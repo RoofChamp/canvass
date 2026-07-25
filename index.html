@@ -38,6 +38,10 @@ input,textarea,select{font:inherit;color:var(--txt);background:var(--card2);bord
 .dot{width:8px;height:8px;border-radius:50%;background:#64748b;flex:0 0 auto}
 .dot.good{background:#22c55e}.dot.ok{background:#f59e0b}.dot.bad{background:#ef4444}
 #stripSpacer{flex:1}
+#modePill{font-weight:900;letter-spacing:.6px;font-size:11px;padding:5px 11px;border-width:1px;border-style:solid}
+#modePill.roof{background:#08313f;border-color:#0ea5e9;color:#7dd3fc}
+#modePill.appraisal{background:#2e1065;border-color:#a855f7;color:#e9d5ff}
+#truckPill{background:#3b0d24;border-color:#f472b6;color:#fbcfe8;font-weight:800}
 #menuBtn{font-size:20px;padding:2px 8px;color:var(--dim)}
 
 /* ---------- house card ---------- */
@@ -61,10 +65,11 @@ input,textarea,select{font:inherit;color:var(--txt);background:var(--card2);bord
 
 /* ---------- bottom bar ---------- */
 #bottom{flex:0 0 auto;display:flex;align-items:center;gap:10px;padding:10px 10px calc(10px + var(--safe-b))}
-.bbtn{flex:1;background:var(--card);border:1px solid var(--line);border-radius:16px;height:64px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;font-size:12px;font-weight:700;color:var(--dim)}
+.bbtn{flex:1;background:var(--card);border:1px solid var(--line);border-radius:16px;height:84px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;font-size:12px;font-weight:700;color:var(--dim)}
 .bbtn .ico{font-size:20px}
 .bbtn:active{background:var(--card2)}
-#miniWrap{flex:0 0 auto;width:88px;height:88px;border-radius:18px;overflow:hidden;border:1px solid var(--line);background:#0f151d;position:relative}
+#miniWrap{flex:0 0 auto;width:112px;height:112px;border-radius:20px;overflow:hidden;border:1px solid var(--line);background:#0f151d;position:relative}
+#miniWrap.parking{border-color:#f472b6;box-shadow:0 0 0 3px rgba(244,114,182,.35)}
 #mini{width:100%;height:100%;display:block}
 #miniLabel{position:absolute;left:0;right:0;bottom:0;font-size:9px;text-align:center;background:rgba(0,0,0,.55);color:#cbd5e1;padding:2px 0;font-weight:700;letter-spacing:.4px}
 
@@ -111,6 +116,19 @@ label.f{display:block;margin:12px 0 5px;font-size:12px;font-weight:800;color:var
 .mbtn.on{background:#2563eb;border-color:#3b82f6}
 #legend{position:absolute;right:8px;bottom:calc(var(--safe-b) + 60px);z-index:500;background:rgba(15,23,42,.92);border:1px solid var(--line);border-radius:12px;padding:8px 10px;font-size:11px;line-height:1.7}
 #legend i{display:inline-block;width:11px;height:11px;border-radius:3px;margin-right:6px;vertical-align:-1px}
+#daysPanel{position:absolute;left:8px;right:8px;bottom:calc(var(--safe-b) + 60px);z-index:600;background:rgba(11,15,20,.97);border:1px solid var(--line);border-radius:16px;max-height:58%;display:flex;flex-direction:column;box-shadow:0 12px 40px rgba(0,0,0,.7)}
+.dpHead{display:flex;align-items:center;gap:10px;padding:12px 14px 8px;font-weight:800;font-size:15px}
+.dpHead .x{margin-left:auto}
+.dpList{overflow-y:auto;padding:0 10px 6px}
+.dpFoot{padding:8px 14px 12px;font-size:11px;color:var(--dim);border-top:1px solid var(--line)}
+.dayRow{display:flex;align-items:center;gap:10px;padding:11px 10px;border-radius:12px;border:1px solid var(--line);margin-bottom:7px;background:var(--card)}
+.dayRow.off{opacity:.42}
+.dayRow .sw{width:20px;height:5px;border-radius:3px;flex:0 0 auto}
+.dayRow .lbl{flex:1;font-weight:700;font-size:14px}
+.dayRow .n{font-size:11px;color:var(--dim);font-weight:700}
+.dayRow .del{background:var(--card2);border:1px solid var(--line);border-radius:9px;padding:6px 9px;font-size:13px}
+#eraseBar{position:absolute;top:calc(var(--safe-t) + 60px);left:8px;right:8px;z-index:600;background:rgba(220,38,38,.95);border-radius:14px;padding:11px 13px;display:flex;align-items:center;gap:10px;font-weight:800;font-size:13px;box-shadow:0 8px 24px rgba(0,0,0,.5)}
+#eraseBar .mbtn{margin-left:auto;background:rgba(0,0,0,.35)}
 .owner-label{font-size:10px;font-weight:700;color:#fff;text-shadow:0 0 3px #000,0 0 3px #000,0 1px 2px #000;white-space:nowrap;pointer-events:none}
 .leaflet-container{background:#0b0f14}
 
@@ -130,8 +148,10 @@ label.f{display:block;margin:12px 0 5px;font-size:12px;font-weight:800;color:var
 <div id="app">
   <div id="strip">
     <span class="pill"><span class="dot" id="gpsDot"></span><span id="gpsTxt">GPS…</span></span>
+    <button class="pill" id="modePill">ROOFING</button>
     <span class="pill" id="countyPill">—</span>
     <span class="pill" id="todayPill">0 today</span>
+    <button class="pill hide" id="truckPill">🚚 —</button>
     <span id="stripSpacer"></span>
     <button id="menuBtn">☰</button>
   </div>
@@ -155,7 +175,7 @@ label.f{display:block;margin:12px 0 5px;font-size:12px;font-weight:800;color:var
   <div id="bottom">
     <button class="bbtn" id="detailBtn"><span class="ico">✎</span>Details</button>
     <button class="bbtn" id="undoBtn"><span class="ico">↩︎</span>Undo</button>
-    <div id="miniWrap"><canvas id="mini"></canvas><div id="miniLabel">MAP</div></div>
+    <div id="miniWrap"><canvas id="mini"></canvas><div id="miniLabel">MAP · HOLD TO PARK</div></div>
   </div>
 </div>
 
@@ -180,11 +200,25 @@ label.f{display:block;margin:12px 0 5px;font-size:12px;font-weight:800;color:var
     <div><i style="background:#f59e0b"></i>No answer</div>
     <div><i style="background:#ef4444"></i>Don't come back</div>
     <div><i style="background:#94a3b8"></i>Not hit</div>
+    <div style="margin-top:4px;border-top:1px solid var(--line);padding-top:4px">
+      <span style="border:1.5px solid #cbd5e1;display:inline-block;width:11px;height:11px;border-radius:3px;margin-right:6px;vertical-align:-1px"></span>Roofing</div>
+    <div><span style="border:1.5px dashed #e9d5ff;display:inline-block;width:11px;height:11px;border-radius:3px;margin-right:6px;vertical-align:-1px"></span>Appraisal</div>
   </div>
   <div id="mapBottom">
+    <button class="mbtn" id="mapFilter">👁 All work</button>
     <button class="mbtn" id="mapNames">🏷 Names</button>
-    <button class="mbtn" id="mapRoute">〰 Route</button>
-    <button class="mbtn" id="mapToday">📅 Today only</button>
+    <button class="mbtn" id="mapRoute">〰 Tracks</button>
+    <button class="mbtn" id="mapDays">📅 Days</button>
+    <button class="mbtn" id="mapErase">✂︎ Erase area</button>
+  </div>
+  <div id="daysPanel" class="hide">
+    <div class="dpHead">Walking tracks by day<button class="x" id="daysClose">Done</button></div>
+    <div class="dpList" id="daysList"></div>
+    <div class="dpFoot">Tap a day to show or hide it. The trash icon deletes that day for good.</div>
+  </div>
+  <div id="eraseBar" class="hide">
+    <span id="eraseTxt">Tap one corner of the area to clear…</span>
+    <button class="mbtn" id="eraseCancel">Cancel</button>
   </div>
 </div>
 
@@ -218,17 +252,39 @@ label.f{display:block;margin:12px 0 5px;font-size:12px;font-weight:800;color:var
   </div>
 </div>
 
+<div id="exportSheet" class="sheet hide">
+  <div class="sheetBody">
+    <div class="sheetHead"><h2>Export a list</h2><button class="x" data-close="exportSheet">Close</button></div>
+    <div class="sheetScroll">
+      <label class="f">Which work</label>
+      <div class="chips" id="xLine"></div>
+      <label class="f">Which dates</label>
+      <div class="chips" id="xRange"></div>
+      <label class="f">Which statuses</label>
+      <div class="chips" id="xStatus"></div>
+      <label class="f">Format</label>
+      <div class="chips" id="xFormat"></div>
+      <div class="small" id="xCount" style="margin-top:14px"></div>
+      <button class="primary" id="xGo">Download</button>
+    </div>
+  </div>
+</div>
+
 <div id="menuSheet" class="sheet hide">
   <div class="sheetBody">
     <div class="sheetHead"><h2>Menu</h2><button class="x" data-close="menuSheet">Close</button></div>
     <div class="sheetScroll">
       <div class="statsbox"></div>
-      <button class="ghost" id="mExportCsv">⬇︎ Export CSV (all records)</button>
-      <button class="ghost" id="mExportToday">⬇︎ Export CSV (today only)</button>
-      <button class="ghost" id="mExportGeo">⬇︎ Export map file (GeoJSON)</button>
+      <button class="ghost" id="mExport">⬇︎ Export a list…</button>
       <button class="ghost" id="mBackup">💾 Full backup (JSON)</button>
       <button class="ghost" id="mRestore">⤴︎ Restore from backup</button>
       <input type="file" id="restoreFile" accept=".json,application/json" class="hide">
+      <label class="f">Vehicle</label>
+      <div class="chips">
+        <button class="chip" id="mPark">🚚 Park here</button>
+        <button class="chip" id="mUnpark">Clear truck pin</button>
+      </div>
+      <div class="small" id="parkInfo" style="margin-top:6px"></div>
       <label class="f">Keep screen awake</label>
       <div class="chips"><button class="chip" id="mWake">Screen lock off</button></div>
       <label class="f">Snap distance</label>
@@ -297,18 +353,36 @@ const STATUS = {
 };
 const TAGS = ['Appointment set','Wants estimate','Storm damage','Insurance claim','Callback later','Renter','Not interested','Already has contractor','Roof looks new'];
 
+/* The two books of business. Marks, counts and exports stay separate;
+   the map draws both, with appraisal lots outlined dashed. */
+const LINES = {
+  roof:      { label:'Roofing',   short:'ROOFING',   color:'#0ea5e9', dash:null },
+  appraisal: { label:'Appraisal', short:'APPRAISAL', color:'#a855f7', dash:'5 4' },
+};
+const dayKey = ts => { const d = new Date(ts); return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`; };
+/* Ten hues evenly round the wheel, stepped 3 slots per calendar day, so
+   consecutive days land 108° apart and never look alike. Lightness alternates
+   as a second cue for anyone who struggles with hue alone. */
+function dayColor(day) {
+  const epochDay = Math.floor(Date.parse(day + 'T12:00:00') / 86400000);
+  const i = ((epochDay * 3) % 10 + 10) % 10;
+  return `hsl(${i * 36} 82% ${i % 2 ? 52 : 67}%)`;
+}
+
 /* ---------------- tiny IndexedDB wrapper ---------------- */
 const DB = (() => {
   let db = null;
   const open = () => new Promise((res, rej) => {
     if (db) return res(db);
-    const r = indexedDB.open('canvass', 2);
+    const r = indexedDB.open('canvass', 3);
     r.onupgradeneeded = e => {
       const d = e.target.result;
       if (!d.objectStoreNames.contains('visits'))  d.createObjectStore('visits', {keyPath:'id'});
       if (!d.objectStoreNames.contains('parcels')) d.createObjectStore('parcels', {keyPath:'key'});
       if (!d.objectStoreNames.contains('tiles'))   d.createObjectStore('tiles', {keyPath:'key'});
       if (!d.objectStoreNames.contains('track'))   d.createObjectStore('track', {keyPath:'id'});
+      // one record per day keeps a year of breadcrumbs readable in a single get
+      if (!d.objectStoreNames.contains('days'))    d.createObjectStore('days', {keyPath:'day'});
     };
     r.onsuccess = e => { db = e.target.result; res(db); };
     r.onerror = () => rej(r.error);
@@ -331,7 +405,11 @@ const state = {
   parcels: new Map(),   // key -> parcel
   visits: new Map(),    // parcelKey -> latest visit
   visitLog: [],         // all visits, newest last
-  track: [],            // breadcrumbs
+  line: 'roof',         // which book of business is being logged right now
+  days: new Map(),      // dayKey -> {day, pts:[{lat,lon,ts}], shown}
+  today: null,          // dayKey for the current day
+  vehicle: null,        // {lat, lon, ts}
+  track: [],            // today's breadcrumbs (alias into days)
   candidates: [],       // nearest parcels to current pos
   candIndex: 0,
   lastVisitId: null,
@@ -342,6 +420,40 @@ const state = {
   wake: null,
   netErr: '',
 };
+window.state = state;   // exposed for the diagnostics panel and automated tests
+
+/* ---------------- day tracks ---------------- */
+let dayFlushTimer = null;
+function pushTrackPoint(lat, lon, ts) {
+  const k = dayKey(ts);
+  let d = state.days.get(k);
+  if (!d) { d = { day:k, pts:[], shown:true }; state.days.set(k, d); }
+  d.pts.push({ lat, lon, ts });
+  if (k === state.today) state.track = d.pts;
+  // batch writes: a breadcrumb every few seconds should not mean a write every few seconds
+  if (!dayFlushTimer) dayFlushTimer = setTimeout(flushDay, 6000);
+}
+async function flushDay() {
+  dayFlushTimer = null;
+  const d = state.days.get(state.today);
+  if (d) await DB.put('days', { day:d.day, pts:d.pts }).catch(()=>{});
+}
+window.addEventListener('pagehide', flushDay);
+document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'hidden') flushDay(); });
+
+async function loadDay(k) {
+  if (state.days.has(k)) return state.days.get(k);
+  const rec = await DB.get('days', k).catch(()=>null);
+  const d = { day:k, pts:(rec && rec.pts) || [], shown:true };
+  state.days.set(k, d);
+  return d;
+}
+async function listDayKeys() {
+  const all = await DB.all('days').catch(()=>[]);
+  const keys = new Set(all.map(d => d.day));
+  state.days.forEach((_, k) => keys.add(k));
+  return [...keys].sort().reverse();
+}
 
 /* ---------------- geo helpers ---------------- */
 const R = 6371000;
@@ -542,6 +654,11 @@ function recompute() {
   renderHouse();
 }
 const current = () => state.candidates[state.candIndex] || null;
+/* A house can hold one record per book of business, so the lookup key is
+   parcel + line. Without this, marking a roofing door would overwrite the
+   appraisal record on the same address. */
+const vKey = (parcelKey, line) => `${line || 'roof'}|${parcelKey}`;
+const visitFor = (parcelKey, line) => state.visits.get(vKey(parcelKey, line === undefined ? state.line : line));
 function pinHouse(key) {
   state.manualKey = key;
   state.manualAt = state.pos ? { lat:state.pos.lat, lon:state.pos.lon, ts:Date.now() } : null;
@@ -560,8 +677,9 @@ function renderStrip() {
       : state.netErr ? '⚠︎ offline'
       : (state.county ? state.county.name + ' Co.' : '—');
   const t0 = new Date(); t0.setHours(0,0,0,0);
-  const todayN = state.visitLog.filter(v => v.ts >= +t0).length;
+  const todayN = state.visitLog.filter(v => v.ts >= +t0 && v.line === state.line).length;
   $('todayPill').textContent = `${todayN} today`;
+  renderTruck();
 }
 
 function renderHouse() {
@@ -577,13 +695,21 @@ function renderHouse() {
   $('addr').classList.toggle('far', c.d > state.snapMax);
   const yr = p.extra.RESYRBLT || p.extra.YRBUILT || p.extra.YearBuilt || p.extra.YRBLT || p.extra.PPYearBuilt;
   $('owner').textContent = (p.owner || 'Owner not listed') + (yr ? ` · built ${yr}` : '') + ` · ${Math.round(c.d)}m`;
-  const v = state.visits.get(p.key);
+  const v = visitFor(p.key);
+  const other = visitFor(p.key, state.line === 'roof' ? 'appraisal' : 'roof');
   const tag = $('alreadyTag');
   if (v) {
     tag.classList.remove('hide');
-    tag.textContent = `Already: ${STATUS[v.status].label} · ${timeAgo(v.ts)}`;
+    tag.textContent = `Already: ${STATUS[v.status].label} · ${timeAgo(v.ts)}`
+      + (other ? ` · ${LINES[other.line].label} too` : '');
     tag.style.background = STATUS[v.status].color + '33';
     tag.style.color = STATUS[v.status].color;
+  } else if (other) {
+    // not hit for this line, but you have been here for the other one
+    tag.classList.remove('hide');
+    tag.textContent = `${LINES[other.line].label}: ${STATUS[other.status].label} · ${timeAgo(other.ts)}`;
+    tag.style.background = LINES[other.line].color + '2e';
+    tag.style.color = LINES[other.line].color;
   } else tag.classList.add('hide');
   drawMini();
 }
@@ -616,7 +742,7 @@ function drawMini() {
 
   for (const p of state.parcels.values()) {
     if (Math.abs(p.cen[1]-lat)*ky > span || Math.abs(p.cen[0]-lon)*kx > span) continue;
-    const v = state.visits.get(p.key);
+    const v = visitFor(p.key) || visitFor(p.key, state.line === 'roof' ? 'appraisal' : 'roof');
     g.beginPath();
     for (const ring of p.rings) {
       ring.forEach((pt,i) => i ? g.lineTo(X(pt), Y(pt)) : g.moveTo(X(pt), Y(pt)));
@@ -639,6 +765,17 @@ function drawMini() {
     trail.forEach((t,i) => { const x = X([t.lon,t.lat]), y = Y([t.lon,t.lat]); i ? g.lineTo(x,y) : g.moveTo(x,y); });
     g.strokeStyle = 'rgba(255,255,255,.45)'; g.lineWidth = 1.6; g.stroke();
   }
+  // truck, clamped to the edge with an arrow when it is off the little map
+  if (state.vehicle) {
+    let tx = X([state.vehicle.lon, state.vehicle.lat]), ty = Y([state.vehicle.lon, state.vehicle.lat]);
+    const pad = 9, off = tx < pad || tx > w-pad || ty < pad || ty > h-pad;
+    tx = Math.max(pad, Math.min(w-pad, tx)); ty = Math.max(pad, Math.min(h-pad, ty));
+    g.beginPath(); g.arc(tx, ty, 6.5, 0, 7);
+    g.fillStyle = off ? 'rgba(244,114,182,.85)' : '#f472b6'; g.fill();
+    g.strokeStyle = '#fff'; g.lineWidth = 1.4; g.stroke();
+    g.fillStyle = '#fff'; g.font = 'bold 8px sans-serif'; g.textAlign = 'center'; g.textBaseline = 'middle';
+    g.fillText('T', tx, ty + .5);
+  }
   // you
   g.beginPath(); g.arc(w/2, h/2, 4.5, 0, 7); g.fillStyle = '#38bdf8'; g.fill();
   g.strokeStyle = '#fff'; g.lineWidth = 1.6; g.stroke();
@@ -652,14 +789,15 @@ async function mark(status) {
   const p = c.p;
   const v = {
     id: 'v' + Date.now() + Math.random().toString(36).slice(2,6),
-    key: p.key, county: p.county, pid: p.pid, status,
+    key: p.key, county: p.county, pid: p.pid, status, line: state.line,
     ts: Date.now(), lat: state.pos.lat, lon: state.pos.lon, acc: state.pos.acc,
     dist: Math.round(c.d), owner: p.owner, addr: p.addr, extra: p.extra,
     name:'', phone:'', email:'', notes:'', tags:[], follow:'',
   };
-  const prev = state.visits.get(p.key);
+  // carry contact details forward, but only from the same book of business
+  const prev = state.visits.get(vKey(p.key, state.line));
   if (prev) { v.name=prev.name; v.phone=prev.phone; v.email=prev.email; v.notes=prev.notes; v.tags=prev.tags||[]; v.follow=prev.follow||''; v.prevId=prev.id; }
-  state.visits.set(p.key, v);
+  state.visits.set(vKey(v.key, v.line), v);
   state.visitLog.push(v);
   state.lastVisitId = v.id;
   await DB.put('visits', v).catch(()=>{});
@@ -685,10 +823,9 @@ async function undoLast() {
   if (!v) return;
   state.visitLog = state.visitLog.filter(x => x.id !== v.id);
   await DB.del('visits', v.id).catch(()=>{});
-  if (v.prevId) {
-    const prev = state.visitLog.filter(x => x.key === v.key).sort((a,b)=>b.ts-a.ts)[0];
-    if (prev) state.visits.set(v.key, prev); else state.visits.delete(v.key);
-  } else state.visits.delete(v.key);
+  const slot = vKey(v.key, v.line);
+  const prev = state.visitLog.filter(x => vKey(x.key, x.line) === slot).sort((a,b)=>b.ts-a.ts)[0];
+  if (prev) state.visits.set(slot, prev); else state.visits.delete(slot);
   const rest = state.visitLog[state.visitLog.length-1];
   state.lastVisitId = rest ? rest.id : null;
   $('toast').classList.remove('show');
@@ -701,7 +838,7 @@ function openCandidates() {
   const list = $('candList'); list.innerHTML = '';
   if (!state.candidates.length) list.innerHTML = '<p style="color:var(--dim)">No lots loaded nearby yet.</p>';
   state.candidates.forEach((c, i) => {
-    const v = state.visits.get(c.p.key);
+    const v = visitFor(c.p.key);
     const el = document.createElement('div');
     el.className = 'cand';
     el.innerHTML = `<div class="sw" style="background:${v?STATUS[v.status].color:'#37475c'}"></div>
@@ -727,13 +864,14 @@ async function reassignLast() {
   let i = state.candidates.findIndex(c => c.p.key === v.key);
   i = (i + 1) % Math.min(state.candidates.length, 6);
   const target = state.candidates[i].p;
-  // detach from old parcel
-  const older = state.visitLog.filter(x => x.key === v.key && x.id !== v.id).sort((a,b)=>b.ts-a.ts)[0];
-  if (older) state.visits.set(v.key, older); else state.visits.delete(v.key);
+  // detach from the old parcel, within this book of business only
+  const oldSlot = vKey(v.key, v.line);
+  const older = state.visitLog.filter(x => vKey(x.key, x.line) === oldSlot && x.id !== v.id).sort((a,b)=>b.ts-a.ts)[0];
+  if (older) state.visits.set(oldSlot, older); else state.visits.delete(oldSlot);
   v.key = target.key; v.pid = target.pid; v.county = target.county;
   v.owner = target.owner; v.addr = target.addr; v.extra = target.extra;
   v.dist = Math.round(state.candidates[i].d);
-  state.visits.set(v.key, v);
+  state.visits.set(vKey(v.key, v.line), v);
   state.candIndex = i; pinHouse(target.key);
   await DB.put('visits', v).catch(()=>{});
   buzz(15);
@@ -759,11 +897,11 @@ function openDetail(visit) {
     const c = current();
     v = state.lastVisitId ? state.visitLog.find(x => x.id === state.lastVisitId) : null;
     if (c && (!v || v.key !== c.p.key)) {
-      const existing = state.visits.get(c.p.key);
+      const existing = visitFor(c.p.key);
       v = existing || null;
       if (!v) {
         // let them add notes before ever tapping a status
-        v = { id:'v'+Date.now()+Math.random().toString(36).slice(2,6), key:c.p.key, county:c.p.county,
+        v = { id:'v'+Date.now()+Math.random().toString(36).slice(2,6), key:c.p.key, county:c.p.county, line:state.line,
               pid:c.p.pid, status:'talked', ts:Date.now(), lat:state.pos.lat, lon:state.pos.lon,
               acc:state.pos.acc, dist:Math.round(c.d), owner:c.p.owner, addr:c.p.addr, extra:c.p.extra,
               name:'', phone:'', email:'', notes:'', tags:[], follow:'', _new:true };
@@ -773,7 +911,9 @@ function openDetail(visit) {
   if (!v) { flashToast('Mark a house first','Tap a status, then add details','#64748b'); return; }
   editing = v;
   $('dTitle').textContent = v.addr || 'Lot ' + v.pid;
-  $('dSub').textContent = (v.owner || 'owner not listed') + ' · ' + (COUNTIES.find(c=>c.key===v.county)||{}).name + ' Co.';
+  const ln = LINES[v.line || 'roof'];
+  $('dSub').innerHTML = `<span style="color:${ln.color};font-weight:800">${ln.short}</span> · `
+    + esc(v.owner || 'owner not listed') + ' · ' + esc((COUNTIES.find(c=>c.key===v.county)||{}).name || '?') + ' Co.';
   $('dName').value = v.name||''; $('dPhone').value = v.phone||'';
   $('dEmail').value = v.email||''; $('dNotes').value = v.notes||''; $('dFollow').value = v.follow||'';
   const sw = $('dStatus'); sw.innerHTML = '';
@@ -797,7 +937,7 @@ async function saveDetail() {
   if (!editing) return;
   pullDetail();
   if (editing._new) { delete editing._new; state.visitLog.push(editing); state.lastVisitId = editing.id; }
-  state.visits.set(editing.key, editing);
+  state.visits.set(vKey(editing.key, editing.line), editing);
   await DB.put('visits', editing).catch(()=>{});
   closeSheet('detailSheet'); buzz(20);
   flashToast('Saved', editing.addr || '', STATUS[editing.status].color);
@@ -807,21 +947,25 @@ async function deleteDetail() {
   if (!editing) return;
   state.visitLog = state.visitLog.filter(x => x.id !== editing.id);
   await DB.del('visits', editing.id).catch(()=>{});
-  const prev = state.visitLog.filter(x => x.key === editing.key).sort((a,b)=>b.ts-a.ts)[0];
-  if (prev) state.visits.set(editing.key, prev); else state.visits.delete(editing.key);
+  const slot = vKey(editing.key, editing.line);
+  const prev = state.visitLog.filter(x => vKey(x.key, x.line) === slot).sort((a,b)=>b.ts-a.ts)[0];
+  if (prev) state.visits.set(slot, prev); else state.visits.delete(slot);
   if (state.lastVisitId === editing.id) { const r = state.visitLog[state.visitLog.length-1]; state.lastVisitId = r?r.id:null; }
   editing = null; closeSheet('detailSheet'); buzz(30);
   renderStrip(); renderHouse(); if (window._map) refreshMapLayers();
 }
 
 /* ---------------- sheets ---------------- */
-function openSheet(id){ $(id).classList.remove('hide'); }
+/* Sheets can be opened from other sheets (menu → export). DOM order alone would
+   leave the newer one buried, so each open lifts it above whatever is showing. */
+let sheetZ = 80;
+function openSheet(id){ const el = $(id); el.style.zIndex = ++sheetZ; el.classList.remove('hide'); }
 function closeSheet(id){ $(id).classList.add('hide'); }
 document.querySelectorAll('[data-close]').forEach(b => b.onclick = () => closeSheet(b.dataset.close));
 document.querySelectorAll('.sheet').forEach(s => s.addEventListener('click', e => { if (e.target === s) s.classList.add('hide'); }));
 
 /* ---------------- full map (Leaflet, lazy loaded) ---------------- */
-const mapOpts = { sat:false, names:true, route:true, today:false, follow:true };
+const mapOpts = { sat:false, names:true, tracks:true, filter:'all', follow:true };
 function loadLeaflet() {
   if (window.L) return Promise.resolve();
   return new Promise((res, rej) => {
@@ -854,6 +998,7 @@ async function openMap() {
     window._meLayer     = L.layerGroup().addTo(m);
     m.on('dragstart', () => { mapOpts.follow = false; syncMapBtns(); });
     m.on('moveend', () => { refreshMapLayers(); loadForView(); });
+    m.on('click', e => { if (eraseMode) eraseTap(e.latlng); });
   }
   setTimeout(() => { window._map.invalidateSize(); if (state.pos && mapOpts.follow) window._map.setView([state.pos.lat,state.pos.lon]); refreshMapLayers(); }, 60);
   syncMapBtns();
@@ -864,56 +1009,183 @@ async function loadForView() {
   const cs = countiesFor(c.lat, c.lng);
   if (cs[0]) { const n = await fetchTile(cs[0], c.lat, c.lng, true); if (n) refreshMapLayers(); }
 }
+const passesFilter = line => mapOpts.filter === 'all' || mapOpts.filter === line;
+
 function refreshMapLayers() {
   const m = window._map; if (!m) return;
   const pl = window._parcelLayer, ll = window._labelLayer;
   pl.clearLayers(); ll.clearLayers();
-  const b = m.getBounds(); const z = m.getZoom();
-  const t0 = new Date(); t0.setHours(0,0,0,0);
-  let shown = 0;
-  for (const p of state.parcels.values()) {
-    if (p.bbox[2] < b.getWest() || p.bbox[0] > b.getEast() || p.bbox[3] < b.getSouth() || p.bbox[1] > b.getNorth()) continue;
-    if (shown++ > 1400) break;
-    let v = state.visits.get(p.key);
-    if (v && mapOpts.today && v.ts < +t0) v = null;
-    const col = v ? STATUS[v.status].color : '#94a3b8';
-    const latlngs = p.rings.map(r => r.map(pt => [pt[1], pt[0]]));
-    const poly = L.polygon(latlngs, {
-      color: v ? col : (mapOpts.sat ? '#e2e8f0' : '#64748b'),
-      weight: v ? 2 : 1, opacity: v ? 1 : .65,
-      fillColor: col, fillOpacity: v ? .55 : (mapOpts.sat ? .04 : .10),
-    });
-    poly.on('click', () => {
-      const ex = state.visits.get(p.key);
-      openDetail(ex || { id:'v'+Date.now()+Math.random().toString(36).slice(2,6), key:p.key, county:p.county,
-        pid:p.pid, status:'noanswer', ts:Date.now(), lat:p.cen[1], lon:p.cen[0], acc:0, dist:0,
-        owner:p.owner, addr:p.addr, extra:p.extra, name:'',phone:'',email:'',notes:'',tags:[],follow:'', _new:true });
-    });
-    pl.addLayer(poly);
-    if (mapOpts.names && z >= 18 && p.owner) {
-      ll.addLayer(L.marker([p.cen[1], p.cen[0]], { interactive:false, icon: L.divIcon({
-        className:'', html:`<div class="owner-label">${esc(shortOwner(p.owner))}${p.addr?'<br>'+esc(p.addr.split(' ')[0]):''}</div>`,
-        iconSize:[0,0] }) }));
+  const b = m.getBounds(), z = m.getZoom();
+  const inView = ll2 => ll2[0] >= b.getSouth() && ll2[0] <= b.getNorth() && ll2[1] >= b.getWest() && ll2[1] <= b.getEast();
+
+  /* Below zoom 16 the lot lines are not loaded (and would be illegible anyway),
+     so marked houses are drawn as dots straight from the saved records. That way
+     zooming out to survey a week's work actually shows the week's work. */
+  if (z < 16) {
+    const seen = new Set();
+    for (const v of state.visitLog) {
+      if (!passesFilter(v.line)) continue;
+      const slot = vKey(v.key, v.line);
+      if (seen.has(slot)) continue;
+      const latest = state.visits.get(slot);
+      if (!latest || latest.id !== v.id) continue;
+      seen.add(slot);
+      const p = state.parcels.get(v.key);
+      const ll2 = p ? [p.cen[1], p.cen[0]] : [v.lat, v.lon];
+      if (!inView(ll2)) continue;
+      pl.addLayer(L.circleMarker(ll2, {
+        radius: z >= 14 ? 5 : 3.5, weight: v.line === 'appraisal' ? 2 : 1,
+        color: v.line === 'appraisal' ? '#e9d5ff' : '#0f172a',
+        fillColor: STATUS[v.status].color, fillOpacity: .95,
+      }).on('click', () => openDetail(latest)));
+    }
+  } else {
+    let shown = 0;
+    for (const p of state.parcels.values()) {
+      if (p.bbox[2] < b.getWest() || p.bbox[0] > b.getEast() || p.bbox[3] < b.getSouth() || p.bbox[1] > b.getNorth()) continue;
+      if (shown++ > 1400) break;
+      // a lot can carry a record in each book; show whichever the filter allows,
+      // preferring the one you are currently logging
+      const own = passesFilter(state.line) ? visitFor(p.key, state.line) : null;
+      const alt = passesFilter(state.line === 'roof' ? 'appraisal' : 'roof')
+        ? visitFor(p.key, state.line === 'roof' ? 'appraisal' : 'roof') : null;
+      const v = own || alt;
+      const col = v ? STATUS[v.status].color : '#94a3b8';
+      const latlngs = p.rings.map(r => r.map(pt => [pt[1], pt[0]]));
+      const poly = L.polygon(latlngs, {
+        color: v ? col : (mapOpts.sat ? '#e2e8f0' : '#64748b'),
+        weight: v ? (v.line === 'appraisal' ? 3 : 2) : 1,
+        opacity: v ? 1 : .65,
+        dashArray: v && v.line === 'appraisal' ? '6 4' : null,
+        fillColor: col, fillOpacity: v ? .55 : (mapOpts.sat ? .04 : .10),
+      });
+      poly.on('click', () => {
+        const ex = visitFor(p.key, state.line) || alt;
+        openDetail(ex || { id:'v'+Date.now()+Math.random().toString(36).slice(2,6), key:p.key, county:p.county,
+          pid:p.pid, status:'noanswer', line:state.line, ts:Date.now(), lat:p.cen[1], lon:p.cen[0], acc:0, dist:0,
+          owner:p.owner, addr:p.addr, extra:p.extra, name:'',phone:'',email:'',notes:'',tags:[],follow:'', _new:true });
+      });
+      pl.addLayer(poly);
+      if (mapOpts.names && z >= 18 && p.owner) {
+        ll.addLayer(L.marker([p.cen[1], p.cen[0]], { interactive:false, icon: L.divIcon({
+          className:'', html:`<div class="owner-label">${esc(shortOwner(p.owner))}${p.addr?'<br>'+esc(p.addr.split(' ')[0]):''}</div>`,
+          iconSize:[0,0] }) }));
+      }
     }
   }
+
+  /* tracks: one coloured line per day, only for days ticked on */
   const rl = window._routeLayer; rl.clearLayers();
-  if (mapOpts.route && state.track.length > 1) {
-    const pts = state.track.filter(t => !mapOpts.today || t.ts >= +t0).map(t => [t.lat, t.lon]);
-    if (pts.length > 1) rl.addLayer(L.polyline(pts, { color:'#38bdf8', weight:3, opacity:.85, dashArray:'1 6', lineCap:'round' }));
+  if (mapOpts.tracks) {
+    for (const d of state.days.values()) {
+      if (!d.shown || d.pts.length < 2) continue;
+      rl.addLayer(L.polyline(d.pts.map(t => [t.lat, t.lon]), {
+        color: dayColor(d.day), weight: d.day === state.today ? 4 : 3,
+        opacity: d.day === state.today ? .95 : .7, lineCap:'round',
+        dashArray: d.day === state.today ? null : '1 7',
+      }));
+    }
   }
+
   const ml = window._meLayer; ml.clearLayers();
+  if (state.vehicle) {
+    ml.addLayer(L.marker([state.vehicle.lat, state.vehicle.lon], { icon: L.divIcon({
+      className:'', iconSize:[0,0],
+      html:`<div style="transform:translate(-14px,-14px);font-size:22px;filter:drop-shadow(0 0 3px #000)">🚚</div>` }) })
+      .bindTooltip('Your truck'));
+  }
   if (state.pos) {
     ml.addLayer(L.circleMarker([state.pos.lat, state.pos.lon], { radius:7, color:'#fff', weight:2, fillColor:'#38bdf8', fillOpacity:1 }));
     ml.addLayer(L.circle([state.pos.lat, state.pos.lon], { radius: state.pos.acc, color:'#38bdf8', weight:1, opacity:.4, fillOpacity:.06 }));
   }
+  if (eraseCorner) ml.addLayer(L.circleMarker(eraseCorner, { radius:8, color:'#fff', weight:2, fillColor:'#dc2626', fillOpacity:.9 }));
 }
 const shortOwner = o => { const parts = o.split(/\s*&\s*/)[0].trim().split(/\s+/); return parts.slice(0, Math.min(2, parts.length)).join(' '); };
 function syncMapBtns() {
   $('mapSat').classList.toggle('on', mapOpts.sat);
   $('mapNames').classList.toggle('on', mapOpts.names);
-  $('mapRoute').classList.toggle('on', mapOpts.route);
-  $('mapToday').classList.toggle('on', mapOpts.today);
+  $('mapRoute').classList.toggle('on', mapOpts.tracks);
   $('mapFollow').classList.toggle('on', mapOpts.follow);
+  const f = $('mapFilter');
+  f.textContent = mapOpts.filter === 'all' ? '👁 All work'
+    : mapOpts.filter === 'roof' ? '👁 Roofing only' : '👁 Appraisal only';
+  f.classList.toggle('on', mapOpts.filter !== 'all');
+}
+
+/* ---------------- days panel ---------------- */
+async function openDays() {
+  const keys = await listDayKeys();
+  for (const k of keys) await loadDay(k);
+  const list = $('daysList'); list.innerHTML = '';
+  if (!keys.length) list.innerHTML = '<p style="color:var(--dim);padding:8px">No walking tracks recorded yet.</p>';
+  keys.forEach(k => {
+    const d = state.days.get(k);
+    const row = document.createElement('div');
+    row.className = 'dayRow' + (d.shown ? '' : ' off');
+    const dt = new Date(k + 'T12:00:00');
+    const label = k === state.today ? 'Today' : dt.toLocaleDateString(undefined, {weekday:'short', month:'short', day:'numeric'});
+    row.innerHTML = `<div class="sw" style="background:${dayColor(k)}"></div>
+      <div class="lbl">${esc(label)}</div><div class="n">${d.pts.length} pts</div>`;
+    row.onclick = e => {
+      if (e.target.classList.contains('del')) return;
+      d.shown = !d.shown; row.classList.toggle('off', !d.shown); refreshMapLayers(); buzz(10);
+    };
+    const del = document.createElement('button');
+    del.className = 'del'; del.textContent = '🗑';
+    del.onclick = async ev => {
+      ev.stopPropagation();
+      if (!confirm(`Delete the walking track for ${label}? Your door records are not affected.`)) return;
+      await DB.del('days', k).catch(()=>{});
+      state.days.delete(k);
+      if (k === state.today) { state.track = []; await loadDay(state.today); state.track = state.days.get(state.today).pts; }
+      openDays(); refreshMapLayers(); buzz(30);
+    };
+    row.appendChild(del);
+    list.appendChild(row);
+  });
+  $('daysPanel').classList.remove('hide');
+}
+
+/* ---------------- erase an area of track ---------------- */
+let eraseMode = false, eraseCorner = null;
+function startErase() {
+  eraseMode = true; eraseCorner = null;
+  $('eraseBar').classList.remove('hide');
+  $('eraseTxt').textContent = 'Tap one corner of the area to clear…';
+  $('mapErase').classList.add('on');
+}
+function cancelErase() {
+  eraseMode = false; eraseCorner = null;
+  $('eraseBar').classList.add('hide');
+  $('mapErase').classList.remove('on');
+  refreshMapLayers();
+}
+async function eraseTap(latlng) {
+  if (!eraseCorner) {
+    eraseCorner = [latlng.lat, latlng.lng];
+    $('eraseTxt').textContent = 'Now tap the opposite corner.';
+    refreshMapLayers(); buzz(12);
+    return;
+  }
+  const s = Math.min(eraseCorner[0], latlng.lat), n = Math.max(eraseCorner[0], latlng.lat);
+  const w = Math.min(eraseCorner[1], latlng.lng), e = Math.max(eraseCorner[1], latlng.lng);
+  let hit = 0;
+  for (const d of state.days.values())
+    hit += d.pts.filter(p => p.lat>=s && p.lat<=n && p.lon>=w && p.lon<=e).length;
+  if (!hit) { flashToast('Nothing in that box', 'No breadcrumbs to clear there', '#64748b'); cancelErase(); return; }
+  if (!confirm(`Clear ${hit} track point${hit===1?'':'s'} inside that box? Door records are not affected.`)) { cancelErase(); return; }
+  for (const d of state.days.values()) {
+    const before = d.pts.length;
+    d.pts = d.pts.filter(p => !(p.lat>=s && p.lat<=n && p.lon>=w && p.lon<=e));
+    if (d.pts.length !== before) {
+      if (d.pts.length) await DB.put('days', {day:d.day, pts:d.pts}).catch(()=>{});
+      else { await DB.del('days', d.day).catch(()=>{}); }
+    }
+  }
+  state.track = (state.days.get(state.today) || {pts:[]}).pts;
+  buzz(40);
+  flashToast(`Cleared ${hit} track points`, '', '#f59e0b');
+  cancelErase(); drawMini();
 }
 
 /* ---------------- export ---------------- */
@@ -926,49 +1198,96 @@ function download(name, text, type) {
   document.body.appendChild(a); a.click(); a.remove();
   setTimeout(() => URL.revokeObjectURL(url), 4000);
 }
-function visitsFor(todayOnly) {
-  const t0 = new Date(); t0.setHours(0,0,0,0);
-  return state.visitLog.filter(v => !todayOnly || v.ts >= +t0).sort((a,b)=>a.ts-b.ts);
+/* ---- export options ---- */
+const xOpts = { line:'all', range:'all', status:'all', format:'csv' };
+const RANGES = { today:'Today', week:'Last 7 days', month:'Last 30 days', all:'Everything' };
+function rangeStart(r) {
+  const d = new Date(); d.setHours(0,0,0,0);
+  if (r === 'today') return +d;
+  if (r === 'week')  return +d - 86400000*6;
+  if (r === 'month') return +d - 86400000*29;
+  return 0;
 }
-function exportCsv(todayOnly) {
-  const rows = visitsFor(todayOnly);
-  if (!rows.length) { flashToast('Nothing to export','','#64748b'); return; }
-  const head = ['Date','Time','Status','Address','Owner','County','Parcel ID','Contact name','Phone','Email','Tags','Follow up','Notes','Year built','Latitude','Longitude','GPS accuracy m','Distance to lot m'];
+function visitsFor(o) {
+  const from = rangeStart(o.range);
+  return state.visitLog
+    .filter(v => v.ts >= from)
+    .filter(v => o.line === 'all' || v.line === o.line)
+    .filter(v => o.status === 'all' || v.status === o.status)
+    .sort((a,b)=>a.ts-b.ts);
+}
+function exportCsv(o) {
+  const rows = visitsFor(o);
+  if (!rows.length) { flashToast('Nothing matches those options','','#64748b'); return; }
+  const head = ['Date','Time','Work','Status','Address','Owner','County','Parcel ID','Contact name','Phone','Email','Tags','Follow up','Notes','Year built','Latitude','Longitude','GPS accuracy m','Distance to lot m'];
   const yr = v => v.extra && (v.extra.RESYRBLT||v.extra.YRBUILT||v.extra.YearBuilt||v.extra.YRBLT||v.extra.PPYearBuilt) || '';
   const lines = [head.map(q).join(',')];
   rows.forEach(v => {
     const d = new Date(v.ts);
-    lines.push([d.toLocaleDateString(), d.toLocaleTimeString(), STATUS[v.status].label, v.addr, v.owner,
+    lines.push([d.toLocaleDateString(), d.toLocaleTimeString(), LINES[v.line||'roof'].label,
+      STATUS[v.status].label, v.addr, v.owner,
       (COUNTIES.find(c=>c.key===v.county)||{}).name, v.pid, v.name, v.phone, v.email,
       (v.tags||[]).join('; '), v.follow, v.notes, yr(v),
       v.lat.toFixed(6), v.lon.toFixed(6), Math.round(v.acc||0), v.dist].map(q).join(','));
   });
-  download(`canvass-${stamp(todayOnly)}.csv`, '﻿'+lines.join('\r\n'), 'text/csv');
+  download(`canvass-${xName(o)}.csv`, '﻿'+lines.join('\r\n'), 'text/csv');
 }
-function exportGeo() {
-  const rows = visitsFor(false);
+function exportGeo(o) {
+  const rows = visitsFor(o);
   const feats = rows.map(v => {
     const p = state.parcels.get(v.key);
     return { type:'Feature',
-      properties:{ status:STATUS[v.status].label, address:v.addr, owner:v.owner, parcel:v.pid,
+      properties:{ work:LINES[v.line||'roof'].label, status:STATUS[v.status].label,
+        address:v.addr, owner:v.owner, parcel:v.pid,
         county:v.county, when:new Date(v.ts).toISOString(), contact:v.name, phone:v.phone,
         email:v.email, tags:(v.tags||[]).join('; '), notes:v.notes,
         'marker-color':STATUS[v.status].color, fill:STATUS[v.status].color },
       geometry: p ? { type:'Polygon', coordinates:p.rings } : { type:'Point', coordinates:[v.lon, v.lat] } };
   });
-  if (state.track.length > 1)
-    feats.push({ type:'Feature', properties:{name:'Walking route', stroke:'#38bdf8'},
-      geometry:{ type:'LineString', coordinates: state.track.map(t=>[t.lon,t.lat]) } });
-  download(`canvass-${stamp(false)}.geojson`, JSON.stringify({type:'FeatureCollection',features:feats}), 'application/geo+json');
+  const from = rangeStart(o.range);
+  for (const d of state.days.values()) {
+    const pts = d.pts.filter(p => p.ts >= from);
+    if (pts.length > 1) feats.push({ type:'Feature',
+      properties:{ name:`Walking track ${d.day}`, day:d.day, stroke:dayColor(d.day), 'stroke-width':3 },
+      geometry:{ type:'LineString', coordinates: pts.map(t=>[t.lon,t.lat]) } });
+  }
+  if (state.vehicle) feats.push({ type:'Feature', properties:{name:'Truck', 'marker-color':'#f472b6'},
+    geometry:{ type:'Point', coordinates:[state.vehicle.lon, state.vehicle.lat] } });
+  download(`canvass-${xName(o)}.geojson`, JSON.stringify({type:'FeatureCollection',features:feats}), 'application/geo+json');
 }
 async function backup() {
-  const data = { v:1, exported:new Date().toISOString(),
-    visits: await DB.all('visits'), track: await DB.all('track') };
-  download(`canvass-backup-${stamp(false)}.json`, JSON.stringify(data), 'application/json');
+  const data = { v:2, exported:new Date().toISOString(),
+    visits: await DB.all('visits'), days: await DB.all('days'), vehicle: state.vehicle };
+  download(`canvass-backup-${stamp()}.json`, JSON.stringify(data), 'application/json');
 }
-function stamp(todayOnly) {
+function stamp() {
   const d = new Date();
-  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}${todayOnly?'':'-all'}`;
+  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+}
+const xName = o => `${o.line==='all'?'all-work':o.line}-${o.range}-${stamp()}`;
+
+/* ---- export sheet ---- */
+function renderExport() {
+  const chip = (host, items, cur, set) => {
+    const el = $(host); el.innerHTML = '';
+    items.forEach(([val, label, color]) => {
+      const b = document.createElement('button');
+      b.className = 'chip' + (cur === val ? ' on' : ''); b.textContent = label;
+      if (cur === val && color) { b.style.background = color+'2e'; b.style.borderColor = color; b.style.color = color; }
+      b.onclick = () => { set(val); renderExport(); };
+      el.appendChild(b);
+    });
+  };
+  chip('xLine', [['all','Both'],['roof','Roofing','#0ea5e9'],['appraisal','Appraisal','#a855f7']],
+       xOpts.line, v => xOpts.line = v);
+  chip('xRange', Object.entries(RANGES).map(([k,l]) => [k,l]), xOpts.range, v => xOpts.range = v);
+  chip('xStatus', [['all','All statuses'], ...Object.entries(STATUS).map(([k,s]) => [k, s.label, s.color])],
+       xOpts.status, v => xOpts.status = v);
+  chip('xFormat', [['csv','Spreadsheet (CSV)'],['geo','Map file (GeoJSON)']], xOpts.format, v => xOpts.format = v);
+  const n = visitsFor(xOpts).length;
+  $('xCount').textContent = n ? `${n} record${n===1?'':'s'} match. The CSV opens in Excel or Google Sheets.`
+                              : 'No records match those options yet.';
+  $('xGo').style.opacity = n ? 1 : .45;
 }
 
 /* ---------------- geolocation ---------------- */
@@ -980,12 +1299,13 @@ function startGps() {
     state.pos = { lat:c.latitude, lon:c.longitude, acc:c.accuracy||99, heading:c.heading, ts:pos.timestamp };
     renderStrip();
     const now = Date.now();
+    if (dayKey(now) !== state.today) { await flushDay(); state.today = dayKey(now); await loadDay(state.today); }
     const last = state.track[state.track.length-1];
     if (!last || now - lastTrack > 4000 || haversine(last.lat,last.lon,c.latitude,c.longitude) > 8) {
       lastTrack = now;
-      const t = { id:'t'+now+Math.random().toString(36).slice(2,5), lat:c.latitude, lon:c.longitude, ts:now, acc:c.accuracy };
-      state.track.push(t); DB.put('track', t).catch(()=>{});
+      pushTrackPoint(c.latitude, c.longitude, now);
     }
+    renderTruck();
     await ensureParcels(c.latitude, c.longitude);
     recompute(); drawMini();
     if (window._map && mapOpts.follow && !$('mapView').classList.contains('hide')) {
@@ -996,6 +1316,43 @@ function startGps() {
     $('gpsTxt').textContent = err.code === 1 ? 'blocked' : 'no fix';
     if (err.code === 1) flashToast('Location blocked','Enable location for this site in Settings › Safari','#ef4444');
   }, { enableHighAccuracy:true, maximumAge:2000, timeout:20000 });
+}
+
+/* ---------------- vehicle ---------------- */
+const COMPASS = ['N','NE','E','SE','S','SW','W','NW'];
+function bearingTo(a, b, c, d) {
+  const y = Math.sin(rad(d-b)) * Math.cos(rad(c));
+  const x = Math.cos(rad(a))*Math.sin(rad(c)) - Math.sin(rad(a))*Math.cos(rad(c))*Math.cos(rad(d-b));
+  return (Math.atan2(y, x) * 180 / Math.PI + 360) % 360;
+}
+function park(lat, lon) {
+  state.vehicle = { lat, lon, ts: Date.now() };
+  localStorage.setItem('vehicle', JSON.stringify(state.vehicle));
+  buzz([25,50,25]);
+  flashToast('Truck parked here', 'Hold the map corner again to move it', '#f472b6');
+  renderTruck(); renderParkInfo(); if (window._map) refreshMapLayers();
+}
+function unpark() {
+  state.vehicle = null; localStorage.removeItem('vehicle');
+  renderTruck(); renderParkInfo(); if (window._map) refreshMapLayers();
+}
+/** Chip only exists while it is useful: parked, and far enough away to matter. */
+function renderTruck() {
+  const el = $('truckPill');
+  if (!state.vehicle || !state.pos) { el.classList.add('hide'); return; }
+  const d = haversine(state.pos.lat, state.pos.lon, state.vehicle.lat, state.vehicle.lon);
+  if (d < 20) { el.classList.add('hide'); return; }
+  const brg = bearingTo(state.pos.lat, state.pos.lon, state.vehicle.lat, state.vehicle.lon);
+  const dir = COMPASS[Math.round(brg / 45) % 8];
+  el.classList.remove('hide');
+  el.textContent = `🚚 ${d < 1000 ? Math.round(d) + ' m' : (d/1609).toFixed(1) + ' mi'} ${dir}`;
+}
+function renderParkInfo() {
+  const el = $('parkInfo');
+  if (!el) return;
+  el.textContent = state.vehicle
+    ? `Truck pinned ${timeAgo(state.vehicle.ts)}${state.pos ? ' · ' + Math.round(haversine(state.pos.lat,state.pos.lon,state.vehicle.lat,state.vehicle.lon)) + ' m away' : ''}.`
+    : 'No truck pin set. Press and hold the map in the bottom corner to drop one.';
 }
 
 /* ---------------- wake lock ---------------- */
@@ -1018,15 +1375,17 @@ document.addEventListener('visibilitychange', async () => {
 /* ---------------- menu ---------------- */
 function renderStats() {
   const t0 = new Date(); t0.setHours(0,0,0,0);
-  const today = state.visitLog.filter(v => v.ts >= +t0);
+  const today = state.visitLog.filter(v => v.ts >= +t0 && (v.line||'roof') === state.line);
   const by = s => today.filter(v => v.status === s).length;
+  const lineTotal = l => state.visitLog.filter(v => (v.line||'roof') === l).length;
   const html = `
-    <div class="stat"><b>${today.length}</b>doors today</div>
+    <div class="stat" style="border-color:${LINES[state.line].color}"><b style="color:${LINES[state.line].color}">${today.length}</b>${LINES[state.line].label.toLowerCase()} today</div>
     <div class="stat"><b style="color:${STATUS.talked.color}">${by('talked')}</b>talked</div>
     <div class="stat"><b style="color:${STATUS.material.color}">${by('material')}</b>material</div>
     <div class="stat"><b style="color:${STATUS.noanswer.color}">${by('noanswer')}</b>no answer</div>
     <div class="stat"><b style="color:${STATUS.dnr.color}">${by('dnr')}</b>do not return</div>
-    <div class="stat"><b>${state.visitLog.length}</b>all time</div>`;
+    <div class="stat"><b style="color:${LINES.roof.color}">${lineTotal('roof')}</b>roofing all time</div>
+    <div class="stat"><b style="color:${LINES.appraisal.color}">${lineTotal('appraisal')}</b>appraisal all time</div>`;
   document.querySelectorAll('.statsbox').forEach(el => el.innerHTML = html);
 }
 function renderSnapChips() {
@@ -1045,15 +1404,57 @@ $('undoBtn').onclick = undoLast;
 $('detailBtn').onclick = () => openDetail(null);
 $('swapBtn').onclick = openCandidates;
 $('house').addEventListener('dblclick', openCandidates);
-$('miniWrap').onclick = openMap;
+$('modePill').onclick = toggleMode;
+$('truckPill').onclick = openMap;
+
+/* Mini map: tap opens the big map, press-and-hold parks the truck.
+   The hold must cancel the tap, or you would get a map every time you park. */
+(() => {
+  const el = $('miniWrap');
+  let timer = null, held = false, sx = 0, sy = 0;
+  const start = e => {
+    held = false;
+    const t = e.touches ? e.touches[0] : e;
+    sx = t.clientX; sy = t.clientY;
+    timer = setTimeout(() => {
+      held = true;
+      el.classList.add('parking');
+      if (state.pos) park(state.pos.lat, state.pos.lon);
+      else flashToast('No GPS fix yet', 'Wait for a fix, then hold again', '#f59e0b');
+      setTimeout(() => el.classList.remove('parking'), 700);
+    }, 650);
+  };
+  const move = e => {
+    const t = e.touches ? e.touches[0] : e;
+    if (Math.hypot(t.clientX - sx, t.clientY - sy) > 12) { clearTimeout(timer); timer = null; }
+  };
+  const end = e => {
+    clearTimeout(timer); timer = null;
+    if (held) { e.preventDefault(); e.stopPropagation(); held = false; return; }
+    openMap();
+  };
+  el.addEventListener('touchstart', start, {passive:true});
+  el.addEventListener('touchmove', move, {passive:true});
+  el.addEventListener('touchend', end);
+  el.addEventListener('mousedown', start);
+  el.addEventListener('mousemove', move);
+  el.addEventListener('mouseup', end);
+  el.addEventListener('mouseleave', () => { clearTimeout(timer); timer = null; });
+  el.addEventListener('contextmenu', e => e.preventDefault());
+})();
 $('toastUndo').onclick = undoLast;
 $('toastSwap').onclick = reassignLast;
-$('menuBtn').onclick = () => { renderStats(); renderSnapChips(); renderDiag(); openSheet('menuSheet'); };
+$('menuBtn').onclick = () => { renderStats(); renderSnapChips(); renderDiag(); renderParkInfo(); openSheet('menuSheet'); };
 $('dSave').onclick = saveDetail;
 $('dDelete').onclick = deleteDetail;
-$('mExportCsv').onclick = () => exportCsv(false);
-$('mExportToday').onclick = () => exportCsv(true);
-$('mExportGeo').onclick = exportGeo;
+$('mExport').onclick = () => { renderExport(); openSheet('exportSheet'); };
+$('xGo').onclick = () => {
+  if (!visitsFor(xOpts).length) return;
+  (xOpts.format === 'csv' ? exportCsv : exportGeo)(xOpts);
+  closeSheet('exportSheet');
+};
+$('mPark').onclick = () => { if (state.pos) { park(state.pos.lat, state.pos.lon); } else flashToast('No GPS fix yet','','#f59e0b'); };
+$('mUnpark').onclick = () => { unpark(); flashToast('Truck pin cleared','','#64748b'); };
 $('mBackup').onclick = backup;
 $('mWake').onclick = toggleWake;
 $('mTest').onclick = testConnections;
@@ -1063,15 +1464,20 @@ $('restoreFile').onchange = async e => {
   try {
     const d = JSON.parse(await f.text());
     for (const v of (d.visits||[])) await DB.put('visits', v);
-    for (const t of (d.track||[])) await DB.put('track', t);
+    for (const day of (d.days||[])) await DB.put('days', day);
+    for (const t of (d.track||[])) await DB.put('track', t);   // v1 backups
+    if (d.vehicle) localStorage.setItem('vehicle', JSON.stringify(d.vehicle));
+    state.days.clear();
     await loadStored(); renderStats();
     flashToast('Restored', `${(d.visits||[]).length} records`, '#22c55e');
   } catch(err) { flashToast('Could not read that file','','#ef4444'); }
 };
 $('mWipe').onclick = async () => {
   if (!confirm('Erase every door you have logged? This cannot be undone.')) return;
-  await DB.clear('visits'); await DB.clear('track'); await DB.clear('tiles');
-  state.visitLog = []; state.visits.clear(); state.track = []; state.lastVisitId = null;
+  await DB.clear('visits'); await DB.clear('track'); await DB.clear('tiles'); await DB.clear('days');
+  state.visitLog = []; state.visits.clear(); state.track = []; state.days.clear(); state.lastVisitId = null;
+  unpark();
+  await loadDay(state.today); state.track = state.days.get(state.today).pts;
   renderStrip(); renderHouse(); renderStats(); closeSheet('menuSheet');
 };
 $('mapClose').onclick = () => $('mapView').classList.add('hide');
@@ -1080,8 +1486,15 @@ $('mapSat').onclick = () => { mapOpts.sat = !mapOpts.sat;
   else { window._map.removeLayer(window._satL); window._street.addTo(window._map); }
   syncMapBtns(); refreshMapLayers(); };
 $('mapNames').onclick = () => { mapOpts.names = !mapOpts.names; syncMapBtns(); refreshMapLayers(); };
-$('mapRoute').onclick = () => { mapOpts.route = !mapOpts.route; syncMapBtns(); refreshMapLayers(); };
-$('mapToday').onclick = () => { mapOpts.today = !mapOpts.today; syncMapBtns(); refreshMapLayers(); };
+$('mapRoute').onclick = () => { mapOpts.tracks = !mapOpts.tracks; syncMapBtns(); refreshMapLayers(); };
+$('mapFilter').onclick = () => {
+  mapOpts.filter = mapOpts.filter === 'all' ? 'roof' : mapOpts.filter === 'roof' ? 'appraisal' : 'all';
+  syncMapBtns(); refreshMapLayers(); buzz(10);
+};
+$('mapDays').onclick = openDays;
+$('daysClose').onclick = () => $('daysPanel').classList.add('hide');
+$('mapErase').onclick = () => { eraseMode ? cancelErase() : startErase(); };
+$('eraseCancel').onclick = cancelErase;
 $('mapFollow').onclick = () => { mapOpts.follow = !mapOpts.follow; syncMapBtns();
   if (mapOpts.follow && state.pos) window._map.setView([state.pos.lat,state.pos.lon], 18); };
 
@@ -1114,7 +1527,7 @@ async function testConnections() {
 }
 
 function renderDiag() {
-  $('diag').innerHTML = `Lots cached: ${state.parcels.size} · records: ${state.visitLog.length} · breadcrumbs: ${state.track.length}`
+  $('diag').innerHTML = `Lots cached: ${state.parcels.size} · records: ${state.visitLog.length} · track days: ${state.days.size} · today's breadcrumbs: ${state.track.length}`
     + (state.netErr ? `<br>Last network error: ${esc(state.netErr)}` : '');
 }
 
@@ -1122,14 +1535,47 @@ function renderDiag() {
 async function loadStored() {
   const vs = (await DB.all('visits').catch(()=>[])) || [];
   vs.sort((a,b)=>a.ts-b.ts);
+  vs.forEach(v => { if (!v.line) v.line = 'roof'; });   // records made before modes existed
   state.visitLog = vs;
   state.visits.clear();
-  vs.forEach(v => state.visits.set(v.key, v));
+  vs.forEach(v => state.visits.set(vKey(v.key, v.line), v));
   state.lastVisitId = vs.length ? vs[vs.length-1].id : null;
-  const t0 = new Date(); t0.setHours(0,0,0,0);
-  const tr = (await DB.all('track').catch(()=>[])) || [];
-  state.track = tr.filter(t => t.ts >= +t0 - 86400000*2).sort((a,b)=>a.ts-b.ts);
-  renderStrip(); renderStats();
+
+  // one-time move of loose breadcrumbs into per-day records
+  const legacy = (await DB.all('track').catch(()=>[])) || [];
+  if (legacy.length) {
+    const byDay = new Map();
+    legacy.forEach(t => { const k = dayKey(t.ts); if (!byDay.has(k)) byDay.set(k, []); byDay.get(k).push(t); });
+    for (const [k, pts] of byDay) {
+      const existing = await DB.get('days', k).catch(()=>null);
+      const merged = [...((existing && existing.pts) || []), ...pts.map(p => ({lat:p.lat, lon:p.lon, ts:p.ts}))]
+        .sort((a,b)=>a.ts-b.ts);
+      await DB.put('days', { day:k, pts:merged }).catch(()=>{});
+    }
+    await DB.clear('track').catch(()=>{});
+  }
+
+  state.today = dayKey(Date.now());
+  const d = await loadDay(state.today);
+  state.track = d.pts;
+
+  try { const v = localStorage.getItem('vehicle'); if (v) state.vehicle = JSON.parse(v); } catch(e){}
+  state.line = localStorage.getItem('line') === 'appraisal' ? 'appraisal' : 'roof';
+  renderMode(); renderStrip(); renderStats(); renderTruck();
+}
+
+function renderMode() {
+  const el = $('modePill');
+  el.textContent = LINES[state.line].short;
+  el.className = 'pill ' + (state.line === 'appraisal' ? 'appraisal' : 'roof');
+}
+function toggleMode() {
+  state.line = state.line === 'roof' ? 'appraisal' : 'roof';
+  localStorage.setItem('line', state.line);
+  buzz([15,40,15]);
+  renderMode(); renderStrip(); renderHouse();
+  flashToast(`Now logging ${LINES[state.line].label}`, 'Counts and exports stay separate', LINES[state.line].color);
+  if (window._map) refreshMapLayers();
 }
 $('startBtn').onclick = async () => {
   $('gate').classList.add('hide');
