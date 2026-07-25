@@ -42,6 +42,7 @@ input,textarea,select{font:inherit;color:var(--txt);background:var(--card2);bord
 #modePill.roof{background:#08313f;border-color:#0ea5e9;color:#7dd3fc}
 #modePill.appraisal{background:#2e1065;border-color:#a855f7;color:#e9d5ff}
 #truckPill{background:#3b0d24;border-color:#f472b6;color:#fbcfe8;font-weight:800}
+#gpsPill.paused{background:#2a1608;border-color:#f59e0b;color:#fcd34d}
 #menuBtn{font-size:20px;padding:2px 8px;color:var(--dim)}
 
 /* ---------- house card ---------- */
@@ -81,6 +82,16 @@ input,textarea,select{font:inherit;color:var(--txt);background:var(--card2);bord
   text-align:center;background:rgba(0,0,0,.6);color:#cbd5e1;padding:3px 0 4px;font-weight:800}
 #hubN{position:absolute;top:3px;left:50%;transform:translateX(-50%);font-size:8px;font-weight:900;
   color:rgba(255,255,255,.55);letter-spacing:.5px}
+/* small controls tucked against the hub ring, thumb reachable, out of the way */
+.hubBtn{position:absolute;z-index:6;width:34px;height:34px;border-radius:50%;
+  background:rgba(11,15,20,.94);border:1px solid var(--line);color:var(--txt);
+  font-size:16px;font-weight:800;display:flex;align-items:center;justify-content:center;
+  box-shadow:0 3px 10px rgba(0,0,0,.5)}
+.hubBtn:active{background:#1c2430}
+.hubBtn.on{background:#2563eb;border-color:#60a5fa}
+#hubOut{left:50%;top:50%;transform:translate(calc(-50% - var(--hub)/2 - 6px), calc(-50% + var(--hub)/2 - 12px))}
+#hubIn {left:50%;top:50%;transform:translate(calc(-50% + var(--hub)/2 + 6px), calc(-50% + var(--hub)/2 - 12px))}
+#hubSat{left:50%;top:50%;transform:translate(-50%, calc(-50% - var(--hub)/2 - 22px));font-size:14px}
 #b-talked{background:var(--talked)} #b-material{background:var(--material)}
 #b-noanswer{background:var(--noanswer)} #b-dnr{background:var(--dnr)}
 
@@ -123,6 +134,11 @@ label.f{display:block;margin:12px 0 5px;font-size:12px;font-weight:800;color:var
 .cand .a{font-weight:800;font-size:15px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .cand .o{font-size:12px;color:var(--dim);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .cand .d{font-size:11px;color:var(--dim);font-weight:700;flex:0 0 auto}
+#dHistory{margin:10px 0 2px;background:var(--card);border:1px solid var(--line);border-radius:12px;padding:9px 11px}
+#dHistory .hLbl{font-size:11px;font-weight:800;color:var(--dim);letter-spacing:.4px;text-transform:uppercase;margin-bottom:5px}
+#dHistory .hRow{font-size:13px;font-weight:700;display:flex;align-items:center;gap:7px;padding:2px 0}
+#dHistory .hRow i{width:9px;height:9px;border-radius:3px;flex:0 0 auto}
+#dHistory .hRow span{margin-left:auto;font-weight:600;color:var(--dim);font-size:11px}
 
 /* ---------- full map ---------- */
 #mapView{position:fixed;inset:0;z-index:70;background:var(--bg);display:flex;flex-direction:column}
@@ -146,6 +162,7 @@ label.f{display:block;margin:12px 0 5px;font-size:12px;font-weight:800;color:var
 .dayRow .del{background:var(--card2);border:1px solid var(--line);border-radius:9px;padding:6px 9px;font-size:13px}
 #eraseBar{position:absolute;top:calc(var(--safe-t) + 60px);left:8px;right:8px;z-index:600;background:rgba(220,38,38,.95);border-radius:14px;padding:11px 13px;display:flex;align-items:center;gap:10px;font-weight:800;font-size:13px;box-shadow:0 8px 24px rgba(0,0,0,.5)}
 #eraseBar .mbtn{margin-left:auto;background:rgba(0,0,0,.35)}
+.ehandle{width:22px;height:22px;border-radius:50%;background:#dc2626;border:3px solid #fff;box-shadow:0 2px 8px rgba(0,0,0,.6);transform:translate(-11px,-11px)}
 .owner-label{font-size:10px;font-weight:700;color:#fff;text-shadow:0 0 3px #000,0 0 3px #000,0 1px 2px #000;white-space:nowrap;pointer-events:none;transform:translate(-50%,-50%);display:inline-block;text-align:center}
 .rentwarn{filter:drop-shadow(0 0 2px #000)}
 .leaflet-container{background:#0b0f14}
@@ -159,13 +176,23 @@ label.f{display:block;margin:12px 0 5px;font-size:12px;font-weight:800;color:var
 .statsbox{display:flex;gap:8px;flex-wrap:wrap;justify-content:center;margin-top:6px}
 .stat{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:8px 12px;font-size:12px;color:var(--dim);font-weight:700}
 .stat b{color:var(--txt);font-size:16px;display:block}
+.nagOk{font-size:12px;color:var(--dim);padding:9px 11px;border:1px solid var(--line);border-radius:12px;margin-bottom:10px}
+.nagWarn{font-size:12.5px;line-height:1.5;color:#fde68a;background:rgba(251,191,36,.12);border:1px solid rgba(251,191,36,.5);border-radius:12px;padding:10px 12px;margin-bottom:10px;font-weight:600}
+#lockScreen{position:fixed;inset:0;z-index:300;background:var(--bg);display:flex;align-items:center;justify-content:center;padding:24px}
+#lockBox{display:flex;flex-direction:column;align-items:center;gap:14px;width:100%;max-width:300px}
+#lockTitle{font-size:18px;font-weight:800}
+#lockDots{font-size:22px;letter-spacing:10px;color:var(--dim)}
+#lockPad{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;width:100%}
+.padKey{height:62px;border-radius:16px;background:var(--card);border:1px solid var(--line);font-size:23px;font-weight:700}
+.padKey:active{background:var(--card2)}
+.padKey.blank{background:none;border:0}
 </style>
 </head>
 <body>
 
 <div id="app">
   <div id="strip">
-    <span class="pill"><span class="dot" id="gpsDot"></span><span id="gpsTxt">GPS…</span></span>
+    <button class="pill" id="gpsPill"><span class="dot" id="gpsDot"></span><span id="gpsTxt">GPS…</span></button>
     <button class="pill" id="modePill">ROOFING</button>
     <span class="pill" id="countyPill">—</span>
     <span class="pill" id="todayPill">0 today</span>
@@ -194,6 +221,9 @@ label.f{display:block;margin:12px 0 5px;font-size:12px;font-weight:800;color:var
       <button class="act" id="b-dnr"      data-s="dnr">     <span class="ico">⛔</span><span class="big">Don't Come Back</span><span class="sub">do not return</span></button>
     </div>
     <div id="hub"><canvas id="mini"></canvas><div id="hubN">N</div><div id="hubLabel">HOLD TO PARK</div></div>
+    <button class="hubBtn" id="hubOut" aria-label="zoom out">−</button>
+    <button class="hubBtn" id="hubIn" aria-label="zoom in">+</button>
+    <button class="hubBtn" id="hubSat" aria-label="satellite">🛰</button>
   </div>
 
   <div id="bottom">
@@ -240,7 +270,8 @@ label.f{display:block;margin:12px 0 5px;font-size:12px;font-weight:800;color:var
     <div class="dpFoot">Tap a day to show or hide it. The trash icon deletes that day for good.</div>
   </div>
   <div id="eraseBar" class="hide">
-    <span id="eraseTxt">Tap one corner of the area to clear…</span>
+    <span id="eraseTxt">Drag the box over the track you want gone.</span>
+    <button class="mbtn hide" id="eraseGo">Clear</button>
     <button class="mbtn" id="eraseCancel">Cancel</button>
   </div>
 </div>
@@ -258,6 +289,7 @@ label.f{display:block;margin:12px 0 5px;font-size:12px;font-weight:800;color:var
     <div class="sheetHead"><h2 id="dTitle">Details</h2><button class="x" data-close="detailSheet">Close</button></div>
     <div class="sheetScroll">
       <div id="dSub" style="color:var(--dim);font-size:13px;margin-bottom:4px"></div>
+      <div id="dHistory" class="hide"></div>
       <label class="f">Status</label>
       <div class="chips" id="dStatus"></div>
       <label class="f">Contact name</label><input id="dName" placeholder="Homeowner or who you spoke with" autocomplete="off">
@@ -272,6 +304,28 @@ label.f{display:block;margin:12px 0 5px;font-size:12px;font-weight:800;color:var
       <button class="primary" id="dSave">Save</button>
       <button class="ghost danger" id="dDelete">Delete this record</button>
     </div>
+  </div>
+</div>
+
+<div id="sessionSheet" class="sheet hide">
+  <div class="sheetBody">
+    <div class="sheetHead"><h2 id="sesTitle">Session</h2><button class="x" data-close="sessionSheet">Close</button></div>
+    <div class="sheetScroll">
+      <div class="statsbox" id="sesStats"></div>
+      <div class="small" id="sesMeta" style="margin-top:10px"></div>
+      <button class="primary" id="sesExport">⬇︎ Save this session's list</button>
+      <button class="ghost" id="sesEnd">■ End session and stop tracking</button>
+      <button class="ghost" id="sesKeep">Keep canvassing</button>
+    </div>
+  </div>
+</div>
+
+<div id="lockScreen" class="hide">
+  <div id="lockBox">
+    <div id="lockTitle">Enter your PIN</div>
+    <div id="lockDots"></div>
+    <div id="lockPad"></div>
+    <button class="ghost" id="lockForgot" style="max-width:260px">Forgot PIN</button>
   </div>
 </div>
 
@@ -298,6 +352,8 @@ label.f{display:block;margin:12px 0 5px;font-size:12px;font-weight:800;color:var
     <div class="sheetHead"><h2>Menu</h2><button class="x" data-close="menuSheet">Close</button></div>
     <div class="sheetScroll">
       <div class="statsbox"></div>
+      <div id="backupNag" class="hide"></div>
+      <button class="ghost" id="mSession">■ End session / session log</button>
       <button class="ghost" id="mExport">⬇︎ Export a list…</button>
       <button class="ghost" id="mBackup">💾 Full backup (JSON)</button>
       <button class="ghost" id="mRestore">⤴︎ Restore from backup</button>
@@ -308,6 +364,12 @@ label.f{display:block;margin:12px 0 5px;font-size:12px;font-weight:800;color:var
         <button class="chip" id="mUnpark">Clear truck pin</button>
       </div>
       <div class="small" id="parkInfo" style="margin-top:6px"></div>
+      <label class="f">Lock the app</label>
+      <div class="chips">
+        <button class="chip" id="mSetPin">Set a PIN</button>
+        <button class="chip" id="mClearPin">Turn off</button>
+      </div>
+      <div class="small" id="pinInfo" style="margin-top:6px"></div>
       <label class="f">Keep screen awake</label>
       <div class="chips"><button class="chip" id="mWake">Screen lock off</button></div>
       <label class="f">Snap distance</label>
@@ -552,6 +614,17 @@ const state = {
   started: false,
   wake: null,
   netErr: '',
+  paused: false,        // tracking suspended by the user
+  fixes: [],            // recent raw GPS fixes, for smoothing
+  still: false,         // standing rather than walking
+  stillSince: 0,
+  anchor: null,         // position the house was locked to while standing
+  heldKey: null,        // house frozen while stationary
+  switchCand: null,     // candidate waiting to win the hysteresis test
+  switchCount: 0,
+  session: null,        // {id, start, line}
+  hubSpan: 140,         // metres across the hub map
+  hubSat: false,
 };
 window.state = state;   // exposed for the diagnostics panel and automated tests
 
@@ -815,6 +888,24 @@ function recompute() {
     else { state.manualKey = null; state.candIndex = 0; }
   } else {
     state.candIndex = 0;
+    /* While standing still, hold the house you were on. Only give it up when a
+       rival is clearly closer on two fixes running, which stops the address
+       flickering between neighbours mid-conversation. */
+    if (state.still && state.heldKey) {
+      const held = state.candidates.findIndex(x => x.p.key === state.heldKey);
+      if (held >= 0) {
+        const rival = state.candidates[0];
+        const beatsBy = state.candidates[held].d - rival.d;
+        if (held !== 0 && beatsBy > SWITCH_GAIN) {
+          if (state.switchCand === rival.p.key) state.switchCount++;
+          else { state.switchCand = rival.p.key; state.switchCount = 1; }
+          if (state.switchCount >= SWITCH_HITS) { state.heldKey = rival.p.key; state.switchCount = 0; }
+          else state.candIndex = held;
+        } else { state.candIndex = held; state.switchCand = null; state.switchCount = 0; }
+      } else state.heldKey = null;
+    }
+    if (state.still && !state.heldKey && state.candidates.length) state.heldKey = state.candidates[0].p.key;
+    if (!state.still) { state.heldKey = null; state.switchCand = null; state.switchCount = 0; }
   }
   renderHouse();
 }
@@ -832,12 +923,14 @@ function pinHouse(key) {
 /* ---------------- rendering: strip + house ---------------- */
 function renderStrip() {
   const d = $('gpsDot'), t = $('gpsTxt');
-  if (!state.pos) { d.className='dot'; t.textContent='GPS…'; }
+  if (state.paused) { d.className='dot'; t.textContent='paused'; }
+  else if (!state.pos) { d.className='dot'; t.textContent='GPS…'; }
   else {
     const a = Math.round(state.pos.acc);
     d.className = 'dot ' + (a <= 12 ? 'good' : a <= 30 ? 'ok' : 'bad');
-    t.textContent = `±${a} m`;
+    t.textContent = `±${a} m` + (state.still ? ' · held' : '');
   }
+  $('gpsPill').classList.toggle('paused', state.paused);
   $('countyPill').textContent = state.tilesLoading ? 'loading lots…'
       : state.netErr ? '⚠︎ offline'
       : (state.county ? state.county.name + ' Co.' : '—');
@@ -899,7 +992,42 @@ function timeAgo(ts) {
   return d===1 ? 'yesterday' : d+' days ago';
 }
 
-/* ---------------- mini map (canvas, works offline) ---------------- */
+/* ---------------- hub map (canvas, works offline) ----------------
+   Satellite tiles are drawn straight onto the canvas and cached in memory, so
+   panning back over ground already covered costs nothing. */
+const tileCache = new Map();
+function getTile(z, x, y) {
+  const k = `${z}/${x}/${y}`;
+  if (tileCache.has(k)) return tileCache.get(k);
+  const img = new Image();
+  img.crossOrigin = 'anonymous';
+  img.onload = () => drawMini();
+  img.onerror = () => { img._bad = true; };
+  img.src = `https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/${z}/${y}/${x}`;
+  tileCache.set(k, img);
+  if (tileCache.size > 240) tileCache.delete(tileCache.keys().next().value);
+  return img;
+}
+const lon2tile = (lon, z) => (lon + 180) / 360 * Math.pow(2, z);
+const lat2tile = (lat, z) => (1 - Math.log(Math.tan(rad(lat)) + 1/Math.cos(rad(lat))) / Math.PI) / 2 * Math.pow(2, z);
+function drawSatellite(g, w, h, lat, lon, span) {
+  const mPerPx = span / w;
+  const z = Math.max(14, Math.min(19, Math.round(Math.log2(156543.03392 * Math.cos(rad(lat)) / mPerPx))));
+  const cx = lon2tile(lon, z), cy = lat2tile(lat, z);
+  // world pixels per metre at this zoom and latitude
+  const worldPx = 256 * Math.pow(2, z);
+  const mPerWorldPx = (2 * Math.PI * 6378137 * Math.cos(rad(lat))) / worldPx;
+  const pxPerTile = 256 * (mPerWorldPx / mPerPx);   // on-screen size of one tile
+  for (let dx = -2; dx <= 2; dx++) for (let dy = -2; dy <= 2; dy++) {
+    const tx = Math.floor(cx) + dx, ty = Math.floor(cy) + dy;
+    if (tx < 0 || ty < 0 || tx >= Math.pow(2,z) || ty >= Math.pow(2,z)) continue;
+    const img = getTile(z, tx, ty);
+    if (!img.complete || img._bad || !img.naturalWidth) continue;
+    const sx = w/2 + (tx - cx) * pxPerTile;
+    const sy = h/2 + (ty - cy) * pxPerTile;
+    g.drawImage(img, sx, sy, pxPerTile + 1, pxPerTile + 1);
+  }
+}
 function drawMini() {
   const cv = $('mini'); if (!cv) return;
   const dpr = window.devicePixelRatio || 1;
@@ -911,7 +1039,8 @@ function drawMini() {
   g.fillStyle = '#0f151d'; g.fillRect(0,0,w,h);
   if (!state.pos) return;
   const {lat, lon} = state.pos;
-  const span = 140; // metres shown across the hub map
+  const span = state.hubSpan; // metres shown across the hub map
+  if (state.hubSat) { try { drawSatellite(g, w, h, lat, lon, span); } catch(e) {} }
   const kx = mPerDegLon(lat), ky = mPerDegLat;
   const sc = w / span;
   const X = p => w/2 + (p[0]-lon)*kx*sc;
@@ -926,7 +1055,17 @@ function drawMini() {
       g.closePath();
     }
     if (v) { g.fillStyle = STATUS[v.status].color + 'cc'; g.fill(); }
-    g.strokeStyle = v ? '#0f151d' : '#3a4a5e'; g.lineWidth = v ? 1 : .8; g.stroke();
+    g.strokeStyle = v ? '#0f151d' : (state.hubSat ? 'rgba(255,255,255,.55)' : '#3a4a5e');
+    g.lineWidth = v ? 1 : .8; g.stroke();
+    // likely rentals get a small yellow triangle on the house
+    if (p.occ === 'rental') {
+      const at = p.house || p.cen, tx = X(at), ty = Y(at), r = 4.2;
+      if (tx > -10 && tx < w + 10 && ty > -10 && ty < h + 10) {
+        g.beginPath(); g.moveTo(tx, ty - r); g.lineTo(tx + r, ty + r * .8); g.lineTo(tx - r, ty + r * .8); g.closePath();
+        g.fillStyle = '#fbbf24'; g.fill();
+        g.strokeStyle = 'rgba(0,0,0,.85)'; g.lineWidth = 1; g.stroke();
+      }
+    }
   }
   // highlight the currently targeted house
   const c = current();
@@ -959,6 +1098,12 @@ function drawMini() {
 }
 
 /* ---------------- marking a door ---------------- */
+const histOf = v => !v ? [] : (v.history && v.history.length ? v.history.slice() : [{status:v.status, ts:v.ts, note:''}]);
+const histText = v => histOf(v).map(h => {
+  const d = new Date(h.ts);
+  return `${STATUS[h.status] ? STATUS[h.status].label : h.status} ${d.toLocaleDateString()} ${d.toLocaleTimeString([], {hour:'numeric', minute:'2-digit'})}`;
+}).join(' → ');
+
 let toastTimer = null;
 async function mark(status) {
   const c = current();
@@ -975,6 +1120,9 @@ async function mark(status) {
   // carry contact details forward, but only from the same book of business
   const prev = state.visits.get(vKey(p.key, state.line));
   if (prev) { v.name=prev.name; v.phone=prev.phone; v.email=prev.email; v.notes=prev.notes; v.tags=prev.tags||[]; v.follow=prev.follow||''; v.prevId=prev.id; }
+  // every status this door has ever had, in order. A "talked" that later turns
+  // into "don't come back" is the story, and the last status alone loses it.
+  v.history = [...histOf(prev), { status, ts:v.ts, note:'' }];
   state.visits.set(vKey(v.key, v.line), v);
   state.visitLog.push(v);
   state.lastVisitId = v.id;
@@ -984,6 +1132,9 @@ async function mark(status) {
   buzz(status === 'dnr' ? [40,60,40] : 35);
   flashToast(STATUS[status].label, `${p.addr || 'lot ' + p.pid}${p.owner ? ' · ' + p.owner : ''}`, STATUS[status].color);
   renderStrip(); renderHouse(); if (window._map) refreshMapLayers();
+  // Talked is the one status that carries information worth capturing. Save
+  // first so nothing can be lost, then open the panel with the name field ready.
+  if (status === 'talked') setTimeout(() => openDetail(v, true), 260);
 }
 function flashToast(title, sub, color) {
   $('toastTitle').textContent = title;
@@ -1069,7 +1220,7 @@ function pullDetail() {
   editing.notes = $('dNotes').value.trim();
   editing.follow = $('dFollow').value;
 }
-function openDetail(visit) {
+function openDetail(visit, focusName) {
   let v = visit;
   if (!v) {
     const c = current();
@@ -1118,11 +1269,27 @@ function openDetail(visit) {
     b.onclick = () => { pullDetail(); const s = new Set(editing.tags||[]); s.has(t)?s.delete(t):s.add(t); editing.tags=[...s]; openDetail(editing); };
     tg.appendChild(b);
   });
+  // every status this door has held, so a talk that soured is still on the record
+  const h = histOf(v);
+  const hist = $('dHistory');
+  if (h.length > 1) {
+    hist.classList.remove('hide');
+    hist.innerHTML = '<div class="hLbl">Status history</div>' + h.map(x => {
+      const d = new Date(x.ts), st = STATUS[x.status] || {label:x.status, color:'#94a3b8'};
+      return `<div class="hRow"><i style="background:${st.color}"></i>${esc(st.label)}
+        <span>${d.toLocaleDateString()} ${esc(d.toLocaleTimeString([], {hour:'numeric', minute:'2-digit'}))}</span></div>`;
+    }).join('');
+  } else hist.classList.add('hide');
   openSheet('detailSheet');
+  if (focusName) setTimeout(() => { const el = $('dName'); el.focus({preventScroll:false}); }, 220);
 }
 async function saveDetail() {
   if (!editing) return;
   pullDetail();
+  // a status changed by hand belongs in the history too
+  const h = histOf(editing);
+  if (!h.length || h[h.length-1].status !== editing.status) h.push({ status:editing.status, ts:Date.now(), note:'' });
+  editing.history = h;
   if (editing._new) { delete editing._new; state.visitLog.push(editing); state.lastVisitId = editing.id; }
   state.visits.set(vKey(editing.key, editing.line), editing);
   await DB.put('visits', editing).catch(()=>{});
@@ -1172,20 +1339,21 @@ async function openMap() {
     return;
   }
   if (!window._map) {
-    const m = L.map('leaf', { zoomControl:false, attributionControl:true })
+    const m = L.map('leaf', { zoomControl:false, attributionControl:true, maxZoom:22 })
       .setView(state.pos ? [state.pos.lat, state.pos.lon] : [39.96,-83.0], 18);
     window._map = m;
+    // maxNativeZoom lets Leaflet upscale the deepest tile that exists instead of
+    // showing "map data not yet available" blanks past the imagery's real limit
     window._street = L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png',
-      { maxZoom:19, attribution:'© OpenStreetMap' }).addTo(m);
+      { maxZoom:22, maxNativeZoom:19, attribution:'© OpenStreetMap' }).addTo(m);
     window._satL = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
-      { maxZoom:20, attribution:'Esri' });
+      { maxZoom:22, maxNativeZoom:18, attribution:'Esri' });
     window._parcelLayer = L.layerGroup().addTo(m);
     window._labelLayer  = L.layerGroup().addTo(m);
     window._routeLayer  = L.layerGroup().addTo(m);
     window._meLayer     = L.layerGroup().addTo(m);
     m.on('dragstart', () => { mapOpts.follow = false; syncMapBtns(); });
     m.on('moveend', () => { refreshMapLayers(); loadForView(); });
-    m.on('click', e => { if (eraseMode) eraseTap(e.latlng); });
   }
   setTimeout(() => { window._map.invalidateSize(); if (state.pos && mapOpts.follow) window._map.setView([state.pos.lat,state.pos.lon]); refreshMapLayers(); }, 60);
   syncMapBtns();
@@ -1288,7 +1456,6 @@ function refreshMapLayers() {
     ml.addLayer(L.circleMarker([state.pos.lat, state.pos.lon], { radius:7, color:'#fff', weight:2, fillColor:'#38bdf8', fillOpacity:1 }));
     ml.addLayer(L.circle([state.pos.lat, state.pos.lon], { radius: state.pos.acc, color:'#38bdf8', weight:1, opacity:.4, fillOpacity:.06 }));
   }
-  if (eraseCorner) ml.addLayer(L.circleMarker(eraseCorner, { radius:8, color:'#fff', weight:2, fillColor:'#dc2626', fillOpacity:.9 }));
 }
 const shortOwner = o => { const parts = o.split(/\s*&\s*/)[0].trim().split(/\s+/); return parts.slice(0, Math.min(2, parts.length)).join(' '); };
 function syncMapBtns() {
@@ -1336,34 +1503,75 @@ async function openDays() {
   $('daysPanel').classList.remove('hide');
 }
 
-/* ---------------- erase an area of track ---------------- */
-let eraseMode = false, eraseCorner = null;
+/* ---------------- erase an area of track ----------------
+   A box you can drag around and resize by its corner, so you can see exactly
+   what is about to go before it goes. */
+let eraseMode = false, eraseCorner = null, eraseRect = null, eraseHandle = null;
 function startErase() {
-  eraseMode = true; eraseCorner = null;
+  eraseMode = true;
+  const m = window._map, b = m.getBounds(), c = m.getCenter();
+  const dLat = (b.getNorth() - b.getSouth()) * 0.18, dLon = (b.getEast() - b.getWest()) * 0.22;
+  const bounds = L.latLngBounds([c.lat - dLat, c.lng - dLon], [c.lat + dLat, c.lng + dLon]);
+  eraseRect = L.rectangle(bounds, { color:'#dc2626', weight:2, fillColor:'#dc2626', fillOpacity:.22, interactive:true }).addTo(m);
+  eraseHandle = L.marker(bounds.getNorthEast(), { draggable:true, icon: L.divIcon({
+    className:'', iconSize:[26,26], html:'<div class="ehandle"></div>' }) }).addTo(m);
+  // drag the middle to move the whole box
+  let dragFrom = null;
+  eraseRect.on('mousedown touchstart', () => { m.dragging.disable(); });
+  m.on('mousemove touchmove', ev => {
+    if (!dragFrom) return;
+    const b0 = eraseRect.getBounds();
+    const dy = ev.latlng.lat - dragFrom.lat, dx = ev.latlng.lng - dragFrom.lng;
+    eraseRect.setBounds(L.latLngBounds([b0.getSouth()+dy, b0.getWest()+dx], [b0.getNorth()+dy, b0.getEast()+dx]));
+    eraseHandle.setLatLng(eraseRect.getBounds().getNorthEast());
+    dragFrom = ev.latlng;
+    updateEraseCount();
+  });
+  eraseRect.on('mousedown', ev => { dragFrom = ev.latlng; });
+  m.on('mouseup touchend', () => { dragFrom = null; m.dragging.enable(); });
+  eraseHandle.on('drag', () => {
+    const b0 = eraseRect.getBounds(), p = eraseHandle.getLatLng();
+    eraseRect.setBounds(L.latLngBounds([b0.getSouth(), b0.getWest()], [p.lat, p.lng]));
+    updateEraseCount();
+  });
   $('eraseBar').classList.remove('hide');
-  $('eraseTxt').textContent = 'Tap one corner of the area to clear…';
   $('mapErase').classList.add('on');
+  $('eraseGo').classList.remove('hide');
+  updateEraseCount();
+}
+function pointsInBox() {
+  if (!eraseRect) return 0;
+  const b = eraseRect.getBounds();
+  let n = 0;
+  for (const d of state.days.values())
+    n += d.pts.filter(p => p.lat>=b.getSouth() && p.lat<=b.getNorth() && p.lon>=b.getWest() && p.lon<=b.getEast()).length;
+  return n;
+}
+function updateEraseCount() {
+  const n = pointsInBox();
+  $('eraseTxt').textContent = n
+    ? `${n} track point${n===1?'':'s'} inside. Drag the box, pull the corner to resize.`
+    : 'Drag the box over the track you want gone.';
+  $('eraseGo').textContent = n ? `Clear ${n}` : 'Clear';
+  $('eraseGo').style.opacity = n ? 1 : .45;
 }
 function cancelErase() {
   eraseMode = false; eraseCorner = null;
+  if (eraseRect) { window._map.removeLayer(eraseRect); eraseRect = null; }
+  if (eraseHandle) { window._map.removeLayer(eraseHandle); eraseHandle = null; }
+  if (window._map) window._map.dragging.enable();
   $('eraseBar').classList.add('hide');
+  $('eraseGo').classList.add('hide');
   $('mapErase').classList.remove('on');
   refreshMapLayers();
 }
-async function eraseTap(latlng) {
-  if (!eraseCorner) {
-    eraseCorner = [latlng.lat, latlng.lng];
-    $('eraseTxt').textContent = 'Now tap the opposite corner.';
-    refreshMapLayers(); buzz(12);
-    return;
-  }
-  const s = Math.min(eraseCorner[0], latlng.lat), n = Math.max(eraseCorner[0], latlng.lat);
-  const w = Math.min(eraseCorner[1], latlng.lng), e = Math.max(eraseCorner[1], latlng.lng);
-  let hit = 0;
-  for (const d of state.days.values())
-    hit += d.pts.filter(p => p.lat>=s && p.lat<=n && p.lon>=w && p.lon<=e).length;
-  if (!hit) { flashToast('Nothing in that box', 'No breadcrumbs to clear there', '#64748b'); cancelErase(); return; }
-  if (!confirm(`Clear ${hit} track point${hit===1?'':'s'} inside that box? Door records are not affected.`)) { cancelErase(); return; }
+async function commitErase() {
+  if (!eraseRect) return cancelErase();
+  const bb = eraseRect.getBounds();
+  const s = bb.getSouth(), n = bb.getNorth(), w = bb.getWest(), e = bb.getEast();
+  const hit = pointsInBox();
+  if (!hit) { flashToast('Nothing in that box', 'Drag it over the track you want gone', '#64748b'); return; }
+  if (!confirm(`Clear ${hit} track point${hit===1?'':'s'} inside the box? Door records are not affected.`)) return;
   for (const d of state.days.values()) {
     const before = d.pts.length;
     d.pts = d.pts.filter(p => !(p.lat>=s && p.lat<=n && p.lon>=w && p.lon<=e));
@@ -1409,13 +1617,13 @@ function visitsFor(o) {
 function exportCsv(o) {
   const rows = visitsFor(o);
   if (!rows.length) { flashToast('Nothing matches those options','','#64748b'); return; }
-  const head = ['Date','Time','Work','Status','Address','Owner','Likely rental','Owner mailing address','County','Parcel ID','Contact name','Phone','Email','Tags','Follow up','Notes','Year built','Latitude','Longitude','GPS accuracy m','Distance to lot m'];
+  const head = ['Date','Time','Work','Status','Address','Owner','Status history','Likely rental','Owner mailing address','County','Parcel ID','Contact name','Phone','Email','Tags','Follow up','Notes','Year built','Latitude','Longitude','GPS accuracy m','Distance to lot m'];
   const yr = v => v.extra && (v.extra.RESYRBLT||v.extra.YRBUILT||v.extra.YearBuilt||v.extra.YRBLT||v.extra.PPYearBuilt) || '';
   const lines = [head.map(q).join(',')];
   rows.forEach(v => {
     const d = new Date(v.ts);
     lines.push([d.toLocaleDateString(), d.toLocaleTimeString(), LINES[v.line||'roof'].label,
-      STATUS[v.status].label, v.addr, v.owner,
+      STATUS[v.status].label, v.addr, v.owner, histText(v),
       v.occ === 'rental' ? 'YES' : v.occ === 'owner' ? 'no' : '', v.mail || '',
       (COUNTIES.find(c=>c.key===v.county)||{}).name, v.pid, v.name, v.phone, v.email,
       (v.tags||[]).join('; '), v.follow, v.notes, yr(v),
@@ -1450,6 +1658,9 @@ async function backup() {
   const data = { v:2, exported:new Date().toISOString(),
     visits: await DB.all('visits'), days: await DB.all('days'), vehicle: state.vehicle };
   download(`canvass-backup-${stamp()}.json`, JSON.stringify(data), 'application/json');
+  localStorage.setItem('lastBackup', String(Date.now()));
+  renderBackupNag();
+  flashToast('Backup saved', 'Use Share to put it in iCloud Drive or OneDrive so it reaches your laptop', '#22c55e');
 }
 function stamp() {
   const d = new Date();
@@ -1481,32 +1692,104 @@ function renderExport() {
   $('xGo').style.opacity = n ? 1 : .45;
 }
 
-/* ---------------- geolocation ---------------- */
+/* ---------------- geolocation ----------------
+   Raw phone GPS wanders several metres while you stand perfectly still, which
+   made the house flip between neighbours mid-conversation and left a knot of
+   breadcrumbs at every door. Four things settle it:
+     1. Accuracy-weighted smoothing over the last few seconds of fixes.
+     2. A dwell lock: once you stop moving the house is held until you walk off.
+     3. No breadcrumbs while stationary.
+     4. Hysteresis, so a rival house must be clearly closer, twice running.
+   None of it slows down the one-tap flow. */
+const STILL_SPEED = 0.45;      // m/s below which you count as standing
+const STILL_AFTER = 3500;      // ms of standing before the house locks
+const BREAK_LOCK  = 14;        // metres of real movement that releases the lock
+const SWITCH_GAIN = 6;         // metres a rival must beat the held house by
+const SWITCH_HITS = 2;         // consecutive fixes it must win
+
+function pushFix(c, ts) {
+  state.fixes.push({ lat:c.latitude, lon:c.longitude, acc:Math.max(c.accuracy||30, 3), ts });
+  const cutoff = ts - 12000;
+  while (state.fixes.length > 12 || (state.fixes.length && state.fixes[0].ts < cutoff)) state.fixes.shift();
+}
+/** inverse-variance weighted mean: a tight fix counts for far more than a loose one */
+function smoothed() {
+  const f = state.fixes;
+  if (!f.length) return null;
+  const best = Math.min(...f.map(x => x.acc));
+  const use = f.filter(x => x.acc <= Math.max(best * 2.5, best + 15));
+  let wl = 0, wo = 0, w = 0;
+  for (const x of use) { const k = 1 / (x.acc * x.acc); wl += x.lat * k; wo += x.lon * k; w += k; }
+  return { lat: wl / w, lon: wo / w, acc: Math.min(...use.map(x => x.acc)), n: use.length };
+}
+/** metres per second across the recent buffer */
+function recentSpeed() {
+  const f = state.fixes;
+  if (f.length < 2) return 0;
+  const a = f[0], b = f[f.length - 1];
+  const dt = (b.ts - a.ts) / 1000;
+  if (dt < 1) return 0;
+  return haversine(a.lat, a.lon, b.lat, b.lon) / dt;
+}
+
 let watchId = null, lastTrack = 0;
 function startGps() {
   if (!navigator.geolocation) { flashToast('No GPS','This browser cannot get location','#ef4444'); return; }
+  if (watchId != null) navigator.geolocation.clearWatch(watchId);
   watchId = navigator.geolocation.watchPosition(async pos => {
-    const c = pos.coords;
-    state.pos = { lat:c.latitude, lon:c.longitude, acc:c.accuracy||99, heading:c.heading, ts:pos.timestamp };
-    renderStrip();
+    if (state.paused) return;
     const now = Date.now();
-    if (dayKey(now) !== state.today) { await flushDay(); state.today = dayKey(now); await loadDay(state.today); }
-    const last = state.track[state.track.length-1];
-    if (!last || now - lastTrack > 4000 || haversine(last.lat,last.lon,c.latitude,c.longitude) > 8) {
-      lastTrack = now;
-      pushTrackPoint(c.latitude, c.longitude, now);
+    pushFix(pos.coords, now);
+    const sm = smoothed();
+    if (!sm) return;
+    state.pos = { lat:sm.lat, lon:sm.lon, acc:sm.acc, heading:pos.coords.heading, ts:now, raw:pos.coords.accuracy };
+
+    /* --- dwell lock --- */
+    const speed = recentSpeed();
+    const wasStill = state.still;
+    if (speed < STILL_SPEED) {
+      if (!state.stillSince) state.stillSince = now;
+      if (now - state.stillSince > STILL_AFTER) state.still = true;
+    } else {
+      state.stillSince = 0;
+      if (state.anchor && haversine(sm.lat, sm.lon, state.anchor.lat, state.anchor.lon) > BREAK_LOCK) {
+        state.still = false; state.anchor = null; state.heldKey = null;
+      }
     }
-    renderTruck();
-    await ensureParcels(c.latitude, c.longitude);
+    if (state.still && !wasStill) state.anchor = { lat:sm.lat, lon:sm.lon };
+    if (state.anchor && haversine(sm.lat, sm.lon, state.anchor.lat, state.anchor.lon) > BREAK_LOCK) {
+      state.still = false; state.anchor = null; state.heldKey = null; state.stillSince = 0;
+    }
+
+    renderStrip(); renderTruck();
+    if (dayKey(now) !== state.today) { await flushDay(); state.today = dayKey(now); await loadDay(state.today); }
+
+    /* --- breadcrumbs only while actually moving --- */
+    const last = state.track[state.track.length-1];
+    const moved = last ? haversine(last.lat, last.lon, sm.lat, sm.lon) : Infinity;
+    if (!state.still && (!last || (now - lastTrack > 4000 && moved > 6) || moved > 12)) {
+      lastTrack = now;
+      pushTrackPoint(sm.lat, sm.lon, now);
+    }
+
+    await ensureParcels(sm.lat, sm.lon);
     recompute(); drawMini();
     if (window._map && mapOpts.follow && !$('mapView').classList.contains('hide')) {
-      window._map.setView([c.latitude, c.longitude], window._map.getZoom(), {animate:false});
+      window._map.setView([sm.lat, sm.lon], window._map.getZoom(), {animate:false});
     }
   }, err => {
     $('gpsDot').className = 'dot bad';
     $('gpsTxt').textContent = err.code === 1 ? 'blocked' : 'no fix';
     if (err.code === 1) flashToast('Location blocked','Enable location for this site in Settings › Safari','#ef4444');
-  }, { enableHighAccuracy:true, maximumAge:2000, timeout:20000 });
+  }, { enableHighAccuracy:true, maximumAge:0, timeout:20000 });
+}
+function setPaused(p) {
+  state.paused = p;
+  if (p) { if (watchId != null) { navigator.geolocation.clearWatch(watchId); watchId = null; } flushDay(); }
+  else { state.fixes = []; startGps(); }
+  renderStrip();
+  flashToast(p ? 'Tracking paused' : 'Tracking on',
+             p ? 'No position, no breadcrumbs. Tap the GPS chip to resume.' : '', p ? '#64748b' : '#22c55e');
 }
 
 /* ---------------- vehicle ---------------- */
@@ -1596,6 +1879,17 @@ $('detailBtn').onclick = () => openDetail(null);
 $('swapBtn').onclick = openCandidates;
 $('house').addEventListener('dblclick', openCandidates);
 $('modePill').onclick = toggleMode;
+$('gpsPill').onclick = () => setPaused(!state.paused);
+const setHubSpan = v => { state.hubSpan = Math.max(60, Math.min(600, v)); localStorage.setItem('hubSpan', state.hubSpan); drawMini(); };
+$('hubIn').onclick  = e => { e.stopPropagation(); setHubSpan(Math.round(state.hubSpan / 1.6)); buzz(8); };
+$('hubOut').onclick = e => { e.stopPropagation(); setHubSpan(Math.round(state.hubSpan * 1.6)); buzz(8); };
+$('hubSat').onclick = e => {
+  e.stopPropagation();
+  state.hubSat = !state.hubSat;
+  localStorage.setItem('hubSat', state.hubSat ? '1' : '0');
+  $('hubSat').classList.toggle('on', state.hubSat);
+  buzz(10); drawMini();
+};
 $('truckPill').onclick = openMap;
 
 /* Mini map: tap opens the big map, press-and-hold parks the truck.
@@ -1636,7 +1930,35 @@ $('truckPill').onclick = openMap;
 })();
 $('toastUndo').onclick = undoLast;
 $('toastSwap').onclick = reassignLast;
-$('menuBtn').onclick = () => { renderStats(); renderSnapChips(); renderDiag(); renderParkInfo(); openSheet('menuSheet'); };
+$('menuBtn').onclick = () => { renderStats(); renderSnapChips(); renderDiag(); renderParkInfo(); renderBackupNag(); renderPinInfo(); openSheet('menuSheet'); };
+$('mSession').onclick = openSession;
+$('sesKeep').onclick = () => { if (!state.session) { startSession(); setPaused(false); } closeSheet('sessionSheet'); };
+$('sesEnd').onclick = endSession;
+$('sesExport').onclick = () => { xOpts.range = 'today'; renderExport(); closeSheet('sessionSheet'); openSheet('exportSheet'); };
+function renderPinInfo() {
+  $('pinInfo').textContent = localStorage.getItem('pin')
+    ? 'A PIN is set. The app asks for it when you open it or come back to it.'
+    : 'No PIN. Anyone who picks up the phone can read homeowner names, notes and where you have been.';
+}
+$('mSetPin').onclick = async () => {
+  const a = prompt('Choose a PIN (4 to 8 digits)');
+  if (!a || !/^\d{4,8}$/.test(a)) { if (a !== null) flashToast('PIN must be 4 to 8 digits','','#ef4444'); return; }
+  const b = prompt('Enter it again');
+  if (a !== b) { flashToast('Those did not match','Nothing changed','#ef4444'); return; }
+  localStorage.setItem('pin', await pinHash(a));
+  renderPinInfo(); flashToast('PIN set','The app will ask for it when you come back','#22c55e');
+};
+$('mClearPin').onclick = () => { localStorage.removeItem('pin'); renderPinInfo(); flashToast('PIN turned off','','#64748b'); };
+$('lockForgot').onclick = () => {
+  if (!confirm('Turning off the PIN keeps all your records. Continue?')) return;
+  localStorage.removeItem('pin'); $('lockScreen').classList.add('hide');
+};
+/* lock on return, but only after a real absence so it never interrupts a street */
+let hiddenAt = 0;
+document.addEventListener('visibilitychange', () => {
+  if (document.visibilityState === 'hidden') hiddenAt = Date.now();
+  else if (hiddenAt && Date.now() - hiddenAt > 120000) lockIfNeeded();
+});
 $('dSave').onclick = saveDetail;
 $('dDelete').onclick = deleteDetail;
 $('mExport').onclick = () => { renderExport(); openSheet('exportSheet'); };
@@ -1687,6 +2009,7 @@ $('mapDays').onclick = openDays;
 $('daysClose').onclick = () => $('daysPanel').classList.add('hide');
 $('mapErase').onclick = () => { eraseMode ? cancelErase() : startErase(); };
 $('eraseCancel').onclick = cancelErase;
+$('eraseGo').onclick = commitErase;
 $('mapFollow').onclick = () => { mapOpts.follow = !mapOpts.follow; syncMapBtns();
   if (mapOpts.follow && state.pos) window._map.setView([state.pos.lat,state.pos.lon], 18); };
 
@@ -1721,6 +2044,114 @@ async function testConnections() {
 function renderDiag() {
   $('diag').innerHTML = `Lots cached: ${state.parcels.size} · records: ${state.visitLog.length} · track days: ${state.days.size} · today's breadcrumbs: ${state.track.length}`
     + (state.netErr ? `<br>Last network error: ${esc(state.netErr)}` : '');
+}
+
+/* ---------------- sessions ---------------- */
+function startSession() {
+  state.session = { id:'s'+Date.now(), start:Date.now(), line:state.line };
+  localStorage.setItem('session', JSON.stringify(state.session));
+}
+function sessionStats() {
+  const from = state.session ? state.session.start : 0;
+  const rows = state.visitLog.filter(v => v.ts >= from);
+  let metres = 0;
+  for (const d of state.days.values())
+    for (let i = 1; i < d.pts.length; i++)
+      if (d.pts[i].ts >= from) metres += haversine(d.pts[i-1].lat, d.pts[i-1].lon, d.pts[i].lat, d.pts[i].lon);
+  return { rows, metres, mins: from ? Math.round((Date.now()-from)/60000) : 0 };
+}
+function openSession() {
+  const s = sessionStats();
+  const by = k => s.rows.filter(v => v.status === k).length;
+  const byLine = l => s.rows.filter(v => (v.line||'roof') === l).length;
+  $('sesTitle').textContent = state.session ? 'This session' : 'No session running';
+  $('sesStats').innerHTML = `
+    <div class="stat"><b>${s.rows.length}</b>doors</div>
+    <div class="stat"><b style="color:${STATUS.talked.color}">${by('talked')}</b>talked</div>
+    <div class="stat"><b style="color:${STATUS.material.color}">${by('material')}</b>material</div>
+    <div class="stat"><b style="color:${STATUS.noanswer.color}">${by('noanswer')}</b>no answer</div>
+    <div class="stat"><b style="color:${STATUS.dnr.color}">${by('dnr')}</b>do not return</div>
+    <div class="stat"><b>${(s.metres/1609).toFixed(2)}</b>miles walked</div>
+    <div class="stat"><b>${s.mins}</b>minutes out</div>`;
+  $('sesMeta').textContent = state.session
+    ? `Started ${new Date(state.session.start).toLocaleTimeString([], {hour:'numeric', minute:'2-digit'})}. `
+      + `Roofing ${byLine('roof')}, appraisal ${byLine('appraisal')}. Ending a session stops tracking and saves the battery. Your records stay.`
+    : 'Tracking is stopped. Tap Keep canvassing to start a new session.';
+  openSheet('sessionSheet');
+}
+async function endSession() {
+  await flushDay();
+  setPaused(true);
+  state.session = null; localStorage.removeItem('session');
+  closeSheet('sessionSheet'); closeSheet('menuSheet');
+  flashToast('Session ended', 'Tracking stopped. Tap the GPS chip to start again.', '#64748b');
+  renderStrip();
+}
+
+/* ---------------- keeping the data alive ----------------
+   The phone holds the only copy, so three things matter: ask the browser not to
+   evict it, notice when the app is running in a browser tab (where storage is a
+   DIFFERENT container and looks empty), and nag for a backup when one is due. */
+async function guardStorage() {
+  try {
+    if (navigator.storage && navigator.storage.persist) {
+      const already = await navigator.storage.persisted();
+      if (!already) await navigator.storage.persist();
+    }
+  } catch (e) {}
+  const standalone = window.matchMedia('(display-mode: standalone)').matches || navigator.standalone === true;
+  if (!standalone && state.visitLog.length === 0 && localStorage.getItem('everSaved') === '1') {
+    flashToast('Opened in the browser, not the app',
+      'Your records live in the home screen app. Open the Canvass icon instead.', '#f59e0b');
+  }
+  if (standalone) localStorage.setItem('everSaved', '1');
+}
+const lastBackup = () => +(localStorage.getItem('lastBackup') || 0);
+function renderBackupNag() {
+  const el = $('backupNag'); if (!el) return;
+  const days = lastBackup() ? Math.floor((Date.now() - lastBackup()) / 86400000) : null;
+  const n = state.visitLog.length;
+  if (!n) { el.classList.add('hide'); return; }
+  if (days !== null && days < 7) {
+    el.classList.remove('hide');
+    el.className = 'nagOk';
+    el.textContent = `Backed up ${days === 0 ? 'today' : days + ' day' + (days===1?'':'s') + ' ago'}. ${n} records held on this phone.`;
+    return;
+  }
+  el.classList.remove('hide');
+  el.className = 'nagWarn';
+  el.innerHTML = `⚠️ ${days === null ? 'You have never backed up.' : `Last backup was ${days} days ago.`}
+    All ${n} records live only on this phone. Deleting the app icon deletes them.`;
+}
+
+/* ---------------- PIN lock ---------------- */
+const pinHash = async s => {
+  const b = await crypto.subtle.digest('SHA-256', new TextEncoder().encode('canvass:' + s));
+  return [...new Uint8Array(b)].map(x => x.toString(16).padStart(2,'0')).join('');
+};
+let pinBuf = '';
+function renderPad() {
+  $('lockDots').textContent = '●'.repeat(pinBuf.length) + '○'.repeat(Math.max(0, 4 - pinBuf.length));
+  const pad = $('lockPad');
+  if (pad.childElementCount) return;
+  ['1','2','3','4','5','6','7','8','9','','0','⌫'].forEach(k => {
+    const b = document.createElement('button');
+    b.className = 'padKey' + (k ? '' : ' blank'); b.textContent = k;
+    if (k) b.onclick = async () => {
+      buzz(8);
+      if (k === '⌫') pinBuf = pinBuf.slice(0, -1);
+      else if (pinBuf.length < 8) pinBuf += k;
+      renderPad();
+      if (pinBuf.length >= 4 && await pinHash(pinBuf) === localStorage.getItem('pin')) {
+        pinBuf = ''; renderPad(); $('lockScreen').classList.add('hide');
+      }
+    };
+    pad.appendChild(b);
+  });
+}
+function lockIfNeeded() {
+  if (!localStorage.getItem('pin')) return;
+  pinBuf = ''; $('lockScreen').classList.remove('hide'); renderPad();
 }
 
 /* ---------------- boot ---------------- */
@@ -1772,13 +2203,21 @@ function toggleMode() {
 $('startBtn').onclick = async () => {
   $('gate').classList.add('hide');
   state.started = true;
+  state.paused = false;
+  if (!state.session) startSession();
   startGps();
   toggleWake();
+  guardStorage();
   drawMini();
 };
 window.addEventListener('resize', drawMini);
 (async () => {
   const s = localStorage.getItem('snapMax'); if (s) state.snapMax = +s;
+  const hs = localStorage.getItem('hubSpan'); if (hs) state.hubSpan = +hs;
+  state.hubSat = localStorage.getItem('hubSat') === '1';
+  $('hubSat').classList.toggle('on', state.hubSat);
+  try { const ses = localStorage.getItem('session'); if (ses) state.session = JSON.parse(ses); } catch(e){}
+  lockIfNeeded();
   await purgeStaleTiles();
   await loadStored();
   if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(()=>{});
