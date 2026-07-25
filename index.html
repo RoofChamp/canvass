@@ -411,7 +411,17 @@ function countiesFor(lat, lon) {
 }
 
 const TILE = 0.006; // ~0.66 km lat, ~0.51 km lon at 40°N
-const tileKey = (c, lat, lon) => `${c.key}:${Math.floor(lat/TILE)}:${Math.floor(lon/TILE)}`;
+/* Bump PARSE_V whenever the county field mapping or attribute parsing changes.
+   Cached tiles hold PARSED parcels, so without this an old cache would keep
+   serving the old interpretation forever and a fix would never reach anyone. */
+const PARSE_V = 2;
+const tileKey = (c, lat, lon) => `v${PARSE_V}:${c.key}:${Math.floor(lat/TILE)}:${Math.floor(lon/TILE)}`;
+async function purgeStaleTiles() {
+  try {
+    const all = await DB.all('tiles');
+    for (const t of all) if (!t.key.startsWith(`v${PARSE_V}:`)) await DB.del('tiles', t.key);
+  } catch (e) {}
+}
 const tileBBox = (lat, lon) => {
   const ty = Math.floor(lat/TILE), tx = Math.floor(lon/TILE);
   const pad = TILE * 0.35;
@@ -1131,6 +1141,7 @@ $('startBtn').onclick = async () => {
 window.addEventListener('resize', drawMini);
 (async () => {
   const s = localStorage.getItem('snapMax'); if (s) state.snapMax = +s;
+  await purgeStaleTiles();
   await loadStored();
   if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(()=>{});
   drawMini();
