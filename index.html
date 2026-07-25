@@ -457,7 +457,11 @@ async function fetchTile(c, lat, lon, silent) {
       const a = f.properties || {};
       const pid = String(a[c.pid] ?? '').trim();
       if (!pid) continue;
-      const owner = c.owner.map(k => (a[k]||'').toString().trim()).filter(v => v && v !== ' ').join(' & ');
+      // counties use different stand-ins for "no second owner": empty, a single
+      // space, a literal 0, or NONE. Strip them all or names read "SMITH JOHN & 0".
+      const blank = v => !v || v === '0' || /^(none|n\/a|null|unknown)$/i.test(v);
+      const owner = c.owner.map(k => (a[k]==null?'':String(a[k])).trim())
+                           .filter(v => !blank(v)).join(' & ');
       const addr = (a[c.addr] || '').toString().trim();
       const extra = {}; c.extra.forEach(k => { if (a[k] != null && String(a[k]).trim()) extra[k] = a[k]; });
       out.push({ key:`${c.key}:${pid}`, county:c.key, pid, owner, addr, extra, rings,
