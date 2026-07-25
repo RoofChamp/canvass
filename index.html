@@ -1,0 +1,1136 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,maximum-scale=1,user-scalable=no">
+<meta name="theme-color" content="#0b0f14">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Canvass">
+<title>Roof Champ Canvass</title>
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="icon-180.png">
+<style>
+:root{
+  --bg:#0b0f14; --card:#151b24; --card2:#1c2430; --line:#2a3646;
+  --txt:#eaf1f9; --dim:#93a6bb;
+  --talked:#16a34a; --material:#2563eb; --noanswer:#d97706; --dnr:#dc2626;
+  --safe-t:env(safe-area-inset-top,0px); --safe-b:env(safe-area-inset-bottom,0px);
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;height:100%;overflow:hidden;overscroll-behavior:none}
+body{
+  background:var(--bg); color:var(--txt);
+  font:16px/1.35 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,system-ui,sans-serif;
+  -webkit-user-select:none; user-select:none;
+}
+button{font:inherit;color:inherit;border:0;background:none;cursor:pointer}
+input,textarea,select{font:inherit;color:var(--txt);background:var(--card2);border:1px solid var(--line);border-radius:10px;padding:12px;width:100%;-webkit-user-select:text;user-select:text}
+.hide{display:none !important}
+
+/* ---------- app shell ---------- */
+#app{display:flex;flex-direction:column;height:100%;padding-top:var(--safe-t)}
+
+/* ---------- top status strip ---------- */
+#strip{display:flex;align-items:center;gap:8px;padding:6px 10px;font-size:12px;color:var(--dim);flex:0 0 auto}
+.pill{display:inline-flex;align-items:center;gap:5px;background:var(--card);border:1px solid var(--line);border-radius:999px;padding:4px 9px;white-space:nowrap}
+.dot{width:8px;height:8px;border-radius:50%;background:#64748b;flex:0 0 auto}
+.dot.good{background:#22c55e}.dot.ok{background:#f59e0b}.dot.bad{background:#ef4444}
+#stripSpacer{flex:1}
+#menuBtn{font-size:20px;padding:2px 8px;color:var(--dim)}
+
+/* ---------- house card ---------- */
+#house{margin:2px 10px 8px;background:var(--card);border:1px solid var(--line);border-radius:16px;padding:12px 14px;flex:0 0 auto;min-height:92px;display:flex;flex-direction:column;justify-content:center;position:relative}
+#addr{font-size:26px;font-weight:800;letter-spacing:-.4px;line-height:1.15;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+#owner{font-size:15px;color:var(--dim);margin-top:3px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+#addr.far{color:#fbbf24}
+#swapWrap{position:absolute;right:8px;top:8px;display:flex;gap:6px}
+.mini-btn{background:var(--card2);border:1px solid var(--line);border-radius:10px;padding:7px 10px;font-size:12px;color:var(--dim);font-weight:600}
+#alreadyTag{display:inline-block;margin-top:6px;font-size:12px;font-weight:700;padding:3px 9px;border-radius:999px}
+
+/* ---------- big buttons ---------- */
+#grid{flex:1 1 auto;display:grid;grid-template-columns:1fr 1fr;grid-template-rows:1fr 1fr;gap:10px;padding:0 10px;min-height:0}
+.act{border-radius:20px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;font-weight:800;letter-spacing:-.3px;color:#fff;box-shadow:inset 0 -4px 0 rgba(0,0,0,.22);transition:transform .06s ease,filter .06s ease;text-align:center;padding:6px}
+.act:active{transform:scale(.96);filter:brightness(1.18)}
+.act .big{font-size:clamp(19px,5.4vw,27px);line-height:1.05}
+.act .sub{font-size:11px;font-weight:600;opacity:.82;letter-spacing:.3px;text-transform:uppercase}
+.act .ico{font-size:26px;line-height:1}
+#b-talked{background:var(--talked)} #b-material{background:var(--material)}
+#b-noanswer{background:var(--noanswer)} #b-dnr{background:var(--dnr)}
+
+/* ---------- bottom bar ---------- */
+#bottom{flex:0 0 auto;display:flex;align-items:center;gap:10px;padding:10px 10px calc(10px + var(--safe-b))}
+.bbtn{flex:1;background:var(--card);border:1px solid var(--line);border-radius:16px;height:64px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;font-size:12px;font-weight:700;color:var(--dim)}
+.bbtn .ico{font-size:20px}
+.bbtn:active{background:var(--card2)}
+#miniWrap{flex:0 0 auto;width:88px;height:88px;border-radius:18px;overflow:hidden;border:1px solid var(--line);background:#0f151d;position:relative}
+#mini{width:100%;height:100%;display:block}
+#miniLabel{position:absolute;left:0;right:0;bottom:0;font-size:9px;text-align:center;background:rgba(0,0,0,.55);color:#cbd5e1;padding:2px 0;font-weight:700;letter-spacing:.4px}
+
+/* ---------- toast ---------- */
+#toast{position:fixed;left:8px;right:8px;top:calc(var(--safe-t) + 6px);z-index:60;background:#0f172a;border:1px solid var(--line);border-radius:16px;padding:10px 12px;display:flex;align-items:center;gap:10px;box-shadow:0 12px 32px rgba(0,0,0,.6);transform:translateY(-140%);transition:transform .22s cubic-bezier(.2,.9,.3,1)}
+#toast.show{transform:translateY(0)}
+#toastBar{width:5px;align-self:stretch;border-radius:4px;background:#22c55e;flex:0 0 auto}
+#toastTxt{flex:1;min-width:0}
+#toastTitle{font-weight:800;font-size:15px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+#toastSub{font-size:12px;color:var(--dim);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.tbtn{background:var(--card2);border:1px solid var(--line);border-radius:12px;padding:9px 11px;font-size:12px;font-weight:800;flex:0 0 auto}
+
+/* ---------- sheets / overlays ---------- */
+.sheet{position:fixed;inset:0;z-index:80;background:rgba(3,7,12,.6);backdrop-filter:blur(3px);display:flex;align-items:flex-end}
+.sheet.top{align-items:stretch}
+.sheetBody{background:var(--bg);width:100%;max-height:92%;border-radius:22px 22px 0 0;border-top:1px solid var(--line);display:flex;flex-direction:column;padding-bottom:calc(10px + var(--safe-b))}
+.sheetHead{display:flex;align-items:center;gap:10px;padding:14px 16px 8px;flex:0 0 auto}
+.sheetHead h2{margin:0;font-size:19px;font-weight:800;flex:1;letter-spacing:-.3px}
+.sheetScroll{overflow-y:auto;-webkit-overflow-scrolling:touch;padding:0 16px 16px}
+.x{font-size:15px;font-weight:800;color:var(--dim);background:var(--card2);border:1px solid var(--line);border-radius:12px;padding:8px 12px}
+label.f{display:block;margin:12px 0 5px;font-size:12px;font-weight:800;color:var(--dim);letter-spacing:.4px;text-transform:uppercase}
+.row{display:flex;gap:8px}
+.chip{background:var(--card2);border:1px solid var(--line);border-radius:999px;padding:9px 13px;font-size:13px;font-weight:700;color:var(--dim)}
+.chip.on{background:#1e3a5f;border-color:#3b82f6;color:#dbeafe}
+.chips{display:flex;flex-wrap:wrap;gap:8px;margin-top:4px}
+.primary{background:#2563eb;color:#fff;border-radius:14px;padding:16px;font-weight:800;width:100%;font-size:16px;margin-top:18px}
+.ghost{background:var(--card2);border:1px solid var(--line);border-radius:14px;padding:14px;font-weight:700;width:100%;margin-top:10px;color:var(--txt)}
+.danger{color:#fca5a5}
+
+/* candidate list */
+.cand{display:flex;align-items:center;gap:10px;padding:13px 12px;border:1px solid var(--line);border-radius:14px;background:var(--card);margin-bottom:8px}
+.cand .sw{width:12px;height:34px;border-radius:5px;background:#37475c;flex:0 0 auto}
+.cand .t{flex:1;min-width:0}
+.cand .a{font-weight:800;font-size:15px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.cand .o{font-size:12px;color:var(--dim);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.cand .d{font-size:11px;color:var(--dim);font-weight:700;flex:0 0 auto}
+
+/* ---------- full map ---------- */
+#mapView{position:fixed;inset:0;z-index:70;background:var(--bg);display:flex;flex-direction:column}
+#leaf{flex:1;min-height:0}
+#mapTop{position:absolute;top:calc(var(--safe-t) + 8px);left:8px;right:8px;z-index:500;display:flex;gap:8px;align-items:flex-start}
+#mapBottom{position:absolute;bottom:calc(var(--safe-b) + 8px);left:8px;right:8px;z-index:500;display:flex;gap:8px;flex-wrap:wrap}
+.mbtn{background:rgba(15,23,42,.92);border:1px solid var(--line);border-radius:12px;padding:10px 13px;font-size:13px;font-weight:800;color:var(--txt);box-shadow:0 4px 14px rgba(0,0,0,.4)}
+.mbtn.on{background:#2563eb;border-color:#3b82f6}
+#legend{position:absolute;right:8px;bottom:calc(var(--safe-b) + 60px);z-index:500;background:rgba(15,23,42,.92);border:1px solid var(--line);border-radius:12px;padding:8px 10px;font-size:11px;line-height:1.7}
+#legend i{display:inline-block;width:11px;height:11px;border-radius:3px;margin-right:6px;vertical-align:-1px}
+.owner-label{font-size:10px;font-weight:700;color:#fff;text-shadow:0 0 3px #000,0 0 3px #000,0 1px 2px #000;white-space:nowrap;pointer-events:none}
+.leaflet-container{background:#0b0f14}
+
+/* ---------- start gate ---------- */
+#gate{position:fixed;inset:0;z-index:200;background:var(--bg);display:flex;flex-direction:column;align-items:center;justify-content:center;padding:28px;text-align:center;gap:8px}
+#gate h1{font-size:30px;margin:0;font-weight:900;letter-spacing:-.8px}
+#gate p{color:var(--dim);max-width:330px;margin:2px 0 0;font-size:14px}
+#gate .primary{max-width:330px}
+.small{font-size:11px;color:#5b6b7f;max-width:330px;line-height:1.5}
+.statsbox{display:flex;gap:8px;flex-wrap:wrap;justify-content:center;margin-top:6px}
+.stat{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:8px 12px;font-size:12px;color:var(--dim);font-weight:700}
+.stat b{color:var(--txt);font-size:16px;display:block}
+</style>
+</head>
+<body>
+
+<div id="app">
+  <div id="strip">
+    <span class="pill"><span class="dot" id="gpsDot"></span><span id="gpsTxt">GPS…</span></span>
+    <span class="pill" id="countyPill">—</span>
+    <span class="pill" id="todayPill">0 today</span>
+    <span id="stripSpacer"></span>
+    <button id="menuBtn">☰</button>
+  </div>
+
+  <div id="house">
+    <div id="swapWrap">
+      <button class="mini-btn" id="swapBtn">⇄ house</button>
+    </div>
+    <div id="addr">Getting location…</div>
+    <div id="owner">—</div>
+    <div id="alreadyTag" class="hide"></div>
+  </div>
+
+  <div id="grid">
+    <button class="act" id="b-talked"  data-s="talked">   <span class="ico">🗣️</span><span class="big">Talked</span><span class="sub">spoke to someone</span></button>
+    <button class="act" id="b-material" data-s="material"><span class="ico">📄</span><span class="big">Left Material</span><span class="sub">door hanger / card</span></button>
+    <button class="act" id="b-noanswer" data-s="noanswer"><span class="ico">🚪</span><span class="big">No Answer</span><span class="sub">nobody home</span></button>
+    <button class="act" id="b-dnr"      data-s="dnr">     <span class="ico">⛔</span><span class="big">Don't Come Back</span><span class="sub">do not return</span></button>
+  </div>
+
+  <div id="bottom">
+    <button class="bbtn" id="detailBtn"><span class="ico">✎</span>Details</button>
+    <button class="bbtn" id="undoBtn"><span class="ico">↩︎</span>Undo</button>
+    <div id="miniWrap"><canvas id="mini"></canvas><div id="miniLabel">MAP</div></div>
+  </div>
+</div>
+
+<div id="toast">
+  <div id="toastBar"></div>
+  <div id="toastTxt"><div id="toastTitle"></div><div id="toastSub"></div></div>
+  <button class="tbtn" id="toastSwap">Wrong<br>house</button>
+  <button class="tbtn" id="toastUndo">Undo</button>
+</div>
+
+<!-- ============ full map ============ -->
+<div id="mapView" class="hide">
+  <div id="leaf"></div>
+  <div id="mapTop">
+    <button class="mbtn" id="mapClose">✕ Close</button>
+    <button class="mbtn" id="mapSat">🛰 Satellite</button>
+    <button class="mbtn" id="mapFollow">◎ Follow</button>
+  </div>
+  <div id="legend">
+    <div><i style="background:#22c55e"></i>Talked</div>
+    <div><i style="background:#3b82f6"></i>Left material</div>
+    <div><i style="background:#f59e0b"></i>No answer</div>
+    <div><i style="background:#ef4444"></i>Don't come back</div>
+    <div><i style="background:#94a3b8"></i>Not hit</div>
+  </div>
+  <div id="mapBottom">
+    <button class="mbtn" id="mapNames">🏷 Names</button>
+    <button class="mbtn" id="mapRoute">〰 Route</button>
+    <button class="mbtn" id="mapToday">📅 Today only</button>
+  </div>
+</div>
+
+<!-- ============ sheets ============ -->
+<div id="candSheet" class="sheet hide">
+  <div class="sheetBody">
+    <div class="sheetHead"><h2>Which house?</h2><button class="x" data-close="candSheet">Done</button></div>
+    <div class="sheetScroll" id="candList"></div>
+  </div>
+</div>
+
+<div id="detailSheet" class="sheet hide">
+  <div class="sheetBody">
+    <div class="sheetHead"><h2 id="dTitle">Details</h2><button class="x" data-close="detailSheet">Close</button></div>
+    <div class="sheetScroll">
+      <div id="dSub" style="color:var(--dim);font-size:13px;margin-bottom:4px"></div>
+      <label class="f">Status</label>
+      <div class="chips" id="dStatus"></div>
+      <label class="f">Contact name</label><input id="dName" placeholder="Homeowner or who you spoke with" autocomplete="off">
+      <div class="row"><div style="flex:1"><label class="f">Phone</label><input id="dPhone" type="tel" inputmode="tel" placeholder="(614) 555-0100"></div></div>
+      <label class="f">Email</label><input id="dEmail" type="email" inputmode="email" placeholder="optional" autocapitalize="off">
+      <label class="f">Quick tags</label>
+      <div class="chips" id="dTags"></div>
+      <label class="f">Follow up</label>
+      <input id="dFollow" type="datetime-local">
+      <label class="f">Notes</label>
+      <textarea id="dNotes" rows="4" placeholder="Hail on north slope, insurance is State Farm, wants estimate Thursday…"></textarea>
+      <button class="primary" id="dSave">Save</button>
+      <button class="ghost danger" id="dDelete">Delete this record</button>
+    </div>
+  </div>
+</div>
+
+<div id="menuSheet" class="sheet hide">
+  <div class="sheetBody">
+    <div class="sheetHead"><h2>Menu</h2><button class="x" data-close="menuSheet">Close</button></div>
+    <div class="sheetScroll">
+      <div class="statsbox"></div>
+      <button class="ghost" id="mExportCsv">⬇︎ Export CSV (all records)</button>
+      <button class="ghost" id="mExportToday">⬇︎ Export CSV (today only)</button>
+      <button class="ghost" id="mExportGeo">⬇︎ Export map file (GeoJSON)</button>
+      <button class="ghost" id="mBackup">💾 Full backup (JSON)</button>
+      <button class="ghost" id="mRestore">⤴︎ Restore from backup</button>
+      <input type="file" id="restoreFile" accept=".json,application/json" class="hide">
+      <label class="f">Keep screen awake</label>
+      <div class="chips"><button class="chip" id="mWake">Screen lock off</button></div>
+      <label class="f">Snap distance</label>
+      <div class="chips" id="mSnap"></div>
+      <p class="small" style="margin-top:16px">Parcel lines and owner names come from the county auditor GIS for Franklin, Delaware, Union, Madison, Licking, Fairfield and Pickaway counties. Owner name is the tax record — it may lag a recent sale.</p>
+      <button class="ghost" id="mTest" style="margin-top:6px">📡 Check county data connections</button>
+      <div class="small" id="diag" style="margin-top:10px"></div>
+      <div class="small" id="conn" style="margin-top:8px"></div>
+      <button class="ghost danger" id="mWipe" style="margin-top:20px">Erase all data</button>
+    </div>
+  </div>
+</div>
+
+<!-- ============ start gate ============ -->
+<div id="gate">
+  <h1>Roof Champ Canvass</h1>
+  <p>One screen. Walk away from the door, tap what happened. It figures out the house.</p>
+  <div class="statsbox" style="margin:14px 0"></div>
+  <button class="primary" id="startBtn">Start canvassing</button>
+  <p class="small">Your phone will ask for location permission. Choose <b>Allow While Using</b> — the app needs your position to know which house you just left. Everything stays on this phone.</p>
+</div>
+
+<script>
+/* ==========================================================================
+   Roof Champ Canvass — single-screen door-to-door tracker
+   ========================================================================== */
+const $ = id => document.getElementById(id);
+
+/* ---------------- county parcel services (all verified public, no token) -- */
+const COUNTIES = [
+  { key:'franklin', name:'Franklin',
+    url:'https://gis.franklincountyohio.gov/hosting/rest/services/ParcelFeatures/Parcel_Features/MapServer/0',
+    owner:['OWNERNME1','OWNERNME2'], addr:'SITEADDRESS', pid:'PARCELID',
+    extra:['ZIPCD','RESYRBLT','CLASSDSCRP'], where:'1=1', bbox:[-83.25,39.79,-82.76,40.16] },
+  { key:'delaware', name:'Delaware',
+    url:'https://maps.delco-gis.org/arcgiswebadaptor/rest/services/DelawareCountyData/MapServer/0',
+    owner:['OWNER1','OWNER2'], addr:'ADDR1', pid:'PARCEL_NO',
+    extra:['MUN_NAME','YRBUILT','CLASS'], where:'OBJECTID>0', bbox:[-83.25,40.14,-82.73,40.44] },
+  { key:'union', name:'Union',
+    url:'https://www7.co.union.oh.us/unioncountyohio/rest/services/parcel/MapServer/0',
+    owner:['Owner'], addr:'Address', pid:'ACCOUNT',
+    extra:['city','ZipCode','ParcelClass'], where:'1=1', bbox:[-83.65,40.12,-83.16,40.50] },
+  { key:'madison', name:'Madison',
+    url:'https://services1.arcgis.com/Wz3RgwtkgJCGuhMd/arcgis/rest/services/parcel_joined/FeatureServer/0',
+    owner:['PPOwner'], addr:'PPAddress_1', pid:'TAXPIN',
+    extra:['PPYearBuilt','PPTotalValue'], where:'1=1', bbox:[-83.66,39.70,-83.13,40.10] },
+  { key:'licking', name:'Licking',
+    url:'https://gis.lickingcounty.gov/server/rest/services/Auditor/Parcels/FeatureServer/0',
+    owner:['OwnerName'], addr:'SiteAddress', pid:'Parcel',
+    extra:['SitePostalCity','SitePostalZip','YearBuilt'], where:'1=1', bbox:[-82.80,39.90,-82.19,40.32] },
+  { key:'fairfield', name:'Fairfield',
+    url:'https://gis.co.fairfield.oh.us/arcgis/rest/services/OpenData/ParcelBoundaries/MapServer/0',
+    owner:['OWN1','OWN2'], addr:'PADDR1', pid:'PARID',
+    extra:['YRBLT','CLASS'], where:'1=1', bbox:[-82.95,39.52,-82.38,39.98] },
+  { key:'pickaway', name:'Pickaway',
+    url:'https://services6.arcgis.com/FhJ42byMw3LmPYCN/arcgis/rest/services/Parcels_Search/FeatureServer/1',
+    owner:['OWNER'], addr:'ADDRESS', pid:'PARCELID',
+    extra:['PPAcres'], where:'1=1', bbox:[-83.28,39.40,-82.75,39.83] },
+];
+
+const STATUS = {
+  talked:   { label:'Talked to',        color:'#22c55e', short:'Talked' },
+  material: { label:'Left material',    color:'#3b82f6', short:'Material' },
+  noanswer: { label:'No answer',        color:'#f59e0b', short:'No answer' },
+  dnr:      { label:"Don't come back",  color:'#ef4444', short:'DNR' },
+};
+const TAGS = ['Appointment set','Wants estimate','Storm damage','Insurance claim','Callback later','Renter','Not interested','Already has contractor','Roof looks new'];
+
+/* ---------------- tiny IndexedDB wrapper ---------------- */
+const DB = (() => {
+  let db = null;
+  const open = () => new Promise((res, rej) => {
+    if (db) return res(db);
+    const r = indexedDB.open('canvass', 2);
+    r.onupgradeneeded = e => {
+      const d = e.target.result;
+      if (!d.objectStoreNames.contains('visits'))  d.createObjectStore('visits', {keyPath:'id'});
+      if (!d.objectStoreNames.contains('parcels')) d.createObjectStore('parcels', {keyPath:'key'});
+      if (!d.objectStoreNames.contains('tiles'))   d.createObjectStore('tiles', {keyPath:'key'});
+      if (!d.objectStoreNames.contains('track'))   d.createObjectStore('track', {keyPath:'id'});
+    };
+    r.onsuccess = e => { db = e.target.result; res(db); };
+    r.onerror = () => rej(r.error);
+  });
+  const tx = async (store, mode) => (await open()).transaction(store, mode).objectStore(store);
+  const p = req => new Promise((res, rej) => { req.onsuccess = () => res(req.result); req.onerror = () => rej(req.error); });
+  return {
+    put:  async (s, v) => p((await tx(s,'readwrite')).put(v)),
+    get:  async (s, k) => p((await tx(s,'readonly')).get(k)),
+    del:  async (s, k) => p((await tx(s,'readwrite')).delete(k)),
+    all:  async s      => p((await tx(s,'readonly')).getAll()),
+    clear:async s      => p((await tx(s,'readwrite')).clear()),
+  };
+})();
+
+/* ---------------- state ---------------- */
+const state = {
+  pos: null,            // {lat, lon, acc, heading, ts}
+  county: null,         // county cfg
+  parcels: new Map(),   // key -> parcel
+  visits: new Map(),    // parcelKey -> latest visit
+  visitLog: [],         // all visits, newest last
+  track: [],            // breadcrumbs
+  candidates: [],       // nearest parcels to current pos
+  candIndex: 0,
+  lastVisitId: null,
+  tilesLoading: 0,
+  tilesDone: new Set(),
+  snapMax: 45,          // metres — furthest a parcel can be and still auto-snap
+  started: false,
+  wake: null,
+  netErr: '',
+};
+
+/* ---------------- geo helpers ---------------- */
+const R = 6371000;
+const rad = d => d * Math.PI / 180;
+function haversine(a, b, c, d) {
+  const dLat = rad(c-a), dLon = rad(d-b);
+  const x = Math.sin(dLat/2)**2 + Math.cos(rad(a))*Math.cos(rad(c))*Math.sin(dLon/2)**2;
+  return 2*R*Math.asin(Math.sqrt(x));
+}
+const mPerDegLat = 111320;
+const mPerDegLon = lat => 111320 * Math.cos(rad(lat));
+
+/** even-odd point in (multi)ring polygon; rings = [[[lon,lat],...],...] */
+function pointInRings(lon, lat, rings) {
+  let inside = false;
+  for (const ring of rings) {
+    for (let i = 0, j = ring.length - 1; i < ring.length; j = i++) {
+      const xi = ring[i][0], yi = ring[i][1], xj = ring[j][0], yj = ring[j][1];
+      if (((yi > lat) !== (yj > lat)) && (lon < (xj - xi) * (lat - yi) / (yj - yi) + xi)) inside = !inside;
+    }
+  }
+  return inside;
+}
+/** metres from point to nearest edge of rings (0 if inside) */
+function distToRings(lon, lat, rings) {
+  if (pointInRings(lon, lat, rings)) return 0;
+  const kx = mPerDegLon(lat), ky = mPerDegLat;
+  let best = Infinity;
+  for (const ring of rings) {
+    for (let i = 0; i < ring.length - 1; i++) {
+      const ax = (ring[i][0]-lon)*kx,   ay = (ring[i][1]-lat)*ky;
+      const bx = (ring[i+1][0]-lon)*kx, by = (ring[i+1][1]-lat)*ky;
+      const dx = bx-ax, dy = by-ay;
+      const len2 = dx*dx + dy*dy;
+      let t = len2 ? -(ax*dx + ay*dy) / len2 : 0;
+      t = Math.max(0, Math.min(1, t));
+      const px = ax + t*dx, py = ay + t*dy;
+      const d = Math.hypot(px, py);
+      if (d < best) best = d;
+    }
+  }
+  return best;
+}
+function ringsCentroid(rings) {
+  let x=0, y=0, n=0;
+  for (const r of rings) for (const pt of r) { x+=pt[0]; y+=pt[1]; n++; }
+  return n ? [x/n, y/n] : [0,0];
+}
+function ringsBBox(rings) {
+  let w=180, s=90, e=-180, nn=-90;
+  for (const r of rings) for (const pt of r) {
+    if (pt[0]<w) w=pt[0]; if (pt[0]>e) e=pt[0];
+    if (pt[1]<s) s=pt[1]; if (pt[1]>nn) nn=pt[1];
+  }
+  return [w,s,e,nn];
+}
+
+/* ---------------- county detection & parcel fetching ---------------- */
+function countiesFor(lat, lon) {
+  const inside = COUNTIES.filter(c => lon>=c.bbox[0] && lon<=c.bbox[2] && lat>=c.bbox[1] && lat<=c.bbox[3]);
+  const rank = c => {
+    const cx = (c.bbox[0]+c.bbox[2])/2, cy = (c.bbox[1]+c.bbox[3])/2;
+    return haversine(lat, lon, cy, cx);
+  };
+  const list = (inside.length ? inside : COUNTIES.slice()).sort((a,b) => rank(a)-rank(b));
+  return list;
+}
+
+const TILE = 0.006; // ~0.66 km lat, ~0.51 km lon at 40°N
+const tileKey = (c, lat, lon) => `${c.key}:${Math.floor(lat/TILE)}:${Math.floor(lon/TILE)}`;
+const tileBBox = (lat, lon) => {
+  const ty = Math.floor(lat/TILE), tx = Math.floor(lon/TILE);
+  const pad = TILE * 0.35;
+  return [tx*TILE - pad, ty*TILE - pad, (tx+1)*TILE + pad, (ty+1)*TILE + pad];
+};
+
+function esriToRings(geom) {
+  if (!geom) return null;
+  if (geom.type === 'Polygon')      return geom.coordinates;
+  if (geom.type === 'MultiPolygon') return geom.coordinates.flat();
+  if (geom.rings)                   return geom.rings;
+  return null;
+}
+
+async function fetchTile(c, lat, lon, silent) {
+  const key = tileKey(c, lat, lon);
+  if (state.tilesDone.has(key)) return 0;
+  state.tilesDone.add(key);
+
+  const cached = await DB.get('tiles', key).catch(()=>null);
+  if (cached && cached.parcels) { cached.parcels.forEach(addParcel); return cached.parcels.length; }
+
+  const [w,s,e,n] = tileBBox(lat, lon);
+  const fields = [c.pid, c.addr, ...c.owner, ...c.extra].filter(Boolean).join(',');
+  const base = {
+    where: c.where, geometry:`${w},${s},${e},${n}`, geometryType:'esriGeometryEnvelope',
+    inSR:'4326', outSR:'4326', spatialRel:'esriSpatialRelIntersects',
+    outFields: fields, returnGeometry:'true', geometryPrecision:'6', resultRecordCount:'1500',
+  };
+  if (!silent) { state.tilesLoading++; renderStrip(); }
+  let out = [];
+  try {
+    let res = await fetch(`${c.url}/query?` + new URLSearchParams({...base, f:'geojson'}), {mode:'cors'});
+    let j = await res.json();
+    if (!j || !j.features) {
+      res = await fetch(`${c.url}/query?` + new URLSearchParams({...base, f:'json'}), {mode:'cors'});
+      j = await res.json();
+      j = { features: (j.features||[]).map(f => ({ properties:f.attributes, geometry:{rings:f.geometry && f.geometry.rings} })) };
+    }
+    for (const f of (j.features||[])) {
+      const rings = esriToRings(f.geometry);
+      if (!rings || !rings.length) continue;
+      const a = f.properties || {};
+      const pid = String(a[c.pid] ?? '').trim();
+      if (!pid) continue;
+      const owner = c.owner.map(k => (a[k]||'').toString().trim()).filter(v => v && v !== ' ').join(' & ');
+      const addr = (a[c.addr] || '').toString().trim();
+      const extra = {}; c.extra.forEach(k => { if (a[k] != null && String(a[k]).trim()) extra[k] = a[k]; });
+      out.push({ key:`${c.key}:${pid}`, county:c.key, pid, owner, addr, extra, rings,
+                 bbox:ringsBBox(rings), cen:ringsCentroid(rings) });
+    }
+    state.netErr = '';
+    DB.put('tiles', {key, ts:Date.now(), parcels:out}).catch(()=>{});
+  } catch (err) {
+    state.tilesDone.delete(key);
+    state.netErr = (err && err.message) || 'network';
+  }
+  out.forEach(addParcel);
+  if (!silent) { state.tilesLoading--; renderStrip(); }
+  return out.length;
+}
+function addParcel(p) { if (!state.parcels.has(p.key)) state.parcels.set(p.key, p); }
+
+let lastTileCenter = null;
+async function ensureParcels(lat, lon) {
+  if (lastTileCenter && haversine(lat, lon, lastTileCenter[0], lastTileCenter[1]) < 60) return;
+  lastTileCenter = [lat, lon];
+  const cands = countiesFor(lat, lon);
+  let got = 0;
+  for (const c of cands) {
+    got = await fetchTile(c, lat, lon);
+    if (got > 0 || state.parcels.size) { state.county = c; break; }
+  }
+  renderStrip(); recompute();
+  // quietly warm the neighbouring tiles so walking the block never stalls
+  if (state.county) {
+    const c = state.county;
+    setTimeout(() => {
+      for (const dy of [-1,0,1]) for (const dx of [-1,0,1]) {
+        if (!dx && !dy) continue;
+        fetchTile(c, lat + dy*TILE, lon + dx*TILE, true).then(n => { if (n) { recompute(); drawMini(); } });
+      }
+    }, 900);
+  }
+}
+
+/* ---------------- candidate resolution ---------------- */
+function recompute() {
+  if (!state.pos) return;
+  const {lat, lon} = state.pos;
+  const near = [];
+  for (const p of state.parcels.values()) {
+    // cheap bbox reject
+    const pad = 0.0012;
+    if (lon < p.bbox[0]-pad || lon > p.bbox[2]+pad || lat < p.bbox[1]-pad || lat > p.bbox[3]+pad) continue;
+    const d = distToRings(lon, lat, p.rings);
+    if (d <= 140) near.push({p, d});
+  }
+  near.sort((a,b) => a.d - b.d);
+  state.candidates = near.slice(0, 12);
+  // a manual house pick expires once you walk off or after two minutes,
+  // so the very next door snaps automatically again
+  if (state.manualKey && state.manualAt) {
+    const moved = haversine(lat, lon, state.manualAt.lat, state.manualAt.lon);
+    if (moved > 25 || Date.now() - state.manualAt.ts > 120000) { state.manualKey = null; state.manualAt = null; }
+  }
+  if (state.manualKey) {
+    const i = state.candidates.findIndex(x => x.p.key === state.manualKey);
+    if (i >= 0) state.candIndex = i;
+    else { state.manualKey = null; state.candIndex = 0; }
+  } else {
+    state.candIndex = 0;
+  }
+  renderHouse();
+}
+const current = () => state.candidates[state.candIndex] || null;
+function pinHouse(key) {
+  state.manualKey = key;
+  state.manualAt = state.pos ? { lat:state.pos.lat, lon:state.pos.lon, ts:Date.now() } : null;
+}
+
+/* ---------------- rendering: strip + house ---------------- */
+function renderStrip() {
+  const d = $('gpsDot'), t = $('gpsTxt');
+  if (!state.pos) { d.className='dot'; t.textContent='GPS…'; }
+  else {
+    const a = Math.round(state.pos.acc);
+    d.className = 'dot ' + (a <= 12 ? 'good' : a <= 30 ? 'ok' : 'bad');
+    t.textContent = `±${a} m`;
+  }
+  $('countyPill').textContent = state.tilesLoading ? 'loading lots…'
+      : state.netErr ? '⚠︎ offline'
+      : (state.county ? state.county.name + ' Co.' : '—');
+  const t0 = new Date(); t0.setHours(0,0,0,0);
+  const todayN = state.visitLog.filter(v => v.ts >= +t0).length;
+  $('todayPill').textContent = `${todayN} today`;
+}
+
+function renderHouse() {
+  const c = current();
+  if (!c) {
+    $('addr').textContent = state.parcels.size ? 'No lot nearby' : 'Loading lot lines…';
+    $('owner').textContent = state.netErr ? 'No signal — parcels unavailable here' : '—';
+    $('alreadyTag').classList.add('hide');
+    drawMini(); return;
+  }
+  const p = c.p;
+  $('addr').textContent = p.addr || '(no address on file)';
+  $('addr').classList.toggle('far', c.d > state.snapMax);
+  const yr = p.extra.RESYRBLT || p.extra.YRBUILT || p.extra.YearBuilt || p.extra.YRBLT || p.extra.PPYearBuilt;
+  $('owner').textContent = (p.owner || 'Owner not listed') + (yr ? ` · built ${yr}` : '') + ` · ${Math.round(c.d)}m`;
+  const v = state.visits.get(p.key);
+  const tag = $('alreadyTag');
+  if (v) {
+    tag.classList.remove('hide');
+    tag.textContent = `Already: ${STATUS[v.status].label} · ${timeAgo(v.ts)}`;
+    tag.style.background = STATUS[v.status].color + '33';
+    tag.style.color = STATUS[v.status].color;
+  } else tag.classList.add('hide');
+  drawMini();
+}
+function timeAgo(ts) {
+  const s = (Date.now()-ts)/1000;
+  if (s < 90) return 'just now';
+  if (s < 3600) return Math.round(s/60)+' min ago';
+  if (s < 86400) return Math.round(s/3600)+' hr ago';
+  const d = Math.round(s/86400);
+  return d===1 ? 'yesterday' : d+' days ago';
+}
+
+/* ---------------- mini map (canvas, works offline) ---------------- */
+function drawMini() {
+  const cv = $('mini'); if (!cv) return;
+  const dpr = window.devicePixelRatio || 1;
+  const w = cv.clientWidth || 88, h = cv.clientHeight || 88;
+  if (cv.width !== w*dpr) { cv.width = w*dpr; cv.height = h*dpr; }
+  const g = cv.getContext('2d');
+  g.setTransform(dpr,0,0,dpr,0,0);
+  g.clearRect(0,0,w,h);
+  g.fillStyle = '#0f151d'; g.fillRect(0,0,w,h);
+  if (!state.pos) return;
+  const {lat, lon} = state.pos;
+  const span = 120; // metres shown across the mini map
+  const kx = mPerDegLon(lat), ky = mPerDegLat;
+  const sc = w / span;
+  const X = p => w/2 + (p[0]-lon)*kx*sc;
+  const Y = p => h/2 - (p[1]-lat)*ky*sc;
+
+  for (const p of state.parcels.values()) {
+    if (Math.abs(p.cen[1]-lat)*ky > span || Math.abs(p.cen[0]-lon)*kx > span) continue;
+    const v = state.visits.get(p.key);
+    g.beginPath();
+    for (const ring of p.rings) {
+      ring.forEach((pt,i) => i ? g.lineTo(X(pt), Y(pt)) : g.moveTo(X(pt), Y(pt)));
+      g.closePath();
+    }
+    if (v) { g.fillStyle = STATUS[v.status].color + 'cc'; g.fill(); }
+    g.strokeStyle = v ? '#0f151d' : '#3a4a5e'; g.lineWidth = v ? 1 : .8; g.stroke();
+  }
+  // highlight the currently targeted house
+  const c = current();
+  if (c) {
+    g.beginPath();
+    for (const ring of c.p.rings) { ring.forEach((pt,i)=> i?g.lineTo(X(pt),Y(pt)):g.moveTo(X(pt),Y(pt))); g.closePath(); }
+    g.strokeStyle = '#ffffff'; g.lineWidth = 1.8; g.stroke();
+  }
+  // route trail
+  const trail = state.track.slice(-160);
+  if (trail.length > 1) {
+    g.beginPath();
+    trail.forEach((t,i) => { const x = X([t.lon,t.lat]), y = Y([t.lon,t.lat]); i ? g.lineTo(x,y) : g.moveTo(x,y); });
+    g.strokeStyle = 'rgba(255,255,255,.45)'; g.lineWidth = 1.6; g.stroke();
+  }
+  // you
+  g.beginPath(); g.arc(w/2, h/2, 4.5, 0, 7); g.fillStyle = '#38bdf8'; g.fill();
+  g.strokeStyle = '#fff'; g.lineWidth = 1.6; g.stroke();
+}
+
+/* ---------------- marking a door ---------------- */
+let toastTimer = null;
+async function mark(status) {
+  const c = current();
+  if (!c) { flashToast('No lot found here', 'Move a few steps and try again — or open the map', '#64748b'); return; }
+  const p = c.p;
+  const v = {
+    id: 'v' + Date.now() + Math.random().toString(36).slice(2,6),
+    key: p.key, county: p.county, pid: p.pid, status,
+    ts: Date.now(), lat: state.pos.lat, lon: state.pos.lon, acc: state.pos.acc,
+    dist: Math.round(c.d), owner: p.owner, addr: p.addr, extra: p.extra,
+    name:'', phone:'', email:'', notes:'', tags:[], follow:'',
+  };
+  const prev = state.visits.get(p.key);
+  if (prev) { v.name=prev.name; v.phone=prev.phone; v.email=prev.email; v.notes=prev.notes; v.tags=prev.tags||[]; v.follow=prev.follow||''; v.prevId=prev.id; }
+  state.visits.set(p.key, v);
+  state.visitLog.push(v);
+  state.lastVisitId = v.id;
+  await DB.put('visits', v).catch(()=>{});
+  // release any manual pick so the next door snaps on its own again
+  state.manualKey = null; state.manualAt = null;
+  buzz(status === 'dnr' ? [40,60,40] : 35);
+  flashToast(STATUS[status].label, `${p.addr || 'lot ' + p.pid}${p.owner ? ' · ' + p.owner : ''}`, STATUS[status].color);
+  renderStrip(); renderHouse(); if (window._map) refreshMapLayers();
+}
+function flashToast(title, sub, color) {
+  $('toastTitle').textContent = title;
+  $('toastSub').textContent = sub;
+  $('toastBar').style.background = color;
+  const t = $('toast'); t.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => t.classList.remove('show'), 4200);
+}
+function buzz(pat) { try { navigator.vibrate && navigator.vibrate(pat); } catch(e){} }
+
+async function undoLast() {
+  if (!state.lastVisitId) { flashToast('Nothing to undo','','#64748b'); return; }
+  const v = state.visitLog.find(x => x.id === state.lastVisitId);
+  if (!v) return;
+  state.visitLog = state.visitLog.filter(x => x.id !== v.id);
+  await DB.del('visits', v.id).catch(()=>{});
+  if (v.prevId) {
+    const prev = state.visitLog.filter(x => x.key === v.key).sort((a,b)=>b.ts-a.ts)[0];
+    if (prev) state.visits.set(v.key, prev); else state.visits.delete(v.key);
+  } else state.visits.delete(v.key);
+  const rest = state.visitLog[state.visitLog.length-1];
+  state.lastVisitId = rest ? rest.id : null;
+  $('toast').classList.remove('show');
+  buzz(20); flashToast('Undone', v.addr || '', '#64748b');
+  renderStrip(); renderHouse(); if (window._map) refreshMapLayers();
+}
+
+/* ---------------- house picker ---------------- */
+function openCandidates() {
+  const list = $('candList'); list.innerHTML = '';
+  if (!state.candidates.length) list.innerHTML = '<p style="color:var(--dim)">No lots loaded nearby yet.</p>';
+  state.candidates.forEach((c, i) => {
+    const v = state.visits.get(c.p.key);
+    const el = document.createElement('div');
+    el.className = 'cand';
+    el.innerHTML = `<div class="sw" style="background:${v?STATUS[v.status].color:'#37475c'}"></div>
+      <div class="t"><div class="a">${esc(c.p.addr || '(no address)')}</div>
+      <div class="o">${esc(c.p.owner || 'owner not listed')}${v?' · '+STATUS[v.status].short:''}</div></div>
+      <div class="d">${Math.round(c.d)}m</div>`;
+    el.onclick = () => { state.candIndex = i; pinHouse(c.p.key); renderHouse(); closeSheet('candSheet'); buzz(15); };
+    list.appendChild(el);
+  });
+  openSheet('candSheet');
+}
+function cycleHouse() {
+  if (state.candidates.length < 2) return;
+  state.candIndex = (state.candIndex + 1) % Math.min(state.candidates.length, 6);
+  pinHouse(state.candidates[state.candIndex].p.key);
+  buzz(12); renderHouse();
+}
+/** re-point the most recent mark at the next-nearest house */
+async function reassignLast() {
+  if (!state.lastVisitId || state.candidates.length < 2) { cycleHouse(); return; }
+  const v = state.visitLog.find(x => x.id === state.lastVisitId);
+  if (!v) return;
+  let i = state.candidates.findIndex(c => c.p.key === v.key);
+  i = (i + 1) % Math.min(state.candidates.length, 6);
+  const target = state.candidates[i].p;
+  // detach from old parcel
+  const older = state.visitLog.filter(x => x.key === v.key && x.id !== v.id).sort((a,b)=>b.ts-a.ts)[0];
+  if (older) state.visits.set(v.key, older); else state.visits.delete(v.key);
+  v.key = target.key; v.pid = target.pid; v.county = target.county;
+  v.owner = target.owner; v.addr = target.addr; v.extra = target.extra;
+  v.dist = Math.round(state.candidates[i].d);
+  state.visits.set(v.key, v);
+  state.candIndex = i; pinHouse(target.key);
+  await DB.put('visits', v).catch(()=>{});
+  buzz(15);
+  flashToast(STATUS[v.status].label + ' → moved', `${target.addr || target.pid}${target.owner?' · '+target.owner:''}`, STATUS[v.status].color);
+  renderHouse(); if (window._map) refreshMapLayers();
+}
+
+/* ---------------- detail sheet ---------------- */
+let editing = null;
+/** copy whatever is typed in the form back onto the record being edited,
+    so re-rendering the sheet (tag/status taps) never throws away typing */
+function pullDetail() {
+  if (!editing) return;
+  editing.name  = $('dName').value.trim();
+  editing.phone = $('dPhone').value.trim();
+  editing.email = $('dEmail').value.trim();
+  editing.notes = $('dNotes').value.trim();
+  editing.follow = $('dFollow').value;
+}
+function openDetail(visit) {
+  let v = visit;
+  if (!v) {
+    const c = current();
+    v = state.lastVisitId ? state.visitLog.find(x => x.id === state.lastVisitId) : null;
+    if (c && (!v || v.key !== c.p.key)) {
+      const existing = state.visits.get(c.p.key);
+      v = existing || null;
+      if (!v) {
+        // let them add notes before ever tapping a status
+        v = { id:'v'+Date.now()+Math.random().toString(36).slice(2,6), key:c.p.key, county:c.p.county,
+              pid:c.p.pid, status:'talked', ts:Date.now(), lat:state.pos.lat, lon:state.pos.lon,
+              acc:state.pos.acc, dist:Math.round(c.d), owner:c.p.owner, addr:c.p.addr, extra:c.p.extra,
+              name:'', phone:'', email:'', notes:'', tags:[], follow:'', _new:true };
+      }
+    }
+  }
+  if (!v) { flashToast('Mark a house first','Tap a status, then add details','#64748b'); return; }
+  editing = v;
+  $('dTitle').textContent = v.addr || 'Lot ' + v.pid;
+  $('dSub').textContent = (v.owner || 'owner not listed') + ' · ' + (COUNTIES.find(c=>c.key===v.county)||{}).name + ' Co.';
+  $('dName').value = v.name||''; $('dPhone').value = v.phone||'';
+  $('dEmail').value = v.email||''; $('dNotes').value = v.notes||''; $('dFollow').value = v.follow||'';
+  const sw = $('dStatus'); sw.innerHTML = '';
+  Object.entries(STATUS).forEach(([k,s]) => {
+    const b = document.createElement('button');
+    b.className = 'chip' + (v.status===k ? ' on' : ''); b.textContent = s.label;
+    if (v.status===k) { b.style.background = s.color+'2e'; b.style.borderColor = s.color; b.style.color = s.color; }
+    b.onclick = () => { pullDetail(); editing.status = k; openDetail(editing); };
+    sw.appendChild(b);
+  });
+  const tg = $('dTags'); tg.innerHTML = '';
+  TAGS.forEach(t => {
+    const b = document.createElement('button');
+    b.className = 'chip' + ((v.tags||[]).includes(t) ? ' on' : ''); b.textContent = t;
+    b.onclick = () => { pullDetail(); const s = new Set(editing.tags||[]); s.has(t)?s.delete(t):s.add(t); editing.tags=[...s]; openDetail(editing); };
+    tg.appendChild(b);
+  });
+  openSheet('detailSheet');
+}
+async function saveDetail() {
+  if (!editing) return;
+  pullDetail();
+  if (editing._new) { delete editing._new; state.visitLog.push(editing); state.lastVisitId = editing.id; }
+  state.visits.set(editing.key, editing);
+  await DB.put('visits', editing).catch(()=>{});
+  closeSheet('detailSheet'); buzz(20);
+  flashToast('Saved', editing.addr || '', STATUS[editing.status].color);
+  renderStrip(); renderHouse(); if (window._map) refreshMapLayers();
+}
+async function deleteDetail() {
+  if (!editing) return;
+  state.visitLog = state.visitLog.filter(x => x.id !== editing.id);
+  await DB.del('visits', editing.id).catch(()=>{});
+  const prev = state.visitLog.filter(x => x.key === editing.key).sort((a,b)=>b.ts-a.ts)[0];
+  if (prev) state.visits.set(editing.key, prev); else state.visits.delete(editing.key);
+  if (state.lastVisitId === editing.id) { const r = state.visitLog[state.visitLog.length-1]; state.lastVisitId = r?r.id:null; }
+  editing = null; closeSheet('detailSheet'); buzz(30);
+  renderStrip(); renderHouse(); if (window._map) refreshMapLayers();
+}
+
+/* ---------------- sheets ---------------- */
+function openSheet(id){ $(id).classList.remove('hide'); }
+function closeSheet(id){ $(id).classList.add('hide'); }
+document.querySelectorAll('[data-close]').forEach(b => b.onclick = () => closeSheet(b.dataset.close));
+document.querySelectorAll('.sheet').forEach(s => s.addEventListener('click', e => { if (e.target === s) s.classList.add('hide'); }));
+
+/* ---------------- full map (Leaflet, lazy loaded) ---------------- */
+const mapOpts = { sat:false, names:true, route:true, today:false, follow:true };
+function loadLeaflet() {
+  if (window.L) return Promise.resolve();
+  return new Promise((res, rej) => {
+    const css = document.createElement('link');
+    css.rel='stylesheet'; css.href='https://unpkg.com/leaflet@1.9.4/dist/leaflet.css';
+    document.head.appendChild(css);
+    const s = document.createElement('script');
+    s.src='https://unpkg.com/leaflet@1.9.4/dist/leaflet.js';
+    s.onload = res; s.onerror = rej; document.head.appendChild(s);
+  });
+}
+async function openMap() {
+  $('mapView').classList.remove('hide');
+  try { await loadLeaflet(); } catch(e) {
+    $('mapView').classList.add('hide');
+    flashToast('Map needs signal', 'Open the big map once while online and it will cache', '#f59e0b');
+    return;
+  }
+  if (!window._map) {
+    const m = L.map('leaf', { zoomControl:false, attributionControl:true })
+      .setView(state.pos ? [state.pos.lat, state.pos.lon] : [39.96,-83.0], 18);
+    window._map = m;
+    window._street = L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+      { maxZoom:19, attribution:'© OpenStreetMap' }).addTo(m);
+    window._satL = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
+      { maxZoom:20, attribution:'Esri' });
+    window._parcelLayer = L.layerGroup().addTo(m);
+    window._labelLayer  = L.layerGroup().addTo(m);
+    window._routeLayer  = L.layerGroup().addTo(m);
+    window._meLayer     = L.layerGroup().addTo(m);
+    m.on('dragstart', () => { mapOpts.follow = false; syncMapBtns(); });
+    m.on('moveend', () => { refreshMapLayers(); loadForView(); });
+  }
+  setTimeout(() => { window._map.invalidateSize(); if (state.pos && mapOpts.follow) window._map.setView([state.pos.lat,state.pos.lon]); refreshMapLayers(); }, 60);
+  syncMapBtns();
+}
+async function loadForView() {
+  const m = window._map; if (!m || m.getZoom() < 16) return;
+  const c = m.getCenter();
+  const cs = countiesFor(c.lat, c.lng);
+  if (cs[0]) { const n = await fetchTile(cs[0], c.lat, c.lng, true); if (n) refreshMapLayers(); }
+}
+function refreshMapLayers() {
+  const m = window._map; if (!m) return;
+  const pl = window._parcelLayer, ll = window._labelLayer;
+  pl.clearLayers(); ll.clearLayers();
+  const b = m.getBounds(); const z = m.getZoom();
+  const t0 = new Date(); t0.setHours(0,0,0,0);
+  let shown = 0;
+  for (const p of state.parcels.values()) {
+    if (p.bbox[2] < b.getWest() || p.bbox[0] > b.getEast() || p.bbox[3] < b.getSouth() || p.bbox[1] > b.getNorth()) continue;
+    if (shown++ > 1400) break;
+    let v = state.visits.get(p.key);
+    if (v && mapOpts.today && v.ts < +t0) v = null;
+    const col = v ? STATUS[v.status].color : '#94a3b8';
+    const latlngs = p.rings.map(r => r.map(pt => [pt[1], pt[0]]));
+    const poly = L.polygon(latlngs, {
+      color: v ? col : (mapOpts.sat ? '#e2e8f0' : '#64748b'),
+      weight: v ? 2 : 1, opacity: v ? 1 : .65,
+      fillColor: col, fillOpacity: v ? .55 : (mapOpts.sat ? .04 : .10),
+    });
+    poly.on('click', () => {
+      const ex = state.visits.get(p.key);
+      openDetail(ex || { id:'v'+Date.now()+Math.random().toString(36).slice(2,6), key:p.key, county:p.county,
+        pid:p.pid, status:'noanswer', ts:Date.now(), lat:p.cen[1], lon:p.cen[0], acc:0, dist:0,
+        owner:p.owner, addr:p.addr, extra:p.extra, name:'',phone:'',email:'',notes:'',tags:[],follow:'', _new:true });
+    });
+    pl.addLayer(poly);
+    if (mapOpts.names && z >= 18 && p.owner) {
+      ll.addLayer(L.marker([p.cen[1], p.cen[0]], { interactive:false, icon: L.divIcon({
+        className:'', html:`<div class="owner-label">${esc(shortOwner(p.owner))}${p.addr?'<br>'+esc(p.addr.split(' ')[0]):''}</div>`,
+        iconSize:[0,0] }) }));
+    }
+  }
+  const rl = window._routeLayer; rl.clearLayers();
+  if (mapOpts.route && state.track.length > 1) {
+    const pts = state.track.filter(t => !mapOpts.today || t.ts >= +t0).map(t => [t.lat, t.lon]);
+    if (pts.length > 1) rl.addLayer(L.polyline(pts, { color:'#38bdf8', weight:3, opacity:.85, dashArray:'1 6', lineCap:'round' }));
+  }
+  const ml = window._meLayer; ml.clearLayers();
+  if (state.pos) {
+    ml.addLayer(L.circleMarker([state.pos.lat, state.pos.lon], { radius:7, color:'#fff', weight:2, fillColor:'#38bdf8', fillOpacity:1 }));
+    ml.addLayer(L.circle([state.pos.lat, state.pos.lon], { radius: state.pos.acc, color:'#38bdf8', weight:1, opacity:.4, fillOpacity:.06 }));
+  }
+}
+const shortOwner = o => { const parts = o.split(/\s*&\s*/)[0].trim().split(/\s+/); return parts.slice(0, Math.min(2, parts.length)).join(' '); };
+function syncMapBtns() {
+  $('mapSat').classList.toggle('on', mapOpts.sat);
+  $('mapNames').classList.toggle('on', mapOpts.names);
+  $('mapRoute').classList.toggle('on', mapOpts.route);
+  $('mapToday').classList.toggle('on', mapOpts.today);
+  $('mapFollow').classList.toggle('on', mapOpts.follow);
+}
+
+/* ---------------- export ---------------- */
+const esc = s => String(s==null?'':s).replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
+const q = s => `"${String(s==null?'':s).replace(/"/g,'""')}"`;
+function download(name, text, type) {
+  const blob = new Blob([text], {type: type||'text/plain'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a'); a.href = url; a.download = name;
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 4000);
+}
+function visitsFor(todayOnly) {
+  const t0 = new Date(); t0.setHours(0,0,0,0);
+  return state.visitLog.filter(v => !todayOnly || v.ts >= +t0).sort((a,b)=>a.ts-b.ts);
+}
+function exportCsv(todayOnly) {
+  const rows = visitsFor(todayOnly);
+  if (!rows.length) { flashToast('Nothing to export','','#64748b'); return; }
+  const head = ['Date','Time','Status','Address','Owner','County','Parcel ID','Contact name','Phone','Email','Tags','Follow up','Notes','Year built','Latitude','Longitude','GPS accuracy m','Distance to lot m'];
+  const yr = v => v.extra && (v.extra.RESYRBLT||v.extra.YRBUILT||v.extra.YearBuilt||v.extra.YRBLT||v.extra.PPYearBuilt) || '';
+  const lines = [head.map(q).join(',')];
+  rows.forEach(v => {
+    const d = new Date(v.ts);
+    lines.push([d.toLocaleDateString(), d.toLocaleTimeString(), STATUS[v.status].label, v.addr, v.owner,
+      (COUNTIES.find(c=>c.key===v.county)||{}).name, v.pid, v.name, v.phone, v.email,
+      (v.tags||[]).join('; '), v.follow, v.notes, yr(v),
+      v.lat.toFixed(6), v.lon.toFixed(6), Math.round(v.acc||0), v.dist].map(q).join(','));
+  });
+  download(`canvass-${stamp(todayOnly)}.csv`, '﻿'+lines.join('\r\n'), 'text/csv');
+}
+function exportGeo() {
+  const rows = visitsFor(false);
+  const feats = rows.map(v => {
+    const p = state.parcels.get(v.key);
+    return { type:'Feature',
+      properties:{ status:STATUS[v.status].label, address:v.addr, owner:v.owner, parcel:v.pid,
+        county:v.county, when:new Date(v.ts).toISOString(), contact:v.name, phone:v.phone,
+        email:v.email, tags:(v.tags||[]).join('; '), notes:v.notes,
+        'marker-color':STATUS[v.status].color, fill:STATUS[v.status].color },
+      geometry: p ? { type:'Polygon', coordinates:p.rings } : { type:'Point', coordinates:[v.lon, v.lat] } };
+  });
+  if (state.track.length > 1)
+    feats.push({ type:'Feature', properties:{name:'Walking route', stroke:'#38bdf8'},
+      geometry:{ type:'LineString', coordinates: state.track.map(t=>[t.lon,t.lat]) } });
+  download(`canvass-${stamp(false)}.geojson`, JSON.stringify({type:'FeatureCollection',features:feats}), 'application/geo+json');
+}
+async function backup() {
+  const data = { v:1, exported:new Date().toISOString(),
+    visits: await DB.all('visits'), track: await DB.all('track') };
+  download(`canvass-backup-${stamp(false)}.json`, JSON.stringify(data), 'application/json');
+}
+function stamp(todayOnly) {
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}${todayOnly?'':'-all'}`;
+}
+
+/* ---------------- geolocation ---------------- */
+let watchId = null, lastTrack = 0;
+function startGps() {
+  if (!navigator.geolocation) { flashToast('No GPS','This browser cannot get location','#ef4444'); return; }
+  watchId = navigator.geolocation.watchPosition(async pos => {
+    const c = pos.coords;
+    state.pos = { lat:c.latitude, lon:c.longitude, acc:c.accuracy||99, heading:c.heading, ts:pos.timestamp };
+    renderStrip();
+    const now = Date.now();
+    const last = state.track[state.track.length-1];
+    if (!last || now - lastTrack > 4000 || haversine(last.lat,last.lon,c.latitude,c.longitude) > 8) {
+      lastTrack = now;
+      const t = { id:'t'+now+Math.random().toString(36).slice(2,5), lat:c.latitude, lon:c.longitude, ts:now, acc:c.accuracy };
+      state.track.push(t); DB.put('track', t).catch(()=>{});
+    }
+    await ensureParcels(c.latitude, c.longitude);
+    recompute(); drawMini();
+    if (window._map && mapOpts.follow && !$('mapView').classList.contains('hide')) {
+      window._map.setView([c.latitude, c.longitude], window._map.getZoom(), {animate:false});
+    }
+  }, err => {
+    $('gpsDot').className = 'dot bad';
+    $('gpsTxt').textContent = err.code === 1 ? 'blocked' : 'no fix';
+    if (err.code === 1) flashToast('Location blocked','Enable location for this site in Settings › Safari','#ef4444');
+  }, { enableHighAccuracy:true, maximumAge:2000, timeout:20000 });
+}
+
+/* ---------------- wake lock ---------------- */
+async function toggleWake() {
+  try {
+    if (state.wake) { await state.wake.release(); state.wake = null; }
+    else if ('wakeLock' in navigator) { state.wake = await navigator.wakeLock.request('screen'); }
+    else { flashToast('Not supported','This browser has no screen-wake control','#64748b'); }
+  } catch(e) { state.wake = null; }
+  $('mWake').classList.toggle('on', !!state.wake);
+  $('mWake').textContent = state.wake ? 'Screen stays on' : 'Screen lock off';
+}
+document.addEventListener('visibilitychange', async () => {
+  if (document.visibilityState === 'visible' && state.wake === null && $('mWake').classList.contains('on')) {
+    try { state.wake = await navigator.wakeLock.request('screen'); } catch(e){}
+  }
+  if (document.visibilityState === 'visible') { drawMini(); }
+});
+
+/* ---------------- menu ---------------- */
+function renderStats() {
+  const t0 = new Date(); t0.setHours(0,0,0,0);
+  const today = state.visitLog.filter(v => v.ts >= +t0);
+  const by = s => today.filter(v => v.status === s).length;
+  const html = `
+    <div class="stat"><b>${today.length}</b>doors today</div>
+    <div class="stat"><b style="color:${STATUS.talked.color}">${by('talked')}</b>talked</div>
+    <div class="stat"><b style="color:${STATUS.material.color}">${by('material')}</b>material</div>
+    <div class="stat"><b style="color:${STATUS.noanswer.color}">${by('noanswer')}</b>no answer</div>
+    <div class="stat"><b style="color:${STATUS.dnr.color}">${by('dnr')}</b>do not return</div>
+    <div class="stat"><b>${state.visitLog.length}</b>all time</div>`;
+  document.querySelectorAll('.statsbox').forEach(el => el.innerHTML = html);
+}
+function renderSnapChips() {
+  const el = $('mSnap'); el.innerHTML = '';
+  [25,45,70,120].forEach(m => {
+    const b = document.createElement('button');
+    b.className = 'chip' + (state.snapMax===m?' on':''); b.textContent = m + ' m';
+    b.onclick = () => { state.snapMax = m; localStorage.setItem('snapMax', m); renderSnapChips(); };
+    el.appendChild(b);
+  });
+}
+
+/* ---------------- wiring ---------------- */
+document.querySelectorAll('.act').forEach(b => b.addEventListener('click', () => mark(b.dataset.s)));
+$('undoBtn').onclick = undoLast;
+$('detailBtn').onclick = () => openDetail(null);
+$('swapBtn').onclick = openCandidates;
+$('house').addEventListener('dblclick', openCandidates);
+$('miniWrap').onclick = openMap;
+$('toastUndo').onclick = undoLast;
+$('toastSwap').onclick = reassignLast;
+$('menuBtn').onclick = () => { renderStats(); renderSnapChips(); renderDiag(); openSheet('menuSheet'); };
+$('dSave').onclick = saveDetail;
+$('dDelete').onclick = deleteDetail;
+$('mExportCsv').onclick = () => exportCsv(false);
+$('mExportToday').onclick = () => exportCsv(true);
+$('mExportGeo').onclick = exportGeo;
+$('mBackup').onclick = backup;
+$('mWake').onclick = toggleWake;
+$('mTest').onclick = testConnections;
+$('mRestore').onclick = () => $('restoreFile').click();
+$('restoreFile').onchange = async e => {
+  const f = e.target.files[0]; if (!f) return;
+  try {
+    const d = JSON.parse(await f.text());
+    for (const v of (d.visits||[])) await DB.put('visits', v);
+    for (const t of (d.track||[])) await DB.put('track', t);
+    await loadStored(); renderStats();
+    flashToast('Restored', `${(d.visits||[]).length} records`, '#22c55e');
+  } catch(err) { flashToast('Could not read that file','','#ef4444'); }
+};
+$('mWipe').onclick = async () => {
+  if (!confirm('Erase every door you have logged? This cannot be undone.')) return;
+  await DB.clear('visits'); await DB.clear('track'); await DB.clear('tiles');
+  state.visitLog = []; state.visits.clear(); state.track = []; state.lastVisitId = null;
+  renderStrip(); renderHouse(); renderStats(); closeSheet('menuSheet');
+};
+$('mapClose').onclick = () => $('mapView').classList.add('hide');
+$('mapSat').onclick = () => { mapOpts.sat = !mapOpts.sat;
+  if (mapOpts.sat) { window._map.removeLayer(window._street); window._satL.addTo(window._map); }
+  else { window._map.removeLayer(window._satL); window._street.addTo(window._map); }
+  syncMapBtns(); refreshMapLayers(); };
+$('mapNames').onclick = () => { mapOpts.names = !mapOpts.names; syncMapBtns(); refreshMapLayers(); };
+$('mapRoute').onclick = () => { mapOpts.route = !mapOpts.route; syncMapBtns(); refreshMapLayers(); };
+$('mapToday').onclick = () => { mapOpts.today = !mapOpts.today; syncMapBtns(); refreshMapLayers(); };
+$('mapFollow').onclick = () => { mapOpts.follow = !mapOpts.follow; syncMapBtns();
+  if (mapOpts.follow && state.pos) window._map.setView([state.pos.lat,state.pos.lon], 18); };
+
+/** Ping every county service from the browser so you can see, in the field,
+    which ones your phone is actually allowed to talk to. */
+async function testConnections() {
+  const box = $('conn');
+  box.innerHTML = 'Testing 7 county services…';
+  const lines = [];
+  for (const c of COUNTIES) {
+    const cx = (c.bbox[0]+c.bbox[2])/2, cy = (c.bbox[1]+c.bbox[3])/2;
+    const url = `${c.url}/query?` + new URLSearchParams({
+      where:c.where, geometry:`${cx-0.004},${cy-0.004},${cx+0.004},${cy+0.004}`,
+      geometryType:'esriGeometryEnvelope', inSR:'4326', spatialRel:'esriSpatialRelIntersects',
+      returnCountOnly:'true', f:'json' });
+    const t = Date.now();
+    try {
+      const r = await fetch(url, {mode:'cors'});
+      const j = await r.json();
+      const ms = Date.now()-t;
+      if (j && typeof j.count === 'number') lines.push(`✅ ${c.name} — ${j.count.toLocaleString()} lots in test box (${ms} ms)`);
+      else if (j && j.error) lines.push(`⚠️ ${c.name} — server said: ${esc(j.error.message||'error')}`);
+      else lines.push(`⚠️ ${c.name} — unexpected reply`);
+    } catch (err) {
+      lines.push(`❌ ${c.name} — blocked or unreachable (${esc((err&&err.message)||'')})`);
+    }
+    box.innerHTML = lines.join('<br>');
+  }
+  box.innerHTML = lines.join('<br>') + '<br><br>Anything marked ❌ means that county is blocking requests from this app — screenshot this and it can be worked around.';
+}
+
+function renderDiag() {
+  $('diag').innerHTML = `Lots cached: ${state.parcels.size} · records: ${state.visitLog.length} · breadcrumbs: ${state.track.length}`
+    + (state.netErr ? `<br>Last network error: ${esc(state.netErr)}` : '');
+}
+
+/* ---------------- boot ---------------- */
+async function loadStored() {
+  const vs = (await DB.all('visits').catch(()=>[])) || [];
+  vs.sort((a,b)=>a.ts-b.ts);
+  state.visitLog = vs;
+  state.visits.clear();
+  vs.forEach(v => state.visits.set(v.key, v));
+  state.lastVisitId = vs.length ? vs[vs.length-1].id : null;
+  const t0 = new Date(); t0.setHours(0,0,0,0);
+  const tr = (await DB.all('track').catch(()=>[])) || [];
+  state.track = tr.filter(t => t.ts >= +t0 - 86400000*2).sort((a,b)=>a.ts-b.ts);
+  renderStrip(); renderStats();
+}
+$('startBtn').onclick = async () => {
+  $('gate').classList.add('hide');
+  state.started = true;
+  startGps();
+  toggleWake();
+  drawMini();
+};
+window.addEventListener('resize', drawMini);
+(async () => {
+  const s = localStorage.getItem('snapMax'); if (s) state.snapMax = +s;
+  await loadStored();
+  if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(()=>{});
+  drawMini();
+})();
+</script>
+</body>
+</html>
