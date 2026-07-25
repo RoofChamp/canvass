@@ -46,20 +46,41 @@ input,textarea,select{font:inherit;color:var(--txt);background:var(--card2);bord
 
 /* ---------- house card ---------- */
 #house{margin:2px 10px 8px;background:var(--card);border:1px solid var(--line);border-radius:16px;padding:12px 14px;flex:0 0 auto;min-height:92px;display:flex;flex-direction:column;justify-content:center;position:relative}
-#addr{font-size:26px;font-weight:800;letter-spacing:-.4px;line-height:1.15;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+#addr{font-size:26px;font-weight:800;letter-spacing:-.4px;line-height:1.15;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;padding-right:92px}
 #owner{font-size:15px;color:var(--dim);margin-top:3px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 #addr.far{color:#fbbf24}
+.warnTri{margin-right:6px;font-size:20px;vertical-align:2px}
+#tagRow{display:flex;gap:6px;flex-wrap:wrap;margin-top:6px}
+#rentTag{font-size:12px;font-weight:800;padding:3px 9px;border-radius:999px;color:#fbbf24;background:rgba(251,191,36,.15);border:1px solid rgba(251,191,36,.5);white-space:nowrap}
 #swapWrap{position:absolute;right:8px;top:8px;display:flex;gap:6px}
 .mini-btn{background:var(--card2);border:1px solid var(--line);border-radius:10px;padding:7px 10px;font-size:12px;color:var(--dim);font-weight:600}
-#alreadyTag{display:inline-block;margin-top:6px;font-size:12px;font-weight:700;padding:3px 9px;border-radius:999px}
+#alreadyTag{display:inline-block;font-size:12px;font-weight:700;padding:3px 9px;border-radius:999px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%}
 
-/* ---------- big buttons ---------- */
-#grid{flex:1 1 auto;display:grid;grid-template-columns:1fr 1fr;grid-template-rows:1fr 1fr;gap:10px;padding:0 10px;min-height:0}
-.act{border-radius:20px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;font-weight:800;letter-spacing:-.3px;color:#fff;box-shadow:inset 0 -4px 0 rgba(0,0,0,.22);transition:transform .06s ease,filter .06s ease;text-align:center;padding:6px}
-.act:active{transform:scale(.96);filter:brightness(1.18)}
-.act .big{font-size:clamp(19px,5.4vw,27px);line-height:1.05}
-.act .sub{font-size:11px;font-weight:600;opacity:.82;letter-spacing:.3px;text-transform:uppercase}
-.act .ico{font-size:26px;line-height:1}
+/* ---------- big buttons with a radial map hub in the middle ---------- */
+:root{ --hub: clamp(124px, 41vw, 176px); }
+#gridWrap{flex:1 1 auto;position:relative;padding:0 10px;min-height:0;display:flex}
+#grid{flex:1;display:grid;grid-template-columns:1fr 1fr;grid-template-rows:1fr 1fr;gap:10px;min-height:0}
+.act{border-radius:20px;display:flex;flex-direction:column;gap:3px;font-weight:800;letter-spacing:-.3px;color:#fff;box-shadow:inset 0 -4px 0 rgba(0,0,0,.22);transition:transform .06s ease,filter .06s ease;padding:14px}
+.act:active{transform:scale(.97);filter:brightness(1.18)}
+.act .big{font-size:clamp(17px,4.9vw,24px);line-height:1.03}
+.act .sub{font-size:10.5px;font-weight:600;opacity:.82;letter-spacing:.3px;text-transform:uppercase;line-height:1.15}
+.act .ico{font-size:22px;line-height:1}
+/* content sits in each button's OUTER corner so the hub never covers a word */
+#b-talked  {justify-content:flex-start;align-items:flex-start;text-align:left}
+#b-material{justify-content:flex-start;align-items:flex-end;  text-align:right}
+#b-noanswer{justify-content:flex-end;  align-items:flex-start;text-align:left}
+#b-dnr     {justify-content:flex-end;  align-items:flex-end;  text-align:right}
+
+#hub{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);
+  width:var(--hub);height:var(--hub);border-radius:50%;overflow:hidden;
+  border:7px solid var(--bg);box-shadow:0 0 0 2px var(--line),0 6px 18px rgba(0,0,0,.55);
+  background:#0f151d;z-index:5}
+#hub.parking{box-shadow:0 0 0 3px #f472b6,0 0 22px rgba(244,114,182,.6)}
+#hub canvas{width:100%;height:100%;display:block}
+#hubLabel{position:absolute;left:0;right:0;bottom:0;font-size:8.5px;letter-spacing:.5px;
+  text-align:center;background:rgba(0,0,0,.6);color:#cbd5e1;padding:3px 0 4px;font-weight:800}
+#hubN{position:absolute;top:3px;left:50%;transform:translateX(-50%);font-size:8px;font-weight:900;
+  color:rgba(255,255,255,.55);letter-spacing:.5px}
 #b-talked{background:var(--talked)} #b-material{background:var(--material)}
 #b-noanswer{background:var(--noanswer)} #b-dnr{background:var(--dnr)}
 
@@ -68,10 +89,6 @@ input,textarea,select{font:inherit;color:var(--txt);background:var(--card2);bord
 .bbtn{flex:1;background:var(--card);border:1px solid var(--line);border-radius:16px;height:84px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;font-size:12px;font-weight:700;color:var(--dim)}
 .bbtn .ico{font-size:20px}
 .bbtn:active{background:var(--card2)}
-#miniWrap{flex:0 0 auto;width:112px;height:112px;border-radius:20px;overflow:hidden;border:1px solid var(--line);background:#0f151d;position:relative}
-#miniWrap.parking{border-color:#f472b6;box-shadow:0 0 0 3px rgba(244,114,182,.35)}
-#mini{width:100%;height:100%;display:block}
-#miniLabel{position:absolute;left:0;right:0;bottom:0;font-size:9px;text-align:center;background:rgba(0,0,0,.55);color:#cbd5e1;padding:2px 0;font-weight:700;letter-spacing:.4px}
 
 /* ---------- toast ---------- */
 #toast{position:fixed;left:8px;right:8px;top:calc(var(--safe-t) + 6px);z-index:60;background:#0f172a;border:1px solid var(--line);border-radius:16px;padding:10px 12px;display:flex;align-items:center;gap:10px;box-shadow:0 12px 32px rgba(0,0,0,.6);transform:translateY(-140%);transition:transform .22s cubic-bezier(.2,.9,.3,1)}
@@ -129,7 +146,8 @@ label.f{display:block;margin:12px 0 5px;font-size:12px;font-weight:800;color:var
 .dayRow .del{background:var(--card2);border:1px solid var(--line);border-radius:9px;padding:6px 9px;font-size:13px}
 #eraseBar{position:absolute;top:calc(var(--safe-t) + 60px);left:8px;right:8px;z-index:600;background:rgba(220,38,38,.95);border-radius:14px;padding:11px 13px;display:flex;align-items:center;gap:10px;font-weight:800;font-size:13px;box-shadow:0 8px 24px rgba(0,0,0,.5)}
 #eraseBar .mbtn{margin-left:auto;background:rgba(0,0,0,.35)}
-.owner-label{font-size:10px;font-weight:700;color:#fff;text-shadow:0 0 3px #000,0 0 3px #000,0 1px 2px #000;white-space:nowrap;pointer-events:none}
+.owner-label{font-size:10px;font-weight:700;color:#fff;text-shadow:0 0 3px #000,0 0 3px #000,0 1px 2px #000;white-space:nowrap;pointer-events:none;transform:translate(-50%,-50%);display:inline-block;text-align:center}
+.rentwarn{filter:drop-shadow(0 0 2px #000)}
 .leaflet-container{background:#0b0f14}
 
 /* ---------- start gate ---------- */
@@ -162,20 +180,25 @@ label.f{display:block;margin:12px 0 5px;font-size:12px;font-weight:800;color:var
     </div>
     <div id="addr">Getting location…</div>
     <div id="owner">—</div>
-    <div id="alreadyTag" class="hide"></div>
+    <div id="tagRow">
+      <span id="rentTag" class="hide">⚠️ likely rental</span>
+      <span id="alreadyTag" class="hide"></span>
+    </div>
   </div>
 
-  <div id="grid">
-    <button class="act" id="b-talked"  data-s="talked">   <span class="ico">🗣️</span><span class="big">Talked</span><span class="sub">spoke to someone</span></button>
-    <button class="act" id="b-material" data-s="material"><span class="ico">📄</span><span class="big">Left Material</span><span class="sub">door hanger / card</span></button>
-    <button class="act" id="b-noanswer" data-s="noanswer"><span class="ico">🚪</span><span class="big">No Answer</span><span class="sub">nobody home</span></button>
-    <button class="act" id="b-dnr"      data-s="dnr">     <span class="ico">⛔</span><span class="big">Don't Come Back</span><span class="sub">do not return</span></button>
+  <div id="gridWrap">
+    <div id="grid">
+      <button class="act" id="b-talked"  data-s="talked">   <span class="ico">🗣️</span><span class="big">Talked</span><span class="sub">spoke to someone</span></button>
+      <button class="act" id="b-material" data-s="material"><span class="ico">📄</span><span class="big">Left Material</span><span class="sub">door hanger / card</span></button>
+      <button class="act" id="b-noanswer" data-s="noanswer"><span class="ico">🚪</span><span class="big">No Answer</span><span class="sub">nobody home</span></button>
+      <button class="act" id="b-dnr"      data-s="dnr">     <span class="ico">⛔</span><span class="big">Don't Come Back</span><span class="sub">do not return</span></button>
+    </div>
+    <div id="hub"><canvas id="mini"></canvas><div id="hubN">N</div><div id="hubLabel">HOLD TO PARK</div></div>
   </div>
 
   <div id="bottom">
     <button class="bbtn" id="detailBtn"><span class="ico">✎</span>Details</button>
     <button class="bbtn" id="undoBtn"><span class="ico">↩︎</span>Undo</button>
-    <div id="miniWrap"><canvas id="mini"></canvas><div id="miniLabel">MAP · HOLD TO PARK</div></div>
   </div>
 </div>
 
@@ -318,31 +341,54 @@ const COUNTIES = [
   { key:'franklin', name:'Franklin',
     url:'https://gis.franklincountyohio.gov/hosting/rest/services/ParcelFeatures/Parcel_Features/MapServer/0',
     owner:['OWNERNME1','OWNERNME2'], addr:'SITEADDRESS', pid:'PARCELID',
-    extra:['ZIPCD','RESYRBLT','CLASSDSCRP'], where:'1=1', bbox:[-83.25,39.79,-82.76,40.16] },
+    extra:['ZIPCD','RESYRBLT','CLASSDSCRP','MAILNME1','MAILNME2','OWNEROCCUPIED','HOMSTD','RENTAL'],
+    where:'1=1', bbox:[-83.25,39.79,-82.76,40.16],
+    occ:{ mail:a=>a.MAILNME1, mailCity:a=>a.MAILNME2, mailName:null,
+          // OWNEROCCUPIED='N' only means they never filed for the tax credit, so it is
+          // not evidence of a rental on its own. RENTAL='Y' is an actual auditor flag.
+          flag:a=> a.RENTAL==='Y' ? 'rental' : a.OWNEROCCUPIED==='Y' ? 'owner' : null } },
   { key:'delaware', name:'Delaware',
     url:'https://maps.delco-gis.org/arcgiswebadaptor/rest/services/DelawareCountyData/MapServer/0',
     owner:['OWNER1','OWNER2'], addr:'ADDR1', pid:'PARCEL_NO',
-    extra:['MUN_NAME','YRBUILT','CLASS'], where:'OBJECTID>0', bbox:[-83.25,40.14,-82.73,40.44] },
+    extra:['MUN_NAME','YRBUILT','CLASS','MAILNAME1','MAILADDR1','MAILADDR2'],
+    where:'OBJECTID>0', bbox:[-83.25,40.14,-82.73,40.44],
+    // Delaware routes tax mail to the mortgage servicer (COTALITY etc.) on any financed
+    // home, so the mailing name has to be checked against the owner or every mortgaged
+    // owner-occupied house reads as a rental.
+    occ:{ mail:a=>a.MAILADDR1, mailCity:a=>a.MAILADDR2, mailName:a=>a.MAILNAME1, flag:null } },
   { key:'union', name:'Union',
     url:'https://www7.co.union.oh.us/unioncountyohio/rest/services/parcel/MapServer/0',
     owner:['Owner'], addr:'Address', pid:'ACCOUNT',
-    extra:['city','ZipCode','ParcelClass'], where:'1=1', bbox:[-83.65,40.12,-83.16,40.50] },
+    extra:['city','ZipCode','ParcelClass','GISNO'], where:'1=1', bbox:[-83.65,40.12,-83.16,40.50],
+    // Union keeps mailing addresses in a sibling service; joined on GISNO at fetch time.
+    mailJoin:{ url:'https://www7.co.union.oh.us/unioncountyohio/rest/services/parcelOwnerAcreageNBHDpClass/MapServer/0',
+               key:'GISNO', fields:['GISNO','mailAddress1','mailCity','mailZip'] },
+    occ:{ mail:a=>a._mailAddress1, mailCity:a=>a._mailCity, mailName:null, flag:null } },
   { key:'madison', name:'Madison',
     url:'https://services1.arcgis.com/Wz3RgwtkgJCGuhMd/arcgis/rest/services/parcel_joined/FeatureServer/0',
     owner:['PPOwner'], addr:'PPAddress_1', pid:'TAXPIN',
-    extra:['PPYearBuilt','PPTotalValue'], where:'1=1', bbox:[-83.66,39.70,-83.13,40.10] },
+    extra:['PPYearBuilt','PPTotalValue','PPOwnerAddress'], where:'1=1', bbox:[-83.66,39.70,-83.13,40.10],
+    // PPOwnerAddress is the owner's own address. PPTaxPayerAddress is the servicer, ignore it.
+    occ:{ mail:a=>a.PPOwnerAddress, mailCity:null, mailName:null, flag:null } },
   { key:'licking', name:'Licking',
     url:'https://gis.lickingcounty.gov/server/rest/services/Auditor/Parcels/FeatureServer/0',
     owner:['OwnerName'], addr:'SiteAddress', pid:'Parcel',
-    extra:['SitePostalCity','SitePostalZip','YearBuilt'], where:'1=1', bbox:[-82.80,39.90,-82.19,40.32] },
+    extra:['SitePostalCity','SitePostalZip','YearBuilt','OwnerAddress','OwnerCity','OwnerOccupied','Homestead'],
+    where:'1=1', bbox:[-82.80,39.90,-82.19,40.32],
+    occ:{ mail:a=>a.OwnerAddress, mailCity:a=>a.OwnerCity, mailName:null,
+          flag:a=> a.OwnerOccupied==='No' ? 'rental' : a.OwnerOccupied==='Yes' ? 'owner' : null } },
   { key:'fairfield', name:'Fairfield',
     url:'https://gis.co.fairfield.oh.us/arcgis/rest/services/OpenData/ParcelBoundaries/MapServer/0',
     owner:['OWN1','OWN2'], addr:'PADDR1', pid:'PARID',
-    extra:['YRBLT','CLASS'], where:'1=1', bbox:[-82.95,39.52,-82.38,39.98] },
+    extra:['YRBLT','CLASS','MADDR1','MADDR2','MCITYNAME'], where:'1=1', bbox:[-82.95,39.52,-82.38,39.98],
+    // a leading % means MADDR1 is a care-of line and the street is on MADDR2
+    occ:{ mail:a=> (a.MADDR1||'').trim().startsWith('%') ? a.MADDR2 : a.MADDR1,
+          mailCity:a=>a.MCITYNAME, mailName:null, flag:null } },
   { key:'pickaway', name:'Pickaway',
     url:'https://services6.arcgis.com/FhJ42byMw3LmPYCN/arcgis/rest/services/Parcels_Search/FeatureServer/1',
     owner:['OWNER'], addr:'ADDRESS', pid:'PARCELID',
-    extra:['PPAcres'], where:'1=1', bbox:[-83.28,39.40,-82.75,39.83] },
+    extra:['PPAcres','PPOwnerAdd','PPOwnerA_2'], where:'1=1', bbox:[-83.28,39.40,-82.75,39.83],
+    occ:{ mail:a=>a.PPOwnerAdd, mailCity:a=>a.PPOwnerA_2, mailName:null, flag:null } },
 ];
 
 const STATUS = {
@@ -367,6 +413,93 @@ function dayColor(day) {
   const epochDay = Math.floor(Date.parse(day + 'T12:00:00') / 86400000);
   const i = ((epochDay * 3) % 10 + 10) % 10;
   return `hsl(${i * 36} 82% ${i % 2 ? 52 : 67}%)`;
+}
+
+/* ---------------- likely-rental detection ----------------
+   The auditor's mailing address is the best free signal for non-owner-occupied
+   property, but it is noisy in two specific ways that have to be handled or the
+   warning is worse than useless:
+     1. Mortgage escrow servicers (Cotality, CoreLogic, Lereta) receive the tax
+        bill for financed homes, so an owner-occupied house shows an out-of-state
+        corporate address. Guarded by comparing the mailing NAME to the owner.
+     2. A PO box owner still lives at the property. Treated as unknown.
+   Anything uncertain shows no warning at all. A false "rental" costs more than
+   a missed one, because it changes how Travis opens the conversation. */
+const STREET_NOISE = /\b(N|S|E|W|NE|NW|SE|SW|NORTH|SOUTH|EAST|WEST|RD|ROAD|ST|STREET|DR|DRIVE|LN|LANE|CT|COURT|CIR|CIRCLE|AVE|AVENUE|BLVD|PL|PLACE|TER|TRL|WAY|HWY|PKWY|APT|UNIT|STE)\b/g;
+/** "177 CHASELY CIR" and "177 W CHASELY CIRCLE" both reduce to "177 CHASELY" */
+function addrKey(s) {
+  if (!s) return '';
+  let t = String(s).toUpperCase().replace(/[.,#]/g, ' ').replace(/-/g, ' ');
+  t = t.replace(/\bOH\b\s*$/, '').replace(STREET_NOISE, ' ').replace(/\s+/g, ' ').trim();
+  const m = t.match(/^(\d+)\s+([A-Z0-9]+)/);
+  if (m) return m[1] + ' ' + m[2];
+  return t.split(' ').slice(0, 2).join(' ');
+}
+const nameKey = s => String(s || '').toUpperCase().replace(/[^A-Z ]/g, ' ').replace(/\s+/g, ' ').trim();
+function namesLookRelated(a, b) {
+  const A = nameKey(a).split(' ').filter(w => w.length > 2);
+  const B = nameKey(b).split(' ').filter(w => w.length > 2);
+  if (!A.length || !B.length) return true;          // nothing to compare, don't block
+  return A.some(w => B.includes(w));                 // one shared surname is enough
+}
+/** returns {v:'rental'|'owner'|null, mail:string, why:string} */
+function assessOccupancy(c, a, siteAddr) {
+  const cfg = c.occ;
+  if (!cfg) return { v:null, mail:'', why:'no mailing data for this county' };
+
+  const flag = cfg.flag ? cfg.flag(a) : null;
+  const rawMail = (cfg.mail ? cfg.mail(a) : '') || '';
+  const mailCity = (cfg.mailCity ? cfg.mailCity(a) : '') || '';
+  const mail = [rawMail, mailCity].map(s => String(s).trim()).filter(s => s && s !== '0').join(', ');
+
+  if (flag) return { v:flag, mail, why:'county auditor occupancy flag' };
+
+  const street = String(rawMail).trim();
+  if (!street || street === '0') return { v:null, mail, why:'no mailing address on file' };
+  if (/\bP\.?\s?O\.?\s?BOX\b/i.test(street)) return { v:null, mail, why:'owner uses a PO box' };
+
+  if (cfg.mailName) {
+    const mn = cfg.mailName(a);
+    if (mn && !namesLookRelated(mn, a[c.owner[0]]))
+      return { v:null, mail, why:'tax bill goes to a third party, likely a mortgage servicer' };
+  }
+  const same = addrKey(street) === addrKey(siteAddr);
+  if (!addrKey(street) || !addrKey(siteAddr)) return { v:null, mail, why:'address could not be read' };
+  return { v: same ? 'owner' : 'rental', mail,
+           why: same ? 'owner mail comes here' : 'owner mail goes elsewhere' };
+}
+
+/* ---------------- building footprints (FEMA USA Structures) ----------------
+   One nationwide public layer. Returns precomputed interior points, so no
+   geometry has to cross the wire. Used to place the owner's name on the house
+   rather than at the lot's average centre, which lands in a pond on the big
+   irregular lots. */
+const BUILDINGS_URL = 'https://services2.arcgis.com/FiaPA4ga0iQKduv3/arcgis/rest/services/USA_Structures_View/FeatureServer/0';
+async function fetchBuildings(w, s, e, n) {
+  const params = new URLSearchParams({
+    f:'json', where:"1=1", geometry:`${w},${s},${e},${n}`, geometryType:'esriGeometryEnvelope',
+    inSR:'4326', outSR:'4326', spatialRel:'esriSpatialRelIntersects',
+    outFields:'LONGITUDE,LATITUDE,SQFEET,OCC_CLS,OUTBLDG', returnGeometry:'false', resultRecordCount:'2000' });
+  const r = await fetch(`${BUILDINGS_URL}/query?` + params, {mode:'cors'});
+  const j = await r.json();
+  return (j.features || []).map(f => f.attributes)
+    .filter(a => a && a.LONGITUDE != null && a.LATITUDE != null);
+}
+/** pick the biggest non-outbuilding sitting inside each lot */
+function attachHouses(parcels, buildings) {
+  if (!buildings.length) return;
+  for (const p of parcels) {
+    let best = null;
+    for (const b of buildings) {
+      if (b.LONGITUDE < p.bbox[0] || b.LONGITUDE > p.bbox[2] ||
+          b.LATITUDE  < p.bbox[1] || b.LATITUDE  > p.bbox[3]) continue;
+      if (!pointInRings(b.LONGITUDE, b.LATITUDE, p.rings)) continue;
+      if (b.OUTBLDG) continue;                       // sheds, detached garages
+      if ((b.SQFEET || 0) < 380) continue;           // too small to be the house
+      if (!best || (b.SQFEET || 0) > (best.SQFEET || 0)) best = b;
+    }
+    if (best) p.house = [best.LONGITUDE, best.LATITUDE];
+  }
 }
 
 /* ---------------- tiny IndexedDB wrapper ---------------- */
@@ -526,7 +659,7 @@ const TILE = 0.006; // ~0.66 km lat, ~0.51 km lon at 40°N
 /* Bump PARSE_V whenever the county field mapping or attribute parsing changes.
    Cached tiles hold PARSED parcels, so without this an old cache would keep
    serving the old interpretation forever and a fix would never reach anyone. */
-const PARSE_V = 2;
+const PARSE_V = 3;
 const tileKey = (c, lat, lon) => `v${PARSE_V}:${c.key}:${Math.floor(lat/TILE)}:${Math.floor(lon/TILE)}`;
 async function purgeStaleTiles() {
   try {
@@ -573,6 +706,7 @@ async function fetchTile(c, lat, lon, silent) {
       j = await res.json();
       j = { features: (j.features||[]).map(f => ({ properties:f.attributes, geometry:{rings:f.geometry && f.geometry.rings} })) };
     }
+    const attrs = [];
     for (const f of (j.features||[])) {
       const rings = esriToRings(f.geometry);
       if (!rings || !rings.length) continue;
@@ -586,9 +720,40 @@ async function fetchTile(c, lat, lon, silent) {
                            .filter(v => !blank(v)).join(' & ');
       const addr = (a[c.addr] || '').toString().trim();
       const extra = {}; c.extra.forEach(k => { if (a[k] != null && String(a[k]).trim()) extra[k] = a[k]; });
-      out.push({ key:`${c.key}:${pid}`, county:c.key, pid, owner, addr, extra, rings,
-                 bbox:ringsBBox(rings), cen:ringsCentroid(rings) });
+      const p = { key:`${c.key}:${pid}`, county:c.key, pid, owner, addr, extra, rings,
+                  bbox:ringsBBox(rings), cen:ringsCentroid(rings) };
+      out.push(p); attrs.push(a);
     }
+
+    // Union keeps mailing addresses in a sibling service. Join it on before assessing.
+    if (c.mailJoin && out.length) {
+      try {
+        const mp = new URLSearchParams({ ...base, f:'json',
+          outFields:c.mailJoin.fields.join(','), returnGeometry:'false' });
+        const mr = await fetch(`${c.mailJoin.url}/query?` + mp, {mode:'cors'});
+        const mj = await mr.json();
+        const byKey = new Map();
+        (mj.features||[]).forEach(f => {
+          const at = f.attributes || {};
+          const k = String(at[c.mailJoin.key] ?? '').trim();
+          if (k) byKey.set(k, at);
+        });
+        attrs.forEach(a => {
+          const m = byKey.get(String(a[c.mailJoin.key] ?? '').trim());
+          if (m) Object.keys(m).forEach(k => { a['_' + k] = m[k]; });
+        });
+      } catch (e) { /* mailing join is optional, never block the parcels */ }
+    }
+
+    out.forEach((p, i) => {
+      const r = assessOccupancy(c, attrs[i], p.addr);
+      p.occ = r.v; p.mail = r.mail; p.occWhy = r.why;
+    });
+
+    // put the owner's name on the house instead of the middle of the lot
+    try { attachHouses(out, await fetchBuildings(w, s, e, n)); }
+    catch (e) { /* footprints are a nicety; parcels still work without them */ }
+
     state.netErr = '';
     DB.put('tiles', {key, ts:Date.now(), parcels:out}).catch(()=>{});
   } catch (err) {
@@ -687,14 +852,17 @@ function renderHouse() {
   if (!c) {
     $('addr').textContent = state.parcels.size ? 'No lot nearby' : 'Loading lot lines…';
     $('owner').textContent = state.netErr ? 'No signal — parcels unavailable here' : '—';
-    $('alreadyTag').classList.add('hide');
+    $('alreadyTag').classList.add('hide'); $('rentTag').classList.add('hide');
     drawMini(); return;
   }
   const p = c.p;
-  $('addr').textContent = p.addr || '(no address on file)';
+  const rental = p.occ === 'rental';
+  $('addr').innerHTML = (rental ? '<span class="warnTri">⚠️</span>' : '') + esc(p.addr || '(no address on file)');
   $('addr').classList.toggle('far', c.d > state.snapMax);
   const yr = p.extra.RESYRBLT || p.extra.YRBUILT || p.extra.YearBuilt || p.extra.YRBLT || p.extra.PPYearBuilt;
+  fitAddr();
   $('owner').textContent = (p.owner || 'Owner not listed') + (yr ? ` · built ${yr}` : '') + ` · ${Math.round(c.d)}m`;
+  $('rentTag').classList.toggle('hide', !rental);
   const v = visitFor(p.key);
   const other = visitFor(p.key, state.line === 'roof' ? 'appraisal' : 'roof');
   const tag = $('alreadyTag');
@@ -712,6 +880,15 @@ function renderHouse() {
     tag.style.color = LINES[other.line].color;
   } else tag.classList.add('hide');
   drawMini();
+}
+/* Long addresses plus the warning glyph would ellipsis away the street name,
+   which is the one thing that has to stay readable. Shrink to fit instead. */
+function fitAddr() {
+  const el = $('addr');
+  for (let size = 26; size >= 15; size--) {
+    el.style.fontSize = size + 'px';
+    if (el.scrollWidth <= el.clientWidth) break;
+  }
 }
 function timeAgo(ts) {
   const s = (Date.now()-ts)/1000;
@@ -734,7 +911,7 @@ function drawMini() {
   g.fillStyle = '#0f151d'; g.fillRect(0,0,w,h);
   if (!state.pos) return;
   const {lat, lon} = state.pos;
-  const span = 120; // metres shown across the mini map
+  const span = 140; // metres shown across the hub map
   const kx = mPerDegLon(lat), ky = mPerDegLat;
   const sc = w / span;
   const X = p => w/2 + (p[0]-lon)*kx*sc;
@@ -792,6 +969,7 @@ async function mark(status) {
     key: p.key, county: p.county, pid: p.pid, status, line: state.line,
     ts: Date.now(), lat: state.pos.lat, lon: state.pos.lon, acc: state.pos.acc,
     dist: Math.round(c.d), owner: p.owner, addr: p.addr, extra: p.extra,
+    occ: p.occ || null, mail: p.mail || '',
     name:'', phone:'', email:'', notes:'', tags:[], follow:'',
   };
   // carry contact details forward, but only from the same book of business
@@ -842,7 +1020,7 @@ function openCandidates() {
     const el = document.createElement('div');
     el.className = 'cand';
     el.innerHTML = `<div class="sw" style="background:${v?STATUS[v.status].color:'#37475c'}"></div>
-      <div class="t"><div class="a">${esc(c.p.addr || '(no address)')}</div>
+      <div class="t"><div class="a">${c.p.occ==='rental'?'⚠️ ':''}${esc(c.p.addr || '(no address)')}</div>
       <div class="o">${esc(c.p.owner || 'owner not listed')}${v?' · '+STATUS[v.status].short:''}</div></div>
       <div class="d">${Math.round(c.d)}m</div>`;
     el.onclick = () => { state.candIndex = i; pinHouse(c.p.key); renderHouse(); closeSheet('candSheet'); buzz(15); };
@@ -904,6 +1082,7 @@ function openDetail(visit) {
         v = { id:'v'+Date.now()+Math.random().toString(36).slice(2,6), key:c.p.key, county:c.p.county, line:state.line,
               pid:c.p.pid, status:'talked', ts:Date.now(), lat:state.pos.lat, lon:state.pos.lon,
               acc:state.pos.acc, dist:Math.round(c.d), owner:c.p.owner, addr:c.p.addr, extra:c.p.extra,
+              occ:c.p.occ||null, mail:c.p.mail||'',
               name:'', phone:'', email:'', notes:'', tags:[], follow:'', _new:true };
       }
     }
@@ -912,8 +1091,16 @@ function openDetail(visit) {
   editing = v;
   $('dTitle').textContent = v.addr || 'Lot ' + v.pid;
   const ln = LINES[v.line || 'roof'];
+  const par = state.parcels.get(v.key);
+  const occ = v.occ || (par && par.occ) || null;
+  const mail = v.mail || (par && par.mail) || '';
+  const why = par && par.occWhy;
   $('dSub').innerHTML = `<span style="color:${ln.color};font-weight:800">${ln.short}</span> · `
-    + esc(v.owner || 'owner not listed') + ' · ' + esc((COUNTIES.find(c=>c.key===v.county)||{}).name || '?') + ' Co.';
+    + esc(v.owner || 'owner not listed') + ' · ' + esc((COUNTIES.find(c=>c.key===v.county)||{}).name || '?') + ' Co.'
+    + (occ === 'rental'
+        ? `<div style="margin-top:6px;color:#fbbf24;font-weight:700">⚠️ Likely a rental. Owner's mail goes to ${esc(mail || 'another address')}.</div>`
+        : mail ? `<div style="margin-top:6px;color:var(--dim)">Owner mail: ${esc(mail)}${occ==='owner'?' (same address)':''}</div>`
+               : (why ? `<div style="margin-top:6px;color:var(--dim)">Occupancy unknown: ${esc(why)}.</div>` : ''));
   $('dName').value = v.name||''; $('dPhone').value = v.phone||'';
   $('dEmail').value = v.email||''; $('dNotes').value = v.notes||''; $('dFollow').value = v.follow||'';
   const sw = $('dStatus'); sw.innerHTML = '';
@@ -1063,12 +1250,15 @@ function refreshMapLayers() {
         const ex = visitFor(p.key, state.line) || alt;
         openDetail(ex || { id:'v'+Date.now()+Math.random().toString(36).slice(2,6), key:p.key, county:p.county,
           pid:p.pid, status:'noanswer', line:state.line, ts:Date.now(), lat:p.cen[1], lon:p.cen[0], acc:0, dist:0,
-          owner:p.owner, addr:p.addr, extra:p.extra, name:'',phone:'',email:'',notes:'',tags:[],follow:'', _new:true });
+          owner:p.owner, addr:p.addr, extra:p.extra, occ:p.occ||null, mail:p.mail||'',
+          name:'',phone:'',email:'',notes:'',tags:[],follow:'', _new:true });
       });
       pl.addLayer(poly);
       if (mapOpts.names && z >= 18 && p.owner) {
-        ll.addLayer(L.marker([p.cen[1], p.cen[0]], { interactive:false, icon: L.divIcon({
-          className:'', html:`<div class="owner-label">${esc(shortOwner(p.owner))}${p.addr?'<br>'+esc(p.addr.split(' ')[0]):''}</div>`,
+        const at = p.house || p.cen;   // on the house when we know where it is
+        const warn = p.occ === 'rental' ? '<span class="rentwarn">⚠️</span> ' : '';
+        ll.addLayer(L.marker([at[1], at[0]], { interactive:false, icon: L.divIcon({
+          className:'', html:`<div class="owner-label">${warn}${esc(shortOwner(p.owner))}${p.addr?'<br>'+esc(p.addr.split(' ')[0]):''}</div>`,
           iconSize:[0,0] }) }));
       }
     }
@@ -1219,13 +1409,14 @@ function visitsFor(o) {
 function exportCsv(o) {
   const rows = visitsFor(o);
   if (!rows.length) { flashToast('Nothing matches those options','','#64748b'); return; }
-  const head = ['Date','Time','Work','Status','Address','Owner','County','Parcel ID','Contact name','Phone','Email','Tags','Follow up','Notes','Year built','Latitude','Longitude','GPS accuracy m','Distance to lot m'];
+  const head = ['Date','Time','Work','Status','Address','Owner','Likely rental','Owner mailing address','County','Parcel ID','Contact name','Phone','Email','Tags','Follow up','Notes','Year built','Latitude','Longitude','GPS accuracy m','Distance to lot m'];
   const yr = v => v.extra && (v.extra.RESYRBLT||v.extra.YRBUILT||v.extra.YearBuilt||v.extra.YRBLT||v.extra.PPYearBuilt) || '';
   const lines = [head.map(q).join(',')];
   rows.forEach(v => {
     const d = new Date(v.ts);
     lines.push([d.toLocaleDateString(), d.toLocaleTimeString(), LINES[v.line||'roof'].label,
       STATUS[v.status].label, v.addr, v.owner,
+      v.occ === 'rental' ? 'YES' : v.occ === 'owner' ? 'no' : '', v.mail || '',
       (COUNTIES.find(c=>c.key===v.county)||{}).name, v.pid, v.name, v.phone, v.email,
       (v.tags||[]).join('; '), v.follow, v.notes, yr(v),
       v.lat.toFixed(6), v.lon.toFixed(6), Math.round(v.acc||0), v.dist].map(q).join(','));
@@ -1410,7 +1601,8 @@ $('truckPill').onclick = openMap;
 /* Mini map: tap opens the big map, press-and-hold parks the truck.
    The hold must cancel the tap, or you would get a map every time you park. */
 (() => {
-  const el = $('miniWrap');
+  const el = $('hub');
+  if (!el) return;
   let timer = null, held = false, sx = 0, sy = 0;
   const start = e => {
     held = false;
