@@ -47,6 +47,15 @@ input,textarea,select{font:inherit;color:var(--txt);background:var(--card2);bord
   border-radius:999px;padding:3px 9px;line-height:1}
 #menuDot{position:absolute;top:0;right:1px;width:9px;height:9px;border-radius:50%;background:#ef4444;
   box-shadow:0 0 0 2px var(--bg)}
+#strip{overflow:hidden}
+#strip .pill{flex:0 1 auto;overflow:hidden;text-overflow:ellipsis}
+#countyPill{min-width:0}
+#menuBtn{flex:0 0 auto;position:relative;display:flex;align-items:center;gap:6px;font-size:20px;
+  padding:4px 4px 4px 10px;color:var(--dim);border-radius:999px}
+#menuCount{font-size:13px;font-weight:800;color:var(--txt);background:var(--card);border:1px solid var(--line);
+  border-radius:999px;padding:3px 9px;line-height:1}
+#menuDot{position:absolute;top:0;right:1px;width:9px;height:9px;border-radius:50%;background:#ef4444;
+  box-shadow:0 0 0 2px var(--bg)}
 #modePill{font-weight:900;letter-spacing:.6px;font-size:11px;padding:5px 11px;border-width:1px;border-style:solid}
 #modePill.roof{background:#08313f;border-color:#0ea5e9;color:#7dd3fc}
 #modePill.appraisal{background:#2e1065;border-color:#a855f7;color:#e9d5ff}
@@ -355,7 +364,8 @@ label.f{display:block;margin:12px 0 5px;font-size:12px;font-weight:800;color:var
         <button id="dAddNote">Add</button>
       </div>
       <button class="primary" id="dSave">Save</button>
-      <button class="ghost danger" id="dDelete">Delete this record</button>
+      <button class="ghost" id="dClear">Clear notes, tags and contact</button>
+      <button class="ghost danger" id="dDelete">Delete everything for this house</button>
     </div>
   </div>
 </div>
@@ -438,6 +448,9 @@ label.f{display:block;margin:12px 0 5px;font-size:12px;font-weight:800;color:var
       <div class="small" id="pinInfo" style="margin-top:6px"></div>
       <label class="f">Keep screen awake</label>
       <div class="chips"><button class="chip" id="mWake">Screen lock off</button></div>
+      <label class="f">Track detail</label>
+      <div class="chips" id="mDetail"></div>
+      <div class="small" style="margin-top:6px">Normal skips points while you stand still, so doors do not collect a knot of dots. Fine records everything, which is what you want for short distances or testing.</div>
       <label class="f">Snap distance</label>
       <div class="chips" id="mSnap"></div>
       <p class="small" style="margin-top:16px">Parcel lines and owner names come from the county auditor GIS for Franklin, Delaware, Union, Madison, Licking, Fairfield and Pickaway counties. Owner name is the tax record — it may lag a recent sale.</p>
@@ -733,6 +746,7 @@ const state = {
   session: null,        // {id, start, line}
   hubSpan: 140,         // metres across the hub map
   hubSat: false,
+  trackDetail: 'normal',
   override: null,      // hand-placed position, {lat, lon, ts}
   heading: null,       // degrees clockwise from true north, 0 = north
   headingSrc: null,    // 'compass' or 'course'
@@ -1045,6 +1059,7 @@ function renderStrip() {
   }
   $('gpsPill').classList.toggle('paused', state.paused);
   $('fixPill').classList.toggle('hide', !state.override);
+  if (!$('menuSheet').classList.contains('hide')) renderDiag();
   $('countyPill').textContent = state.tilesLoading ? 'loading lots…'
       : state.netErr ? '⚠︎ offline'
       : (state.county ? state.county.name + ' Co.' : '—');
@@ -1555,14 +1570,40 @@ async function saveDetail() {
 }
 async function deleteDetail() {
   if (!editing) return;
-  state.visitLog = state.visitLog.filter(x => x.id !== editing.id);
-  await DB.del('visits', editing.id).catch(()=>{});
   const slot = vKey(editing.key, editing.line);
-  const prev = state.visitLog.filter(x => vKey(x.key, x.line) === slot).sort((a,b)=>b.ts-a.ts)[0];
-  if (prev) state.visits.set(slot, prev); else state.visits.delete(slot);
-  if (state.lastVisitId === editing.id) { const r = state.visitLog[state.visitLog.length-1]; state.lastVisitId = r?r.id:null; }
-  editing = null; closeSheet('detailSheet'); buzz(30);
-  renderStrip(); renderHouse(); if (window._map) refreshMapLayers();
+  const mine = state.visitLog.filter(x => vKey(x.key, x.line) === slot);
+  const label = editing.addr || editing.pid;
+  if (!confirm(`Delete EVERYTHING for ${label} in ${LINES[editing.line||'roof'].label}?\n\n`
+    + `${mine.length} record${mine.length===1?'':'s'}, every note, tag, stage and follow-up for this house goes.\n`
+    + `Your walking track is not touched. This cannot be undone.`)) return;
+  for (const v of mine) await DB.del('visits', v.id).catch(()=>{});
+  state.visitLog = state.visitLog.filter(x => vKey(x.key, x.line) !== slot);
+  state.visits.delete(slot);
+  if (mine.some(v => v.id === state.lastVisitId)) {
+    const r = state.visitLog[state.visitLog.length-1];
+    state.lastVisitId = r ? r.id : null;
+  }
+  editing = null; closeSheet('detailSheet'); buzz([30,50,30]);
+  flashToast('House wiped', `${mine.length} record${mine.length===1?'':'s'} removed`, '#ef4444');
+  renderStrip(); renderHouse(); renderStats(); if (window._map) refreshMapLayers();
+}
+/** keep the door marks, throw away everything typed */
+async function clearDetailContent() {
+  if (!editing) return;
+  if (!confirm('Clear the notes, tags, contact details, stage and follow-up for this house?\n\n'
+    + 'The status marks stay, so it still shows on the map as a door you worked.')) return;
+  const slot = vKey(editing.key, editing.line);
+  for (const v of state.visitLog.filter(x => vKey(x.key, x.line) === slot)) {
+    v.name = ''; v.phone = ''; v.email = ''; v.notes = '';
+    v.tags = []; v.dispo = 'new'; v.followAt = null; v.followDone = false;
+    v.log = logOf(v).filter(e => e.kind === 'status');
+    await DB.put('visits', v).catch(()=>{});
+  }
+  editing = state.visits.get(slot) || editing;
+  buzz(25);
+  flashToast('Notes and tags cleared', 'The door marks are still there', '#f59e0b');
+  openDetail(editing);
+  renderStrip(); if (window._map) refreshMapLayers();
 }
 
 /* ---------------- sheets ---------------- */
@@ -2042,13 +2083,23 @@ function startGps() {
     renderStrip(); renderTruck();
     if (dayKey(now) !== state.today) { await flushDay(); state.today = dayKey(now); await loadDay(state.today); }
 
-    /* --- breadcrumbs only while actually moving --- */
+    /* Suppressing points while standing stops the knot of dots at every door,
+       but it must not swallow short walks. So: always mark the moment you stop
+       and the moment you set off again, keep the distance gate small, and let
+       Fine detail switch the suppression off entirely for close-in work. */
+    const fine = state.trackDetail === 'fine';
+    const minMove = fine ? 1.5 : 3;
+    const minGap  = fine ? 2000 : 3000;
+    const startedMoving = wasStill && !state.still;
+    const justStopped   = !wasStill && state.still;
     const last = state.track[state.track.length-1];
     const moved = last ? haversine(last.lat, last.lon, state.pos.lat, state.pos.lon) : Infinity;
-    if (!state.still && (!last || (now - lastTrack > 4000 && moved > 6) || moved > 12)) {
+    const allowed = fine || !state.still || startedMoving || justStopped;
+    if (allowed && (!last || startedMoving || justStopped || (now - lastTrack > minGap && moved > minMove))) {
       lastTrack = now;
       pushTrackPoint(state.pos.lat, state.pos.lon, now);
     }
+    state.lastMoved = moved; state.lastSpeed = speed;
 
     await ensureParcels(state.pos.lat, state.pos.lon);
     recompute(); drawMini();
@@ -2140,6 +2191,16 @@ function renderStats() {
     <div class="stat"><b style="color:${LINES.appraisal.color}">${lineTotal('appraisal')}</b>appraisal all time</div>`;
   document.querySelectorAll('.statsbox').forEach(el => el.innerHTML = html);
 }
+function renderDetailChips() {
+  const el = $('mDetail'); el.innerHTML = '';
+  [['normal','Normal'],['fine','Fine']].forEach(([v,label]) => {
+    const b = document.createElement('button');
+    b.className = 'chip' + (state.trackDetail === v ? ' on' : ''); b.textContent = label;
+    b.onclick = () => { state.trackDetail = v; localStorage.setItem('trackDetail', v); renderDetailChips();
+      flashToast(v === 'fine' ? 'Fine detail on' : 'Normal detail', v === 'fine' ? 'Every step recorded' : '', '#38bdf8'); };
+    el.appendChild(b);
+  });
+}
 function renderSnapChips() {
   const el = $('mSnap'); el.innerHTML = '';
   [25,45,70,120].forEach(m => {
@@ -2218,7 +2279,7 @@ $('truckPill').onclick = openMap;
 })();
 $('toastUndo').onclick = undoLast;
 $('toastSwap').onclick = reassignLast;
-$('menuBtn').onclick = () => { renderStats(); renderSnapChips(); renderDiag(); renderParkInfo(); renderBackupNag(); renderPinInfo(); openSheet('menuSheet'); };
+$('menuBtn').onclick = () => { renderStats(); renderSnapChips(); renderDetailChips(); renderDiag(); renderParkInfo(); renderBackupNag(); renderPinInfo(); openSheet('menuSheet'); };
 $('mCrm').onclick = openCrm;
 $('crmIcs').onclick = () => addToCalendar(dueList());
 $('dIcs').onclick = () => { pullDetail(); addToCalendar([editing]); };
@@ -2253,6 +2314,7 @@ document.addEventListener('visibilitychange', () => {
 $('dSave').onclick = saveDetail;
 $('dAddNote').onclick = addLogNote;
 $('dDelete').onclick = deleteDetail;
+$('dClear').onclick = clearDetailContent;
 $('mExport').onclick = () => { renderExport(); openSheet('exportSheet'); };
 $('xGo').onclick = () => {
   if (!visitsFor(xOpts).length) return;
@@ -2336,8 +2398,19 @@ async function testConnections() {
 }
 
 function renderDiag() {
-  $('diag').innerHTML = `Lots cached: ${state.parcels.size} · records: ${state.visitLog.length} · track days: ${state.days.size} · today's breadcrumbs: ${state.track.length}`
-    + (state.netErr ? `<br>Last network error: ${esc(state.netErr)}` : '');
+  const pp = state.pos;
+  const rows = [
+    `Lots cached: ${state.parcels.size} · records: ${state.visitLog.length} · track days: ${state.days.size}`,
+    `Breadcrumbs today: <b style="color:var(--txt)">${state.track.length}</b> · detail: ${state.trackDetail}`,
+    pp ? `Fix: ±${Math.round(pp.acc)} m smoothed, ±${Math.round(pp.raw || 0)} m raw · ${state.fixes.length} recent` : 'No fix yet',
+    `Speed: ${(state.lastSpeed || 0).toFixed(2)} m/s · ${state.still ? '<b style="color:#fbbf24">standing</b>' : 'moving'}`
+      + (state.paused ? ' · <b style="color:#fbbf24">PAUSED</b>' : ''),
+    `Last step measured: ${state.lastMoved == null ? '—' : Math.round(state.lastMoved) + ' m'}`
+      + (state.override ? ' · position set by hand' : ''),
+    state.heading == null ? 'No compass' : `Facing ${Math.round(state.heading)}° (${state.headingSrc})`,
+  ];
+  if (state.netErr) rows.push(`Last network error: ${esc(state.netErr)}`);
+  $('diag').innerHTML = rows.join('<br>');
 }
 
 /* ---------------- which way you are facing ----------------
@@ -2742,6 +2815,7 @@ window.addEventListener('resize', drawMini);
 (async () => {
   const s = localStorage.getItem('snapMax'); if (s) state.snapMax = +s;
   const hs = localStorage.getItem('hubSpan'); if (hs) state.hubSpan = +hs;
+  state.trackDetail = localStorage.getItem('trackDetail') === 'fine' ? 'fine' : 'normal';
   state.hubSat = localStorage.getItem('hubSat') === '1';
   state.headUp = localStorage.getItem('headUp') === '1';
   $('hubRot').classList.toggle('on', state.headUp);
