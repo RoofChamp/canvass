@@ -193,6 +193,14 @@ label.f{display:block;margin:12px 0 5px;font-size:12px;font-weight:800;color:var
 .apRow .o{font-size:12px;color:var(--dim);margin-top:2px}
 .apRow .m{display:flex;gap:7px;align-items:center;margin-top:5px;flex-wrap:wrap}
 .apRow button{background:var(--card2);border:1px solid var(--line);border-radius:9px;padding:6px 9px;font-size:12px;font-weight:700;flex:0 0 auto}
+.lsRow{border:1px solid var(--line);border-radius:12px;background:var(--card);padding:10px 12px;margin-bottom:8px}
+.lsRow b{display:block;font-size:13.5px;font-weight:800}
+.lsRow .sub{font-size:11.5px;color:var(--dim);font-weight:700;margin-top:2px}
+.lsRow .kv{display:flex;flex-wrap:wrap;gap:6px;margin-top:7px}
+.lsRow .kv span{font-size:10.5px;font-weight:700;color:var(--dim);border:1px solid var(--line);border-radius:999px;padding:2px 7px}
+.apRow .tick{width:26px;height:26px;border-radius:8px;border:1.5px solid var(--line);background:var(--card2);
+  display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:800;color:transparent;flex:0 0 auto}
+.apRow .tick.on{background:#2563eb;border-color:#2563eb;color:#fff}
 /* ---------- go-back route ---------- */
 .rtLeg{display:flex;align-items:center;gap:9px;margin:14px 0 7px;color:var(--dim);font-size:12px;font-weight:800;letter-spacing:.3px}
 .rtLeg:before,.rtLeg:after{content:'';height:1px;background:var(--line);flex:1}
@@ -433,6 +441,7 @@ label.f{display:block;margin:12px 0 5px;font-size:12px;font-weight:800;color:var
       <div class="chips" id="dFollowChips"></div>
       <input id="dFollow" type="datetime-local">
       <button class="ghost" id="dIcs" style="margin-top:8px">📅 Add this reminder to my phone calendar</button>
+      <div id="dApptBox" class="hide" style="margin-top:10px"></div>
       <label class="f">Log</label>
       <div id="dLog"></div>
       <div class="logAdd">
@@ -499,7 +508,20 @@ label.f{display:block;margin:12px 0 5px;font-size:12px;font-weight:800;color:var
     <div class="sheetHead"><h2>Schedule</h2><button class="x" data-close="apptSheet">Close</button></div>
     <div class="sheetScroll">
       <div class="small" id="apptIntro" style="margin-bottom:10px"></div>
+      <div class="chips" id="apptSelBar" style="margin-bottom:10px">
+        <button class="chip" id="apSelAll">Select all</button>
+        <button class="chip" id="apSelNone">Clear</button>
+      </div>
+      <div id="apBulkWrap" class="hide" style="margin-bottom:10px">
+        <label class="f" id="apBulkLabel">Set length for the ticked ones</label>
+        <div class="chips" id="apBulkMins"></div>
+        <div class="row" style="margin-top:6px"><div style="flex:1">
+          <input id="apBulkExact" type="number" inputmode="numeric" min="5" max="600" step="5" placeholder="or type minutes, then tap Apply">
+        </div><button class="chip" id="apBulkGo" style="align-self:flex-end">Apply</button></div>
+      </div>
       <div id="apptList"></div>
+      <button class="primary" id="apIcsSel" style="margin-top:12px">📅 Send selected to my calendar</button>
+      <button class="ghost" id="apIcsAll">📅 Send everything on the schedule</button>
       <button class="primary" id="apptNew" style="margin-top:12px">+ Add an appointment</button>
 
       <div id="apptForm" class="hide" style="margin-top:14px;border-top:1px solid var(--line);padding-top:14px">
@@ -512,6 +534,11 @@ label.f{display:block;margin:12px 0 5px;font-size:12px;font-weight:800;color:var
         <div class="small" id="apWhereInfo" style="margin-top:6px"></div>
         <label class="f">When</label>
         <input id="apAt" type="datetime-local">
+        <label class="f">How long</label>
+        <div class="chips" id="apMins"></div>
+        <div class="row" style="margin-top:6px"><div style="flex:1">
+          <input id="apMinsExact" type="number" inputmode="numeric" min="5" max="600" step="5" placeholder="or type minutes">
+        </div></div>
         <button class="primary" id="apSave" style="margin-top:12px">Save appointment</button>
         <button class="ghost" id="apCancel">Cancel</button>
       </div>
@@ -531,6 +558,16 @@ label.f{display:block;margin:12px 0 5px;font-size:12px;font-weight:800;color:var
       <div id="rtList" style="margin-top:12px"></div>
       <button class="primary" id="rtMaps">🗺 Open the next leg in Google Maps</button>
       <button class="ghost" id="rtFresh">↻ Start a fresh run</button>
+    </div>
+  </div>
+</div>
+
+<div id="listSheet" class="sheet hide">
+  <div class="sheetBody">
+    <div class="sheetHead"><h2>The list</h2><button class="x" data-close="listSheet">Close</button></div>
+    <div class="sheetScroll">
+      <div class="small" id="lsCount" style="margin-bottom:10px"></div>
+      <div id="lsList"></div>
     </div>
   </div>
 </div>
@@ -568,6 +605,8 @@ label.f{display:block;margin:12px 0 5px;font-size:12px;font-weight:800;color:var
       <div class="chips" id="xFormat"></div>
       <div class="small" id="xCount" style="margin-top:14px"></div>
       <button class="primary" id="xGo">Download</button>
+      <button class="ghost" id="xView">👁 Just show me the list here</button>
+      <div class="small" style="margin-top:6px">A CSV is built for a computer. If it opens badly on the phone, read it here instead.</div>
     </div>
   </div>
 </div>
@@ -1713,6 +1752,7 @@ function openDetail(visit, focusName) {
   $('dName').value = v.name||''; $('dGoesBy').value = v.goesBy||'';
   $('dNameNote').textContent = nameIsFromDeed(v) ? 'This came off the county deed, not from the door.' : '';
   renderPropPanel(withParcelStats(v, state.parcels.get(v.key)));
+  renderApptLink(v);
   $('dPhone').value = v.phone||'';
   $('dEmail').value = v.email||'';
   const sw = $('dStatus'); sw.innerHTML = '';
@@ -1853,12 +1893,18 @@ async function deleteDetail() {
   const slot = vKey(editing.key, editing.line);
   const mine = state.visitLog.filter(x => vKey(x.key, x.line) === slot);
   const label = editing.addr || editing.pid;
+  const booked = state.appts.filter(a => a.key === editing.key && (a.line || 'roof') === (editing.line || 'roof'));
   if (!confirm(`Delete EVERYTHING for ${label} in ${LINES[editing.line||'roof'].label}?\n\n`
     + `${mine.length} record${mine.length===1?'':'s'}, every note, tag, stage and follow-up for this house goes.\n`
+    + (booked.length ? `${booked.length} scheduled appointment${booked.length===1?'':'s'} for it goes too.\n` : '')
     + `Your walking track is not touched. This cannot be undone.`)) return;
   for (const v of mine) await DB.del('visits', v.id).catch(()=>{});
   state.visitLog = state.visitLog.filter(x => vKey(x.key, x.line) !== slot);
   state.visits.delete(slot);
+  if (booked.length) {                       // or the schedule keeps a row pointing at nothing
+    state.appts = state.appts.filter(a => !booked.includes(a));
+    saveAppts();
+  }
   if (mine.some(v => v.id === state.lastVisitId)) {
     const r = state.visitLog[state.visitLog.length-1];
     state.lastVisitId = r ? r.id : null;
@@ -2579,6 +2625,45 @@ function hubLabelLines(p) {
   return lines.slice(0, 2);
 }
 
+/* The Appointment stage and the schedule are the same fact seen twice, so each
+   one offers the other rather than leaving him to keep them in step by hand. */
+function renderApptLink(v) {
+  const el = $('dApptBox'); if (!el) return;
+  const booked = apptForVisit(v);
+  if (booked) {
+    el.classList.remove('hide');
+    el.innerHTML = `<div class="nagOk">📅 Booked for <b>${esc(new Date(booked.at).toLocaleString([], {weekday:'short', month:'short', day:'numeric', hour:'numeric', minute:'2-digit'}))}</b>. It is on the schedule.</div>`;
+    const open = document.createElement('button');
+    open.className = 'ghost'; open.textContent = '📋 Open the schedule';
+    open.onclick = () => { closeSheet('detailSheet'); openAppts(); };
+    el.appendChild(open);
+    return;
+  }
+  if ((v.dispo || 'new') !== 'appt') { el.classList.add('hide'); el.innerHTML = ''; return; }
+  el.classList.remove('hide');
+  el.innerHTML = `<div class="nagWarn">This one is on the Appointment stage but has no time on the schedule.</div>`;
+  const add = document.createElement('button');
+  add.className = 'primary'; add.textContent = '📅 Put it on the schedule';
+  add.onclick = () => {
+    pullDetail();
+    const rec = editing;
+    closeSheet('detailSheet');
+    openAppts();
+    setTimeout(() => {
+      $('apptNew').click();
+      $('apLabel').value = displayName(rec);
+      $('apAddr').value = rec.addr || '';
+      if (rec.lat != null) {
+        apptDraft.lat = rec.lat; apptDraft.lon = rec.lon;
+        apptDraft.src = 'cust'; apptDraft.srcLabel = displayName(rec);
+      }
+      apptDraft.key = rec.key; apptDraft.line = rec.line || 'roof';
+      renderApWhere();
+    }, 120);
+  };
+  el.appendChild(add);
+}
+
 /* ---------------- the property summary ----------------
    Everything here is already on the record from the auditor, so it costs no
    network call and works with no signal. It is deliberately facts only: the
@@ -2838,6 +2923,7 @@ $('mapErase').onclick = () => { if (routePickBox) endRoutePick(false); else eras
 $('eraseCancel').onclick = () => { if (routePickBox) endRoutePick(false); else cancelErase(); };
 $('eraseGo').onclick = () => { if (routePickBox) endRoutePick(true); else commitErase(); };
 $('mRoute').onclick = () => { closeSheet('menuSheet'); openRoute(); };
+$('xView').onclick = openListView;
 $('rtFresh').onclick = () => { startFreshRun(); renderRoute(); buzz(20);
   flashToast('Fresh run started', 'Every unanswered door is back on the list', '#22c55e'); };
 let mapsLegFrom = 0;
@@ -2975,6 +3061,15 @@ function clearOverride(quiet) {
   if (!quiet) flashToast('Back on GPS', '', '#64748b');
   if (window._map) refreshMapLayers();
 }
+/* Deliberately looking somewhere else has to switch Follow off, or the next GPS
+   fix drags the map straight back to you. That is what made a searched address
+   flash up and vanish. Anything that jumps the map on purpose goes through here. */
+function focusMapOn(lat, lon, zoom) {
+  const m = window._map; if (!m) return;
+  if (mapOpts.follow) { mapOpts.follow = false; syncMapBtns(); }
+  m.setView([lat, lon], zoom == null ? m.getZoom() : zoom, { animate:true });
+}
+
 let moveMeMode = false;
 function toggleMoveMe() {
   moveMeMode = !moveMeMode;
@@ -3033,30 +3128,37 @@ function whenText(ts) {
    iOS will not do that for a web app without a push server, so the honest route
    is a calendar event: it fires on its own, on every device he owns. */
 const icsEsc = t => String(t || '').replace(/[\\;,]/g, m => '\\' + m).replace(/\n/g, '\\n');
-function icsFor(rows) {
+/** one builder for everything that lands in a calendar.
+    items: {uid, at, mins, summary, location, description} */
+function icsItems(items) {
   const ts = t => new Date(t).toISOString().replace(/[-:]/g, '').split('.')[0] + 'Z';
   const out = ['BEGIN:VCALENDAR','VERSION:2.0','PRODID:-//Roof Champ Canvass//EN','CALSCALE:GREGORIAN'];
-  rows.forEach(v => {
-    const who = displayName(v);
+  items.forEach(it => {
     out.push('BEGIN:VEVENT',
-      `UID:${v.id}@canvass`,
+      `UID:${it.uid}@canvass`,
       `DTSTAMP:${ts(Date.now())}`,
-      `DTSTART:${ts(v.followAt)}`,
-      `DTEND:${ts(v.followAt + 30*60000)}`,
-      `SUMMARY:${icsEsc(`Follow up: ${who}`)}`,
-      `LOCATION:${icsEsc(v.addr || '')}`,
-      `DESCRIPTION:${icsEsc([
-        `${LINES[v.line||'roof'].label} follow up`,
-        v.addr, v.owner ? `Owner: ${v.owner}` : '',
-        v.phone ? `Phone: ${v.phone}` : '',
-        DISPO[v.dispo||'new'] ? `Stage: ${DISPO[v.dispo||'new'].label}` : '',
-        noteText(v)].filter(Boolean).join('\n'))}`,
-      'BEGIN:VALARM','TRIGGER:-PT30M','ACTION:DISPLAY','DESCRIPTION:Follow up','END:VALARM',
+      `DTSTART:${ts(it.at)}`,
+      `DTEND:${ts(it.at + (it.mins || 30) * 60000)}`,
+      `SUMMARY:${icsEsc(it.summary)}`,
+      `LOCATION:${icsEsc(it.location || '')}`,
+      `DESCRIPTION:${icsEsc(it.description || '')}`,
+      'BEGIN:VALARM','TRIGGER:-PT30M','ACTION:DISPLAY',
+      `DESCRIPTION:${icsEsc(it.summary)}`,'END:VALARM',
       'END:VEVENT');
   });
   out.push('END:VCALENDAR');
   return out.join('\r\n');
 }
+const visitToIcs = v => ({
+  uid: v.id, at: v.followAt, mins: cleanMins(v.followMins) || APPT_MINS_DEFAULT,
+  summary: `Follow up: ${displayName(v)}`,
+  location: v.addr || '',
+  description: [`${LINES[v.line||'roof'].label} follow up`, v.addr,
+    v.owner ? `Owner: ${v.owner}` : '', v.phone ? `Phone: ${v.phone}` : '',
+    DISPO[v.dispo||'new'] ? `Stage: ${DISPO[v.dispo||'new'].label}` : '',
+    noteText(v)].filter(Boolean).join('\n'),
+});
+function icsFor(rows) { return icsItems(rows.map(visitToIcs)); }
 function addToCalendar(rows) {
   const list = rows.filter(v => v.followAt);
   if (!list.length) { flashToast('No follow-up time set', 'Pick when to circle back first', '#64748b'); return; }
@@ -3078,6 +3180,28 @@ function displayName(v) {
 }
 /* true when the name on screen was inherited from the deed rather than typed at
    a door, so the list can show it in a lighter weight and not overclaim. */
+/* The last time this house was touched at all: a status tapped, a note typed,
+   a stage moved. Not just when it was first marked, which is what v.ts holds. */
+function lastTouched(v) {
+  if (!v) return 0;
+  let t = v.ts || 0;
+  for (const e of logOf(v)) if (e.ts > t) t = e.ts;
+  if (v.followAt && v.followDone && v.followAt > t && v.followAt <= Date.now()) t = v.followAt;
+  return t;
+}
+/** "3 hrs since touched", in Travis's words */
+function touchedText(ts) {
+  if (!ts) return 'never touched';
+  const d = Date.now() - ts;
+  if (d < 90000) return 'just touched';
+  const unit = d < HOUR ? [Math.round(d/60000), 'min']
+             : d < DAY ? [Math.round(d/HOUR), 'hr']
+             : d < 14*DAY ? [Math.round(d/DAY), 'day']
+             : d < 60*DAY ? [Math.round(d/(7*DAY)), 'week']
+             : [Math.round(d/(30*DAY)), 'month'];
+  return `${unit[0]} ${unit[1]}${unit[0] === 1 ? '' : 's'} since touched`;
+}
+
 const nameIsAssumed = v => !!(v && v.nameFromOwner && !goesByOf(v) && contactOf(v) === (v.owner || '').trim());
 /* Anything on screen that came off the deed rather than out of a conversation,
    whether it was copied into the name field or just fallen back to for display. */
@@ -3249,6 +3373,37 @@ function scheduleItems() {
   }
   return out.sort((a, b) => a.at - b.at);
 }
+/** a schedule row, appointment or follow-up, as a calendar entry */
+function scheduleToIcs(it) {
+  if (it.kind === 'follow') return visitToIcs(it.ref);
+  const v = apptVisit(it.ref);
+  return {
+    uid: it.id, at: it.at, mins: minsOf(it),
+    summary: it.label || 'Appointment',
+    location: it.addr || (v && v.addr) || '',
+    description: [it.addr || (v && v.addr) || '',
+      v && v.owner ? `Owner: ${v.owner}` : '',
+      v && v.phone ? `Phone: ${v.phone}` : '',
+      v ? `${LINES[v.line||'roof'].label} appointment` : ''].filter(Boolean).join('\n'),
+  };
+}
+/** the door an appointment was booked against, when it was made from a customer */
+function apptVisit(a) {
+  if (!a || !a.key) return null;
+  return state.visits.get(vKey(a.key, a.line || 'roof')) || null;
+}
+/** the appointment booked against a given door, if there is one */
+function apptForVisit(v) {
+  if (!v) return null;
+  const mine = state.appts
+    .filter(a => a.key === v.key && (a.line || 'roof') === (v.line || 'roof'))
+    .sort((a, b) => a.at - b.at);
+  // the next one still to come, or failing that the most recent past one
+  return mine.find(a => a.at >= Date.now()) || mine[mine.length - 1] || null;
+}
+/** true when the door has a booking that has not happened yet */
+const hasFutureAppt = v => { const a = apptForVisit(v); return !!a && a.at >= Date.now(); };
+
 /** the next thing worth driving to: the soonest one that still has a location */
 function nextStop() {
   const items = scheduleItems().filter(i => i.lat != null && i.lon != null);
@@ -3309,14 +3464,14 @@ const SORTS = [
   ['name',   'Name A to Z'],
   ['street', 'Street'],
   ['area',   'Area'],
-  ['recent', 'Newest'],
+  ['recent', 'Last touched'],
   ['stage',  'Stage'],
 ];
 const STAGE_ORDER = Object.keys(DISPO);
 
 function sortRows(rows, how) {
   const r = [...rows];
-  const byRecent = (a, b) => b.ts - a.ts;
+  const byRecent = (a, b) => lastTouched(b) - lastTouched(a);
   switch (how) {
     case 'near': {
       if (!state.pos) return r.sort(byRecent);
@@ -3445,6 +3600,7 @@ function renderCrm() {
     const dp = DISPO[v.dispo || 'new'];
     const live = v.followAt && !v.followDone;
     const late = live && v.followAt <= Date.now();
+    const booked = apptForVisit(v);
     const el = document.createElement('div');
     el.className = 'crmRow' + (late ? ' late' : '');
     const under = [goesByOf(v) && contactOf(v) && contactOf(v) !== goesByOf(v) ? contactOf(v) : '',
@@ -3458,8 +3614,10 @@ function renderCrm() {
         <div class="o">${esc(under)}</div>
         <div class="m"><span class="dchip" style="color:${dp.color};border-color:${dp.color}66">${esc(dp.label)}</span>
           ${live ? `<span class="${late ? 'lateTxt' : 'dimTxt'}">${esc(whenText(v.followAt))}</span>` : ''}
+          ${booked ? `<span class="dimTxt">📅 ${esc(fmtWhenClock(booked.at))}</span>` : ''}
           ${far ? `<span class="dimTxt">📍 ${esc(far)}</span>` : ''}
-          <span class="dimTxt">${esc(LINES[v.line||'roof'].short)}</span></div>
+          <span class="dimTxt">${esc(LINES[v.line||'roof'].short)}</span>
+          <span class="dimTxt">🕘 ${esc(touchedText(lastTouched(v)))}</span></div>
       </div>`;
     const acts = document.createElement('div'); acts.className = 'crmActs';
     if (live) {
@@ -3574,42 +3732,162 @@ function renderTravel() {
 let apptDraft = null;
 function saveAppts() { localStorage.setItem('appts', JSON.stringify(state.appts)); }
 function openAppts() { apptDraft = null; $('apptForm').classList.add('hide'); renderAppts(); openSheet('apptSheet'); }
+/* Half an hour is the honest default: most of these are a knock-back or a quick
+   look, not a full inspection. The presets cover the rest and the box covers
+   the job that fits none of them. */
+const APPT_MINS_DEFAULT = 30;
+const DURATIONS = [[15,'15 min'],[30,'30 min'],[45,'45 min'],[60,'1 hr'],[120,'2 hr']];
+const minsLabel = m => {
+  const k = DURATIONS.find(d => d[0] === m);
+  if (k) return k[1];
+  return m % 60 === 0 ? `${m/60} hr` : m > 60 ? `${Math.floor(m/60)} hr ${m%60} min` : `${m} min`;
+};
+const cleanMins = v => {
+  const n = Math.round(Number(v));
+  return isFinite(n) && n >= 5 && n <= 600 ? n : null;
+};
+/** how long a schedule row runs: its own setting, else the default */
+const minsOf = it => it.kind === 'appt'
+  ? (cleanMins(it.ref && it.ref.mins) || APPT_MINS_DEFAULT)
+  : (cleanMins(it.ref && it.ref.followMins) || APPT_MINS_DEFAULT);
+
+let apptSel = new Set();
+function renderBulkMins() {
+  const wrap = $('apBulkWrap'); if (!wrap) return;
+  wrap.classList.toggle('hide', !apptSel.size);
+  if (!apptSel.size) return;
+  $('apBulkLabel').textContent = `Set length for the ${apptSel.size} ticked`;
+  const host = $('apBulkMins'); host.innerHTML = '';
+  DURATIONS.forEach(([m, label]) => {
+    const b = document.createElement('button');
+    b.className = 'chip'; b.textContent = label;
+    b.onclick = () => applyBulkMins(m);
+    host.appendChild(b);
+  });
+}
+/** one length onto everything ticked, appointments and follow-ups alike */
+function applyBulkMins(m) {
+  const mins = cleanMins(m);
+  if (!mins) { flashToast('That is not a length', 'Between 5 and 600 minutes', '#f59e0b'); return; }
+  let hit = 0;
+  scheduleItems().filter(i => apptSel.has(i.id)).forEach(it => {
+    if (it.kind === 'appt') { it.ref.mins = mins; hit++; }
+    else { it.ref.followMins = mins; DB.put('visits', it.ref).catch(()=>{}); hit++; }
+  });
+  saveAppts(); renderAppts(); buzz(20);
+  flashToast(`${hit} set to ${minsLabel(mins)}`, 'Send them to your calendar to push the change', '#22c55e');
+}
+function syncApptSendBtn() {
+  $('apIcsSel').textContent = apptSel.size
+    ? `\u{1F4C5} Send ${apptSel.size} selected to my calendar`
+    : '\u{1F4C5} Send selected to my calendar';
+  $('apIcsSel').style.opacity = apptSel.size ? 1 : .5;
+}
 function renderAppts() {
   const items = scheduleItems();
+  const ids = new Set(items.map(i => i.id));
+  [...apptSel].forEach(id => { if (!ids.has(id)) apptSel.delete(id); });
   $('apptIntro').textContent = items.length
-    ? 'Appointments you typed in and follow-ups from doors, in one list.'
+    ? 'Appointments you typed in and follow-ups from doors, in one list. Tap a row to open the house.'
     : 'Nothing scheduled. Add an appointment, or set a follow-up from a door.';
+  $('apptSelBar').classList.toggle('hide', !items.length);
+  $('apIcsSel').classList.toggle('hide', !items.length);
+  $('apIcsAll').classList.toggle('hide', !items.length);
+  syncApptSendBtn();
+  renderBulkMins();
+
   const host = $('apptList'); host.innerHTML = '';
   items.forEach(it => {
     const late = it.at <= Date.now();
     const el = document.createElement('div');
     el.className = 'apRow' + (late ? ' late' : '');
-    const where = it.lat == null ? 'No location, so no drive time' : fmtMiles(
-      state.pos ? haversine(state.pos.lat, state.pos.lon, it.lat, it.lon) : 0) + ' away';
-    el.innerHTML = `<div class="t">
-        <div class="a">${esc(it.label)}${it.assumed ? ' <span class="assumed">(from the deed)</span>' : ''}</div>
-        <div class="o">${esc(new Date(it.at).toLocaleString([], {weekday:'short', month:'short', day:'numeric', hour:'numeric', minute:'2-digit'}))}${it.addr ? ' · ' + esc(it.addr) : ''}</div>
-        <div class="m">
-          <span class="dchip" style="color:${it.kind==='appt'?'#7dd3fc':'#a855f7'};border-color:${it.kind==='appt'?'#7dd3fc66':'#a855f766'}">${it.kind==='appt'?'Appointment':'Follow-up'}</span>
-          <span class="${late?'lateTxt':'dimTxt'}">${esc(whenText(it.at))}</span>
-          <span class="dimTxt">${it.lat == null ? '⚠️ no location, so no drive time'
-                                    : (state.pos ? '📍 ' + esc(where) : '')}</span>
-        </div>
+    const v = it.kind === 'appt' ? apptVisit(it.ref) : it.ref;
+    const where = it.lat == null ? '' : (state.pos
+      ? fmtMiles(haversine(state.pos.lat, state.pos.lon, it.lat, it.lon)) + ' away' : '');
+
+    const tick = document.createElement('div');
+    tick.className = 'tick' + (apptSel.has(it.id) ? ' on' : '');
+    tick.textContent = '\u2713';
+    tick.onclick = e => { e.stopPropagation();
+      // toggle in place: a full re-render would bounce a long schedule back to
+      // the top halfway through selecting things
+      if (apptSel.has(it.id)) apptSel.delete(it.id); else apptSel.add(it.id);
+      tick.classList.toggle('on', apptSel.has(it.id));
+      syncApptSendBtn(); renderBulkMins(); buzz(8);
+    };
+    el.appendChild(tick);
+
+    const body = document.createElement('div'); body.className = 't';
+    body.innerHTML = `
+      <div class="a">${esc(it.label)}${it.assumed ? ' <span class="assumed">(from the deed)</span>' : ''}</div>
+      <div class="o">${esc(new Date(it.at).toLocaleString([], {weekday:'short', month:'short', day:'numeric', hour:'numeric', minute:'2-digit'}))}${it.addr ? ' \u00b7 ' + esc(it.addr) : ''}</div>
+      <div class="m">
+        <span class="dchip" style="color:${it.kind==='appt'?'#7dd3fc':'#a855f7'};border-color:${it.kind==='appt'?'#7dd3fc66':'#a855f766'}">${it.kind==='appt'?'Appointment':'Follow-up'}</span>
+        <span class="${late?'lateTxt':'dimTxt'}">${esc(whenText(it.at))}</span>
+        <span class="dimTxt">${esc(minsLabel(minsOf(it)))}</span>
+        <span class="dimTxt">${it.lat == null ? '\u26A0\uFE0F no location, so no drive time' : esc(where)}</span>
+        ${it.kind === 'appt' && !v ? '<span class="dimTxt">not linked to a door</span>' : ''}
       </div>`;
+    el.appendChild(body);
+
     if (it.kind === 'appt') {
-      const del = document.createElement('button'); del.textContent = '🗑';
+      const del = document.createElement('button'); del.textContent = '\u{1F5D1}';
       del.onclick = e => {
         e.stopPropagation();
         if (!confirm('Delete this appointment?')) return;
         state.appts = state.appts.filter(a => a.id !== it.id);
+        apptSel.delete(it.id);
         saveAppts(); renderAppts(); buzz(20);
       };
       el.appendChild(del);
-    } else {
-      el.onclick = () => { closeSheet('apptSheet'); openDetail(it.ref); };
     }
+    /* Every row opens the house it belongs to. An appointment booked against a
+       customer opens that record; one dropped on the map finds the nearest lot. */
+    el.onclick = async () => {
+      if (it.kind === 'follow') { closeSheet('apptSheet'); openDetail(it.ref); return; }
+      if (v) { closeSheet('apptSheet'); openDetail(v); return; }
+      if (it.lat == null) { flashToast('No house on this one', 'It was saved without a location', '#64748b'); return; }
+      const book = (it.ref && it.ref.line) || state.line;
+      let target = recordAt(it.lat, it.lon, book);
+      if (!target) {                                  // the lot lines may simply not be loaded yet
+        await ensureParcels(it.lat, it.lon).catch(()=>{});
+        target = recordAt(it.lat, it.lon, book);
+      }
+      if (!target) {
+        flashToast('No lot found there', navigator.onLine
+          ? 'Nothing within 40 m of that pin' : 'No signal to fetch the lot lines', '#f59e0b');
+        return;
+      }
+      closeSheet('apptSheet'); openDetail(target);
+    };
     host.appendChild(el);
   });
+}
+/* The record for a point on the map, when an appointment has no door attached.
+   40 m rather than something looser: a lot is about 20 m of frontage, so a wide
+   radius would confidently open the neighbour's house and invent an owner. */
+const RECORD_AT_MAX = 40;
+function nearestParcel(lat, lon) {
+  let best = null, bestD = Infinity;
+  for (const p of state.parcels.values()) {
+    const at = p.house || p.cen;
+    const d = haversine(lat, lon, at[1], at[0]);
+    if (d < bestD) { bestD = d; best = p; }
+  }
+  return bestD <= RECORD_AT_MAX ? best : null;
+}
+function recordAt(lat, lon, line) {
+  if (lat == null || lon == null) return null;
+  const book = line || state.line;
+  const best = nearestParcel(lat, lon);
+  if (!best) return null;
+  const existing = visitFor(best.key, book);
+  if (existing) return withParcelStats(existing, best);
+  return { id:'v' + Date.now() + Math.random().toString(36).slice(2,6), key:best.key, county:best.county,
+    pid:best.pid, status:'noanswer', line:book, ts:Date.now(), lat:best.cen[1], lon:best.cen[0], acc:0, dist:0,
+    owner:best.owner, addr:best.addr, extra:best.extra, occ:best.occ||null, mail:best.mail||'',
+    val:best.val||null, sqft:best.sqft||null, saleTs:best.saleTs||null, salePrice:best.salePrice||null,
+    name:'', goesBy:'', nameFromOwner:false, phone:'', email:'', notes:'', tags:[], follow:'', _new:true };
 }
 /* Location comes from something already on the phone rather than a typed address,
    because resolving an address means a geocoding service, an account and signal. */
@@ -3619,6 +3897,22 @@ const AP_WHERE = [
   ['home',  'Home'],
   ['truck', 'The truck'],
 ];
+function renderApMins() {
+  const host = $('apMins'); if (!host) return;
+  const cur = (apptDraft && cleanMins(apptDraft.mins)) || APPT_MINS_DEFAULT;
+  host.innerHTML = '';
+  DURATIONS.forEach(([m, label]) => {
+    const b = document.createElement('button');
+    b.className = 'chip' + (cur === m ? ' on' : ''); b.textContent = label;
+    b.onclick = () => { if (apptDraft) apptDraft.mins = m; $('apMinsExact').value = ''; renderApMins(); };
+    host.appendChild(b);
+  });
+  if (!DURATIONS.some(d => d[0] === cur)) {
+    const b = document.createElement('button');
+    b.className = 'chip on'; b.textContent = minsLabel(cur);
+    host.appendChild(b);
+  }
+}
 function renderApWhere() {
   const host = $('apWhere'); host.innerHTML = '';
   AP_WHERE.forEach(([k, label]) => {
@@ -3649,6 +3943,7 @@ function pickApptWhere(k) {
       d.lat = v.lat; d.lon = v.lon; d.src = 'cust'; d.srcLabel = displayName(v);
       if (!$('apAddr').value) $('apAddr').value = v.addr || '';
       if (!$('apLabel').value) $('apLabel').value = displayName(v);
+      d.key = v.key; d.line = v.line || 'roof';
       renderApWhere();
     });
     return;
@@ -3681,16 +3976,36 @@ function openCustPicker(onPick) {
   openSheet('pickCustSheet');
 }
 $('apptNew').onclick = () => {
-  apptDraft = { id:'a' + Date.now() + Math.random().toString(36).slice(2,6), lat:null, lon:null, src:null };
-  $('apLabel').value = ''; $('apAddr').value = '';
+  apptDraft = { id:'a' + Date.now() + Math.random().toString(36).slice(2,6), lat:null, lon:null, src:null, mins:APPT_MINS_DEFAULT };
+  $('apLabel').value = ''; $('apAddr').value = ''; $('apMinsExact').value = '';
   const d = new Date(Date.now() + HOUR);
   d.setMinutes(0, 0, 0);
   $('apAt').value = new Date(d.getTime() - d.getTimezoneOffset()*60000).toISOString().slice(0,16);
-  renderApWhere();
+  renderApWhere(); renderApMins();
   $('apptForm').classList.remove('hide');
   $('apLabel').focus();
 };
 $('apCancel').onclick = () => { apptDraft = null; $('apptForm').classList.add('hide'); };
+$('apSelAll').onclick = () => { scheduleItems().forEach(i => apptSel.add(i.id)); renderAppts(); };
+$('apBulkGo').onclick = () => {
+  const m = cleanMins($('apBulkExact').value);
+  if (!m) { flashToast('Type a number of minutes', 'Between 5 and 600', '#f59e0b'); return; }
+  $('apBulkExact').value = ''; applyBulkMins(m);
+};
+$('apMinsExact').oninput = e => {
+  const m = cleanMins(e.target.value);
+  if (m && apptDraft) { apptDraft.mins = m; renderApMins(); }
+};
+$('apSelNone').onclick = () => { apptSel.clear(); renderAppts(); };
+function sendScheduleToCalendar(items, what) {
+  if (!items.length) { flashToast('Nothing to send', what, '#64748b'); return; }
+  download(`schedule-${stamp()}.ics`, icsItems(items.map(scheduleToIcs)), 'text/calendar');
+  flashToast(`${items.length} ${items.length===1?'entry':'entries'} ready`,
+    'Open the file and tap Add All to put them in your phone calendar', '#22c55e');
+}
+$('apIcsAll').onclick = () => sendScheduleToCalendar(scheduleItems(), 'The schedule is empty');
+$('apIcsSel').onclick = () => sendScheduleToCalendar(
+  scheduleItems().filter(i => apptSel.has(i.id)), 'Tick the ones you want first');
 $('apSave').onclick = () => {
   const d = apptDraft; if (!d) return;
   const at = $('apAt').value ? new Date($('apAt').value).getTime() : NaN;
@@ -3698,11 +4013,33 @@ $('apSave').onclick = () => {
   state.appts = [...state.appts.filter(a => a.id !== d.id), {
     id:d.id, label:($('apLabel').value || '').trim() || 'Appointment',
     addr:($('apAddr').value || '').trim(), lat:d.lat, lon:d.lon, at,
+    mins: cleanMins(d.mins) || APPT_MINS_DEFAULT,
+    key:d.key || null, line:d.line || null,
   }];
   saveAppts();
+  // booking a customer IS the appointment stage. Keep the two in step rather
+  // than leaving him to remember to move the chip himself.
+  const linked = apptVisit({ key:d.key, line:d.line });
+  let staged = false;
+  if (linked) {
+    const now = STAGE_ORDER.indexOf(linked.dispo || 'new');
+    const appt = STAGE_ORDER.indexOf('appt');
+    // only ever move a customer forward. Booking a site visit for someone
+    // already Quoted or Signed must not knock them back down the pipeline.
+    if (now >= 0 && now < appt) { linked.dispo = 'appt'; staged = true; }
+    linked.log = [...logOf(linked), { id:newId(), ts:Date.now(), kind:'note',
+      text:`Appointment booked for ${new Date(at).toLocaleString([], {month:'short', day:'numeric', hour:'numeric', minute:'2-digit'})}.` }];
+    linked.notes = logOf(linked).filter(e => e.kind === 'note').map(e => e.text).join(' | ');
+    // written unconditionally: the pre-fill path edits this record in memory and
+    // closes the sheet without saving, so this is its only trip to disk
+    state.visits.set(vKey(linked.key, linked.line), linked);
+    DB.put('visits', linked).catch(()=>{});
+  }
   apptDraft = null; $('apptForm').classList.add('hide');
-  renderAppts(); buzz(20);
-  flashToast('Appointment saved', d.lat == null ? 'No location on it, so no drive time' : '', '#22c55e');
+  renderAppts(); renderStrip(); buzz(20);
+  flashToast('Appointment saved',
+    staged ? 'That customer is now on the Appointment stage' :
+    d.lat == null ? 'No location on it, so no drive time' : '', '#22c55e');
 };
 
 /* ==========================================================================
@@ -4025,7 +4362,10 @@ function goToFind(i) {
   $('findList').classList.add('hide');
   $('findInput').blur();
   const m = window._map;
-  m.setView([r.lat, r.lon], Math.max(m.getZoom(), 19), { animate:true });
+  if (!m) { flashToast('Map still loading', 'Try that again in a second', '#f59e0b'); return; }
+  const wasFollowing = mapOpts.follow;
+  focusMapOn(r.lat, r.lon, Math.max(m.getZoom(), 19));
+  if (wasFollowing) flashToast('Holding on that address', 'Tap ◎ Follow when you want the map back on you', '#38bdf8');
   if (window._findMark) { try { m.removeLayer(window._findMark); } catch(e) {} }
   window._findMark = L.circleMarker([r.lat, r.lon], {
     radius: 13, color:'#38bdf8', weight: 3, fillColor:'#38bdf8', fillOpacity: .22, interactive: false }).addTo(m);
@@ -4057,6 +4397,40 @@ function runFind() {
         : 'No signal, so only streets already loaded can be searched.');
     } finally { findAbort = null; }
   }, 280);
+}
+
+const LIST_VIEW_MAX = 300;
+/* A CSV is a computer's format. On a phone it opens in whatever the OS feels
+   like and often reads as one long line. This shows the same rows in the app,
+   so the list can always be checked without another program. */
+function openListView() {
+  const current = new Set([...state.visits.values()].map(v => v.id));
+  const rows = visitsFor(xOpts).filter(v => current.has(v.id)).slice(0, LIST_VIEW_MAX);
+  const total = visitsFor(xOpts).filter(v => current.has(v.id)).length;
+  $('lsCount').textContent = !total ? 'Nothing matches those options.'
+    : `${rows.length} of ${total} door${total===1?'':'s'}, newest first`
+      + (rows.length < total ? `. Showing the most recent ${LIST_VIEW_MAX}; the CSV has them all.` : '. The CSV holds the same doors with every column.');
+  const host = $('lsList'); host.innerHTML = '';
+  [...rows].sort((a,b) => b.ts - a.ts).forEach(v => {
+    const el = document.createElement('div');
+    el.className = 'lsRow';
+    const bits = [
+      new Date(v.ts).toLocaleString([], {month:'short', day:'numeric', hour:'numeric', minute:'2-digit'}),
+      (LINES[v.line||'roof'] || {label:v.line}).label,
+      (STATUS[v.status] || {label:v.status || 'unknown'}).label,
+      DISPO[v.dispo||'new'] ? DISPO[v.dispo||'new'].label : '',
+      v.phone || '', v.occ === 'rental' ? 'likely rental' : '',
+      v.val != null ? money(v.val) : '', yearBuilt(v) ? 'built ' + yearBuilt(v) : '',
+    ].filter(Boolean);
+    el.innerHTML = `<b>${esc(v.addr || 'Unnamed lot')}</b>
+      <div class="sub">${esc(displayName(v))}${nameIsFromDeed(v) ? ' (from the deed)' : ''}${
+        v.owner && displayName(v) !== v.owner ? ' \u00b7 deed: ' + esc(v.owner) : ''}</div>
+      <div class="kv">${bits.map(b => `<span>${esc(b)}</span>`).join('')}</div>
+      ${noteText(v) ? `<div class="sub" style="margin-top:6px">${esc(noteText(v))}</div>` : ''}`;
+    el.onclick = () => { closeSheet('listSheet'); openDetail(v); };
+    host.appendChild(el);
+  });
+  openSheet('listSheet');
 }
 
 function openRoute() { renderRoute(); openSheet('routeSheet'); }
@@ -4298,7 +4672,8 @@ async function loadStored() {
   try { const v = localStorage.getItem('vehicle'); if (v) state.vehicle = JSON.parse(v); } catch(e){}
   try { const h = localStorage.getItem('home'); if (h) state.home = JSON.parse(h); } catch(e){}
   try { const a = JSON.parse(localStorage.getItem('appts') || '[]');
-        state.appts = Array.isArray(a) ? a.filter(x => x && typeof x.at === 'number') : []; } catch(e){ state.appts = []; }
+        state.appts = Array.isArray(a)
+          ? a.filter(x => x && typeof x.at === 'number' && typeof x.id === 'string' && x.id) : []; } catch(e){ state.appts = []; }
   try { const dj = parseFloat(localStorage.getItem('driveAdj')); if (isFinite(dj) && dj > 0) state.driveAdj = dj; } catch(e){}
   try { const hd = JSON.parse(localStorage.getItem('hubData') || '[]');
         state.hubData = Array.isArray(hd) ? hd.filter(k => HUB_FIELDS.some(f => f[0] === k)) : []; } catch(e){ state.hubData = []; }
