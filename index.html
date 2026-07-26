@@ -93,7 +93,8 @@ input,textarea,select{font:inherit;color:var(--txt);background:var(--card2);bord
 .hubBtn.on{background:#2563eb;border-color:#60a5fa}
 #hubOut{left:50%;top:50%;transform:translate(calc(-50% - var(--hub)/2 - 6px), calc(-50% + var(--hub)/2 - 12px))}
 #hubIn {left:50%;top:50%;transform:translate(calc(-50% + var(--hub)/2 + 6px), calc(-50% + var(--hub)/2 - 12px))}
-#hubSat{left:50%;top:50%;transform:translate(-50%, calc(-50% - var(--hub)/2 - 22px));font-size:14px}
+#hubSat{left:50%;top:50%;transform:translate(calc(-50% - 22px), calc(-50% - var(--hub)/2 - 22px));font-size:14px}
+#hubRot{left:50%;top:50%;transform:translate(calc(-50% + 22px), calc(-50% - var(--hub)/2 - 22px));font-size:14px}
 #b-talked{background:var(--talked)} #b-material{background:var(--material)}
 #b-noanswer{background:var(--noanswer)} #b-dnr{background:var(--dnr)}
 
@@ -172,6 +173,15 @@ label.f{display:block;margin:12px 0 5px;font-size:12px;font-weight:800;color:var
 .dayRow .del{background:var(--card2);border:1px solid var(--line);border-radius:9px;padding:6px 9px;font-size:13px}
 #eraseBar{position:absolute;top:calc(var(--safe-t) + 60px);left:8px;right:8px;z-index:600;background:rgba(220,38,38,.95);border-radius:14px;padding:11px 13px;display:flex;align-items:center;gap:10px;font-weight:800;font-size:13px;box-shadow:0 8px 24px rgba(0,0,0,.5)}
 #eraseBar .mbtn{margin-left:auto;background:rgba(0,0,0,.35)}
+.mewrap{position:relative;width:0;height:0}
+.mecone{position:absolute;left:0;top:0;width:96px;height:96px;transform-origin:50% 50%;
+  background:conic-gradient(from -33deg, rgba(56,189,248,0) 0deg, rgba(56,189,248,.45) 14deg, rgba(56,189,248,.7) 33deg, rgba(56,189,248,.45) 52deg, rgba(56,189,248,0) 66deg);
+  -webkit-mask-image:radial-gradient(circle at 50% 50%, #000 0%, #000 30%, transparent 72%);
+  mask-image:radial-gradient(circle at 50% 50%, #000 0%, #000 30%, transparent 72%);
+  border-radius:50%;pointer-events:none}
+.medot{position:absolute;left:0;top:0;width:16px;height:16px;border-radius:50%;background:#38bdf8;
+  border:3px solid #fff;box-shadow:0 2px 6px rgba(0,0,0,.6);transform:translate(-50%,-50%)}
+.medot.fixed{border-color:#2dd4bf}
 .medrag{width:26px;height:26px;border-radius:50%;background:#38bdf8;border:4px solid #fff;box-shadow:0 0 0 3px rgba(45,212,191,.8),0 3px 10px rgba(0,0,0,.6);transform:translate(-13px,-13px)}
 .ehandle{width:22px;height:22px;border-radius:50%;background:#dc2626;border:3px solid #fff;box-shadow:0 2px 8px rgba(0,0,0,.6);transform:translate(-11px,-11px)}
 .owner-label{font-size:10px;font-weight:700;color:#fff;text-shadow:0 0 3px #000,0 0 3px #000,0 1px 2px #000;white-space:nowrap;pointer-events:none;transform:translate(-50%,-50%);display:inline-block;text-align:center}
@@ -233,10 +243,11 @@ label.f{display:block;margin:12px 0 5px;font-size:12px;font-weight:800;color:var
       <button class="act" id="b-noanswer" data-s="noanswer"><span class="ico">🚪</span><span class="big">No Answer</span><span class="sub">nobody home</span></button>
       <button class="act" id="b-dnr"      data-s="dnr">     <span class="ico">⛔</span><span class="big">Don't Come Back</span><span class="sub">do not return</span></button>
     </div>
-    <div id="hub"><canvas id="mini"></canvas><div id="hubN">N</div><div id="hubLabel">HOLD TO PARK</div></div>
+    <div id="hub"><canvas id="mini"></canvas><div id="hubLabel">HOLD TO PARK</div></div>
     <button class="hubBtn" id="hubOut" aria-label="zoom out">−</button>
     <button class="hubBtn" id="hubIn" aria-label="zoom in">+</button>
     <button class="hubBtn" id="hubSat" aria-label="satellite">🛰</button>
+    <button class="hubBtn" id="hubRot" aria-label="heading up">🧭</button>
   </div>
 
   <div id="bottom">
@@ -685,6 +696,9 @@ const state = {
   hubSpan: 140,         // metres across the hub map
   hubSat: false,
   override: null,      // hand-placed position, {lat, lon, ts}
+  heading: null,       // degrees clockwise from true north, 0 = north
+  headingSrc: null,    // 'compass' or 'course'
+  headUp: false,       // rotate the hub map to match the way you face
 };
 window.state = state;   // exposed for the diagnostics panel and automated tests
 
@@ -1105,6 +1119,9 @@ function drawMini() {
   if (!state.pos) return;
   const {lat, lon} = state.pos;
   const span = state.hubSpan; // metres shown across the hub map
+  // heading-up mode spins the whole hub so the way you face is always straight up
+  const rot = state.headUp && state.heading != null ? -state.heading : 0;
+  if (rot) { g.save(); g.translate(w/2, h/2); g.rotate(rad(rot)); g.translate(-w/2, -h/2); }
   if (state.hubSat) { try { drawSatellite(g, w, h, lat, lon, span); } catch(e) {} }
   const kx = mPerDegLon(lat), ky = mPerDegLat;
   const sc = w / span;
@@ -1157,9 +1174,31 @@ function drawMini() {
     g.fillStyle = '#fff'; g.font = 'bold 8px sans-serif'; g.textAlign = 'center'; g.textBaseline = 'middle';
     g.fillText('T', tx, ty + .5);
   }
-  // you
-  g.beginPath(); g.arc(w/2, h/2, 4.5, 0, 7); g.fillStyle = '#38bdf8'; g.fill();
-  g.strokeStyle = '#fff'; g.lineWidth = 1.6; g.stroke();
+  if (rot) g.restore();
+
+  // you, with a Google-style facing cone
+  if (state.heading != null) {
+    const face = rad(state.headUp ? 0 : state.heading);
+    const reach = Math.min(w, h) * 0.40, spread = 0.58;   // ~66 degrees, like Google's
+    g.save();
+    g.translate(w/2, h/2); g.rotate(face);
+    const grad = g.createRadialGradient(0, 0, 3, 0, 0, reach);
+    grad.addColorStop(0, 'rgba(56,189,248,.9)');
+    grad.addColorStop(.35, 'rgba(56,189,248,.5)');
+    grad.addColorStop(.7, 'rgba(56,189,248,.18)');
+    grad.addColorStop(1, 'rgba(56,189,248,0)');
+    g.beginPath(); g.moveTo(0, 0);
+    g.arc(0, 0, reach, -Math.PI/2 - spread, -Math.PI/2 + spread);
+    g.closePath(); g.fillStyle = grad; g.fill();
+    g.restore();
+  }
+  g.beginPath(); g.arc(w/2, h/2, 5, 0, 7); g.fillStyle = '#38bdf8'; g.fill();
+  g.strokeStyle = '#fff'; g.lineWidth = 2; g.stroke();
+
+  // north tick spins when the map does, so N always points at true north
+  const nAng = rad(state.headUp && state.heading != null ? -state.heading : 0) - Math.PI/2;
+  const nx = w/2 + Math.cos(nAng) * (w/2 - 7), ny = h/2 + Math.sin(nAng) * (h/2 - 7);
+  g.beginPath(); g.arc(nx, ny, 2.4, 0, 7); g.fillStyle = 'rgba(255,255,255,.65)'; g.fill();
 }
 
 /* ---------------- marking a door ---------------- */
@@ -1593,9 +1632,14 @@ function refreshMapLayers() {
       dot.on('dragend', () => { const p = dot.getLatLng(); setOverride(p.lat, p.lng); });
       ml.addLayer(dot);
     } else {
-      ml.addLayer(L.circleMarker([state.pos.lat, state.pos.lon], {
-        radius:7, color: state.override ? '#2dd4bf' : '#fff', weight:2, fillColor:'#38bdf8', fillOpacity:1 }));
       ml.addLayer(L.circle([state.pos.lat, state.pos.lon], { radius: state.pos.acc, color:'#38bdf8', weight:1, opacity:.4, fillOpacity:.06 }));
+      const me = L.marker([state.pos.lat, state.pos.lon], { interactive:false, icon: L.divIcon({
+        className:'', iconSize:[0,0],
+        html:`<div class="mewrap"><div class="mecone"></div><div class="medot${state.override?' fixed':''}"></div></div>` }) });
+      ml.addLayer(me);
+      const el = me.getElement();
+      window._meCone = el ? el.querySelector('.mecone') : null;
+      paintMapHeading();
     }
   }
 }
@@ -1893,6 +1937,9 @@ function startGps() {
 
     /* --- dwell lock --- */
     const speed = recentSpeed();
+    // only trust GPS course when actually walking, and never over a live compass
+    if (state.headingSrc !== 'compass' && speed > 1 && pos.coords.heading != null && isFinite(pos.coords.heading))
+      setHeading(pos.coords.heading, 'course');
     const wasStill = state.still;
     if (speed < STILL_SPEED) {
       if (!state.stillSince) state.stillSince = now;
@@ -2030,6 +2077,16 @@ $('gpsPill').onclick = () => setPaused(!state.paused);
 const setHubSpan = v => { state.hubSpan = Math.max(60, Math.min(600, v)); localStorage.setItem('hubSpan', state.hubSpan); drawMini(); };
 $('hubIn').onclick  = e => { e.stopPropagation(); setHubSpan(Math.round(state.hubSpan / 1.6)); buzz(8); };
 $('hubOut').onclick = e => { e.stopPropagation(); setHubSpan(Math.round(state.hubSpan * 1.6)); buzz(8); };
+$('hubRot').onclick = async e => {
+  e.stopPropagation();
+  if (state.heading == null) { const ok = await askCompass();
+    if (!ok) { flashToast('No compass', 'Your phone did not allow the compass', '#f59e0b'); return; } }
+  state.headUp = !state.headUp;
+  localStorage.setItem('headUp', state.headUp ? '1' : '0');
+  $('hubRot').classList.toggle('on', state.headUp);
+  buzz(10); drawMini();
+  flashToast(state.headUp ? 'Map turns with you' : 'Map is north up', '', '#38bdf8');
+};
 $('hubSat').onclick = e => {
   e.stopPropagation();
   state.hubSat = !state.hubSat;
@@ -2194,6 +2251,54 @@ async function testConnections() {
 function renderDiag() {
   $('diag').innerHTML = `Lots cached: ${state.parcels.size} · records: ${state.visitLog.length} · track days: ${state.days.size} · today's breadcrumbs: ${state.track.length}`
     + (state.netErr ? `<br>Last network error: ${esc(state.netErr)}` : '');
+}
+
+/* ---------------- which way you are facing ----------------
+   GPS course only exists while you are moving, so it is useless standing at a
+   door. The compass works stationary, which is the case that matters. iOS needs
+   an explicit permission request from a user gesture, so it is asked for on
+   Start. Falls back to GPS course when there is no compass. */
+let headBuf = [];
+function setHeading(deg, src) {
+  if (deg == null || !isFinite(deg)) return;
+  const d = ((deg % 360) + 360) % 360;
+  // circular mean, or the needle jitters badly at the 0/360 wrap
+  headBuf.push(d); if (headBuf.length > 6) headBuf.shift();
+  let x = 0, y = 0;
+  for (const h of headBuf) { x += Math.cos(rad(h)); y += Math.sin(rad(h)); }
+  const avg = ((Math.atan2(y, x) * 180 / Math.PI) + 360) % 360;
+  const prev = state.heading;
+  state.heading = avg; state.headingSrc = src;
+  let delta = Math.abs(avg - (prev == null ? avg + 999 : prev));
+  if (delta > 180) delta = 360 - delta;
+  if (prev == null || delta > 1.5) { drawMini(); paintMapHeading(); }
+}
+function startCompass() {
+  const h = e => {
+    if (e.webkitCompassHeading != null && isFinite(e.webkitCompassHeading)) setHeading(e.webkitCompassHeading, 'compass');
+    else if (e.alpha != null && (e.absolute || e.webkitCompassHeading != null)) setHeading(360 - e.alpha, 'compass');
+  };
+  window.addEventListener('deviceorientationabsolute', h, true);
+  window.addEventListener('deviceorientation', h, true);
+}
+async function askCompass() {
+  try {
+    const D = window.DeviceOrientationEvent;
+    if (D && typeof D.requestPermission === 'function') {
+      const r = await D.requestPermission();
+      if (r !== 'granted') return false;
+    }
+    startCompass();
+    return true;
+  } catch (e) { return false; }
+}
+/** the cone on the big map, updated in place so heading changes stay cheap */
+function paintMapHeading() {
+  const el = window._meCone;
+  if (!el) return;
+  if (state.heading == null) { el.style.display = 'none'; return; }
+  el.style.display = '';
+  el.style.transform = `translate(-50%,-50%) rotate(${state.heading}deg)`;
 }
 
 /* ---------------- hand-placed position ----------------
@@ -2392,6 +2497,7 @@ $('startBtn').onclick = async () => {
   startGps();
   toggleWake();
   guardStorage();
+  askCompass();
   drawMini();
 };
 window.addEventListener('resize', drawMini);
@@ -2399,6 +2505,8 @@ window.addEventListener('resize', drawMini);
   const s = localStorage.getItem('snapMax'); if (s) state.snapMax = +s;
   const hs = localStorage.getItem('hubSpan'); if (hs) state.hubSpan = +hs;
   state.hubSat = localStorage.getItem('hubSat') === '1';
+  state.headUp = localStorage.getItem('headUp') === '1';
+  $('hubRot').classList.toggle('on', state.headUp);
   $('hubSat').classList.toggle('on', state.hubSat);
   try { const ses = localStorage.getItem('session'); if (ses) state.session = JSON.parse(ses); } catch(e){}
   lockIfNeeded();
