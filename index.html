@@ -155,15 +155,6 @@ label.f{display:block;margin:12px 0 5px;font-size:12px;font-weight:800;color:var
 .cand .a{font-weight:800;font-size:15px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .cand .o{font-size:12px;color:var(--dim);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .cand .d{font-size:11px;color:var(--dim);font-weight:700;flex:0 0 auto}
-.etaRow{display:flex;align-items:center;gap:12px;padding:11px 12px;border:1px solid var(--line);
-  border-radius:14px;background:var(--card);margin-bottom:8px}
-.etaLabel{font-weight:800;font-size:14px}
-.etaSub{font-size:11.5px;color:var(--dim);margin-top:2px}
-.etaVal{margin-left:auto;font-weight:900;font-size:19px;white-space:nowrap}
-.etaVerdict{font-size:13px;font-weight:800;padding:9px 12px;border-radius:12px;margin:-2px 0 10px}
-.etaVerdict.ok{color:#86efac;background:rgba(34,197,94,.12);border:1px solid rgba(34,197,94,.4)}
-.etaVerdict.warn{color:#fde68a;background:rgba(251,191,36,.12);border:1px solid rgba(251,191,36,.45)}
-.etaVerdict.bad{color:#fca5a5;background:rgba(239,68,68,.12);border:1px solid rgba(239,68,68,.45)}
 .crmRow{display:flex;align-items:flex-start;gap:10px;padding:11px 12px;border:1px solid var(--line);
   border-radius:14px;background:var(--card);margin-bottom:8px}
 .crmRow.late{border-color:rgba(239,68,68,.55);background:rgba(239,68,68,.08)}
@@ -177,6 +168,58 @@ label.f{display:block;margin:12px 0 5px;font-size:12px;font-weight:800;color:var
 .lateTxt{font-size:11px;color:#fca5a5;font-weight:800}
 .crmActs{display:flex;flex-direction:column;gap:5px;flex:0 0 auto}
 .crmActs button{background:var(--card2);border:1px solid var(--line);border-radius:9px;padding:6px 9px;font-size:12px;font-weight:700}
+.crmRow .a .assumed{font-weight:600;color:var(--dim)}
+#crmSearchWrap{position:relative;margin-top:12px}
+#crmSearchWrap input{padding-right:40px}
+#crmSearchClear{position:absolute;right:6px;top:50%;transform:translateY(-50%);background:none;border:0;
+  color:var(--dim);font-size:15px;font-weight:800;padding:6px 8px;line-height:1}
+/* ---------- getting back ---------- */
+.tvBig{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:14px 15px;text-align:center}
+.tvBig b{display:block;font-size:23px;font-weight:800;color:var(--txt);line-height:1.2}
+.tvBig span{font-size:13px;color:var(--dim);font-weight:700}
+.tvBig.warn{border-color:rgba(239,68,68,.55);background:rgba(239,68,68,.10)}
+.tvBig.warn b{color:#fca5a5}
+.tvLeg{display:flex;align-items:center;gap:10px;padding:10px 12px;border:1px solid var(--line);
+  border-radius:12px;background:var(--card);margin-bottom:7px;font-size:13px;font-weight:700}
+.tvLeg .ic{font-size:16px;flex:0 0 auto}
+.tvLeg .lg{flex:1;min-width:0}
+.tvLeg .lg small{display:block;font-size:11px;color:var(--dim);font-weight:700;margin-top:2px}
+.tvLeg .amt{flex:0 0 auto;color:var(--dim);font-weight:800;font-size:12px}
+.apRow{display:flex;align-items:flex-start;gap:10px;padding:11px 12px;border:1px solid var(--line);
+  border-radius:14px;background:var(--card);margin-bottom:8px}
+.apRow.late{border-color:rgba(239,68,68,.55);background:rgba(239,68,68,.08)}
+.apRow .t{flex:1;min-width:0}
+.apRow .a{font-weight:800;font-size:14px}
+.apRow .o{font-size:12px;color:var(--dim);margin-top:2px}
+.apRow .m{display:flex;gap:7px;align-items:center;margin-top:5px;flex-wrap:wrap}
+.apRow button{background:var(--card2);border:1px solid var(--line);border-radius:9px;padding:6px 9px;font-size:12px;font-weight:700;flex:0 0 auto}
+/* ---------- go-back route ---------- */
+.rtLeg{display:flex;align-items:center;gap:9px;margin:14px 0 7px;color:var(--dim);font-size:12px;font-weight:800;letter-spacing:.3px}
+.rtLeg:before,.rtLeg:after{content:'';height:1px;background:var(--line);flex:1}
+.rtGroup{border:1px solid var(--line);border-radius:14px;background:var(--card);overflow:hidden}
+.rtGroupHead{display:flex;align-items:baseline;gap:8px;padding:9px 12px;background:var(--card2);border-bottom:1px solid var(--line)}
+.rtGroupHead b{font-size:13.5px;font-weight:800;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.rtGroupHead span{font-size:11px;color:var(--dim);font-weight:700;flex:0 0 auto}
+.rtStop{display:flex;align-items:center;gap:9px;padding:9px 12px;border-top:1px solid var(--line)}
+.rtStop:first-child{border-top:0}
+.rtStop .num{width:20px;height:20px;border-radius:50%;background:var(--card2);border:1px solid var(--line);
+  font-size:10.5px;font-weight:800;display:flex;align-items:center;justify-content:center;flex:0 0 auto;color:var(--dim)}
+.rtStop .t{flex:1;min-width:0}
+.rtStop .t b{display:block;font-size:13px;font-weight:800;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.rtStop .t em{font-style:normal;font-size:11px;color:var(--dim);font-weight:700}
+.rtStop a{flex:0 0 auto;background:var(--card2);border:1px solid var(--line);border-radius:9px;
+  padding:6px 9px;font-size:12px;font-weight:700;text-decoration:none;color:var(--txt)}
+.rtStop.done{opacity:.45}
+.rtStop.done .t b{text-decoration:line-through}
+/* ---------- property summary above the entry fields ---------- */
+#dProp{border:1px solid var(--line);border-radius:14px;background:var(--card);padding:11px 12px;margin:8px 0 4px}
+#dProp .pg{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+#dProp .pc{background:var(--card2);border:1px solid var(--line);border-radius:11px;padding:7px 9px}
+#dProp .pc b{display:block;font-size:15px;font-weight:800;color:var(--txt);line-height:1.25}
+#dProp .pc span{font-size:10.5px;color:var(--dim);font-weight:700;letter-spacing:.3px;text-transform:uppercase}
+#dProp .pc em{display:block;font-style:normal;font-size:11px;color:var(--dim);font-weight:700;margin-top:1px}
+#dProp .pmeta{font-size:11.5px;color:var(--dim);font-weight:700;margin-top:9px;line-height:1.45}
+#dProp .pnote{font-size:11px;color:#5b6b7f;margin-top:7px;line-height:1.45}
 #dLog{display:flex;flex-direction:column;gap:7px}
 .logRow{display:flex;gap:9px;align-items:flex-start;background:var(--card);border:1px solid var(--line);border-radius:12px;padding:9px 11px}
 .logRow i{width:9px;height:9px;border-radius:3px;flex:0 0 auto;margin-top:5px}
@@ -223,6 +266,21 @@ label.f{display:block;margin:12px 0 5px;font-size:12px;font-weight:800;color:var
   border:3px solid #fff;box-shadow:0 2px 6px rgba(0,0,0,.6);transform:translate(-50%,-50%)}
 .medot.fixed{border-color:#2dd4bf}
 .medrag{width:26px;height:26px;border-radius:50%;background:#38bdf8;border:4px solid #fff;box-shadow:0 0 0 3px rgba(45,212,191,.8),0 3px 10px rgba(0,0,0,.6);transform:translate(-13px,-13px)}
+/* ---------- address search on the big map ---------- */
+#eraseBar.picking{background:rgba(22,163,74,.95);border-color:rgba(34,197,94,.65)}
+#findWrap{position:absolute;z-index:1002;left:10px;right:10px;top:calc(var(--safe-t) + 52px)}
+#findInput{background:rgba(15,21,29,.96);border:1px solid var(--line);border-radius:12px;padding:11px 38px 11px 13px;
+  font-size:14px;font-weight:600;box-shadow:0 6px 20px rgba(0,0,0,.5)}
+#findClear{position:absolute;right:8px;top:9px;background:none;border:0;color:var(--dim);font-size:15px;font-weight:800;padding:4px 7px}
+#findList{margin-top:6px;background:rgba(15,21,29,.98);border:1px solid var(--line);border-radius:12px;
+  box-shadow:0 10px 30px rgba(0,0,0,.6);overflow:hidden;max-height:46vh;overflow-y:auto}
+.findRow{display:flex;align-items:center;gap:9px;padding:10px 12px;border-top:1px solid var(--line)}
+.findRow:first-child{border-top:0}
+.findRow .t{flex:1;min-width:0}
+.findRow .t b{display:block;font-size:13.5px;font-weight:800;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.findRow .t em{font-style:normal;font-size:11px;color:var(--dim);font-weight:700}
+.findRow .tag{font-size:10px;font-weight:800;color:var(--dim);border:1px solid var(--line);border-radius:999px;padding:2px 7px;flex:0 0 auto}
+.findNote{padding:9px 12px;font-size:11.5px;color:var(--dim);font-weight:700}
 .ehandle{width:22px;height:22px;border-radius:50%;background:#dc2626;border:3px solid #fff;box-shadow:0 2px 8px rgba(0,0,0,.6);transform:translate(-11px,-11px)}
 .owner-label{font-size:10px;font-weight:700;color:#fff;text-shadow:0 0 3px #000,0 0 3px #000,0 1px 2px #000;white-space:nowrap;pointer-events:none;transform:translate(-50%,-50%);display:inline-block;text-align:center}
 .rentwarn{filter:drop-shadow(0 0 2px #000)}
@@ -305,6 +363,11 @@ label.f{display:block;margin:12px 0 5px;font-size:12px;font-weight:800;color:var
 <!-- ============ full map ============ -->
 <div id="mapView" class="hide">
   <div id="leaf"></div>
+  <div id="findWrap">
+    <input id="findInput" placeholder="Find an address" autocomplete="off" autocapitalize="characters" enterkeyhint="search">
+    <button id="findClear" class="hide">✕</button>
+    <div id="findList" class="hide"></div>
+  </div>
   <div id="mapTop">
     <button class="mbtn" id="mapClose">✕ Close</button>
     <button class="mbtn" id="mapSat">🛰 Satellite</button>
@@ -353,12 +416,13 @@ label.f{display:block;margin:12px 0 5px;font-size:12px;font-weight:800;color:var
     <div class="sheetHead"><h2 id="dTitle">Details</h2><button class="x" data-close="detailSheet">Close</button></div>
     <div class="sheetScroll">
       <div id="dSub" style="color:var(--dim);font-size:13px;margin-bottom:4px"></div>
+      <div id="dProp" class="hide"></div>
       <label class="f">Status</label>
       <div class="chips" id="dStatus"></div>
-      <label class="f">Owner goes by</label>
-      <input id="dGoesBy" placeholder="What they actually go by" autocomplete="off">
-      <div class="small" id="dOwnerRec" style="margin-top:4px"></div>
       <label class="f">Contact name</label><input id="dName" placeholder="Homeowner or who you spoke with" autocomplete="off">
+      <div class="small" id="dNameNote" style="margin:-4px 0 2px;color:var(--dim)"></div>
+      <label class="f">Goes by</label><input id="dGoesBy" placeholder="What they actually go by" autocomplete="off">
+      <div class="small" style="margin:-4px 0 2px;color:var(--dim)">The county record stays as it is. This is the name you use.</div>
       <div class="row"><div style="flex:1"><label class="f">Phone</label><input id="dPhone" type="tel" inputmode="tel" placeholder="(614) 555-0100"></div></div>
       <label class="f">Email</label><input id="dEmail" type="email" inputmode="email" placeholder="optional" autocapitalize="off">
       <label class="f">Quick tags</label>
@@ -382,53 +446,22 @@ label.f{display:block;margin:12px 0 5px;font-size:12px;font-weight:800;color:var
   </div>
 </div>
 
-<div id="etaSheet" class="sheet hide">
-  <div class="sheetBody">
-    <div class="sheetHead"><h2>Time and schedule</h2><button class="x" data-close="etaSheet">Close</button></div>
-    <div class="sheetScroll">
-      <div id="etaBody"></div>
-      <div class="small" style="margin-top:10px">Drive times are free-flow and do not include live traffic.</div>
-      <label class="f">Home</label>
-      <div class="chips">
-        <button class="chip" id="etaHomeHere">Set home to where I am</button>
-        <button class="chip" id="etaHomeAddr">Type an address</button>
-        <button class="chip" id="etaHomeClear">Clear</button>
-      </div>
-      <div class="small" id="etaHomeInfo" style="margin-top:6px"></div>
-      <label class="f">Schedule</label>
-      <div id="etaSchedule"></div>
-      <button class="primary" id="etaAddAppt">+ Add an appointment</button>
-    </div>
-  </div>
-</div>
-
-<div id="apptSheet" class="sheet hide">
-  <div class="sheetBody">
-    <div class="sheetHead"><h2>New appointment</h2><button class="x" data-close="apptSheet">Close</button></div>
-    <div class="sheetScroll">
-      <label class="f">What</label><input id="apTitle" placeholder="Roof inspection, Miller">
-      <label class="f">When</label><input id="apWhen" type="datetime-local">
-      <label class="f">Where</label><input id="apWhere" placeholder="Street, city">
-      <div class="chips" style="margin-top:8px">
-        <button class="chip" id="apHere">Use where I am</button>
-      </div>
-      <div class="small" id="apInfo" style="margin-top:6px"></div>
-      <button class="primary" id="apSave">Save appointment</button>
-    </div>
-  </div>
-</div>
-
 <div id="crmSheet" class="sheet hide">
   <div class="sheetBody">
     <div class="sheetHead"><h2>Customers</h2><button class="x" data-close="crmSheet">Close</button></div>
     <div class="sheetScroll">
       <div class="statsbox" id="crmHead"></div>
-      <input id="crmSearch" placeholder="Search name, address, phone, notes" autocomplete="off" style="margin-top:12px">
+      <div id="crmSearchWrap">
+        <input id="crmSearch" placeholder="Search name, address, owner, phone, notes" autocomplete="off" autocapitalize="off">
+        <button class="x hide" id="crmSearchClear">✕</button>
+      </div>
       <label class="f">Sort by</label>
       <div class="chips" id="crmSort"></div>
       <label class="f">Show</label>
       <div class="chips" id="crmChips"></div>
-      <div id="crmList" style="margin-top:12px"></div>
+      <div class="chips" id="crmFilters" style="margin-top:6px"></div>
+      <div class="small" id="crmCount" style="margin-top:10px"></div>
+      <div id="crmList" style="margin-top:8px"></div>
       <button class="ghost" id="crmIcs">📅 Send all follow-ups to my phone calendar</button>
     </div>
   </div>
@@ -443,6 +476,71 @@ label.f{display:block;margin:12px 0 5px;font-size:12px;font-weight:800;color:var
       <button class="primary" id="sesExport">⬇︎ Save this session's list</button>
       <button class="ghost" id="sesEnd">■ End session and stop tracking</button>
       <button class="ghost" id="sesKeep">Keep canvassing</button>
+    </div>
+  </div>
+</div>
+
+<div id="travelSheet" class="sheet hide">
+  <div class="sheetBody">
+    <div class="sheetHead"><h2>Getting back</h2><button class="x" data-close="travelSheet">Close</button></div>
+    <div class="sheetScroll">
+      <div id="tvHeadline"></div>
+      <div id="tvLegs" style="margin-top:10px"></div>
+      <div id="tvNext" style="margin-top:14px"></div>
+      <div class="small" id="tvBasis" style="margin-top:14px"></div>
+      <button class="ghost" id="tvSchedule" style="margin-top:10px">📋 Schedule and appointments</button>
+      <button class="ghost" id="tvSetHome">🏠 Set home to where I am now</button>
+    </div>
+  </div>
+</div>
+
+<div id="apptSheet" class="sheet hide">
+  <div class="sheetBody">
+    <div class="sheetHead"><h2>Schedule</h2><button class="x" data-close="apptSheet">Close</button></div>
+    <div class="sheetScroll">
+      <div class="small" id="apptIntro" style="margin-bottom:10px"></div>
+      <div id="apptList"></div>
+      <button class="primary" id="apptNew" style="margin-top:12px">+ Add an appointment</button>
+
+      <div id="apptForm" class="hide" style="margin-top:14px;border-top:1px solid var(--line);padding-top:14px">
+        <label class="f">What is it</label>
+        <input id="apLabel" placeholder="Kolar estimate" autocomplete="off">
+        <label class="f">Address (for your eyes only)</label>
+        <input id="apAddr" placeholder="109 Maple Ridge Dr" autocomplete="off">
+        <label class="f">Where is it</label>
+        <div class="chips" id="apWhere"></div>
+        <div class="small" id="apWhereInfo" style="margin-top:6px"></div>
+        <label class="f">When</label>
+        <input id="apAt" type="datetime-local">
+        <button class="primary" id="apSave" style="margin-top:12px">Save appointment</button>
+        <button class="ghost" id="apCancel">Cancel</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div id="routeSheet" class="sheet hide">
+  <div class="sheetBody">
+    <div class="sheetHead"><h2>Go back to</h2><button class="x" data-close="routeSheet">Close</button></div>
+    <div class="sheetScroll">
+      <div class="statsbox" id="rtHead"></div>
+      <label class="f">Doors from</label>
+      <div class="chips" id="rtWhen"></div>
+      <div class="chips" id="rtArea" style="margin-top:6px"></div>
+      <div class="small" id="rtNote" style="margin-top:8px"></div>
+      <div id="rtList" style="margin-top:12px"></div>
+      <button class="primary" id="rtMaps">🗺 Open the next leg in Google Maps</button>
+      <button class="ghost" id="rtFresh">↻ Start a fresh run</button>
+    </div>
+  </div>
+</div>
+
+<div id="pickCustSheet" class="sheet hide">
+  <div class="sheetBody">
+    <div class="sheetHead"><h2>Which customer?</h2><button class="x" data-close="pickCustSheet">Close</button></div>
+    <div class="sheetScroll">
+      <input id="pcSearch" placeholder="Search" autocomplete="off" autocapitalize="off">
+      <div id="pcList" style="margin-top:10px"></div>
     </div>
   </div>
 </div>
@@ -480,8 +578,10 @@ label.f{display:block;margin:12px 0 5px;font-size:12px;font-weight:800;color:var
     <div class="sheetScroll">
       <div class="statsbox"></div>
       <div id="backupNag" class="hide"></div>
-      <button class="ghost" id="mEta">⏱ Time, home and schedule</button>
       <button class="ghost" id="mCrm">👥 Customers and follow-ups</button>
+      <button class="ghost" id="mRoute">🔁 Go back to (no answers)</button>
+      <button class="ghost" id="mTravel">🏁 Getting back / how long until home</button>
+      <button class="ghost" id="mAppt">📋 Schedule and appointments</button>
       <button class="ghost" id="mSession">■ End session / session log</button>
       <button class="ghost" id="mExport">⬇︎ Export a list…</button>
       <button class="ghost" id="mBackup">💾 Full backup (JSON)</button>
@@ -499,6 +599,19 @@ label.f{display:block;margin:12px 0 5px;font-size:12px;font-weight:800;color:var
         <button class="chip" id="mClearPin">Turn off</button>
       </div>
       <div class="small" id="pinInfo" style="margin-top:6px"></div>
+      <label class="f">Home</label>
+      <div class="chips">
+        <button class="chip" id="mSetHome">🏠 Set to where I am</button>
+        <button class="chip" id="mClearHome">Clear home</button>
+      </div>
+      <div class="small" id="homeInfo" style="margin-top:6px"></div>
+      <label class="f">Travel estimates</label>
+      <div class="small" id="paceInfo" style="margin-bottom:6px"></div>
+      <div class="chips" id="mDriveSpeed"></div>
+      <div class="small" style="margin-top:6px">Drive times are worked out on the phone from straight line distance, so they need no signal and no account. Nudge this if they read consistently long or short.</div>
+      <label class="f">Show on the mini map</label>
+      <div class="chips" id="mHubData"></div>
+      <div class="small" style="margin-top:6px">Printed on the house itself. The circle is small, so keep it to one or two at a time. Shorthand: b94 built 1994, s19 sold 2019, 1840sf floor area.</div>
       <label class="f">Keep screen awake</label>
       <div class="chips"><button class="chip" id="mWake">Screen lock off</button></div>
       <label class="f">Track detail</label>
@@ -693,6 +806,14 @@ function readStats(c, a) {
 const money = v => v == null ? '' : v >= 1000000 ? '$' + (v/1000000).toFixed(v >= 10000000 ? 0 : 1) + 'M'
                  : v >= 1000 ? '$' + Math.round(v/1000) + 'k' : '$' + Math.round(v);
 const sqftTxt = v => v == null ? '' : Math.round(v).toLocaleString() + ' sq ft';
+/* Year built hides behind a different field name in every county. One chain,
+   used everywhere, so a new county only has to be added once. */
+function yearBuilt(x) {
+  const a = x && x.extra; if (!a) return null;
+  const y = a.RESYRBLT || a.YRBUILT || a.YearBuilt || a.YRBLT || a.PPYearBuilt;
+  const n = parseInt(y, 10);
+  return isFinite(n) && n > 1700 && n < 2100 ? n : null;
+}
 const saleTxt = p => {
   if (!p.saleTs) return '';
   const d = new Date(p.saleTs);
@@ -743,7 +864,7 @@ const DB = (() => {
   let db = null;
   const open = () => new Promise((res, rej) => {
     if (db) return res(db);
-    const r = indexedDB.open('canvass', 4);
+    const r = indexedDB.open('canvass', 3);
     r.onupgradeneeded = e => {
       const d = e.target.result;
       if (!d.objectStoreNames.contains('visits'))  d.createObjectStore('visits', {keyPath:'id'});
@@ -752,7 +873,6 @@ const DB = (() => {
       if (!d.objectStoreNames.contains('track'))   d.createObjectStore('track', {keyPath:'id'});
       // one record per day keeps a year of breadcrumbs readable in a single get
       if (!d.objectStoreNames.contains('days'))    d.createObjectStore('days', {keyPath:'day'});
-      if (!d.objectStoreNames.contains('appts'))   d.createObjectStore('appts', {keyPath:'id'});
     };
     r.onsuccess = e => { db = e.target.result; res(db); };
     r.onerror = () => rej(r.error);
@@ -801,12 +921,14 @@ const state = {
   hubSpan: 140,         // metres across the hub map
   hubSat: false,
   trackDetail: 'normal',
-  appts: [],
-  home: null,
   override: null,      // hand-placed position, {lat, lon, ts}
   heading: null,       // degrees clockwise from true north, 0 = north
   headingSrc: null,    // 'compass' or 'course'
   headUp: false,       // rotate the hub map to match the way you face
+  home: null,          // {lat, lon, ts} — where "how long until you're home" points
+  appts: [],           // [{id, label, addr, lat, lon, at}] typed in by hand
+  driveAdj: 1,         // multiplier on the drive time estimate, nudged from the menu
+  hubData: [],         // which auditor figures to print on the hub map
 };
 window.state = state;   // exposed for the diagnostics panel and automated tests
 
@@ -823,6 +945,7 @@ function pushTrackPoint(lat, lon, ts) {
 }
 async function flushDay() {
   dayFlushTimer = null;
+  clearPaceCache();
   const d = state.days.get(state.today);
   if (d) await DB.put('days', { day:d.day, pts:d.pts }).catch(()=>{});
 }
@@ -1131,7 +1254,7 @@ function renderHouse() {
   const c = current();
   if (!c) {
     $('addr').textContent = state.parcels.size ? 'No lot nearby' : 'Loading lot lines…';
-    $('owner').textContent = state.netErr ? 'No signal, parcels unavailable here' : '—';
+    $('owner').textContent = state.netErr ? 'No signal — parcels unavailable here' : '—';
     $('alreadyTag').classList.add('hide'); $('rentTag').classList.add('hide'); $('propLine').classList.add('hide');
     drawMini(); return;
   }
@@ -1139,13 +1262,9 @@ function renderHouse() {
   const rental = p.occ === 'rental';
   $('addr').innerHTML = (rental ? '<span class="warnTri">⚠️</span>' : '') + esc(p.addr || '(no address on file)');
   $('addr').classList.toggle('far', c.d > state.snapMax);
-  const yr = p.extra.RESYRBLT || p.extra.YRBUILT || p.extra.YearBuilt || p.extra.YRBLT || p.extra.PPYearBuilt;
-  // show what they actually go by, keeping the county record visible beside it
-  const known = visitFor(p.key) || visitFor(p.key, state.line === 'roof' ? 'appraisal' : 'roof');
-  const shownOwner = (known && known.goesBy) ? known.goesBy : (p.owner || 'Owner not listed');
+  const yr = yearBuilt(p);
   fitAddr();
-  $('owner').textContent = shownOwner + (known && known.goesBy && p.owner ? ` (${p.owner})` : '')
-    + (yr ? ` \u00b7 built ${yr}` : '') + ` \u00b7 ${Math.round(c.d)}m`;
+  $('owner').textContent = (p.owner || 'Owner not listed') + (yr ? ` · built ${yr}` : '') + ` · ${Math.round(c.d)}m`;
   const sl = statsLine(p);
   $('propLine').textContent = sl;
   $('propLine').classList.toggle('hide', !sl);
@@ -1243,6 +1362,8 @@ function drawMini() {
   const X = p => w/2 + (p[0]-lon)*kx*sc;
   const Y = p => h/2 - (p[1]-lat)*ky*sc;
 
+  const labelJobs = [];
+  const wantLabels = state.hubData.length > 0;
   for (const p of state.parcels.values()) {
     if (Math.abs(p.cen[1]-lat)*ky > span || Math.abs(p.cen[0]-lon)*kx > span) continue;
     const v = visitFor(p.key) || visitFor(p.key, state.line === 'roof' ? 'appraisal' : 'roof');
@@ -1254,6 +1375,19 @@ function drawMini() {
     if (v) { g.fillStyle = STATUS[v.status].color + 'cc'; g.fill(); }
     g.strokeStyle = v ? '#0f151d' : (state.hubSat ? 'rgba(255,255,255,.55)' : '#3a4a5e');
     g.lineWidth = v ? 1 : .8; g.stroke();
+    /* Queue up any figures the user asked to see. They are drawn after the
+       rotation is unwound, so heading-up mode never prints text upside down.
+       Skip lots too small on screen to hold a word. */
+    if (wantLabels) {
+      const bw = Math.abs(p.bbox[2] - p.bbox[0]) * kx * sc;
+      if (bw >= 16) {
+        const lines = hubLabelLines(p);
+        if (lines.length) {
+          const at = p.house || p.cen;
+          labelJobs.push({ x: X(at), y: Y(at), lines });
+        }
+      }
+    }
     // likely rentals get a small yellow triangle on the house
     if (p.occ === 'rental') {
       const at = p.house || p.cen, tx = X(at), ty = Y(at), r = 4.2;
@@ -1291,6 +1425,33 @@ function drawMini() {
   }
   if (rot) g.restore();
 
+  /* Figures printed on the houses. Drawn outside the rotation so the text is
+     always upright, with the anchors pushed through the same rotation by hand.
+     Overlapping labels are dropped rather than stacked into mush. */
+  if (labelJobs.length) {
+    const a = rad(rot), ca = Math.cos(a), sa = Math.sin(a);
+    const placed = [];
+    g.font = 'bold 7.5px -apple-system,system-ui,sans-serif';
+    g.textAlign = 'center'; g.textBaseline = 'middle';
+    g.lineJoin = 'round';
+    for (const job of labelJobs) {
+      let x = job.x, y = job.y;
+      if (rot) { const dx = x - w/2, dy = y - h/2; x = w/2 + dx*ca - dy*sa; y = h/2 + dx*sa + dy*ca; }
+      const lh = 8.5;
+      const tw = Math.max(...job.lines.map(t => g.measureText(t).width));
+      const th = job.lines.length * lh;
+      if (x < 4 || x > w - 4 || y < 6 || y > h - 6) continue;
+      const box = { l:x - tw/2 - 1, r:x + tw/2 + 1, t:y - th/2 - 1, b:y + th/2 + 1 };
+      if (placed.some(q => box.l < q.r && box.r > q.l && box.t < q.b && box.b > q.t)) continue;
+      placed.push(box);
+      job.lines.forEach((t, i) => {
+        const ly = y - th/2 + lh/2 + i*lh;
+        g.strokeStyle = 'rgba(0,0,0,.9)'; g.lineWidth = 2.6; g.strokeText(t, x, ly);
+        g.fillStyle = '#ffffff'; g.fillText(t, x, ly);
+      });
+    }
+  }
+
   // you, with a Google-style facing cone
   if (state.heading != null) {
     const face = rad(state.headUp ? 0 : state.heading);
@@ -1310,10 +1471,53 @@ function drawMini() {
   g.beginPath(); g.arc(w/2, h/2, 5, 0, 7); g.fillStyle = '#38bdf8'; g.fill();
   g.strokeStyle = '#fff'; g.lineWidth = 2; g.stroke();
 
-  // north tick spins when the map does, so N always points at true north
-  const nAng = rad(state.headUp && state.heading != null ? -state.heading : 0) - Math.PI/2;
-  const nx = w/2 + Math.cos(nAng) * (w/2 - 7), ny = h/2 + Math.sin(nAng) * (h/2 - 7);
-  g.beginPath(); g.arc(nx, ny, 2.4, 0, 7); g.fillStyle = 'rgba(255,255,255,.65)'; g.fill();
+  /* Compass. Four points, not one faint tick, because reading direction off a
+     small map is the part Travis finds hardest. The ring turns with the map so
+     each letter always sits in its real direction, but the letters themselves
+     stay upright, since a rotated "W" is unreadable at this size. North is
+     amber and a size larger so it reads at a glance. */
+  drawCompass(g, w, h, state.headUp && state.heading != null ? -state.heading : 0);
+}
+
+const COMPASS_POINTS = [
+  [0,   'N', '#fbbf24', 10.5],
+  [90,  'E', '#e8f0fa', 9],
+  [180, 'S', '#e8f0fa', 9],
+  [270, 'W', '#e8f0fa', 9],
+];
+/** where each letter sits, kept separate from the drawing so it can be checked */
+function compassPositions(w, h, rotDeg) {
+  const cx = w/2, cy = h/2, r = Math.min(w, h)/2 - 10;
+  return COMPASS_POINTS.map(([bearing, letter, colour, size]) => {
+    const a = rad(bearing + rotDeg) - Math.PI/2;
+    return { letter, colour, size, a, r,
+             x: cx + Math.cos(a) * r, y: cy + Math.sin(a) * r };
+  });
+}
+function drawCompass(g, w, h, rotDeg) {
+  const cx = w/2, cy = h/2;
+  const r = Math.min(w, h)/2 - 10;
+  if (r < 20) return;                       // too small to be worth the clutter
+  g.textAlign = 'center'; g.textBaseline = 'middle'; g.lineJoin = 'round';
+  for (const { letter, colour, size, a, x, y } of compassPositions(w, h, rotDeg)) {
+    // dark disc so the letter survives satellite imagery underneath
+    g.beginPath(); g.arc(x, y, letter === 'N' ? 8 : 7, 0, 7);
+    g.fillStyle = 'rgba(8,13,20,.82)'; g.fill();
+    g.strokeStyle = letter === 'N' ? 'rgba(251,191,36,.85)' : 'rgba(255,255,255,.28)';
+    g.lineWidth = letter === 'N' ? 1.4 : 1;
+    g.stroke();
+    g.font = `bold ${size}px -apple-system,system-ui,sans-serif`;
+    g.fillStyle = colour;
+    g.fillText(letter, x, y + .5);
+    // tick outside the disc, drawn last so nothing paints over it
+    const t1 = (letter === 'N' ? 8 : 7) + 2.5, t2 = t1 + 3.5;
+    g.beginPath();
+    g.moveTo(x + Math.cos(a) * t1, y + Math.sin(a) * t1);
+    g.lineTo(x + Math.cos(a) * t2, y + Math.sin(a) * t2);
+    g.strokeStyle = letter === 'N' ? colour : 'rgba(232,240,250,.7)';
+    g.lineWidth = letter === 'N' ? 2.4 : 1.6;
+    g.stroke();
+  }
 }
 
 /* ---------------- marking a door ---------------- */
@@ -1352,14 +1556,16 @@ async function mark(status) {
     dist: Math.round(c.d), owner: p.owner, addr: p.addr, extra: p.extra,
     occ: p.occ || null, mail: p.mail || '',
     val: p.val || null, sqft: p.sqft || null, saleTs: p.saleTs || null, salePrice: p.salePrice || null,
-    name:'', phone:'', email:'', notes:'', tags:[], follow:'',
+    name:'', goesBy:'', nameFromOwner:false, phone:'', email:'', notes:'', tags:[], follow:'',
   };
   // carry contact details forward, but only from the same book of business
   const prev = state.visits.get(vKey(p.key, state.line));
-  if (prev) { v.name=prev.name; v.phone=prev.phone; v.email=prev.email; v.notes=prev.notes; v.tags=prev.tags||[]; v.follow=prev.follow||''; v.prevId=prev.id; }
+  if (prev) { v.name=prev.name; v.goesBy=prev.goesBy||''; v.nameFromOwner=!!prev.nameFromOwner;
+              v.phone=prev.phone; v.email=prev.email; v.notes=prev.notes; v.tags=prev.tags||[]; v.follow=prev.follow||''; v.prevId=prev.id; }
   // every status this door has ever had, in order. A "talked" that later turns
   // into "don't come back" is the story, and the last status alone loses it.
   v.log = [...logOf(prev), { id:newId(), ts:v.ts, kind:'status', status, text:'' }];
+  applyOwnerNameFallback(v);
   state.visits.set(vKey(v.key, v.line), v);
   state.visitLog.push(v);
   state.lastVisitId = v.id;
@@ -1457,8 +1663,14 @@ let editing = null;
     so re-rendering the sheet (tag/status taps) never throws away typing */
 function pullDetail() {
   if (!editing) return;
+  const typedName = $('dName').value.trim();
+  if (typedName !== (editing.name || '')) editing.nameFromOwner = false;   // he edited it, so it is his now
+  // clearing the field on purpose has to stick, otherwise the deed name he just
+  // deleted walks straight back in on the next save
+  if (!typedName && (editing.name || '')) editing.nameCleared = true;
+  if (typedName) editing.nameCleared = false;
+  editing.name   = typedName;
   editing.goesBy = $('dGoesBy').value.trim();
-  editing.name  = $('dName').value.trim();
   editing.phone = $('dPhone').value.trim();
   editing.email = $('dEmail').value.trim();
   const fv = $('dFollow').value;
@@ -1479,7 +1691,8 @@ function openDetail(visit, focusName) {
               pid:c.p.pid, status:'talked', ts:Date.now(), lat:state.pos.lat, lon:state.pos.lon,
               acc:state.pos.acc, dist:Math.round(c.d), owner:c.p.owner, addr:c.p.addr, extra:c.p.extra,
               occ:c.p.occ||null, mail:c.p.mail||'',
-              name:'', phone:'', email:'', notes:'', tags:[], follow:'', _new:true };
+              val:c.p.val||null, sqft:c.p.sqft||null, saleTs:c.p.saleTs||null, salePrice:c.p.salePrice||null,
+              name:'', goesBy:'', nameFromOwner:false, phone:'', email:'', notes:'', tags:[], follow:'', _new:true };
       }
     }
   }
@@ -1497,9 +1710,10 @@ function openDetail(visit, focusName) {
         ? `<div style="margin-top:6px;color:#fbbf24;font-weight:700">⚠️ Likely a rental. Owner's mail goes to ${esc(mail || 'another address')}.</div>`
         : mail ? `<div style="margin-top:6px;color:var(--dim)">Owner mail: ${esc(mail)}${occ==='owner'?' (same address)':''}</div>`
                : (why ? `<div style="margin-top:6px;color:var(--dim)">Occupancy unknown: ${esc(why)}.</div>` : ''));
-  $('dGoesBy').value = v.goesBy || '';
-  $('dOwnerRec').textContent = v.owner ? `County record: ${v.owner}` : '';
-  $('dName').value = v.name||''; $('dPhone').value = v.phone||'';
+  $('dName').value = v.name||''; $('dGoesBy').value = v.goesBy||'';
+  $('dNameNote').textContent = nameIsFromDeed(v) ? 'This came off the county deed, not from the door.' : '';
+  renderPropPanel(withParcelStats(v, state.parcels.get(v.key)));
+  $('dPhone').value = v.phone||'';
   $('dEmail').value = v.email||'';
   const sw = $('dStatus'); sw.innerHTML = '';
   Object.entries(STATUS).forEach(([k,s]) => {
@@ -1548,14 +1762,16 @@ function openDetail(visit, focusName) {
     clr.onclick = () => { pullDetail(); editing.followAt = null; editing.followDone = false; openDetail(editing); };
     fz.appendChild(clr);
   }
-  $('dFollow').value = editing.followAt
+  $('dFollow').value = (editing.followAt && !editing.followDone)
     ? new Date(editing.followAt - new Date().getTimezoneOffset()*60000).toISOString().slice(0,16) : '';
 
   renderLog();
   openSheet('detailSheet');
   if (focusName) setTimeout(() => { const el = $('dName'); el.focus({preventScroll:false}); }, 220);
 }
-/* The log: newest at the bottom, notes editable in place, status marks fixed. */
+/* The log: newest at the bottom. Notes are editable in place; anything in the
+   log including a status mark can be deleted, behind a confirm. Travis settled
+   that on 2026-07-26: a mistapped door should be cleanable. */
 function renderLog() {
   const host = $('dLog'); host.innerHTML = '';
   const entries = logOf(editing).sort((a,b) => a.ts - b.ts);
@@ -1617,6 +1833,7 @@ function addLogNote() {
 async function saveDetail() {
   if (!editing) return;
   pullDetail();
+  applyOwnerNameFallback(editing);
   // a status changed by hand belongs in the log too
   const lg = logOf(editing);
   const lastStatus = [...lg].reverse().find(e => e.kind === 'status');
@@ -1657,7 +1874,7 @@ async function clearDetailContent() {
     + 'The status marks stay, so it still shows on the map as a door you worked.')) return;
   const slot = vKey(editing.key, editing.line);
   for (const v of state.visitLog.filter(x => vKey(x.key, x.line) === slot)) {
-    v.name = ''; v.phone = ''; v.email = ''; v.notes = '';
+    v.name = ''; v.goesBy = ''; v.nameFromOwner = false; v.phone = ''; v.email = ''; v.notes = '';
     v.tags = []; v.dispo = 'new'; v.followAt = null; v.followDone = false;
     v.log = logOf(v).filter(e => e.kind === 'status');
     await DB.put('visits', v).catch(()=>{});
@@ -1667,136 +1884,6 @@ async function clearDetailContent() {
   flashToast('Notes and tags cleared', 'The door marks are still there', '#f59e0b');
   openDetail(editing);
   renderStrip(); if (window._map) refreshMapLayers();
-}
-
-/* ---------------- travel time, pace and the schedule ----------------
-   "How long until you're home?" is really three legs: walk to the truck, drive
-   from there, and whatever slack is left before the next thing. Walking pace is
-   measured from his own breadcrumbs rather than assumed, and drive time comes
-   from a real router with a straight-line fallback when there is no signal.
-   Note the routers give free-flow time with no live traffic. */
-const PACE_DEFAULT = 1.35;            // m/s, an ordinary walking pace
-function measuredPace() {
-  let metres = 0, seconds = 0;
-  for (const d of state.days.values()) {
-    for (let i = 1; i < d.pts.length; i++) {
-      const dt = (d.pts[i].ts - d.pts[i-1].ts) / 1000;
-      if (dt <= 0 || dt > 25) continue;                       // ignore gaps and stops
-      const m = haversine(d.pts[i-1].lat, d.pts[i-1].lon, d.pts[i].lat, d.pts[i].lon);
-      if (m < 1 || m / dt > 3.5) continue;                    // ignore noise and driving
-      metres += m; seconds += dt;
-    }
-  }
-  if (seconds < 120 || metres < 150) return { pace: PACE_DEFAULT, measured: false };
-  const pace = Math.min(2.0, Math.max(0.7, metres / seconds));
-  return { pace, measured: true, metres, seconds };
-}
-const routeCache = new Map();
-async function driveTime(from, to) {
-  if (!from || !to) return null;
-  const key = [from.lat, from.lon, to.lat, to.lon].map(n => n.toFixed(4)).join(',');
-  if (routeCache.has(key)) return routeCache.get(key);
-  const straight = haversine(from.lat, from.lon, to.lat, to.lon);
-  const fallback = { mins: Math.round(straight * 1.35 / 1609 / 35 * 60), miles: +(straight*1.35/1609).toFixed(1), est: true };
-  try {
-    const u = `https://router.project-osrm.org/route/v1/driving/${from.lon},${from.lat};${to.lon},${to.lat}?overview=false`;
-    const r = await fetch(u, {mode:'cors'});
-    const j = await r.json();
-    if (j.routes && j.routes[0]) {
-      const out = { mins: Math.round(j.routes[0].duration/60), miles: +(j.routes[0].distance/1609).toFixed(1), est:false };
-      routeCache.set(key, out); return out;
-    }
-  } catch (e) {}
-  try {
-    const u = 'https://valhalla1.openstreetmap.de/route?json=' + encodeURIComponent(JSON.stringify({
-      locations:[{lat:from.lat,lon:from.lon},{lat:to.lat,lon:to.lon}], costing:'auto', units:'miles' }));
-    const r = await fetch(u, {mode:'cors'});
-    const j = await r.json();
-    if (j.trip) {
-      const out = { mins: Math.round(j.trip.summary.time/60), miles: +j.trip.summary.length.toFixed(1), est:false };
-      routeCache.set(key, out); return out;
-    }
-  } catch (e) {}
-  routeCache.set(key, fallback);
-  return fallback;
-}
-async function geocode(q) {
-  const u = 'https://nominatim.openstreetmap.org/search?' + new URLSearchParams({
-    q, format:'json', limit:'1', countrycodes:'us' });
-  const r = await fetch(u, {mode:'cors', headers:{Accept:'application/json'}});
-  const j = await r.json();
-  if (!j.length) return null;
-  return { lat:+j[0].lat, lon:+j[0].lon, label:j[0].display_name };
-}
-const mins = n => n == null ? '—' : n < 60 ? `${n} min` : `${Math.floor(n/60)} hr ${n%60} min`;
-
-/* appointments the user types in, kept beside the door follow-ups */
-async function loadAppts() { state.appts = (await DB.all('appts').catch(()=>[])) || []; }
-function scheduleItems() {
-  const fromFollow = dueList().map(v => ({
-    id:v.id, kind:'follow', at:v.followAt, title:v.goesBy || v.name || v.owner || v.addr,
-    where:v.addr, lat:v.lat, lon:v.lon, visit:v }));
-  const fromAppt = (state.appts||[]).map(a => ({
-    id:a.id, kind:'appt', at:a.at, title:a.title, where:a.where, lat:a.lat, lon:a.lon, appt:a }));
-  return [...fromFollow, ...fromAppt].sort((a,b) => a.at - b.at);
-}
-const nextUp = () => scheduleItems().find(i => i.at > Date.now() - 30*60000) || null;
-
-/* ---------------- the time panel ---------------- */
-async function openEta() {
-  openSheet('etaSheet');
-  const host = $('etaBody');
-  host.innerHTML = '<p style="color:var(--dim)">Working it out…</p>';
-  const { pace, measured } = measuredPace();
-  const pos = state.pos;
-  const home = state.home;
-  const truck = state.vehicle;
-  const next = nextUp();
-
-  const walkFrom = (a, b) => a && b ? Math.round(haversine(a.lat, a.lon, b.lat, b.lon) / pace / 60) : null;
-  const toTruck = walkFrom(pos, truck);
-  const start = truck || pos;                       // you drive from wherever the truck is
-  const [homeDrive, apptDrive] = await Promise.all([
-    home ? driveTime(start, home) : null,
-    next && next.lat ? driveTime(start, {lat:next.lat, lon:next.lon}) : null,
-  ]);
-
-  const block = (label, value, sub) =>
-    `<div class="etaRow"><div><div class="etaLabel">${esc(label)}</div>
-     ${sub ? `<div class="etaSub">${esc(sub)}</div>` : ''}</div>
-     <div class="etaVal">${esc(value)}</div></div>`;
-
-  let html = '';
-  html += block('Walking pace', `${(pace*2.237).toFixed(1)} mph`,
-    measured ? 'measured from your own tracks' : 'default, walk a bit more and it learns yours');
-  html += truck ? block('Walk back to the truck', mins(toTruck),
-      `${Math.round(haversine(pos.lat,pos.lon,truck.lat,truck.lon))} m away`)
-    : block('Truck', 'not parked', 'press and hold the map hub to drop a pin');
-
-  if (home && homeDrive) {
-    const total = (toTruck || 0) + homeDrive.mins;
-    html += block('Home', mins(total),
-      `${toTruck ? mins(toTruck) + ' walk, then ' : ''}${mins(homeDrive.mins)} drive, ${homeDrive.miles} mi`
-      + (homeDrive.est ? ' (rough, no signal)' : ''));
-  } else if (!home) {
-    html += block('Home', 'not set', 'set it below');
-  }
-
-  if (next) {
-    const total = (toTruck || 0) + (apptDrive ? apptDrive.mins : 0);
-    const at = new Date(next.at);
-    const slack = Math.round((next.at - Date.now())/60000) - total;
-    html += block(next.kind === 'appt' ? 'Next appointment' : 'Next follow-up', mins(total),
-      `${next.title || ''} · ${at.toLocaleTimeString([], {hour:'numeric', minute:'2-digit'})}`
-      + (apptDrive ? ` · ${apptDrive.miles} mi` : ''));
-    html += `<div class="etaVerdict ${slack < 0 ? 'bad' : slack < 10 ? 'warn' : 'ok'}">${
-      slack < 0 ? `You are ${mins(-slack)} behind for this one.`
-      : `Leave within ${mins(slack)} and you make it.`}</div>`;
-  } else {
-    html += block('Next appointment', 'nothing booked', 'add one below');
-  }
-  host.innerHTML = html;
-  renderHomeInfo(); renderSchedule();
 }
 
 /* ---------------- sheets ---------------- */
@@ -1906,10 +1993,10 @@ function refreshMapLayers() {
       });
       poly.on('click', () => {
         const ex = visitFor(p.key, state.line) || alt;
-        openDetail(ex || { id:'v'+Date.now()+Math.random().toString(36).slice(2,6), key:p.key, county:p.county,
+        openDetail(withParcelStats(ex || { id:'v'+Date.now()+Math.random().toString(36).slice(2,6), key:p.key, county:p.county,
           pid:p.pid, status:'noanswer', line:state.line, ts:Date.now(), lat:p.cen[1], lon:p.cen[0], acc:0, dist:0,
           owner:p.owner, addr:p.addr, extra:p.extra, occ:p.occ||null, mail:p.mail||'',
-          name:'',phone:'',email:'',notes:'',tags:[],follow:'', _new:true });
+          name:'',goesBy:'',nameFromOwner:false,phone:'',email:'',notes:'',tags:[],follow:'', _new:true }, p));
       });
       pl.addLayer(poly);
       if (mapOpts.names && z >= 18 && p.owner) {
@@ -2009,42 +2096,105 @@ async function openDays() {
 /* ---------------- erase an area of track ----------------
    A box you can drag around and resize by its corner, so you can see exactly
    what is about to go before it goes. */
-let eraseMode = false, eraseCorner = null, eraseRect = null, eraseHandle = null;
-function startErase() {
-  eraseMode = true;
-  const m = window._map, b = m.getBounds(), c = m.getCenter();
+/* A box you can actually move.
+   The old one bound `mousedown` only, so on a phone nothing but the corner
+   handle responded and the box could never be dragged. Pointer events cover
+   mouse and touch in one path. Every listener is removed on destroy, which the
+   old version never did. Shared by "erase area" and "pick an area to go back to". */
+function makeMapBox(map, bounds, opts) {
+  const o = opts || {};
+  const color = o.color || '#dc2626';
+  const rect = L.rectangle(bounds, { color, weight:2, fillColor:color, fillOpacity:.18, interactive:false }).addTo(map);
+  const icon = L.divIcon({ className:'', iconSize:[26,26],
+    html:`<div class="ehandle" style="background:${color}"></div>` });
+  const hNE = L.marker(bounds.getNorthEast(), { icon, interactive:false }).addTo(map);
+  const hSW = L.marker(bounds.getSouthWest(), { icon, interactive:false }).addTo(map);
+  const el = map.getContainer();
+  let mode = null, last = null;
+
+  const ptOf = e => { const r = el.getBoundingClientRect(); return L.point(e.clientX - r.left, e.clientY - r.top); };
+  const sync = () => {
+    const b = rect.getBounds();
+    hNE.setLatLng(b.getNorthEast()); hSW.setLatLng(b.getSouthWest());
+    if (o.onChange) o.onChange(b);
+  };
+  const down = e => {
+    const p = ptOf(e), b = rect.getBounds();
+    const ne = map.latLngToContainerPoint(b.getNorthEast());
+    const sw = map.latLngToContainerPoint(b.getSouthWest());
+    // the grab zone shrinks with the box, or on a small box the two corner zones
+    // cover the whole rectangle and it can never be moved again
+    const grab = Math.max(10, Math.min(24, Math.min(Math.abs(ne.x - sw.x), Math.abs(ne.y - sw.y)) * 0.3));
+    const near = (a, q) => Math.abs(a.x - q.x) < grab && Math.abs(a.y - q.y) < grab;
+    if (near(p, ne)) mode = 'ne';
+    else if (near(p, sw)) mode = 'sw';
+    else if (p.x > Math.min(ne.x, sw.x) && p.x < Math.max(ne.x, sw.x)
+          && p.y > Math.min(ne.y, sw.y) && p.y < Math.max(ne.y, sw.y)) mode = 'move';
+    else return;                                  // outside the box: let the map pan
+    last = map.containerPointToLatLng(p);
+    map.dragging.disable();
+    e.preventDefault(); e.stopPropagation();
+  };
+  const move = e => {
+    if (!mode) return;
+    const ll = map.containerPointToLatLng(ptOf(e)), b = rect.getBounds();
+    if (mode === 'move') {
+      const dy = ll.lat - last.lat, dx = ll.lng - last.lng;
+      rect.setBounds(L.latLngBounds([b.getSouth()+dy, b.getWest()+dx], [b.getNorth()+dy, b.getEast()+dx]));
+    } else if (mode === 'ne') {
+      rect.setBounds(L.latLngBounds([b.getSouth(), b.getWest()], [ll.lat, ll.lng]));
+    } else {
+      rect.setBounds(L.latLngBounds([ll.lat, ll.lng], [b.getNorth(), b.getEast()]));
+    }
+    last = ll; sync(); e.preventDefault();
+  };
+  const up = () => { if (!mode) return; mode = null; map.dragging.enable(); };
+
+  el.addEventListener('pointerdown', down, { passive:false });
+  el.addEventListener('pointermove', move, { passive:false });
+  window.addEventListener('pointerup', up);
+  window.addEventListener('pointercancel', up);
+  // NOT sync() here: onChange would fire before the caller has a reference to
+  // hand back, and any callback that touches that reference would throw, leaving
+  // a live box on the map that nothing can destroy. The caller calls refresh().
+  const api = {
+    refresh: sync,
+    getBounds: () => rect.getBounds(),
+    contains: (lat, lon) => { const b = rect.getBounds();
+      return lat >= b.getSouth() && lat <= b.getNorth() && lon >= b.getWest() && lon <= b.getEast(); },
+    destroy() {
+      el.removeEventListener('pointerdown', down);
+      el.removeEventListener('pointermove', move);
+      window.removeEventListener('pointerup', up);
+      window.removeEventListener('pointercancel', up);
+      [rect, hNE, hSW].forEach(l => { try { map.removeLayer(l); } catch(e) {} });
+      map.dragging.enable();
+    },
+  };
+  return api;
+}
+/** a box roughly a fifth of the current view, centred */
+function defaultBoxBounds(map) {
+  const b = map.getBounds(), c = map.getCenter();
   const dLat = (b.getNorth() - b.getSouth()) * 0.18, dLon = (b.getEast() - b.getWest()) * 0.22;
-  const bounds = L.latLngBounds([c.lat - dLat, c.lng - dLon], [c.lat + dLat, c.lng + dLon]);
-  eraseRect = L.rectangle(bounds, { color:'#dc2626', weight:2, fillColor:'#dc2626', fillOpacity:.22, interactive:true }).addTo(m);
-  eraseHandle = L.marker(bounds.getNorthEast(), { draggable:true, icon: L.divIcon({
-    className:'', iconSize:[26,26], html:'<div class="ehandle"></div>' }) }).addTo(m);
-  // drag the middle to move the whole box
-  let dragFrom = null;
-  eraseRect.on('mousedown touchstart', () => { m.dragging.disable(); });
-  m.on('mousemove touchmove', ev => {
-    if (!dragFrom) return;
-    const b0 = eraseRect.getBounds();
-    const dy = ev.latlng.lat - dragFrom.lat, dx = ev.latlng.lng - dragFrom.lng;
-    eraseRect.setBounds(L.latLngBounds([b0.getSouth()+dy, b0.getWest()+dx], [b0.getNorth()+dy, b0.getEast()+dx]));
-    eraseHandle.setLatLng(eraseRect.getBounds().getNorthEast());
-    dragFrom = ev.latlng;
-    updateEraseCount();
-  });
-  eraseRect.on('mousedown', ev => { dragFrom = ev.latlng; });
-  m.on('mouseup touchend', () => { dragFrom = null; m.dragging.enable(); });
-  eraseHandle.on('drag', () => {
-    const b0 = eraseRect.getBounds(), p = eraseHandle.getLatLng();
-    eraseRect.setBounds(L.latLngBounds([b0.getSouth(), b0.getWest()], [p.lat, p.lng]));
-    updateEraseCount();
-  });
+  return L.latLngBounds([c.lat - dLat, c.lng - dLon], [c.lat + dLat, c.lng + dLon]);
+}
+
+let eraseMode = false, eraseBox = null;
+function startErase() {
+  if (!window._map) { flashToast('Map still loading', 'Give it a second', '#f59e0b'); return; }
+  eraseMode = true;
+  eraseBox = makeMapBox(window._map, defaultBoxBounds(window._map), { color:'#dc2626', onChange: updateEraseCount });
+  setBoxBar('erase');
+  eraseBox.refresh();
   $('eraseBar').classList.remove('hide');
   $('mapErase').classList.add('on');
   $('eraseGo').classList.remove('hide');
   updateEraseCount();
 }
 function pointsInBox() {
-  if (!eraseRect) return 0;
-  const b = eraseRect.getBounds();
+  if (!eraseBox) return 0;
+  const b = eraseBox.getBounds();
   let n = 0;
   for (const d of state.days.values())
     n += d.pts.filter(p => p.lat>=b.getSouth() && p.lat<=b.getNorth() && p.lon>=b.getWest() && p.lon<=b.getEast()).length;
@@ -2053,24 +2203,23 @@ function pointsInBox() {
 function updateEraseCount() {
   const n = pointsInBox();
   $('eraseTxt').textContent = n
-    ? `${n} track point${n===1?'':'s'} inside. Drag the box, pull the corner to resize.`
+    ? `${n} track point${n===1?'':'s'} inside. Drag the middle to move it, either corner to resize.`
     : 'Drag the box over the track you want gone.';
   $('eraseGo').textContent = n ? `Clear ${n}` : 'Clear';
   $('eraseGo').style.opacity = n ? 1 : .45;
 }
 function cancelErase() {
-  eraseMode = false; eraseCorner = null;
-  if (eraseRect) { window._map.removeLayer(eraseRect); eraseRect = null; }
-  if (eraseHandle) { window._map.removeLayer(eraseHandle); eraseHandle = null; }
-  if (window._map) window._map.dragging.enable();
+  eraseMode = false;
+  if (eraseBox) { eraseBox.destroy(); eraseBox = null; }
+  setBoxBar(null);
   $('eraseBar').classList.add('hide');
   $('eraseGo').classList.add('hide');
   $('mapErase').classList.remove('on');
   refreshMapLayers();
 }
 async function commitErase() {
-  if (!eraseRect) return cancelErase();
-  const bb = eraseRect.getBounds();
+  if (!eraseBox) return cancelErase();
+  const bb = eraseBox.getBounds();
   const s = bb.getSouth(), n = bb.getNorth(), w = bb.getWest(), e = bb.getEast();
   const hit = pointsInBox();
   if (!hit) { flashToast('Nothing in that box', 'Drag it over the track you want gone', '#64748b'); return; }
@@ -2120,17 +2269,18 @@ function visitsFor(o) {
 function exportCsv(o) {
   const rows = visitsFor(o);
   if (!rows.length) { flashToast('Nothing matches those options','','#64748b'); return; }
-  const head = ['Date','Time','Work','Status','Address','Owner (county record)','Owner goes by','Status history','Market value','Floor area sq ft','Last sale date','Last sale price','Likely rental','Owner mailing address','County','Parcel ID','Contact name','Phone','Email','Tags','Stage','Follow up','Notes','Year built','Latitude','Longitude','GPS accuracy m','Distance to lot m'];
-  const yr = v => v.extra && (v.extra.RESYRBLT||v.extra.YRBUILT||v.extra.YearBuilt||v.extra.YRBLT||v.extra.PPYearBuilt) || '';
+  const head = ['Date','Time','Work','Status','Address','Owner','Status history','Market value','Floor area sq ft','Last sale date','Last sale price','Likely rental','Owner mailing address','County','Parcel ID','Contact name','Name from deed','Goes by','Area','Phone','Email','Tags','Stage','Follow up','Notes','Year built','Latitude','Longitude','GPS accuracy m','Distance to lot m'];
+  const yr = v => yearBuilt(v) || '';
   const lines = [head.map(q).join(',')];
   rows.forEach(v => {
     const d = new Date(v.ts);
     lines.push([d.toLocaleDateString(), d.toLocaleTimeString(), LINES[v.line||'roof'].label,
-      STATUS[v.status].label, v.addr, v.owner, v.goesBy || '', histText(v),
+      STATUS[v.status].label, v.addr, v.owner, histText(v),
       v.val || '', v.sqft ? Math.round(v.sqft) : '',
       v.saleTs ? new Date(v.saleTs).toLocaleDateString() : '', v.salePrice || '',
       v.occ === 'rental' ? 'YES' : v.occ === 'owner' ? 'no' : '', v.mail || '',
-      (COUNTIES.find(c=>c.key===v.county)||{}).name, v.pid, v.name, v.phone, v.email,
+      (COUNTIES.find(c=>c.key===v.county)||{}).name, v.pid, v.name,
+      nameIsFromDeed(v) ? 'yes' : '', v.goesBy || '', areaOf(v), v.phone, v.email,
       (v.tags||[]).join('; '), (DISPO[v.dispo||'new']||{}).label,
       v.followAt ? new Date(v.followAt).toLocaleString() : '', noteText(v), yr(v),
       v.lat.toFixed(6), v.lon.toFixed(6), Math.round(v.acc||0), v.dist].map(q).join(','));
@@ -2144,7 +2294,7 @@ function exportGeo(o) {
     return { type:'Feature',
       properties:{ work:LINES[v.line||'roof'].label, status:STATUS[v.status].label,
         address:v.addr, owner:v.owner, parcel:v.pid,
-        county:v.county, when:new Date(v.ts).toISOString(), contact:v.name, phone:v.phone,
+        county:v.county, when:new Date(v.ts).toISOString(), contact:v.name, goesBy:v.goesBy||'', phone:v.phone,
         email:v.email, tags:(v.tags||[]).join('; '), notes:v.notes,
         'marker-color':STATUS[v.status].color, fill:STATUS[v.status].color },
       geometry: p ? { type:'Polygon', coordinates:p.rings } : { type:'Point', coordinates:[v.lon, v.lat] } };
@@ -2161,7 +2311,8 @@ function exportGeo(o) {
   download(`canvass-${xName(o)}.geojson`, JSON.stringify({type:'FeatureCollection',features:feats}), 'application/geo+json');
 }
 async function backup() {
-  const data = { v:2, exported:new Date().toISOString(),
+  const data = { v:3, exported:new Date().toISOString(),
+    home: state.home, appts: state.appts, driveAdj: state.driveAdj,
     visits: await DB.all('visits'), days: await DB.all('days'), vehicle: state.vehicle };
   download(`canvass-backup-${stamp()}.json`, JSON.stringify(data), 'application/json');
   localStorage.setItem('lastBackup', String(Date.now()));
@@ -2337,7 +2488,9 @@ function renderTruck() {
   const el = $('truckPill');
   if (!state.vehicle || !state.pos) { el.classList.add('hide'); return; }
   const d = haversine(state.pos.lat, state.pos.lon, state.vehicle.lat, state.vehicle.lon);
-  if (d < 20) { el.classList.add('hide'); return; }
+  // Standing at the truck is exactly when someone rings to ask how long until you
+  // are home, so the chip stays reachable instead of hiding itself.
+  if (d < 20) { el.classList.remove('hide'); el.textContent = '🚚 at truck'; return; }
   const brg = bearingTo(state.pos.lat, state.pos.lon, state.vehicle.lat, state.vehicle.lon);
   const dir = COMPASS[Math.round(brg / 45) % 8];
   el.classList.remove('hide');
@@ -2384,6 +2537,102 @@ function renderStats() {
     <div class="stat"><b style="color:${LINES.appraisal.color}">${lineTotal('appraisal')}</b>appraisal all time</div>`;
   document.querySelectorAll('.statsbox').forEach(el => el.innerHTML = html);
 }
+/* What can be printed on the hub map. Order here is the order on screen. */
+const HUB_FIELDS = [
+  ['owner', 'Owner',      p => shortOwner(p.owner || '').slice(0, 13)],
+  ['value', 'Value',      p => money(p.val)],
+  ['built', 'Year built', p => { const y = yearBuilt(p); return y ? 'b' + String(y).slice(-2) : ''; }],
+  ['sold',  'Year sold',  p => p.saleTs ? 's' + String(new Date(p.saleTs).getFullYear()).slice(-2) : ''],
+  ['sqft',  'Sq ft',      p => p.sqft == null ? '' : (p.sqft >= 10000 ? (p.sqft/1000).toFixed(1) + 'k' : String(Math.round(p.sqft))) + 'sf'],
+];
+const hubShows = k => state.hubData.includes(k);
+function renderHubDataChips() {
+  const el = $('mHubData'); if (!el) return;
+  el.innerHTML = '';
+  HUB_FIELDS.forEach(([k, label]) => {
+    const b = document.createElement('button');
+    b.className = 'chip' + (hubShows(k) ? ' on' : ''); b.textContent = label;
+    b.onclick = () => {
+      state.hubData = hubShows(k) ? state.hubData.filter(x => x !== k) : [...state.hubData, k];
+      localStorage.setItem('hubData', JSON.stringify(state.hubData));
+      renderHubDataChips(); drawMini();
+    };
+    el.appendChild(b);
+  });
+  const off = !state.hubData.length;
+  const b = document.createElement('button');
+  b.className = 'chip' + (off ? ' on' : ''); b.textContent = 'Nothing';
+  b.onclick = () => { state.hubData = []; localStorage.setItem('hubData', '[]'); renderHubDataChips(); drawMini(); };
+  el.appendChild(b);
+}
+/* Two lines at most: the owner on top if it is on, the figures underneath.
+   Anything more than that is unreadable on a circle this size. */
+function hubLabelLines(p) {
+  const val = k => (HUB_FIELDS.find(f => f[0] === k)[2])(p) || '';
+  const lines = [];
+  if (hubShows('owner')) { const o = val('owner'); if (o) lines.push(o); }
+  const figures = ['value','built','sold','sqft'].filter(hubShows).map(val).filter(Boolean);
+  if (figures.length) {
+    if (lines.length || figures.length <= 3) lines.push(figures.join(' '));
+    else { lines.push(figures.slice(0,2).join(' ')); lines.push(figures.slice(2).join(' ')); }
+  }
+  return lines.slice(0, 2);
+}
+
+/* ---------------- the property summary ----------------
+   Everything here is already on the record from the auditor, so it costs no
+   network call and works with no signal. It is deliberately facts only: the
+   auditor publishes nothing about a roof, and this panel does not pretend
+   otherwise. What it gives is the setup for the judgement made at the curb. */
+const CLASS_FIELDS = ['CLASSDSCRP','CLASS','ParcelClass','PPClass'];
+function propClass(v) {
+  const a = (v && v.extra) || {};
+  for (const k of CLASS_FIELDS) if (a[k] != null && String(a[k]).trim()) return String(a[k]).trim();
+  return '';
+}
+const yearsSince = ts => Math.floor((Date.now() - ts) / (365.25 * DAY));
+/* A record made before the auditor figures were captured, or one built fresh from
+   a map tap, has no value or floor area on it. The parcel is in hand either way,
+   so fill the gaps from it rather than showing an empty panel. Display only: the
+   record is not written back unless he saves it. */
+function withParcelStats(rec, p) {
+  if (!rec || !p) return rec;
+  if (rec.val == null && p.val != null) rec.val = p.val;
+  if (rec.sqft == null && p.sqft != null) rec.sqft = p.sqft;
+  if (rec.saleTs == null && p.saleTs != null) rec.saleTs = p.saleTs;
+  if (rec.salePrice == null && p.salePrice != null) rec.salePrice = p.salePrice;
+  if ((!rec.extra || !Object.keys(rec.extra).length) && p.extra) rec.extra = p.extra;
+  return rec;
+}
+function renderPropPanel(v) {
+  const el = $('dProp'); if (!el) return;
+  const built = yearBuilt(v);
+  const cells = [];
+  if (built) {
+    const age = new Date().getFullYear() - built;
+    cells.push(`<div class="pc"><span>Built</span><b>${built}</b><em>${age} year${age===1?'':'s'} old</em></div>`);
+  }
+  if (v.val != null) cells.push(`<div class="pc"><span>Auditor value</span><b>${esc(money(v.val))}</b></div>`);
+  if (v.sqft != null) cells.push(`<div class="pc"><span>Floor area</span><b>${esc(Math.round(v.sqft).toLocaleString())}</b><em>square feet</em></div>`);
+  if (v.saleTs) {
+    const yrs = yearsSince(v.saleTs);
+    cells.push(`<div class="pc"><span>Last sold</span><b>${esc(new Date(v.saleTs).toLocaleDateString([], {month:'short', year:'numeric'}))}</b>`
+      + `<em>${v.salePrice ? esc(money(v.salePrice)) + ' · ' : ''}${yrs < 1 ? 'this year' : yrs + ' yr ago'}</em></div>`);
+  }
+  if (!cells.length) { el.classList.add('hide'); el.innerHTML = ''; return; }
+
+  const cls = propClass(v);
+  const meta = [ (COUNTIES.find(c => c.key === v.county) || {}).name
+                   ? (COUNTIES.find(c => c.key === v.county) || {}).name + ' County auditor' : '',
+                 v.pid ? 'parcel ' + v.pid : '', cls ].filter(Boolean).join(' · ');
+
+  el.classList.remove('hide');
+  el.innerHTML = `<div class="pg">${cells.join('')}</div>`
+    + (meta ? `<div class="pmeta">${esc(meta)}</div>` : '')
+    + `<div class="pnote">The auditor records nothing about the roof, so none of this dates one. `
+    + `It is the background for the call you make at the curb.</div>`;
+}
+
 function renderDetailChips() {
   const el = $('mDetail'); el.innerHTML = '';
   [['normal','Normal'],['fine','Fine']].forEach(([v,label]) => {
@@ -2432,7 +2681,7 @@ $('hubSat').onclick = e => {
   $('hubSat').classList.toggle('on', state.hubSat);
   buzz(10); drawMini();
 };
-$('truckPill').onclick = openEta;
+$('truckPill').onclick = openTravel;
 
 /* Mini map: tap opens the big map, press-and-hold parks the truck.
    The hold must cancel the tap, or you would get a map every time you park. */
@@ -2472,85 +2721,22 @@ $('truckPill').onclick = openEta;
 })();
 $('toastUndo').onclick = undoLast;
 $('toastSwap').onclick = reassignLast;
-$('menuBtn').onclick = () => { renderStats(); renderSnapChips(); renderDetailChips(); renderDiag(); renderParkInfo(); renderBackupNag(); renderPinInfo(); openSheet('menuSheet'); };
+$('menuBtn').onclick = () => { renderStats(); renderSnapChips(); renderDetailChips(); renderDiag(); renderParkInfo(); renderBackupNag(); renderPinInfo(); renderHomeInfo(); renderPaceInfo(); renderDriveChips(); renderHubDataChips(); openSheet('menuSheet'); };
 $('mCrm').onclick = openCrm;
-$('mEta').onclick = openEta;
-$('crmSearch').oninput = e => { crmQuery = e.target.value; renderCrm(); };
-$('etaHomeHere').onclick = () => {
-  if (!state.pos) { flashToast('No fix yet','','#f59e0b'); return; }
-  state.home = { lat:state.pos.lat, lon:state.pos.lon, label:'set from your position' };
-  localStorage.setItem('home', JSON.stringify(state.home)); renderHomeInfo(); openEta();
-};
-$('etaHomeAddr').onclick = async () => {
-  const q = prompt('Home address');
-  if (!q) return;
-  $('etaHomeInfo').textContent = 'Looking that up…';
-  try {
-    const g = await geocode(q);
-    if (!g) { $('etaHomeInfo').textContent = 'Could not find that address.'; return; }
-    state.home = g; localStorage.setItem('home', JSON.stringify(g)); renderHomeInfo(); openEta();
-  } catch (e) { $('etaHomeInfo').textContent = 'Address lookup needs signal.'; }
-};
-$('etaHomeClear').onclick = () => { state.home = null; localStorage.removeItem('home'); renderHomeInfo(); openEta(); };
-$('etaAddAppt').onclick = () => {
-  $('apTitle').value = ''; $('apWhere').value = ''; $('apInfo').textContent = '';
-  const d = new Date(Date.now() + 3600000); d.setMinutes(0,0,0);
-  $('apWhen').value = new Date(d - new Date().getTimezoneOffset()*60000).toISOString().slice(0,16);
-  window._apPos = null;
-  openSheet('apptSheet');
-};
-$('apHere').onclick = () => {
-  if (!state.pos) return;
-  window._apPos = { lat:state.pos.lat, lon:state.pos.lon };
-  $('apWhere').value = 'Where I am now';
-  $('apInfo').textContent = 'Using your current position.';
-};
-$('apSave').onclick = async () => {
-  const title = $('apTitle').value.trim() || 'Appointment';
-  const when = $('apWhen').value ? Date.parse($('apWhen').value) : null;
-  if (!when) { flashToast('Pick a date and time','','#f59e0b'); return; }
-  let pos = window._apPos, where = $('apWhere').value.trim();
-  if (!pos && where) {
-    $('apInfo').textContent = 'Looking that address up…';
-    try { const g = await geocode(where); if (g) { pos = {lat:g.lat, lon:g.lon}; where = g.label.split(',').slice(0,3).join(','); } }
-    catch (e) {}
-  }
-  const a = { id:'a'+Date.now(), at:when, title, where, lat:pos?pos.lat:null, lon:pos?pos.lon:null };
-  await DB.put('appts', a); await loadAppts();
-  closeSheet('apptSheet'); buzz(20);
-  flashToast('Appointment saved', pos ? '' : 'No location, so no drive time for this one', '#22c55e');
-  openEta();
-};
-function renderHomeInfo() {
-  $('etaHomeInfo').textContent = state.home
-    ? `Home set${state.home.label ? ': ' + state.home.label.split(',').slice(0,3).join(',') : ''}.`
-    : 'No home set, so there is nothing to count back from.';
-}
-function renderSchedule() {
-  const host = $('etaSchedule'); if (!host) return;
-  const items = scheduleItems().filter(i => i.at > Date.now() - 12*3600000).slice(0, 12);
-  if (!items.length) { host.innerHTML = '<p style="color:var(--dim);font-size:13px">Nothing booked.</p>'; return; }
-  host.innerHTML = '';
-  items.forEach(i => {
-    const d = new Date(i.at);
-    const el = document.createElement('div'); el.className = 'crmRow';
-    el.innerHTML = `<div class="sw" style="background:${i.kind==='appt'?'#a855f7':'#f59e0b'}"></div>
-      <div class="t"><div class="a">${esc(i.title || 'Appointment')}</div>
-      <div class="o">${esc(i.where || '')}</div>
-      <div class="m"><span class="dimTxt">${esc(d.toLocaleDateString())} ${esc(d.toLocaleTimeString([], {hour:'numeric', minute:'2-digit'}))}</span>
-      <span class="dimTxt">${esc(whenText(i.at))}</span></div></div>`;
-    if (i.kind === 'appt') {
-      const acts = document.createElement('div'); acts.className = 'crmActs';
-      const del = document.createElement('button'); del.textContent = '\u2715';
-      del.onclick = async e => { e.stopPropagation();
-        if (!confirm('Remove this appointment?')) return;
-        await DB.del('appts', i.id); await loadAppts(); openEta(); };
-      acts.appendChild(del); el.appendChild(acts);
-    } else el.onclick = () => { closeSheet('etaSheet'); openDetail(i.visit); };
-    host.appendChild(el);
-  });
-}
 $('crmIcs').onclick = () => addToCalendar(dueList());
+/* The search box lives in static markup on purpose. Rebuilt inside renderCrm it
+   would lose the caret on every keystroke. */
+$('crmSearch').oninput = e => { crmQuery = e.target.value; renderCrm(); };
+$('crmSearchClear').onclick = () => { crmQuery = ''; $('crmSearch').value = ''; renderCrm(); $('crmSearch').focus(); };
+$('mTravel').onclick = () => { closeSheet('menuSheet'); openTravel(); };
+$('mAppt').onclick = () => { closeSheet('menuSheet'); openAppts(); };
+$('tvSchedule').onclick = () => { closeSheet('travelSheet'); openAppts(); };
+$('tvSetHome').onclick = () => { setHomeHere(); renderTravel(); };
+$('mSetHome').onclick = () => { setHomeHere(); renderHomeInfo(); };
+$('mClearHome').onclick = () => {
+  state.home = null; localStorage.removeItem('home'); renderHomeInfo();
+  flashToast('Home cleared', '', '#64748b');
+};
 $('dIcs').onclick = () => { pullDetail(); addToCalendar([editing]); };
 $('mSession').onclick = openSession;
 $('sesKeep').onclick = () => { if (!state.session) { startSession(); setPaused(false); } closeSheet('sessionSheet'); };
@@ -2603,6 +2789,11 @@ $('restoreFile').onchange = async e => {
     for (const v of (d.visits||[])) await DB.put('visits', v);
     for (const day of (d.days||[])) await DB.put('days', day);
     for (const t of (d.track||[])) await DB.put('track', t);   // v1 backups
+    // a v3 backup carries home explicitly, so an absent one means absent, not unchanged
+    if (d.v >= 3) { if (d.home) localStorage.setItem('home', JSON.stringify(d.home));
+                    else localStorage.removeItem('home'); }
+    if (Array.isArray(d.appts)) localStorage.setItem('appts', JSON.stringify(d.appts));
+    if (d.driveAdj) localStorage.setItem('driveAdj', String(d.driveAdj));
     if (d.vehicle) localStorage.setItem('vehicle', JSON.stringify(d.vehicle));
     state.days.clear();
     await loadStored(); renderStats();
@@ -2613,11 +2804,21 @@ $('mWipe').onclick = async () => {
   if (!confirm('Erase every door you have logged? This cannot be undone.')) return;
   await DB.clear('visits'); await DB.clear('track'); await DB.clear('tiles'); await DB.clear('days');
   state.visitLog = []; state.visits.clear(); state.track = []; state.days.clear(); state.lastVisitId = null;
+  state.home = null; state.appts = []; state.driveAdj = 1;
+  saveHome(); saveAppts(); localStorage.removeItem('driveAdj'); clearPaceCache();
   unpark();
   await loadDay(state.today); state.track = state.days.get(state.today).pts;
   renderStrip(); renderHouse(); renderStats(); closeSheet('menuSheet');
 };
-$('mapClose').onclick = () => $('mapView').classList.add('hide');
+$('mapClose').onclick = () => {
+  if (routePickBox) endRoutePick(false);
+  else if (eraseMode) cancelErase();
+  $('mapView').classList.add('hide');
+};
+$('findInput').oninput = runFind;
+$('findInput').onfocus = runFind;
+$('findClear').onclick = () => { $('findInput').value = ''; renderFind([], ''); $('findClear').classList.add('hide'); $('findInput').focus(); };
+$('findInput').onkeydown = e => { if (e.key === 'Enter') { e.preventDefault(); if (findRows.length) goToFind(0); } };
 $('mapSat').onclick = () => { mapOpts.sat = !mapOpts.sat;
   if (mapOpts.sat) { window._map.removeLayer(window._street); window._satL.addTo(window._map); }
   else { window._map.removeLayer(window._satL); window._street.addTo(window._map); }
@@ -2632,9 +2833,30 @@ $('mapDays').onclick = openDays;
 $('mapMoveMe').onclick = toggleMoveMe;
 $('fixPill').onclick = () => clearOverride(false);
 $('daysClose').onclick = () => $('daysPanel').classList.add('hide');
-$('mapErase').onclick = () => { eraseMode ? cancelErase() : startErase(); };
-$('eraseCancel').onclick = cancelErase;
-$('eraseGo').onclick = commitErase;
+$('mapErase').onclick = () => { if (routePickBox) endRoutePick(false); else eraseMode ? cancelErase() : startErase(); };
+/* One bar, two jobs: erasing track and picking an area to go back to. */
+$('eraseCancel').onclick = () => { if (routePickBox) endRoutePick(false); else cancelErase(); };
+$('eraseGo').onclick = () => { if (routePickBox) endRoutePick(true); else commitErase(); };
+$('mRoute').onclick = () => { closeSheet('menuSheet'); openRoute(); };
+$('rtFresh').onclick = () => { startFreshRun(); renderRoute(); buzz(20);
+  flashToast('Fresh run started', 'Every unanswered door is back on the list', '#22c55e'); };
+let mapsLegFrom = 0;
+$('rtMaps').onclick = () => {
+  const r = buildRoute();
+  /* Hand Google the places he PARKS, not every door. Sending each door as a
+     driving waypoint would have Maps navigate him between two houses on the
+     same street, which is the opposite of what the clustering is for. */
+  const parks = r.clusters.map(c => ({ lat:c.lat, lon:c.lon }));
+  if (!parks.length) return;
+  const slice = parks.slice(mapsLegFrom, mapsLegFrom + MAPS_LEG);
+  if (!slice.length) { mapsLegFrom = 0; renderRoute(); return; }
+  const from = mapsLegFrom === 0 && state.pos ? state.pos : parks[mapsLegFrom - 1];
+  const url = mapsLegUrl(slice, from ? from.lat : null, from ? from.lon : null);
+  if (url) window.open(url, '_blank', 'noopener');
+  mapsLegFrom += slice.length;
+  if (mapsLegFrom >= parks.length) mapsLegFrom = 0;
+  renderRoute();
+};
 $('mapFollow').onclick = () => { mapOpts.follow = !mapOpts.follow; syncMapBtns();
   if (mapOpts.follow && state.pos) window._map.setView([state.pos.lat,state.pos.lon], 18); };
 
@@ -2815,7 +3037,7 @@ function icsFor(rows) {
   const ts = t => new Date(t).toISOString().replace(/[-:]/g, '').split('.')[0] + 'Z';
   const out = ['BEGIN:VCALENDAR','VERSION:2.0','PRODID:-//Roof Champ Canvass//EN','CALSCALE:GREGORIAN'];
   rows.forEach(v => {
-    const who = v.name || v.owner || v.addr || 'Follow up';
+    const who = displayName(v);
     out.push('BEGIN:VEVENT',
       `UID:${v.id}@canvass`,
       `DTSTAMP:${ts(Date.now())}`,
@@ -2843,36 +3065,305 @@ function addToCalendar(rows) {
              'Open the file and tap Add All to put them in your phone calendar', '#22c55e');
 }
 
+/* ==========================================================================
+   names, area, and searching
+   ========================================================================== */
+
+/* The county owner is the deed. The goes-by is what the person actually answers
+   to. Both are kept: one is the record, the other is how you greet someone. */
+const goesByOf = v => (v && v.goesBy || '').trim();
+const contactOf = v => (v && v.name || '').trim();
+function displayName(v) {
+  return goesByOf(v) || contactOf(v) || shortOwner((v && v.owner) || '') || (v && v.addr) || 'Unnamed';
+}
+/* true when the name on screen was inherited from the deed rather than typed at
+   a door, so the list can show it in a lighter weight and not overclaim. */
+const nameIsAssumed = v => !!(v && v.nameFromOwner && !goesByOf(v) && contactOf(v) === (v.owner || '').trim());
+/* Anything on screen that came off the deed rather than out of a conversation,
+   whether it was copied into the name field or just fallen back to for display. */
+const nameIsFromDeed = v => !!v && !goesByOf(v)
+  && (nameIsAssumed(v) || (!contactOf(v) && !!(v.owner || '').trim()));
+/* Talked with nothing typed means the person at the door was the owner as far as
+   we know, so the deed name stands in. Both names on a joint deed carry over.
+   Flagged as inherited so the list can say where it came from. */
+function applyOwnerNameFallback(v) {
+  if (!v || v.status !== 'talked') return v;
+  if (v.nameCleared) return v;                 // he emptied it deliberately
+  if (contactOf(v) || goesByOf(v)) return v;
+  const owner = (v.owner || '').trim();
+  if (!owner) return v;
+  v.name = owner;
+  v.nameFromOwner = true;
+  return v;
+}
+
+/* Site city is published by three of the seven counties and nothing else is
+   reliable, so "area" falls back city -> ZIP -> street rather than pretending. */
+const CITY_FIELDS = {
+  franklin: a => a.ZIPCD,
+  delaware: a => a.MUN_NAME,
+  union:    a => a.city,
+  licking:  a => a.SitePostalCity || a.SitePostalZip,
+};
+function streetOf(v) {
+  const a = String((v && v.addr) || '').trim();
+  if (!a) return '';
+  return a.replace(/^\s*[\d-]+\s+/, '').trim().toUpperCase();
+}
+function houseNumOf(v) {
+  const m = String((v && v.addr) || '').match(/^\s*(\d+)/);
+  return m ? parseInt(m[1], 10) : Number.MAX_SAFE_INTEGER;
+}
+function areaOf(v) {
+  const f = v && CITY_FIELDS[v.county];
+  const raw = f && v.extra ? f(v.extra) : null;
+  const s = raw == null ? '' : String(raw).trim();
+  if (s && s !== '0') return s.toUpperCase();
+  return streetOf(v);
+}
+/** every scrap of text a search should be able to find a record by */
+function searchBlob(v) {
+  return [goesByOf(v), contactOf(v), v.owner, v.addr, areaOf(v), v.phone, v.email,
+          (v.tags || []).join(' '), noteText(v), (DISPO[v.dispo || 'new'] || {}).label]
+    .filter(Boolean).join(' ').toLowerCase();
+}
+const searchNorm = s => String(s || '').toLowerCase().replace(/[^a-z0-9 ]+/g, ' ').replace(/\s+/g, ' ').trim();
+/** every whitespace-separated term must appear somewhere in the record */
+function matchesQuery(v, q) {
+  const terms = searchNorm(q).split(' ').filter(Boolean);
+  if (!terms.length) return true;
+  const hay = searchNorm(searchBlob(v));
+  return terms.every(t => hay.includes(t));
+}
+
+/* ==========================================================================
+   pace, travel time, and the schedule
+   ========================================================================== */
+
+/* Travis asked for this to work off his own walking pace, so it is measured
+   rather than assumed. Everything here runs on the phone from straight-line
+   distance: no routing service, no key, no signal needed. That is a deliberate
+   trade. It answers "roughly how long" well and "which route" not at all. */
+const WALK_DEFAULT = 1.30;      // m/s, about 2.9 mph, until there is real data
+const WALK_MIN_SAMPLES = 30;
+const DRIVE_MIN_SAMPLES = 40;
+const WALK_DETOUR = 1.20;       // sidewalks and driveways, not across lawns
+const ROAD_DETOUR = 1.30;       // driven miles per straight-line mile, suburban grid
+
+function median(xs) {
+  if (!xs.length) return null;
+  const s = [...xs].sort((a, b) => a - b);
+  const m = s.length >> 1;
+  return s.length % 2 ? s[m] : (s[m-1] + s[m]) / 2;
+}
+/** walk and drive speeds in m/s, read out of the recorded day tracks */
+function measuredPace() {
+  const walk = [], drive = [];
+  for (const d of state.days.values()) {
+    const pts = d.pts || [];
+    for (let i = 1; i < pts.length; i++) {
+      const dt = (pts[i].ts - pts[i-1].ts) / 1000;
+      if (!(dt >= 1)) continue;
+      const m = haversine(pts[i-1].lat, pts[i-1].lon, pts[i].lat, pts[i].lon);
+      const sp = m / dt;
+      // breadcrumbs are suppressed while standing, so a long gap is a pause or a
+      // drive with tracking off, not a slow walk. Throw those away.
+      if (dt <= 90 && m >= 2 && sp >= STILL_SPEED && sp <= 2.5) walk.push(sp);
+      else if (dt <= 120 && sp > 4 && sp <= 40) drive.push(sp);
+    }
+  }
+  return { walk: median(walk), walkN: walk.length, drive: median(drive), driveN: drive.length };
+}
+let paceCache = null, paceCacheAt = 0;
+function pace() {
+  if (paceCache && Date.now() - paceCacheAt < 60000) return paceCache;
+  const m = measuredPace();
+  paceCache = {
+    walk: m.walkN >= WALK_MIN_SAMPLES && m.walk ? m.walk : WALK_DEFAULT,
+    walkMeasured: m.walkN >= WALK_MIN_SAMPLES && !!m.walk,
+    walkN: m.walkN,
+    driveMps: m.driveN >= DRIVE_MIN_SAMPLES ? m.drive : null,
+    driveN: m.driveN,
+  };
+  paceCacheAt = Date.now();
+  return paceCache;
+}
+const clearPaceCache = () => { paceCache = null; };
+
+/** straight-line metres -> seconds on foot */
+function walkSecs(straightM) {
+  const p = pace();
+  return (straightM * WALK_DETOUR) / p.walk;
+}
+/* Average speed rises with trip length because stops dominate a short hop.
+   These are honest central-Ohio numbers including lights and turns. */
+function bandMph(roadMiles) {
+  return roadMiles < 2 ? 20 : roadMiles < 8 ? 28 : roadMiles < 20 ? 38 : 48;
+}
+/** straight-line metres -> seconds behind the wheel */
+function driveSecs(straightM) {
+  const roadM = straightM * ROAD_DETOUR;
+  const miles = roadM / 1609.34;
+  let mph = bandMph(miles);
+  // real recorded driving nudges the band, but only within a quarter of it, so a
+  // handful of odd segments can never produce a silly answer
+  const p = pace();
+  if (p.driveMps) {
+    const measured = p.driveMps * 2.23694;
+    const blended = mph * 0.7 + measured * 0.3;
+    mph = Math.max(mph * 0.75, Math.min(mph * 1.25, blended));
+  }
+  return (miles / mph) * 3600 * (state.driveAdj || 1);
+}
+function fmtDur(secs) {
+  if (secs == null) return '—';
+  const m = Math.max(1, Math.round(secs / 60));
+  if (m < 60) return `${m} min`;
+  const h = Math.floor(m / 60), r = m % 60;
+  return r ? `${h} hr ${r} min` : `${h} hr`;
+}
+const fmtClock = ts => new Date(ts).toLocaleTimeString([], { hour:'numeric', minute:'2-digit' });
+/* A bare clock time reads as "this morning" even when it is Friday. Say the day
+   whenever it is not today, because that is the difference between calm and late. */
+function fmtWhenClock(ts) {
+  const d = new Date(ts), now = new Date();
+  if (d.toDateString() === now.toDateString()) return fmtClock(ts);
+  const within = Math.abs(ts - Date.now()) < 6 * DAY;
+  return d.toLocaleString([], within ? { weekday:'short', hour:'numeric', minute:'2-digit' }
+                                     : { month:'short', day:'numeric', hour:'numeric', minute:'2-digit' });
+}
+const fmtMiles = m => m < 1000 ? `${Math.round(m)} m` : `${(m/1609.34).toFixed(1)} mi`;
+
+/* ---------------- the schedule ---------------- */
+/* One list, two sources: appointments typed in here, and follow-ups already
+   attached to a door. The door ones come with coordinates for free. */
+function scheduleItems() {
+  const out = state.appts.map(a => ({
+    kind:'appt', id:a.id, at:a.at, label:a.label || 'Appointment',
+    addr:a.addr || '', lat:a.lat, lon:a.lon, ref:a,
+  }));
+  for (const v of dueList()) {
+    out.push({ kind:'follow', id:v.id, at:v.followAt, label:displayName(v),
+               addr:v.addr || '', lat:v.lat, lon:v.lon, ref:v,
+               line:v.line || 'roof', assumed:nameIsAssumed(v) });
+  }
+  return out.sort((a, b) => a.at - b.at);
+}
+/** the next thing worth driving to: the soonest one that still has a location */
+function nextStop() {
+  const items = scheduleItems().filter(i => i.lat != null && i.lon != null);
+  const now = Date.now();
+  return items.find(i => i.at >= now - 2*HOUR) || null;
+}
+
+/* Answers the phone call: "how long until you're home?" Walk to the truck,
+   then drive. If there is no truck the drive starts from where you stand. */
+function travelPlan() {
+  const from = state.pos;
+  if (!from) return { ok:false, why:'no position yet' };
+  const plan = { ok:true, legs:[], walk:null, home:null, next:null, at:Date.now() };
+
+  const truck = state.vehicle;
+  let originLat = from.lat, originLon = from.lon, walkS = 0;
+  if (truck) {
+    const m = haversine(from.lat, from.lon, truck.lat, truck.lon);
+    walkS = m < 15 ? 0 : walkSecs(m);
+    plan.walk = { m, secs: walkS, atTruck: m < 15 };
+    originLat = truck.lat; originLon = truck.lon;
+  }
+
+  if (state.home) {
+    const m = haversine(originLat, originLon, state.home.lat, state.home.lon);
+    const secs = driveSecs(m);
+    plan.home = { m, secs, total: walkS + secs, eta: Date.now() + (walkS + secs) * 1000 };
+  }
+
+  const stop = nextStop();
+  if (stop) {
+    const m = haversine(originLat, originLon, stop.lat, stop.lon);
+    const secs = driveSecs(m);
+    const total = walkS + secs;
+    plan.next = { stop, m, secs, total,
+                  eta: Date.now() + total * 1000,
+                  leaveBy: stop.at - total * 1000,
+                  late: Date.now() + total * 1000 > stop.at };
+  }
+  return plan;
+}
+
 /* ---------------- the customer list ---------------- */
-let crmFilter = 'due', crmSort = null, crmQuery = '';
-const effSort = () => crmSort || (crmFilter === 'due' ? 'due' : 'near');
+let crmFilter = 'due';
+let crmQuery = '';
+/* null means "work it out": the Follow-ups view is inherently a time queue, and
+   anywhere else nearest is what you actually want standing on a street. Tapping
+   a sort chip pins it until the sheet is reopened. */
+let crmSort = null;
+const effSort = () => crmSort || (crmFilter === 'due' ? 'due' : (state.pos ? 'near' : 'recent'));
+let crmLine = 'all';        // 'all' | 'roof' | 'appraisal'
+let crmFlags = new Set();   // 'phone' | 'rental'
+let crmArea = '';
+
 const SORTS = [
   ['near',   'Nearest'],
-  ['due',    'Due soonest'],
-  ['name',   'Name A-Z'],
-  ['city',   'City'],
-  ['recent', 'Most recent'],
-  ['value',  'Value high to low'],
-  ['oldsale','Longest since sale'],
+  ['due',    'Soonest follow-up'],
+  ['name',   'Name A to Z'],
+  ['street', 'Street'],
+  ['area',   'Area'],
+  ['recent', 'Newest'],
+  ['stage',  'Stage'],
 ];
-const cityOf = v => {
-  const e = v.extra || {};
-  return (e.MUN_NAME || e.SitePostalCity || e.city || e.MCITYNAME || e.PROP_CITY || '').toString().trim();
-};
-const displayName = v => v.goesBy || v.name || v.owner || v.addr || 'Unnamed';
-function distOf(v) {
-  if (!state.pos) return Infinity;
-  const p = state.parcels.get(v.key);
-  const at = p ? (p.house || p.cen) : null;
-  return at ? haversine(state.pos.lat, state.pos.lon, at[1], at[0])
-            : (v.lat != null ? haversine(state.pos.lat, state.pos.lon, v.lat, v.lon) : Infinity);
+const STAGE_ORDER = Object.keys(DISPO);
+
+function sortRows(rows, how) {
+  const r = [...rows];
+  const byRecent = (a, b) => b.ts - a.ts;
+  switch (how) {
+    case 'near': {
+      if (!state.pos) return r.sort(byRecent);
+      const d = v => (v.lat == null || v.lon == null) ? Infinity
+                   : haversine(state.pos.lat, state.pos.lon, v.lat, v.lon);
+      return r.sort((a, b) => d(a) - d(b) || byRecent(a, b));
+    }
+    case 'due':
+      return r.sort((a, b) => {
+        const A = a.followAt && !a.followDone ? a.followAt : Infinity;
+        const B = b.followAt && !b.followDone ? b.followAt : Infinity;
+        return A - B || byRecent(a, b);
+      });
+    case 'name':
+      return r.sort((a, b) => displayName(a).localeCompare(displayName(b)) || byRecent(a, b));
+    case 'street':
+      return r.sort((a, b) => streetOf(a).localeCompare(streetOf(b))
+                           || houseNumOf(a) - houseNumOf(b) || byRecent(a, b));
+    case 'area':
+      return r.sort((a, b) => {
+        const A = areaOf(a), B = areaOf(b);
+        if (!A !== !B) return A ? -1 : 1;           // blanks last
+        return A.localeCompare(B) || streetOf(a).localeCompare(streetOf(b)) || byRecent(a, b);
+      });
+    case 'stage':
+      return r.sort((a, b) => STAGE_ORDER.indexOf(a.dispo || 'new') - STAGE_ORDER.indexOf(b.dispo || 'new')
+                           || byRecent(a, b));
+    default:
+      return r.sort(byRecent);
+  }
 }
-function openCrm() { renderCrm(); openSheet('crmSheet'); }
+/** every area actually present in the records, so the filter is never a list of nothing */
+function areasPresent(rows) {
+  const s = new Set();
+  rows.forEach(v => { const a = areaOf(v); if (a) s.add(a); });
+  return [...s].sort();
+}
+function openCrm() {
+  crmSort = null;
+  renderCrm();
+  openSheet('crmSheet');
+}
 function renderCrm() {
-  const latest = v => { const l = state.visits.get(vKey(v.key, v.line)); return l && l.id === v.id; };
-  const all = state.visitLog.filter(latest)
-    .filter(v => v.name || v.goesBy || v.phone || v.email || v.followAt
-                 || (v.dispo && v.dispo !== 'new') || logOf(v).some(e => e.kind === 'note'));
+  const all = state.visitLog
+    .filter(v => { const l = state.visits.get(vKey(v.key, v.line)); return l && l.id === v.id; })
+    .filter(v => v.name || v.phone || v.email || v.followAt || (v.dispo && v.dispo !== 'new')
+                 || logOf(v).some(e => e.kind === 'note'));
   const due = dueList();
   const overdue = due.filter(v => v.followAt <= Date.now());
   const soon = due.filter(v => v.followAt > Date.now() && v.followAt < Date.now() + 7*DAY);
@@ -2883,83 +3374,789 @@ function renderCrm() {
     <div class="stat"><b>${soon.length}</b>this week</div>
     <div class="stat"><b>${all.length}</b>customers</div>`;
 
-  const sz = $('crmSort'); sz.innerHTML = '';
-  SORTS.forEach(([k, label]) => {
+  const mkChip = (host, key, label, active, fn) => {
     const b = document.createElement('button');
-    b.className = 'chip' + (effSort() === k ? ' on' : ''); b.textContent = label;
-    b.onclick = () => { crmSort = k; renderCrm(); };
-    sz.appendChild(b);
-  });
+    b.className = 'chip' + (active ? ' on' : ''); b.textContent = label;
+    b.dataset.k = key;
+    b.onclick = fn;
+    host.appendChild(b);
+    return b;
+  };
+
+  $('crmSearchClear').classList.toggle('hide', !crmQuery);
+  const sortNow = effSort();
+  const sortHost = $('crmSort'); sortHost.innerHTML = '';
+  SORTS.forEach(([k, label]) =>
+    mkChip(sortHost, k, label, sortNow === k, () => { crmSort = k; renderCrm(); }));
 
   const chips = $('crmChips'); chips.innerHTML = '';
-  const cities = [...new Set(all.map(cityOf).filter(Boolean))].sort();
-  [['due','Follow-ups'],['all','Everyone'],
-   ...Object.entries(DISPO).map(([k,d])=>['d:'+k, d.label]),
-   ...cities.map(c => ['c:'+c, c])].forEach(([k,label]) => {
-    const b = document.createElement('button');
-    b.className = 'chip' + (crmFilter === k ? ' on' : ''); b.textContent = label;
-    b.onclick = () => { crmFilter = k; renderCrm(); };
-    chips.appendChild(b);
-  });
+  [['due','Follow-ups'],['all','Everyone'],...Object.entries(DISPO).map(([k,d])=>[k,d.label])].forEach(([k,label]) =>
+    mkChip(chips, k, label, crmFilter === k, () => { crmFilter = k; renderCrm(); }));
 
-  let rows = crmFilter === 'due' ? due
-    : crmFilter === 'all' ? all.slice()
-    : crmFilter.startsWith('d:') ? all.filter(v => (v.dispo||'new') === crmFilter.slice(2))
-    : all.filter(v => cityOf(v) === crmFilter.slice(2));
+  const fh = $('crmFilters'); fh.innerHTML = '';
+  [['all','Both books'],['roof',LINES.roof.label],['appraisal',LINES.appraisal.label]].forEach(([k,label]) =>
+    mkChip(fh, 'line:'+k, label, crmLine === k, () => { crmLine = k; renderCrm(); }));
+  mkChip(fh, 'phone', '📞 Has a phone', crmFlags.has('phone'), () => {
+    crmFlags.has('phone') ? crmFlags.delete('phone') : crmFlags.add('phone'); renderCrm(); });
+  mkChip(fh, 'rental', '⚠️ Likely rental', crmFlags.has('rental'), () => {
+    crmFlags.has('rental') ? crmFlags.delete('rental') : crmFlags.add('rental'); renderCrm(); });
 
-  const q = crmQuery.trim().toLowerCase();
-  if (q) rows = rows.filter(v => [displayName(v), v.owner, v.goesBy, v.name, v.addr, v.phone, v.email,
-      cityOf(v), noteText(v)].filter(Boolean).join(' ').toLowerCase().includes(q));
+  const areas = areasPresent(all);
+  // the reset chip shows whenever it could be needed, and the area currently
+  // filtered on is always in the list, or a filter can strand itself unclearable
+  if (areas.length > 1 || crmArea) {
+    mkChip(fh, 'area:', 'All areas', !crmArea, () => { crmArea = ''; renderCrm(); });
+    const shownAreas = areas.slice(0, 12);
+    if (crmArea && !shownAreas.includes(crmArea)) shownAreas.unshift(crmArea);
+    shownAreas.forEach(a =>
+      mkChip(fh, 'area:'+a, a, crmArea === a, () => { crmArea = a; renderCrm(); }));
+  }
 
-  const cmp = {
-    near:    (a,b) => distOf(a) - distOf(b),
-    due:     (a,b) => (a.followAt || Infinity) - (b.followAt || Infinity),
-    name:    (a,b) => displayName(a).localeCompare(displayName(b)),
-    city:    (a,b) => (cityOf(a) || 'zzz').localeCompare(cityOf(b) || 'zzz') || displayName(a).localeCompare(displayName(b)),
-    recent:  (a,b) => b.ts - a.ts,
-    value:   (a,b) => (b.val || 0) - (a.val || 0),
-    oldsale: (a,b) => (a.saleTs || 0) - (b.saleTs || 0),
-  }[effSort()];
-  rows = rows.slice().sort(cmp);
+  let rows;
+  if (crmFilter === 'due') rows = due;
+  else if (crmFilter === 'all') rows = all;
+  else rows = all.filter(v => (v.dispo || 'new') === crmFilter);
+
+  const before = rows.length;
+  if (crmLine !== 'all') rows = rows.filter(v => (v.line || 'roof') === crmLine);
+  if (crmFlags.has('phone')) rows = rows.filter(v => !!(v.phone || '').trim());
+  if (crmFlags.has('rental')) rows = rows.filter(v => v.occ === 'rental');
+  if (crmArea) rows = rows.filter(v => areaOf(v) === crmArea);
+  if (crmQuery.trim()) rows = rows.filter(v => matchesQuery(v, crmQuery));
+
+  rows = sortRows(rows, sortNow);
+
+  const narrowed = before - rows.length;
+  $('crmCount').textContent = !before ? ''
+    : narrowed > 0 ? `Showing ${rows.length} of ${before}. ${narrowed} hidden by the search or filters.`
+                   : `Showing all ${rows.length}.`;
+  if (sortNow === 'near' && !state.pos)
+    $('crmCount').textContent += ' No GPS fix yet, so nearest falls back to newest.';
 
   const host = $('crmList'); host.innerHTML = '';
   if (!rows.length) {
     host.innerHTML = `<p style="color:var(--dim);padding:10px 2px">${
-      q ? 'Nothing matches that search.'
-        : crmFilter === 'due' ? 'No follow-ups scheduled. Set one from a door\u2019s Details panel.'
-        : 'Nobody here yet.'}</p>`;
+      before ? 'Nothing matches. Clear the search or the filters.'
+      : crmFilter === 'due' ? 'No follow-ups scheduled. Set one from a door\u2019s Details panel.'
+                            : 'Nobody here yet.'}</p>`;
     return;
   }
   rows.forEach(v => {
-    const dp = DISPO[v.dispo || 'new'] || DISPO.new;
-    const late = v.followAt && v.followAt <= Date.now();
-    const d = distOf(v);
+    const dp = DISPO[v.dispo || 'new'];
+    const live = v.followAt && !v.followDone;
+    const late = live && v.followAt <= Date.now();
     const el = document.createElement('div');
     el.className = 'crmRow' + (late ? ' late' : '');
+    const under = [goesByOf(v) && contactOf(v) && contactOf(v) !== goesByOf(v) ? contactOf(v) : '',
+                   v.addr || '', v.phone || ''].filter(Boolean).join(' · ');
+    const far = sortNow === 'near' && state.pos && v.lat != null
+      ? fmtMiles(haversine(state.pos.lat, state.pos.lon, v.lat, v.lon)) : '';
     el.innerHTML = `<div class="sw" style="background:${dp.color}"></div>
       <div class="t">
-        <div class="a">${esc(displayName(v))}</div>
-        <div class="o">${esc(v.addr || '')}${cityOf(v) ? ' \u00b7 ' + esc(cityOf(v)) : ''}${v.phone ? ' \u00b7 ' + esc(v.phone) : ''}</div>
+        <div class="a">${esc(displayName(v))}${
+          nameIsFromDeed(v) ? ' <span class="assumed">(from the deed)</span>' : ''}</div>
+        <div class="o">${esc(under)}</div>
         <div class="m"><span class="dchip" style="color:${dp.color};border-color:${dp.color}66">${esc(dp.label)}</span>
-          ${isFinite(d) ? `<span class="dimTxt">${d < 1609 ? Math.round(d) + ' m' : (d/1609).toFixed(1) + ' mi'}</span>` : ''}
-          ${v.followAt ? `<span class="${late ? 'lateTxt' : 'dimTxt'}">${esc(whenText(v.followAt))}</span>` : ''}
+          ${live ? `<span class="${late ? 'lateTxt' : 'dimTxt'}">${esc(whenText(v.followAt))}</span>` : ''}
+          ${far ? `<span class="dimTxt">📍 ${esc(far)}</span>` : ''}
           <span class="dimTxt">${esc(LINES[v.line||'roof'].short)}</span></div>
       </div>`;
     const acts = document.createElement('div'); acts.className = 'crmActs';
-    if (v.followAt) {
-      const sn = document.createElement('button'); sn.textContent = '+1d';
-      sn.onclick = async e => { e.stopPropagation(); v.followAt = nextMorning(1);
-        await DB.put('visits', v); renderCrm(); renderStrip(); buzz(12); };
-      const dn = document.createElement('button'); dn.textContent = '\u2713';
-      dn.onclick = async e => { e.stopPropagation(); v.followDone = true;
+    if (live) {
+      const snooze = document.createElement('button'); snooze.textContent = '+1d';
+      snooze.onclick = async e => { e.stopPropagation();
+        // add a day to where it already sits; only something already due lands on
+        // tomorrow morning. Otherwise "+1d" would drag a month-out call forward.
+        v.followAt = v.followAt > Date.now() ? v.followAt + DAY : nextMorning(1);
+        await DB.put('visits', v).catch(()=>{}); renderCrm(); renderStrip(); buzz(12); };
+      const done = document.createElement('button'); done.textContent = '✓';
+      done.onclick = async e => { e.stopPropagation();
+        v.followDone = true;
         v.log = [...logOf(v), { id:newId(), ts:Date.now(), kind:'note', text:'Follow-up completed.' }];
-        await DB.put('visits', v); renderCrm(); renderStrip(); buzz(20); };
-      acts.append(sn, dn);
+        await DB.put('visits', v).catch(()=>{}); renderCrm(); renderStrip(); buzz(20); };
+      acts.append(snooze, done);
     }
     el.appendChild(acts);
     el.onclick = () => { closeSheet('crmSheet'); openDetail(v); };
     host.appendChild(el);
   });
+}
+
+/* ---------------- home, the getting-back sheet, and appointments ---------------- */
+function saveHome() {
+  if (state.home) localStorage.setItem('home', JSON.stringify(state.home));
+  else localStorage.removeItem('home');
+}
+function setHomeHere() {
+  if (!state.pos) { flashToast('No position yet', 'Wait for a GPS fix first', '#f59e0b'); return; }
+  state.home = { lat: state.pos.lat, lon: state.pos.lon, ts: Date.now() };
+  saveHome(); buzz([25,50,25]);
+  flashToast('Home set', 'This stays on the phone and goes nowhere else', '#22c55e');
+}
+function renderHomeInfo() {
+  $('homeInfo').textContent = state.home
+    ? 'Home is set. It is stored on this phone only and never leaves it except in your own backup file.'
+    : 'No home set. Set it standing in your driveway and the app can tell you how long until you are back.';
+}
+function renderPaceInfo() {
+  const p = pace();
+  const mph = (p.walk * 2.23694).toFixed(1);
+  $('paceInfo').textContent = p.walkMeasured
+    ? `Walking pace measured from your own tracks: ${mph} mph, over ${p.walkN} recorded stretches.`
+    : `Using a default walking pace of ${mph} mph. It switches to your own once there are ${WALK_MIN_SAMPLES} recorded stretches to measure (${p.walkN} so far).`;
+}
+const DRIVE_ADJ = [['0.8','Quicker'],['0.9','A bit quicker'],['1','As estimated'],['1.15','A bit slower'],['1.3','Slower']];
+function renderDriveChips() {
+  const host = $('mDriveSpeed'); host.innerHTML = '';
+  DRIVE_ADJ.forEach(([val, label]) => {
+    const b = document.createElement('button');
+    const v = parseFloat(val);
+    b.className = 'chip' + (Math.abs((state.driveAdj || 1) - v) < 0.001 ? ' on' : '');
+    b.textContent = label;
+    b.onclick = () => { state.driveAdj = v; localStorage.setItem('driveAdj', String(v)); renderDriveChips(); };
+    host.appendChild(b);
+  });
+}
+
+function openTravel() { renderTravel(); openSheet('travelSheet'); }
+function renderTravel() {
+  const plan = travelPlan();
+  const head = $('tvHeadline'), legs = $('tvLegs'), next = $('tvNext');
+  if (!plan.ok) {
+    head.innerHTML = `<div class="tvBig"><b>No position yet</b><span>Waiting on a GPS fix</span></div>`;
+    legs.innerHTML = ''; next.innerHTML = ''; $('tvBasis').textContent = '';
+    return;
+  }
+  head.innerHTML = plan.home
+    ? `<div class="tvBig"><b>Home by ${esc(fmtWhenClock(plan.home.eta))}</b>
+         <span>about ${esc(fmtDur(plan.home.total))} from here</span></div>`
+    : `<div class="tvBig"><b>No home set</b><span>Set it below and this answers the phone call for you</span></div>`;
+
+  const rows = [];
+  if (plan.walk) {
+    rows.push(plan.walk.atTruck
+      ? `<div class="tvLeg"><span class="ic">🚚</span><div class="lg">You are at the truck<small>No walk back needed</small></div></div>`
+      : `<div class="tvLeg"><span class="ic">🚶</span><div class="lg">Walk to the truck<small>${esc(fmtMiles(plan.walk.m))}</small></div>
+           <span class="amt">about ${esc(fmtDur(plan.walk.secs))}</span></div>`);
+  } else {
+    rows.push(`<div class="tvLeg"><span class="ic">📍</span><div class="lg">No truck parked<small>Timing from where you stand. Hold the round map to drop a pin.</small></div></div>`);
+  }
+  if (plan.home) {
+    rows.push(`<div class="tvLeg"><span class="ic">🏠</span><div class="lg">Drive home<small>${esc(fmtMiles(plan.home.m))} as the crow flies</small></div>
+         <span class="amt">about ${esc(fmtDur(plan.home.secs))}</span></div>`);
+  }
+  legs.innerHTML = rows.join('');
+
+  if (plan.next) {
+    const n = plan.next, s = n.stop;
+    next.innerHTML = `
+      <div class="tvBig${n.late ? ' warn' : ''}" style="text-align:left">
+        <b style="font-size:16px">${esc(s.label)}</b>
+        <span>${esc(fmtWhenClock(s.at))}${s.addr ? ' · ' + esc(s.addr) : ''}</span>
+        <div style="margin-top:8px;font-size:13px;font-weight:700;color:var(--txt)">
+          About ${esc(fmtDur(n.total))} to get there · ${esc(fmtMiles(n.m))}</div>
+        <div style="margin-top:4px;font-size:13px;font-weight:800;color:${n.late ? '#fca5a5' : '#7dd3fc'}">
+          ${n.late ? `Running late. Leaving now puts you there ${esc(fmtWhenClock(n.eta))}.`
+                   : `Leave by ${esc(fmtWhenClock(n.leaveBy))}`}</div>
+      </div>`;
+  } else {
+    next.innerHTML = `<div class="small">Nothing on the schedule with a location. Add an appointment, or set a follow-up on a door.</div>`;
+  }
+
+  const p = pace();
+  $('tvBasis').textContent =
+    `Worked out on the phone from straight line distance, so it needs no signal. Walking at ${(p.walk*2.23694).toFixed(1)} mph`
+    + (p.walkMeasured ? ' measured from your own tracks' : ' (default until there is enough of your own walking to measure)')
+    + `. Driving assumes ordinary local roads. These are estimates, not promises.`;
+}
+
+/* ---------------- appointments ---------------- */
+let apptDraft = null;
+function saveAppts() { localStorage.setItem('appts', JSON.stringify(state.appts)); }
+function openAppts() { apptDraft = null; $('apptForm').classList.add('hide'); renderAppts(); openSheet('apptSheet'); }
+function renderAppts() {
+  const items = scheduleItems();
+  $('apptIntro').textContent = items.length
+    ? 'Appointments you typed in and follow-ups from doors, in one list.'
+    : 'Nothing scheduled. Add an appointment, or set a follow-up from a door.';
+  const host = $('apptList'); host.innerHTML = '';
+  items.forEach(it => {
+    const late = it.at <= Date.now();
+    const el = document.createElement('div');
+    el.className = 'apRow' + (late ? ' late' : '');
+    const where = it.lat == null ? 'No location, so no drive time' : fmtMiles(
+      state.pos ? haversine(state.pos.lat, state.pos.lon, it.lat, it.lon) : 0) + ' away';
+    el.innerHTML = `<div class="t">
+        <div class="a">${esc(it.label)}${it.assumed ? ' <span class="assumed">(from the deed)</span>' : ''}</div>
+        <div class="o">${esc(new Date(it.at).toLocaleString([], {weekday:'short', month:'short', day:'numeric', hour:'numeric', minute:'2-digit'}))}${it.addr ? ' · ' + esc(it.addr) : ''}</div>
+        <div class="m">
+          <span class="dchip" style="color:${it.kind==='appt'?'#7dd3fc':'#a855f7'};border-color:${it.kind==='appt'?'#7dd3fc66':'#a855f766'}">${it.kind==='appt'?'Appointment':'Follow-up'}</span>
+          <span class="${late?'lateTxt':'dimTxt'}">${esc(whenText(it.at))}</span>
+          <span class="dimTxt">${it.lat == null ? '⚠️ no location, so no drive time'
+                                    : (state.pos ? '📍 ' + esc(where) : '')}</span>
+        </div>
+      </div>`;
+    if (it.kind === 'appt') {
+      const del = document.createElement('button'); del.textContent = '🗑';
+      del.onclick = e => {
+        e.stopPropagation();
+        if (!confirm('Delete this appointment?')) return;
+        state.appts = state.appts.filter(a => a.id !== it.id);
+        saveAppts(); renderAppts(); buzz(20);
+      };
+      el.appendChild(del);
+    } else {
+      el.onclick = () => { closeSheet('apptSheet'); openDetail(it.ref); };
+    }
+    host.appendChild(el);
+  });
+}
+/* Location comes from something already on the phone rather than a typed address,
+   because resolving an address means a geocoding service, an account and signal. */
+const AP_WHERE = [
+  ['here',  'Where I am now'],
+  ['cust',  'A customer'],
+  ['home',  'Home'],
+  ['truck', 'The truck'],
+];
+function renderApWhere() {
+  const host = $('apWhere'); host.innerHTML = '';
+  AP_WHERE.forEach(([k, label]) => {
+    const b = document.createElement('button');
+    b.className = 'chip' + (apptDraft && apptDraft.src === k ? ' on' : '');
+    b.textContent = label;
+    b.onclick = () => pickApptWhere(k);
+    host.appendChild(b);
+  });
+  const d = apptDraft;
+  $('apWhereInfo').textContent = !d || d.lat == null
+    ? 'Pick where it is so the app can work out the drive.'
+    : `Location set${d.srcLabel ? ' from ' + d.srcLabel : ''}. Saved as a point on the map.`;
+}
+function pickApptWhere(k) {
+  const d = apptDraft;
+  if (k === 'here') {
+    if (!state.pos) { flashToast('No position yet', '', '#f59e0b'); return; }
+    d.lat = state.pos.lat; d.lon = state.pos.lon; d.src = k; d.srcLabel = 'where you are';
+  } else if (k === 'home') {
+    if (!state.home) { flashToast('No home set', 'Set it in the menu first', '#f59e0b'); return; }
+    d.lat = state.home.lat; d.lon = state.home.lon; d.src = k; d.srcLabel = 'home';
+  } else if (k === 'truck') {
+    if (!state.vehicle) { flashToast('No truck parked', 'Hold the round map to drop a pin', '#f59e0b'); return; }
+    d.lat = state.vehicle.lat; d.lon = state.vehicle.lon; d.src = k; d.srcLabel = 'the truck';
+  } else if (k === 'cust') {
+    openCustPicker(v => {
+      d.lat = v.lat; d.lon = v.lon; d.src = 'cust'; d.srcLabel = displayName(v);
+      if (!$('apAddr').value) $('apAddr').value = v.addr || '';
+      if (!$('apLabel').value) $('apLabel').value = displayName(v);
+      renderApWhere();
+    });
+    return;
+  }
+  renderApWhere();
+}
+function openCustPicker(onPick) {
+  const render = () => {
+    const q = $('pcSearch').value;
+    const rows = state.visitLog
+      .filter(v => { const l = state.visits.get(vKey(v.key, v.line)); return l && l.id === v.id; })
+      .filter(v => v.lat != null)
+      .filter(v => matchesQuery(v, q))
+      .sort((a, b) => b.ts - a.ts)
+      .slice(0, 60);
+    const host = $('pcList'); host.innerHTML = '';
+    if (!rows.length) { host.innerHTML = `<p style="color:var(--dim);padding:10px 2px">Nothing matches.</p>`; return; }
+    rows.forEach(v => {
+      const el = document.createElement('div');
+      el.className = 'apRow';
+      el.innerHTML = `<div class="t"><div class="a">${esc(displayName(v))}</div>
+        <div class="o">${esc(v.addr || '')}</div></div>`;
+      el.onclick = () => { closeSheet('pickCustSheet'); onPick(v); };
+      host.appendChild(el);
+    });
+  };
+  $('pcSearch').value = '';
+  $('pcSearch').oninput = render;
+  render();
+  openSheet('pickCustSheet');
+}
+$('apptNew').onclick = () => {
+  apptDraft = { id:'a' + Date.now() + Math.random().toString(36).slice(2,6), lat:null, lon:null, src:null };
+  $('apLabel').value = ''; $('apAddr').value = '';
+  const d = new Date(Date.now() + HOUR);
+  d.setMinutes(0, 0, 0);
+  $('apAt').value = new Date(d.getTime() - d.getTimezoneOffset()*60000).toISOString().slice(0,16);
+  renderApWhere();
+  $('apptForm').classList.remove('hide');
+  $('apLabel').focus();
+};
+$('apCancel').onclick = () => { apptDraft = null; $('apptForm').classList.add('hide'); };
+$('apSave').onclick = () => {
+  const d = apptDraft; if (!d) return;
+  const at = $('apAt').value ? new Date($('apAt').value).getTime() : NaN;
+  if (!isFinite(at)) { flashToast('Pick a time', 'An appointment needs a when', '#f59e0b'); return; }
+  state.appts = [...state.appts.filter(a => a.id !== d.id), {
+    id:d.id, label:($('apLabel').value || '').trim() || 'Appointment',
+    addr:($('apAddr').value || '').trim(), lat:d.lat, lon:d.lon, at,
+  }];
+  saveAppts();
+  apptDraft = null; $('apptForm').classList.add('hide');
+  renderAppts(); buzz(20);
+  flashToast('Appointment saved', d.lat == null ? 'No location on it, so no drive time' : '', '#22c55e');
+};
+
+/* ==========================================================================
+   the go-back route
+   --------------------------------------------------------------------------
+   Travis's actual pattern: drive to a knot of houses, park, walk the two or
+   three that sit together, back to the truck, drive on. So this does not build
+   one flat walking line or one flat driving line. It groups the doors into
+   walking clusters, orders the clusters as drives and the doors inside each as
+   a walk, and keeps the truck as the anchor between them.
+
+   What matters is the ORDER. The times are a footnote, not the product.
+   ========================================================================== */
+const CLUSTER_R = 130;        // metres: close enough to work on foot from one stop
+const CLUSTER_MAX = 450;      // metres: past this it stops being one walk
+const DOOR_SECS = 90;         // walk up, knock, wait, walk back
+
+/* Doors still owed a second knock: the LATEST thing that happened there was
+   nobody home. Tapping anything else at that door takes it out of the pool. */
+function goBackPool(windowKey) {
+  const cutoff = windowKey === 'today' ? new Date(new Date().setHours(0,0,0,0))
+               : windowKey === 'week'  ? Date.now() - 7*DAY : 0;
+  return state.visitLog
+    .filter(v => { const l = state.visits.get(vKey(v.key, v.line)); return l && l.id === v.id; })
+    .filter(v => v.status === 'noanswer' && (v.line || 'roof') === state.line)
+    .filter(v => v.ts >= cutoff)
+    .filter(v => v.lat != null && v.lon != null)
+    .filter(v => !routeBox || (v.lat >= routeBox.s && v.lat <= routeBox.n && v.lon >= routeBox.w && v.lon <= routeBox.e));
+}
+/* Single-link grouping, with a cap so a chain of neighbours cannot run the
+   length of a subdivision and call itself one walk. */
+function clusterStops(stops) {
+  const left = [...stops], out = [];
+  while (left.length) {
+    const group = [left.shift()];
+    let grew = true;
+    while (grew) {
+      grew = false;
+      for (let i = 0; i < left.length; i++) {
+        const c = left[i];
+        const near = group.some(g => haversine(g.lat, g.lon, c.lat, c.lon) <= CLUSTER_R);
+        if (!near) continue;
+        const wide = group.some(g => haversine(g.lat, g.lon, c.lat, c.lon) > CLUSTER_MAX);
+        if (wide) continue;
+        group.push(c); left.splice(i, 1); i--; grew = true;
+      }
+    }
+    const lat = group.reduce((a, g) => a + g.lat, 0) / group.length;
+    const lon = group.reduce((a, g) => a + g.lon, 0) / group.length;
+    out.push({ stops: group, lat, lon });
+  }
+  return out;
+}
+/* Nearest neighbour to get a sane order, then 2-opt to pull out the crossings.
+   Straight-line distance, on the phone, instantly. Good enough to beat the
+   order you would pick by eye, which is the whole job. */
+function orderByProximity(items, fromLat, fromLon) {
+  const rest = [...items], path = [];
+  let cx = fromLat, cy = fromLon;
+  while (rest.length) {
+    let bi = 0, bd = Infinity;
+    rest.forEach((it, i) => { const d = haversine(cx, cy, it.lat, it.lon); if (d < bd) { bd = d; bi = i; } });
+    const nx = rest.splice(bi, 1)[0];
+    path.push(nx); cx = nx.lat; cy = nx.lon;
+  }
+  /* 2-opt, reversing in place and scoring only the two edges that change.
+     The obvious version rebuilds the path and re-walks it for every candidate,
+     which is fine on paper and locks a phone solid at a few hundred stops. */
+  const N = path.length;
+  if (N < 4 || N > TWO_OPT_MAX) return path;
+  const leg = (a, b) => haversine(a.lat, a.lon, b.lat, b.lon);
+  const at = i => (i < 0 ? { lat: fromLat, lon: fromLon } : path[i]);
+  let improved = true, guard = 0;
+  while (improved && guard++ < 12) {
+    improved = false;
+    for (let i = 0; i < N - 1; i++) {
+      for (let j = i + 1; j < N; j++) {
+        const a = at(i - 1), b = path[i], c = path[j], d = j + 1 < N ? path[j + 1] : null;
+        const before = leg(a, b) + (d ? leg(c, d) : 0);
+        const after  = leg(a, c) + (d ? leg(b, d) : 0);
+        if (after < before - 0.5) {
+          for (let x = i, y = j; x < y; x++, y--) { const t = path[x]; path[x] = path[y]; path[y] = t; }
+          improved = true;
+        }
+      }
+    }
+  }
+  return path;
+}
+/* Past this many stops the untangling pass costs more than it is worth on a
+   phone, so the nearest-neighbour order stands on its own. It is still sane. */
+const TWO_OPT_MAX = 120;
+const ROUTE_MAX = 400;
+let routeBox = null;          // {s,n,w,e} when an area has been picked on the map
+let routeWhen = 'today';
+function routeRunStart() {
+  try {
+    const r = JSON.parse(localStorage.getItem('routeRun') || 'null');
+    if (r && dayKey(r.startedAt) === dayKey(Date.now())) return r.startedAt;
+  } catch(e) {}
+  return startFreshRun();
+}
+function startFreshRun() {
+  const t = Date.now();
+  localStorage.setItem('routeRun', JSON.stringify({ startedAt: t }));
+  return t;
+}
+/** the whole plan: ordered clusters, ordered doors, and what has been handled */
+function buildRoute() {
+  const started = routeRunStart();
+  const pool = goBackPool(routeWhen);
+  const anchorLat = state.pos ? state.pos.lat : (state.vehicle ? state.vehicle.lat : (pool[0] || {}).lat);
+  const anchorLon = state.pos ? state.pos.lon : (state.vehicle ? state.vehicle.lon : (pool[0] || {}).lon);
+  /* Done tonight means: this door was owed a knock when the run started, and it
+     has been marked since. That has to survive the door changing status, or a
+     "talked" would simply vanish off the list with no sign you had been. */
+  const wasOwed = v => histOf(v).some(h => h.status === 'noanswer' && h.ts < v.ts);
+  const inWindow = v => {
+    const cutoff = routeWhen === 'today' ? new Date(new Date().setHours(0,0,0,0))
+                 : routeWhen === 'week'  ? Date.now() - 7*DAY : 0;
+    if (!(histOf(v).some(h => h.status === 'noanswer' && h.ts >= cutoff))) return false;
+    return !routeBox || (v.lat >= routeBox.s && v.lat <= routeBox.n && v.lon >= routeBox.w && v.lon <= routeBox.e);
+  };
+  const done = state.visitLog
+    .filter(v => { const l = state.visits.get(vKey(v.key, v.line)); return l && l.id === v.id; })
+    .filter(v => (v.line || 'roof') === state.line && v.ts > started && v.lat != null)
+    .filter(v => wasOwed(v) || v.status === 'noanswer')
+    .filter(inWindow);
+  const doneKeys = new Set(done.map(v => vKey(v.key, v.line)));
+  const todo = pool.filter(v => !doneKeys.has(vKey(v.key, v.line)));
+  if (anchorLat == null) return { clusters: [], done, todo, started, anchorLat:null };
+
+  const capped = todo.length > ROUTE_MAX;
+  const clusters = orderByProximity(clusterStops(capped ? todo.slice(0, ROUTE_MAX) : todo), anchorLat, anchorLon);
+  let cx = anchorLat, cy = anchorLon, driveM = 0, walkM = 0;
+  clusters.forEach((c, i) => {
+    c.driveM = haversine(cx, cy, c.lat, c.lon);
+    driveM += c.driveM;
+    c.stops = orderByProximity(c.stops, c.lat, c.lon);
+    let wx = c.lat, wy = c.lon, wm = 0;
+    c.stops.forEach(st => { wm += haversine(wx, wy, st.lat, st.lon); wx = st.lat; wy = st.lon; });
+    wm += haversine(wx, wy, c.lat, c.lon);          // back to the truck
+    c.walkM = wm; walkM += wm;
+    c.index = i + 1;
+    cx = c.lat; cy = c.lon;
+  });
+  const secs = driveSecs(driveM) + walkSecs(walkM) + todo.length * DOOR_SECS;
+  const homeM = state.home ? haversine(cx, cy, state.home.lat, state.home.lon) : null;
+  return { clusters, done, todo, started, driveM, walkM, secs, homeM, capped,
+           homeSecs: homeM == null ? null : driveSecs(homeM) };
+}
+/* Google Maps takes a trip of an origin, a destination and up to nine stops in
+   between. More than that has to go out as legs. */
+const MAPS_LEG = 9;
+const mapsPoint = v => `${v.lat.toFixed(6)},${v.lon.toFixed(6)}`;
+const mapsOneUrl = v =>
+  `https://www.google.com/maps/dir/?api=1&destination=${mapsPoint(v)}&travelmode=driving`;
+function mapsLegUrl(stops, fromLat, fromLon) {
+  const leg = stops.slice(0, MAPS_LEG);
+  if (!leg.length) return null;
+  const dest = leg[leg.length - 1];
+  const mid = leg.slice(0, -1);
+  const origin = fromLat != null ? `&origin=${fromLat.toFixed(6)},${fromLon.toFixed(6)}` : '';
+  const way = mid.length ? `&waypoints=${mid.map(mapsPoint).join('|')}` : '';
+  return `https://www.google.com/maps/dir/?api=1${origin}&destination=${mapsPoint(dest)}${way}&travelmode=driving`;
+}
+
+/* Draw a box on the big map and everything unanswered inside it becomes the run. */
+let routePickBox = null;
+function startRoutePick() {
+  if (!window._map) { flashToast('Map still loading', 'Give it a second', '#f59e0b'); return; }
+  if (eraseMode) cancelErase();
+  if (routePickBox) { routePickBox.destroy(); routePickBox = null; }
+  // `box` is a local, so the callback can never fire against a null global
+  let box = null;
+  const count = () => {
+    if (!box) return;
+    const inside = state.visitLog
+      .filter(v => { const l = state.visits.get(vKey(v.key, v.line)); return l && l.id === v.id; })
+      .filter(v => v.status === 'noanswer' && (v.line || 'roof') === state.line && v.lat != null)
+      .filter(v => box.contains(v.lat, v.lon)).length;
+    $('eraseTxt').textContent = inside
+      ? `${inside} unanswered door${inside===1?'':'s'} inside. Drag the middle to move it, either corner to resize.`
+      : 'Drag the box over the area you want to go back to.';
+    $('eraseGo').textContent = inside ? `Use these ${inside}` : 'Use this area';
+    $('eraseGo').style.opacity = inside ? 1 : .45;
+  };
+  box = makeMapBox(window._map, defaultBoxBounds(window._map), { color:'#22c55e', onChange: count });
+  routePickBox = box;
+  setBoxBar('pick');
+  $('eraseBar').classList.remove('hide');
+  $('eraseGo').classList.remove('hide');
+  box.refresh();
+}
+/* One bar serves two jobs, so it must not look destructive while picking. */
+function setBoxBar(mode) {
+  const bar = $('eraseBar');
+  bar.classList.toggle('picking', mode === 'pick');
+  // the address search sits over this bar, so it stands down while a box is live
+  $('findWrap').classList.toggle('hide', mode !== null);
+}
+function endRoutePick(use) {
+  if (!routePickBox) return;
+  if (use) {
+    const b = routePickBox.getBounds();
+    routeBox = { s:b.getSouth(), n:b.getNorth(), w:b.getWest(), e:b.getEast() };
+  }
+  routePickBox.destroy(); routePickBox = null;
+  setBoxBar(null);
+  $('eraseBar').classList.add('hide');
+  $('eraseGo').classList.add('hide');
+  $('mapView').classList.add('hide');
+  openRoute();
+}
+
+/* ==========================================================================
+   address search on the big map
+   --------------------------------------------------------------------------
+   Two sources, in this order:
+     1. Everything already on the phone - parcels loaded for streets he has
+        opened, plus every door he has ever marked. Instant, works with no
+        signal, and covers the addresses he actually cares about.
+     2. The county auditor service, queried by address, when there is signal.
+        Same free keyless services the app already uses, so no new dependency
+        and no geocoding account.
+   Local hits show immediately and the county hits fold in when they arrive, so
+   typing never waits on the network.
+   ========================================================================== */
+const findNorm = t => String(t || '').toUpperCase().replace(/[^A-Z0-9 ]+/g, ' ').replace(/\s+/g, ' ').trim();
+function findLocal(q) {
+  const needle = findNorm(q);
+  if (needle.length < 2) return [];
+  const seen = new Set(), out = [];
+  const push = (addr, owner, lat, lon, key, tag) => {
+    const k = findNorm(addr) + '|' + key;
+    if (!addr || seen.has(k)) return;
+    seen.add(k);
+    out.push({ addr, owner, lat, lon, key, tag });
+  };
+  // the latest record per door, not the first: an old no-answer would show the
+  // deed name and drop the pin where he stood on that first knock
+  for (const v of state.visits.values()) {
+    if (v.lat == null || !findNorm(v.addr).includes(needle)) continue;
+    const p = state.parcels.get(v.key);
+    const at = p && (p.house || p.cen);
+    push(v.addr, displayName(v), at ? at[1] : v.lat, at ? at[0] : v.lon, v.key, 'worked');
+  }
+  for (const p of state.parcels.values()) {
+    if (!findNorm(p.addr).includes(needle)) continue;
+    const at = p.house || p.cen;
+    push(p.addr, shortOwner(p.owner || ''), at[1], at[0], p.key, '');
+  }
+  // a house number typed on its own should list numerically, not by string
+  return out.sort((a, b) => {
+    const na = parseInt(a.addr, 10), nb = parseInt(b.addr, 10);
+    if (isFinite(na) && isFinite(nb) && na !== nb) return na - nb;
+    return a.addr.localeCompare(b.addr);
+  }).slice(0, 12);
+}
+/** ask the auditor service covering the current view, by address */
+async function findRemote(q, signal) {
+  if (!window._map) return [];
+  const c0 = window._map.getCenter();
+  const c = countiesFor(c0.lat, c0.lng)[0];
+  if (!c) return [];
+  const needle = findNorm(q).replace(/'/g, "''");
+  if (needle.length < 3) return [];
+  const fields = [c.pid, c.addr, ...c.owner].filter(Boolean).join(',');
+  const params = {
+    where: `UPPER(${c.addr}) LIKE '%${needle}%'`,
+    outFields: fields, returnGeometry: 'true', outSR: '4326',
+    geometryPrecision: '6', resultRecordCount: '12', f: 'geojson',
+  };
+  const res = await fetch(`${c.url}/query?` + new URLSearchParams(params), { mode:'cors', signal });
+  let j = await res.json();
+  if (!j || !j.features) {
+    const r2 = await fetch(`${c.url}/query?` + new URLSearchParams({...params, f:'json'}), { mode:'cors', signal });
+    const j2 = await r2.json();
+    j = { features: (j2.features || []).map(f => ({ properties:f.attributes, geometry:{ rings: f.geometry && f.geometry.rings } })) };
+  }
+  const out = [];
+  for (const f of (j.features || [])) {
+    const a = f.properties || {};
+    const rings = esriToRings(f.geometry);
+    if (!rings || !rings.length) continue;
+    const cen = ringsCentroid(rings);
+    const addr = String(a[c.addr] || '').trim();
+    if (!addr) continue;
+    const owner = c.owner.map(k => (a[k] == null ? '' : String(a[k])).trim())
+      .filter(v => v && v !== '0').join(' & ');
+    out.push({ addr, owner: shortOwner(owner || ''), lat: cen[1], lon: cen[0],
+               key: `${c.key}:${String(a[c.pid] ?? '').trim()}`, tag: c.name });
+  }
+  return out;
+}
+let findTimer = null, findAbort = null, findRows = [];
+function renderFind(rows, note) {
+  const host = $('findList');
+  findRows = rows;
+  if (!rows.length && !note) { host.classList.add('hide'); host.innerHTML = ''; return; }
+  host.classList.remove('hide');
+  host.innerHTML = '';
+  rows.forEach((r, i) => {
+    const el = document.createElement('div');
+    el.className = 'findRow';
+    el.innerHTML = `<div class="t"><b>${esc(r.addr)}</b><em>${esc(r.owner || 'no name on record')}</em></div>`
+      + (r.tag ? `<span class="tag">${esc(r.tag)}</span>` : '');
+    el.onclick = () => goToFind(i);
+    host.appendChild(el);
+  });
+  if (note) {
+    const n = document.createElement('div');
+    n.className = 'findNote'; n.textContent = note;
+    host.appendChild(n);
+  }
+}
+function goToFind(i) {
+  const r = findRows[i]; if (!r) return;
+  $('findInput').value = r.addr;
+  $('findList').classList.add('hide');
+  $('findInput').blur();
+  const m = window._map;
+  m.setView([r.lat, r.lon], Math.max(m.getZoom(), 19), { animate:true });
+  if (window._findMark) { try { m.removeLayer(window._findMark); } catch(e) {} }
+  window._findMark = L.circleMarker([r.lat, r.lon], {
+    radius: 13, color:'#38bdf8', weight: 3, fillColor:'#38bdf8', fillOpacity: .22, interactive: false }).addTo(m);
+  // pull the lot lines in for that spot, so tapping it opens a real record
+  ensureParcels(r.lat, r.lon).then(() => refreshMapLayers()).catch(()=>{});
+  buzz(15);
+}
+function runFind() {
+  const q = $('findInput').value;
+  $('findClear').classList.toggle('hide', !q);
+  if (findAbort) { findAbort.abort(); findAbort = null; }
+  const local = findLocal(q);
+  if (findNorm(q).length < 2) { renderFind([], ''); return; }
+  renderFind(local, local.length ? '' : 'Nothing loaded matches. Checking the county…');
+  clearTimeout(findTimer);
+  findTimer = setTimeout(async () => {
+    if (findNorm(q).length < 3) return;
+    findAbort = new AbortController();
+    try {
+      const remote = await findRemote(q, findAbort.signal);
+      if ($('findInput').value !== q) return;                 // he kept typing
+      const have = new Set(local.map(r => findNorm(r.addr)));
+      const merged = local.concat(remote.filter(r => !have.has(findNorm(r.addr))));
+      renderFind(merged.slice(0, 14), merged.length ? '' : 'No match in this county.');
+    } catch (e) {
+      if (e.name === 'AbortError') return;
+      if (!local.length) renderFind([], navigator.onLine
+        ? 'The county service did not answer. Streets already loaded can still be searched.'
+        : 'No signal, so only streets already loaded can be searched.');
+    } finally { findAbort = null; }
+  }, 280);
+}
+
+function openRoute() { renderRoute(); openSheet('routeSheet'); }
+function renderRoute() {
+  const r = buildRoute();
+  const flat = r.clusters.flatMap(c => c.stops);
+
+  $('rtHead').innerHTML = `
+    <div class="stat"><b>${flat.length}</b>to knock</div>
+    <div class="stat"><b>${r.clusters.length}</b>stop${r.clusters.length===1?'':'s'} to park</div>
+    <div class="stat"><b>${r.done.length}</b>done tonight</div>`;
+
+  const when = $('rtWhen'); when.innerHTML = '';
+  [['today','Today'],['week','Last 7 days'],['all','Everything']].forEach(([k, label]) => {
+    const b = document.createElement('button');
+    b.className = 'chip' + (routeWhen === k ? ' on' : ''); b.textContent = label;
+    b.onclick = () => { routeWhen = k; renderRoute(); };
+    when.appendChild(b);
+  });
+  const ar = $('rtArea'); ar.innerHTML = '';
+  const pick = document.createElement('button');
+  pick.className = 'chip' + (routeBox ? ' on' : '');
+  pick.textContent = routeBox ? '▣ Area picked' : '▣ Pick an area on the map';
+  pick.onclick = () => { closeSheet('routeSheet'); openMap(); setTimeout(startRoutePick, 260); };
+  ar.appendChild(pick);
+  if (routeBox) {
+    const clr = document.createElement('button');
+    clr.className = 'chip'; clr.textContent = 'Whole map';
+    clr.onclick = () => { routeBox = null; renderRoute(); };
+    ar.appendChild(clr);
+  }
+
+  $('rtNote').textContent = !flat.length ? ''
+    : `Park ${r.clusters.length} time${r.clusters.length===1?'':'s'} and walk the doors at each. `
+      + `Ordered to keep the driving down, worked out from straight line distance, so it does not know about one-way streets or a river in the way. `
+      + `Roughly ${fmtDur(r.secs)}${r.homeSecs != null ? `, plus ${fmtDur(r.homeSecs)} home` : ''}. `
+      + `Run started ${fmtWhenClock(r.started)}.`
+      + (r.capped ? ` Showing the first ${ROUTE_MAX}; narrow it with an area or a shorter stretch of time.` : '');
+
+  const host = $('rtList'); host.innerHTML = '';
+  if (!flat.length) {
+    host.innerHTML = `<p style="color:var(--dim);padding:10px 2px">${
+      r.done.length ? 'Every door on this run has been knocked. Nice.'
+                    : 'No unanswered doors in this book for that stretch of time.'}</p>`;
+    $('rtMaps').classList.add('hide');
+  } else {
+    $('rtMaps').classList.remove('hide');
+    let seq = 0;
+    r.clusters.forEach(c => {
+      const leg = document.createElement('div');
+      leg.className = 'rtLeg';
+      // road miles, not crow-flies, or the distance and the time on the same
+      // screen would be computed from different assumptions
+      const drove = fmtMiles(c.driveM * ROAD_DETOUR);
+      leg.append(document.createTextNode(
+        c.index === 1 ? `DRIVE ABOUT ${drove}` : `THEN ABOUT ${drove}`));
+      host.appendChild(leg);
+
+      const g = document.createElement('div'); g.className = 'rtGroup';
+      const head = document.createElement('div'); head.className = 'rtGroupHead';
+      head.innerHTML = `<b>${esc(streetOf(c.stops[0]) || 'Stop ' + c.index)}</b>`
+        + `<span>${c.stops.length} door${c.stops.length===1?'':'s'} on foot</span>`;
+      g.appendChild(head);
+      c.stops.forEach(v => {
+        seq++;
+        const row = document.createElement('div'); row.className = 'rtStop';
+        row.innerHTML = `<div class="num">${seq}</div>
+          <div class="t"><b>${esc(v.addr || 'Unnamed lot')}</b>
+            <em>${esc(displayName(v))}${nameIsFromDeed(v) ? ' (from the deed)' : ''}${
+              v.occ === 'rental' ? ' · ⚠️ likely rental' : ''}</em></div>`;
+        const a = document.createElement('a');
+        a.href = mapsOneUrl(v); a.target = '_blank'; a.rel = 'noopener'; a.textContent = '🗺';
+        a.onclick = e => e.stopPropagation();
+        row.appendChild(a);
+        row.onclick = () => { closeSheet('routeSheet'); openDetail(v); };
+        g.appendChild(row);
+      });
+      host.appendChild(g);
+    });
+  }
+
+  if (r.done.length) {
+    const leg = document.createElement('div'); leg.className = 'rtLeg';
+    leg.append(document.createTextNode('KNOCKED ON THIS RUN'));
+    host.appendChild(leg);
+    const g = document.createElement('div'); g.className = 'rtGroup';
+    r.done.forEach(v => {
+      const row = document.createElement('div'); row.className = 'rtStop done';
+      row.innerHTML = `<div class="num">✓</div><div class="t"><b>${esc(v.addr || '')}</b>
+        <em>${esc(STATUS[v.status].label)}</em></div>`;
+      row.onclick = () => { closeSheet('routeSheet'); openDetail(v); };
+      g.appendChild(row);
+    });
+    host.appendChild(g);
+  }
+  const parkCount = r.clusters.length;
+  $('rtMaps').textContent = parkCount > MAPS_LEG
+    ? (mapsLegFrom === 0 ? `🗺 Open the first ${MAPS_LEG} stops in Google Maps`
+                         : `🗺 Open the next ${Math.min(MAPS_LEG, parkCount - mapsLegFrom)} stops in Google Maps`)
+    : '🗺 Open the whole run in Google Maps';
 }
 
 /* ---------------- sessions ---------------- */
@@ -3099,6 +4296,12 @@ async function loadStored() {
   state.track = d.pts;
 
   try { const v = localStorage.getItem('vehicle'); if (v) state.vehicle = JSON.parse(v); } catch(e){}
+  try { const h = localStorage.getItem('home'); if (h) state.home = JSON.parse(h); } catch(e){}
+  try { const a = JSON.parse(localStorage.getItem('appts') || '[]');
+        state.appts = Array.isArray(a) ? a.filter(x => x && typeof x.at === 'number') : []; } catch(e){ state.appts = []; }
+  try { const dj = parseFloat(localStorage.getItem('driveAdj')); if (isFinite(dj) && dj > 0) state.driveAdj = dj; } catch(e){}
+  try { const hd = JSON.parse(localStorage.getItem('hubData') || '[]');
+        state.hubData = Array.isArray(hd) ? hd.filter(k => HUB_FIELDS.some(f => f[0] === k)) : []; } catch(e){ state.hubData = []; }
   state.line = localStorage.getItem('line') === 'appraisal' ? 'appraisal' : 'roof';
   renderMode(); renderStrip(); renderStats(); renderTruck();
 }
@@ -3138,8 +4341,6 @@ window.addEventListener('resize', drawMini);
   $('hubSat').classList.toggle('on', state.hubSat);
   try { const ses = localStorage.getItem('session'); if (ses) state.session = JSON.parse(ses); } catch(e){}
   lockIfNeeded();
-  try { const h = localStorage.getItem('home'); if (h) state.home = JSON.parse(h); } catch(e){}
-  await loadAppts();
   await purgeStaleTiles();
   await loadStored();
   if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(()=>{});
