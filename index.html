@@ -38,6 +38,15 @@ input,textarea,select{font:inherit;color:var(--txt);background:var(--card2);bord
 .dot{width:8px;height:8px;border-radius:50%;background:#64748b;flex:0 0 auto}
 .dot.good{background:#22c55e}.dot.ok{background:#f59e0b}.dot.bad{background:#ef4444}
 #stripSpacer{flex:1}
+#strip{overflow:hidden}
+#strip .pill{flex:0 1 auto;overflow:hidden;text-overflow:ellipsis}
+#countyPill{min-width:0}
+#menuBtn{flex:0 0 auto;position:relative;display:flex;align-items:center;gap:6px;font-size:20px;
+  padding:4px 4px 4px 10px;color:var(--dim);border-radius:999px}
+#menuCount{font-size:13px;font-weight:800;color:var(--txt);background:var(--card);border:1px solid var(--line);
+  border-radius:999px;padding:3px 9px;line-height:1}
+#menuDot{position:absolute;top:0;right:1px;width:9px;height:9px;border-radius:50%;background:#ef4444;
+  box-shadow:0 0 0 2px var(--bg)}
 #modePill{font-weight:900;letter-spacing:.6px;font-size:11px;padding:5px 11px;border-width:1px;border-style:solid}
 #modePill.roof{background:#08313f;border-color:#0ea5e9;color:#7dd3fc}
 #modePill.appraisal{background:#2e1065;border-color:#a855f7;color:#e9d5ff}
@@ -80,8 +89,8 @@ input,textarea,select{font:inherit;color:var(--txt);background:var(--card2);bord
   background:#0f151d;z-index:5}
 #hub.parking{box-shadow:0 0 0 3px #f472b6,0 0 22px rgba(244,114,182,.6)}
 #hub canvas{width:100%;height:100%;display:block}
-#hubLabel{position:absolute;left:0;right:0;bottom:0;font-size:8.5px;letter-spacing:.5px;
-  text-align:center;background:rgba(0,0,0,.6);color:#cbd5e1;padding:3px 0 4px;font-weight:800}
+#hubLabel{position:absolute;left:50%;bottom:11%;transform:translateX(-50%);font-size:8px;letter-spacing:.4px;
+  white-space:nowrap;background:rgba(0,0,0,.62);color:#cbd5e1;padding:3px 9px;border-radius:999px;font-weight:800}
 #hubN{position:absolute;top:3px;left:50%;transform:translateX(-50%);font-size:8px;font-weight:900;
   color:rgba(255,255,255,.55);letter-spacing:.5px}
 /* small controls tucked against the hub ring, thumb reachable, out of the way */
@@ -137,6 +146,19 @@ label.f{display:block;margin:12px 0 5px;font-size:12px;font-weight:800;color:var
 .cand .a{font-weight:800;font-size:15px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .cand .o{font-size:12px;color:var(--dim);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .cand .d{font-size:11px;color:var(--dim);font-weight:700;flex:0 0 auto}
+.crmRow{display:flex;align-items:flex-start;gap:10px;padding:11px 12px;border:1px solid var(--line);
+  border-radius:14px;background:var(--card);margin-bottom:8px}
+.crmRow.late{border-color:rgba(239,68,68,.55);background:rgba(239,68,68,.08)}
+.crmRow .sw{width:5px;align-self:stretch;border-radius:4px;flex:0 0 auto}
+.crmRow .t{flex:1;min-width:0}
+.crmRow .a{font-weight:800;font-size:15px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.crmRow .o{font-size:12px;color:var(--dim);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.crmRow .m{display:flex;gap:7px;align-items:center;margin-top:5px;flex-wrap:wrap}
+.dchip{font-size:11px;font-weight:800;border:1px solid;border-radius:999px;padding:2px 8px}
+.dimTxt{font-size:11px;color:var(--dim);font-weight:700}
+.lateTxt{font-size:11px;color:#fca5a5;font-weight:800}
+.crmActs{display:flex;flex-direction:column;gap:5px;flex:0 0 auto}
+.crmActs button{background:var(--card2);border:1px solid var(--line);border-radius:9px;padding:6px 9px;font-size:12px;font-weight:700}
 #dLog{display:flex;flex-direction:column;gap:7px}
 .logRow{display:flex;gap:9px;align-items:flex-start;background:var(--card);border:1px solid var(--line);border-radius:12px;padding:9px 11px}
 .logRow i{width:9px;height:9px;border-radius:3px;flex:0 0 auto;margin-top:5px}
@@ -216,11 +238,10 @@ label.f{display:block;margin:12px 0 5px;font-size:12px;font-weight:800;color:var
     <button class="pill" id="gpsPill"><span class="dot" id="gpsDot"></span><span id="gpsTxt">GPS…</span></button>
     <button class="pill" id="modePill">ROOFING</button>
     <span class="pill" id="countyPill">—</span>
-    <span class="pill" id="todayPill">0 today</span>
     <button class="pill hide" id="truckPill">🚚 —</button>
     <button class="pill hide" id="fixPill">📍 set by hand</button>
     <span id="stripSpacer"></span>
-    <button id="menuBtn">☰</button>
+    <button id="menuBtn"><span id="menuCount">0</span> ☰<span id="menuDot" class="hide"></span></button>
   </div>
 
   <div id="house">
@@ -243,7 +264,7 @@ label.f{display:block;margin:12px 0 5px;font-size:12px;font-weight:800;color:var
       <button class="act" id="b-noanswer" data-s="noanswer"><span class="ico">🚪</span><span class="big">No Answer</span><span class="sub">nobody home</span></button>
       <button class="act" id="b-dnr"      data-s="dnr">     <span class="ico">⛔</span><span class="big">Don't Come Back</span><span class="sub">do not return</span></button>
     </div>
-    <div id="hub"><canvas id="mini"></canvas><div id="hubLabel">HOLD TO PARK</div></div>
+    <div id="hub"><canvas id="mini"></canvas><div id="hubLabel">HOLD = PARK</div></div>
     <button class="hubBtn" id="hubOut" aria-label="zoom out">−</button>
     <button class="hubBtn" id="hubIn" aria-label="zoom in">+</button>
     <button class="hubBtn" id="hubSat" aria-label="satellite">🛰</button>
@@ -321,8 +342,12 @@ label.f{display:block;margin:12px 0 5px;font-size:12px;font-weight:800;color:var
       <label class="f">Email</label><input id="dEmail" type="email" inputmode="email" placeholder="optional" autocapitalize="off">
       <label class="f">Quick tags</label>
       <div class="chips" id="dTags"></div>
+      <label class="f">Stage</label>
+      <div class="chips" id="dDispo"></div>
       <label class="f">Follow up</label>
+      <div class="chips" id="dFollowChips"></div>
       <input id="dFollow" type="datetime-local">
+      <button class="ghost" id="dIcs" style="margin-top:8px">📅 Add this reminder to my phone calendar</button>
       <label class="f">Log</label>
       <div id="dLog"></div>
       <div class="logAdd">
@@ -331,6 +356,18 @@ label.f{display:block;margin:12px 0 5px;font-size:12px;font-weight:800;color:var
       </div>
       <button class="primary" id="dSave">Save</button>
       <button class="ghost danger" id="dDelete">Delete this record</button>
+    </div>
+  </div>
+</div>
+
+<div id="crmSheet" class="sheet hide">
+  <div class="sheetBody">
+    <div class="sheetHead"><h2>Customers</h2><button class="x" data-close="crmSheet">Close</button></div>
+    <div class="sheetScroll">
+      <div class="statsbox" id="crmHead"></div>
+      <div class="chips" id="crmChips" style="margin-top:12px"></div>
+      <div id="crmList" style="margin-top:12px"></div>
+      <button class="ghost" id="crmIcs">📅 Send all follow-ups to my phone calendar</button>
     </div>
   </div>
 </div>
@@ -381,6 +418,7 @@ label.f{display:block;margin:12px 0 5px;font-size:12px;font-weight:800;color:var
     <div class="sheetScroll">
       <div class="statsbox"></div>
       <div id="backupNag" class="hide"></div>
+      <button class="ghost" id="mCrm">👥 Customers and follow-ups</button>
       <button class="ghost" id="mSession">■ End session / session log</button>
       <button class="ghost" id="mExport">⬇︎ Export a list…</button>
       <button class="ghost" id="mBackup">💾 Full backup (JSON)</button>
@@ -1012,7 +1050,9 @@ function renderStrip() {
       : (state.county ? state.county.name + ' Co.' : '—');
   const t0 = new Date(); t0.setHours(0,0,0,0);
   const todayN = state.visitLog.filter(v => v.ts >= +t0 && v.line === state.line).length;
-  $('todayPill').textContent = `${todayN} today`;
+  $('menuCount').textContent = todayN;
+  const due = dueCount();
+  $('menuDot').classList.toggle('hide', due === 0);
   renderTruck();
 }
 
@@ -1319,8 +1359,14 @@ async function reassignLast() {
   const oldSlot = vKey(v.key, v.line);
   const older = state.visitLog.filter(x => vKey(x.key, x.line) === oldSlot && x.id !== v.id).sort((a,b)=>b.ts-a.ts)[0];
   if (older) state.visits.set(oldSlot, older); else state.visits.delete(oldSlot);
+  // move EVERY parcel-derived field, not just the address. Leaving the old
+  // mailing address, rental verdict or sale price attached to a corrected
+  // house is worse than the original mis-snap, because it reads as fact.
   v.key = target.key; v.pid = target.pid; v.county = target.county;
   v.owner = target.owner; v.addr = target.addr; v.extra = target.extra;
+  v.occ = target.occ || null; v.mail = target.mail || '';
+  v.val = target.val || null; v.sqft = target.sqft || null;
+  v.saleTs = target.saleTs || null; v.salePrice = target.salePrice || null;
   v.dist = Math.round(state.candidates[i].d);
   state.visits.set(vKey(v.key, v.line), v);
   state.candIndex = i; pinHouse(target.key);
@@ -1339,7 +1385,9 @@ function pullDetail() {
   editing.name  = $('dName').value.trim();
   editing.phone = $('dPhone').value.trim();
   editing.email = $('dEmail').value.trim();
-  editing.follow = $('dFollow').value;
+  const fv = $('dFollow').value;
+  editing.followAt = fv ? Date.parse(fv) : (editing.followAt || null);
+  if (fv) editing.followDone = false;
 }
 function openDetail(visit, focusName) {
   let v = visit;
@@ -1374,7 +1422,7 @@ function openDetail(visit, focusName) {
         : mail ? `<div style="margin-top:6px;color:var(--dim)">Owner mail: ${esc(mail)}${occ==='owner'?' (same address)':''}</div>`
                : (why ? `<div style="margin-top:6px;color:var(--dim)">Occupancy unknown: ${esc(why)}.</div>` : ''));
   $('dName').value = v.name||''; $('dPhone').value = v.phone||'';
-  $('dEmail').value = v.email||''; $('dFollow').value = v.follow||'';
+  $('dEmail').value = v.email||'';
   const sw = $('dStatus'); sw.innerHTML = '';
   Object.entries(STATUS).forEach(([k,s]) => {
     const b = document.createElement('button');
@@ -1390,6 +1438,41 @@ function openDetail(visit, focusName) {
     b.onclick = () => { pullDetail(); const s = new Set(editing.tags||[]); s.has(t)?s.delete(t):s.add(t); editing.tags=[...s]; openDetail(editing); };
     tg.appendChild(b);
   });
+  // stage in the pipeline, separate from what happened at the door
+  const dz = $('dDispo'); dz.innerHTML = '';
+  Object.entries(DISPO).forEach(([k, d]) => {
+    const cur = (editing.dispo || 'new') === k;
+    const b2 = document.createElement('button');
+    b2.className = 'chip' + (cur ? ' on' : ''); b2.textContent = d.label;
+    if (cur) { b2.style.background = d.color + '2e'; b2.style.borderColor = d.color; b2.style.color = d.color; }
+    b2.onclick = () => {
+      pullDetail();
+      if ((editing.dispo || 'new') !== k) {
+        editing.dispo = k;
+        editing.log = [...logOf(editing), { id:newId(), ts:Date.now(), kind:'note',
+          text:`Stage set to ${d.label}.` }];
+      }
+      openDetail(editing);
+    };
+    dz.appendChild(b2);
+  });
+
+  const fz = $('dFollowChips'); fz.innerHTML = '';
+  FOLLOWUPS.forEach(([label, fn]) => {
+    const b3 = document.createElement('button');
+    b3.className = 'chip'; b3.textContent = label;
+    b3.onclick = () => { pullDetail(); editing.followAt = fn(); editing.followDone = false; openDetail(editing); };
+    fz.appendChild(b3);
+  });
+  if (editing.followAt) {
+    const clr = document.createElement('button');
+    clr.className = 'chip'; clr.textContent = '✕ clear'; clr.style.color = '#fca5a5';
+    clr.onclick = () => { pullDetail(); editing.followAt = null; editing.followDone = false; openDetail(editing); };
+    fz.appendChild(clr);
+  }
+  $('dFollow').value = editing.followAt
+    ? new Date(editing.followAt - new Date().getTimezoneOffset()*60000).toISOString().slice(0,16) : '';
+
   renderLog();
   openSheet('detailSheet');
   if (focusName) setTimeout(() => { const el = $('dName'); el.focus({preventScroll:false}); }, 220);
@@ -1803,7 +1886,7 @@ function visitsFor(o) {
 function exportCsv(o) {
   const rows = visitsFor(o);
   if (!rows.length) { flashToast('Nothing matches those options','','#64748b'); return; }
-  const head = ['Date','Time','Work','Status','Address','Owner','Status history','Market value','Floor area sq ft','Last sale date','Last sale price','Likely rental','Owner mailing address','County','Parcel ID','Contact name','Phone','Email','Tags','Follow up','Notes','Year built','Latitude','Longitude','GPS accuracy m','Distance to lot m'];
+  const head = ['Date','Time','Work','Status','Address','Owner','Status history','Market value','Floor area sq ft','Last sale date','Last sale price','Likely rental','Owner mailing address','County','Parcel ID','Contact name','Phone','Email','Tags','Stage','Follow up','Notes','Year built','Latitude','Longitude','GPS accuracy m','Distance to lot m'];
   const yr = v => v.extra && (v.extra.RESYRBLT||v.extra.YRBUILT||v.extra.YearBuilt||v.extra.YRBLT||v.extra.PPYearBuilt) || '';
   const lines = [head.map(q).join(',')];
   rows.forEach(v => {
@@ -1814,7 +1897,8 @@ function exportCsv(o) {
       v.saleTs ? new Date(v.saleTs).toLocaleDateString() : '', v.salePrice || '',
       v.occ === 'rental' ? 'YES' : v.occ === 'owner' ? 'no' : '', v.mail || '',
       (COUNTIES.find(c=>c.key===v.county)||{}).name, v.pid, v.name, v.phone, v.email,
-      (v.tags||[]).join('; '), v.follow, noteText(v), yr(v),
+      (v.tags||[]).join('; '), (DISPO[v.dispo||'new']||{}).label,
+      v.followAt ? new Date(v.followAt).toLocaleString() : '', noteText(v), yr(v),
       v.lat.toFixed(6), v.lon.toFixed(6), Math.round(v.acc||0), v.dist].map(q).join(','));
   });
   download(`canvass-${xName(o)}.csv`, '﻿'+lines.join('\r\n'), 'text/csv');
@@ -2135,6 +2219,9 @@ $('truckPill').onclick = openMap;
 $('toastUndo').onclick = undoLast;
 $('toastSwap').onclick = reassignLast;
 $('menuBtn').onclick = () => { renderStats(); renderSnapChips(); renderDiag(); renderParkInfo(); renderBackupNag(); renderPinInfo(); openSheet('menuSheet'); };
+$('mCrm').onclick = openCrm;
+$('crmIcs').onclick = () => addToCalendar(dueList());
+$('dIcs').onclick = () => { pullDetail(); addToCalendar([editing]); };
 $('mSession').onclick = openSession;
 $('sesKeep').onclick = () => { if (!state.session) { startSession(); setPaused(false); } closeSheet('sessionSheet'); };
 $('sesEnd').onclick = endSession;
@@ -2333,6 +2420,157 @@ function toggleMoveMe() {
     flashToast('Drag the blue dot', 'Drop it where you actually are', '#2dd4bf');
   }
   refreshMapLayers();
+}
+
+/* ---------------- follow-ups and dispositions ----------------
+   The door status says what happened at the door. The disposition says where
+   the person stands in the pipeline. They move independently: a house can be
+   "Talked" once and travel New to Appointment to Signed over three weeks. */
+const DISPO = {
+  new:      { label:'New',            color:'#94a3b8' },
+  callback: { label:'Callback',       color:'#f59e0b' },
+  appt:     { label:'Appointment',    color:'#22c55e' },
+  quoted:   { label:'Quoted',         color:'#3b82f6' },
+  signed:   { label:'Signed',         color:'#a855f7' },
+  cold:     { label:'Not interested', color:'#64748b' },
+  dead:     { label:'Dead',           color:'#475569' },
+};
+const HOUR = 3600000, DAY = 86400000;
+function nextMorning(days) {
+  const d = new Date(); d.setDate(d.getDate() + days); d.setHours(9, 0, 0, 0);
+  return +d;
+}
+const FOLLOWUPS = [
+  ['1 hour',    () => Date.now() + HOUR],
+  ['3 hours',   () => Date.now() + 3*HOUR],
+  ['Tomorrow',  () => nextMorning(1)],
+  ['2 days',    () => nextMorning(2)],
+  ['1 week',    () => nextMorning(7)],
+  ['2 weeks',   () => nextMorning(14)],
+  ['1 month',   () => nextMorning(30)],
+];
+const dueList = () => state.visitLog
+  .filter(v => v.followAt && !v.followDone)
+  .filter(v => { const l = state.visits.get(vKey(v.key, v.line)); return l && l.id === v.id; })
+  .sort((a,b) => a.followAt - b.followAt);
+const dueCount = () => dueList().filter(v => v.followAt <= Date.now()).length;
+function whenText(ts) {
+  const d = ts - Date.now();
+  const abs = Math.abs(d);
+  const unit = abs < HOUR ? [Math.round(abs/60000), 'min']
+            : abs < DAY ? [Math.round(abs/HOUR), 'hr']
+            : abs < 30*DAY ? [Math.round(abs/DAY), 'day']
+            : [Math.round(abs/(30*DAY)), 'mo'];
+  const n = `${unit[0]} ${unit[1]}${unit[0] === 1 ? '' : 's'}`;
+  return d < 0 ? `${n} overdue` : `in ${n}`;
+}
+
+/* Real reminders need a notification the phone will fire while the app is shut.
+   iOS will not do that for a web app without a push server, so the honest route
+   is a calendar event: it fires on its own, on every device he owns. */
+const icsEsc = t => String(t || '').replace(/[\\;,]/g, m => '\\' + m).replace(/\n/g, '\\n');
+function icsFor(rows) {
+  const ts = t => new Date(t).toISOString().replace(/[-:]/g, '').split('.')[0] + 'Z';
+  const out = ['BEGIN:VCALENDAR','VERSION:2.0','PRODID:-//Roof Champ Canvass//EN','CALSCALE:GREGORIAN'];
+  rows.forEach(v => {
+    const who = v.name || v.owner || v.addr || 'Follow up';
+    out.push('BEGIN:VEVENT',
+      `UID:${v.id}@canvass`,
+      `DTSTAMP:${ts(Date.now())}`,
+      `DTSTART:${ts(v.followAt)}`,
+      `DTEND:${ts(v.followAt + 30*60000)}`,
+      `SUMMARY:${icsEsc(`Follow up: ${who}`)}`,
+      `LOCATION:${icsEsc(v.addr || '')}`,
+      `DESCRIPTION:${icsEsc([
+        `${LINES[v.line||'roof'].label} follow up`,
+        v.addr, v.owner ? `Owner: ${v.owner}` : '',
+        v.phone ? `Phone: ${v.phone}` : '',
+        DISPO[v.dispo||'new'] ? `Stage: ${DISPO[v.dispo||'new'].label}` : '',
+        noteText(v)].filter(Boolean).join('\n'))}`,
+      'BEGIN:VALARM','TRIGGER:-PT30M','ACTION:DISPLAY','DESCRIPTION:Follow up','END:VALARM',
+      'END:VEVENT');
+  });
+  out.push('END:VCALENDAR');
+  return out.join('\r\n');
+}
+function addToCalendar(rows) {
+  const list = rows.filter(v => v.followAt);
+  if (!list.length) { flashToast('No follow-up time set', 'Pick when to circle back first', '#64748b'); return; }
+  download(`follow-ups-${stamp()}.ics`, icsFor(list), 'text/calendar');
+  flashToast(`${list.length} reminder${list.length===1?'':'s'} ready`,
+             'Open the file and tap Add All to put them in your phone calendar', '#22c55e');
+}
+
+/* ---------------- the customer list ---------------- */
+let crmFilter = 'due';
+function openCrm() {
+  renderCrm();
+  openSheet('crmSheet');
+}
+function renderCrm() {
+  const all = state.visitLog
+    .filter(v => { const l = state.visits.get(vKey(v.key, v.line)); return l && l.id === v.id; })
+    .filter(v => v.name || v.phone || v.email || v.followAt || (v.dispo && v.dispo !== 'new')
+                 || logOf(v).some(e => e.kind === 'note'));
+  const due = dueList();
+  const overdue = due.filter(v => v.followAt <= Date.now());
+  const soon = due.filter(v => v.followAt > Date.now() && v.followAt < Date.now() + 7*DAY);
+
+  $('crmHead').innerHTML = `
+    <div class="stat" style="border-color:${overdue.length?'#ef4444':'var(--line)'}">
+      <b style="color:${overdue.length?'#ef4444':'var(--txt)'}">${overdue.length}</b>due now</div>
+    <div class="stat"><b>${soon.length}</b>this week</div>
+    <div class="stat"><b>${all.length}</b>customers</div>`;
+
+  const chips = $('crmChips'); chips.innerHTML = '';
+  [['due','Follow-ups'],['all','Everyone'],...Object.entries(DISPO).map(([k,d])=>[k,d.label])].forEach(([k,label]) => {
+    const b = document.createElement('button');
+    b.className = 'chip' + (crmFilter === k ? ' on' : ''); b.textContent = label;
+    b.onclick = () => { crmFilter = k; renderCrm(); };
+    chips.appendChild(b);
+  });
+
+  let rows;
+  if (crmFilter === 'due') rows = due;
+  else if (crmFilter === 'all') rows = all.sort((a,b) => b.ts - a.ts);
+  else rows = all.filter(v => (v.dispo || 'new') === crmFilter).sort((a,b) => b.ts - a.ts);
+
+  const host = $('crmList'); host.innerHTML = '';
+  if (!rows.length) {
+    host.innerHTML = `<p style="color:var(--dim);padding:10px 2px">${
+      crmFilter === 'due' ? 'No follow-ups scheduled. Set one from a door\u2019s Details panel.'
+                          : 'Nobody here yet.'}</p>`;
+    return;
+  }
+  rows.forEach(v => {
+    const dp = DISPO[v.dispo || 'new'];
+    const late = v.followAt && v.followAt <= Date.now();
+    const el = document.createElement('div');
+    el.className = 'crmRow' + (late ? ' late' : '');
+    el.innerHTML = `<div class="sw" style="background:${dp.color}"></div>
+      <div class="t">
+        <div class="a">${esc(v.name || v.addr || 'Unnamed')}</div>
+        <div class="o">${esc(v.name ? (v.addr || '') : (v.owner || ''))}${v.phone ? ' · ' + esc(v.phone) : ''}</div>
+        <div class="m"><span class="dchip" style="color:${dp.color};border-color:${dp.color}66">${esc(dp.label)}</span>
+          ${v.followAt ? `<span class="${late ? 'lateTxt' : 'dimTxt'}">${esc(whenText(v.followAt))}</span>` : ''}
+          <span class="dimTxt">${esc(LINES[v.line||'roof'].short)}</span></div>
+      </div>`;
+    const acts = document.createElement('div'); acts.className = 'crmActs';
+    if (v.followAt) {
+      const snooze = document.createElement('button'); snooze.textContent = '+1d';
+      snooze.onclick = async e => { e.stopPropagation();
+        v.followAt = nextMorning(1); await DB.put('visits', v); renderCrm(); renderStrip(); buzz(12); };
+      const done = document.createElement('button'); done.textContent = '✓';
+      done.onclick = async e => { e.stopPropagation();
+        v.followDone = true;
+        v.log = [...logOf(v), { id:newId(), ts:Date.now(), kind:'note', text:'Follow-up completed.' }];
+        await DB.put('visits', v); renderCrm(); renderStrip(); buzz(20); };
+      acts.append(snooze, done);
+    }
+    el.appendChild(acts);
+    el.onclick = () => { closeSheet('crmSheet'); openDetail(v); };
+    host.appendChild(el);
+  });
 }
 
 /* ---------------- sessions ---------------- */
