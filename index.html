@@ -43,6 +43,7 @@ input,textarea,select{font:inherit;color:var(--txt);background:var(--card2);bord
 #modePill.appraisal{background:#2e1065;border-color:#a855f7;color:#e9d5ff}
 #truckPill{background:#3b0d24;border-color:#f472b6;color:#fbcfe8;font-weight:800}
 #gpsPill.paused{background:#2a1608;border-color:#f59e0b;color:#fcd34d}
+#fixPill{background:#0b2f2a;border-color:#2dd4bf;color:#99f6e4;font-weight:800}
 #menuBtn{font-size:20px;padding:2px 8px;color:var(--dim)}
 
 /* ---------- house card ---------- */
@@ -50,6 +51,7 @@ input,textarea,select{font:inherit;color:var(--txt);background:var(--card2);bord
 #addr{font-size:26px;font-weight:800;letter-spacing:-.4px;line-height:1.15;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;padding-right:92px}
 #owner{font-size:15px;color:var(--dim);margin-top:3px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 #addr.far{color:#fbbf24}
+#propLine{font-size:14px;font-weight:700;color:#7dd3fc;margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;padding-right:6px}
 .warnTri{margin-right:6px;font-size:20px;vertical-align:2px}
 #tagRow{display:flex;gap:6px;flex-wrap:wrap;margin-top:6px}
 #rentTag{font-size:12px;font-weight:800;padding:3px 9px;border-radius:999px;color:#fbbf24;background:rgba(251,191,36,.15);border:1px solid rgba(251,191,36,.5);white-space:nowrap}
@@ -134,11 +136,19 @@ label.f{display:block;margin:12px 0 5px;font-size:12px;font-weight:800;color:var
 .cand .a{font-weight:800;font-size:15px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .cand .o{font-size:12px;color:var(--dim);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .cand .d{font-size:11px;color:var(--dim);font-weight:700;flex:0 0 auto}
-#dHistory{margin:10px 0 2px;background:var(--card);border:1px solid var(--line);border-radius:12px;padding:9px 11px}
-#dHistory .hLbl{font-size:11px;font-weight:800;color:var(--dim);letter-spacing:.4px;text-transform:uppercase;margin-bottom:5px}
-#dHistory .hRow{font-size:13px;font-weight:700;display:flex;align-items:center;gap:7px;padding:2px 0}
-#dHistory .hRow i{width:9px;height:9px;border-radius:3px;flex:0 0 auto}
-#dHistory .hRow span{margin-left:auto;font-weight:600;color:var(--dim);font-size:11px}
+#dLog{display:flex;flex-direction:column;gap:7px}
+.logRow{display:flex;gap:9px;align-items:flex-start;background:var(--card);border:1px solid var(--line);border-radius:12px;padding:9px 11px}
+.logRow i{width:9px;height:9px;border-radius:3px;flex:0 0 auto;margin-top:5px}
+.logRow .body{flex:1;min-width:0}
+.logRow .when{font-size:10.5px;color:var(--dim);font-weight:700;letter-spacing:.3px}
+.logRow .txt{font-size:14px;font-weight:600;line-height:1.35;white-space:pre-wrap;word-break:break-word}
+.logRow .act2{display:flex;gap:5px;flex:0 0 auto}
+.logRow button{background:var(--card2);border:1px solid var(--line);border-radius:9px;padding:5px 8px;font-size:12px}
+.logRow textarea{margin-top:4px}
+.logAdd{display:flex;gap:8px;align-items:flex-end;margin-top:9px}
+.logAdd textarea{flex:1}
+.logAdd button{background:#2563eb;color:#fff;border-radius:12px;padding:13px 16px;font-weight:800;flex:0 0 auto}
+.logEmpty{font-size:13px;color:var(--dim);padding:4px 2px}
 
 /* ---------- full map ---------- */
 #mapView{position:fixed;inset:0;z-index:70;background:var(--bg);display:flex;flex-direction:column}
@@ -162,6 +172,7 @@ label.f{display:block;margin:12px 0 5px;font-size:12px;font-weight:800;color:var
 .dayRow .del{background:var(--card2);border:1px solid var(--line);border-radius:9px;padding:6px 9px;font-size:13px}
 #eraseBar{position:absolute;top:calc(var(--safe-t) + 60px);left:8px;right:8px;z-index:600;background:rgba(220,38,38,.95);border-radius:14px;padding:11px 13px;display:flex;align-items:center;gap:10px;font-weight:800;font-size:13px;box-shadow:0 8px 24px rgba(0,0,0,.5)}
 #eraseBar .mbtn{margin-left:auto;background:rgba(0,0,0,.35)}
+.medrag{width:26px;height:26px;border-radius:50%;background:#38bdf8;border:4px solid #fff;box-shadow:0 0 0 3px rgba(45,212,191,.8),0 3px 10px rgba(0,0,0,.6);transform:translate(-13px,-13px)}
 .ehandle{width:22px;height:22px;border-radius:50%;background:#dc2626;border:3px solid #fff;box-shadow:0 2px 8px rgba(0,0,0,.6);transform:translate(-11px,-11px)}
 .owner-label{font-size:10px;font-weight:700;color:#fff;text-shadow:0 0 3px #000,0 0 3px #000,0 1px 2px #000;white-space:nowrap;pointer-events:none;transform:translate(-50%,-50%);display:inline-block;text-align:center}
 .rentwarn{filter:drop-shadow(0 0 2px #000)}
@@ -197,6 +208,7 @@ label.f{display:block;margin:12px 0 5px;font-size:12px;font-weight:800;color:var
     <span class="pill" id="countyPill">—</span>
     <span class="pill" id="todayPill">0 today</span>
     <button class="pill hide" id="truckPill">🚚 —</button>
+    <button class="pill hide" id="fixPill">📍 set by hand</button>
     <span id="stripSpacer"></span>
     <button id="menuBtn">☰</button>
   </div>
@@ -207,6 +219,7 @@ label.f{display:block;margin:12px 0 5px;font-size:12px;font-weight:800;color:var
     </div>
     <div id="addr">Getting location…</div>
     <div id="owner">—</div>
+    <div id="propLine" class="hide"></div>
     <div id="tagRow">
       <span id="rentTag" class="hide">⚠️ likely rental</span>
       <span id="alreadyTag" class="hide"></span>
@@ -263,6 +276,7 @@ label.f{display:block;margin:12px 0 5px;font-size:12px;font-weight:800;color:var
     <button class="mbtn" id="mapRoute">〰 Tracks</button>
     <button class="mbtn" id="mapDays">📅 Days</button>
     <button class="mbtn" id="mapErase">✂︎ Erase area</button>
+    <button class="mbtn" id="mapMoveMe">📍 Move me</button>
   </div>
   <div id="daysPanel" class="hide">
     <div class="dpHead">Walking tracks by day<button class="x" id="daysClose">Done</button></div>
@@ -289,7 +303,6 @@ label.f{display:block;margin:12px 0 5px;font-size:12px;font-weight:800;color:var
     <div class="sheetHead"><h2 id="dTitle">Details</h2><button class="x" data-close="detailSheet">Close</button></div>
     <div class="sheetScroll">
       <div id="dSub" style="color:var(--dim);font-size:13px;margin-bottom:4px"></div>
-      <div id="dHistory" class="hide"></div>
       <label class="f">Status</label>
       <div class="chips" id="dStatus"></div>
       <label class="f">Contact name</label><input id="dName" placeholder="Homeowner or who you spoke with" autocomplete="off">
@@ -299,8 +312,12 @@ label.f{display:block;margin:12px 0 5px;font-size:12px;font-weight:800;color:var
       <div class="chips" id="dTags"></div>
       <label class="f">Follow up</label>
       <input id="dFollow" type="datetime-local">
-      <label class="f">Notes</label>
-      <textarea id="dNotes" rows="4" placeholder="Hail on north slope, insurance is State Farm, wants estimate Thursday…"></textarea>
+      <label class="f">Log</label>
+      <div id="dLog"></div>
+      <div class="logAdd">
+        <textarea id="dNewNote" rows="2" placeholder="What happened at the door?"></textarea>
+        <button id="dAddNote">Add</button>
+      </div>
       <button class="primary" id="dSave">Save</button>
       <button class="ghost danger" id="dDelete">Delete this record</button>
     </div>
@@ -403,7 +420,8 @@ const COUNTIES = [
   { key:'franklin', name:'Franklin',
     url:'https://gis.franklincountyohio.gov/hosting/rest/services/ParcelFeatures/Parcel_Features/MapServer/0',
     owner:['OWNERNME1','OWNERNME2'], addr:'SITEADDRESS', pid:'PARCELID',
-    extra:['ZIPCD','RESYRBLT','CLASSDSCRP','MAILNME1','MAILNME2','OWNEROCCUPIED','HOMSTD','RENTAL'],
+    extra:['ZIPCD','RESYRBLT','CLASSDSCRP','MAILNME1','MAILNME2','OWNEROCCUPIED','HOMSTD','RENTAL','TOTVALUEBASE','RESFLRAREA','SALEDATE','SALEPRICE'],
+    stats:{ val:'TOTVALUEBASE', sqft:'RESFLRAREA', saleDate:'SALEDATE', salePrice:'SALEPRICE' },
     where:'1=1', bbox:[-83.25,39.79,-82.76,40.16],
     occ:{ mail:a=>a.MAILNME1, mailCity:a=>a.MAILNME2, mailName:null,
           // OWNEROCCUPIED='N' only means they never filed for the tax credit, so it is
@@ -412,7 +430,8 @@ const COUNTIES = [
   { key:'delaware', name:'Delaware',
     url:'https://maps.delco-gis.org/arcgiswebadaptor/rest/services/DelawareCountyData/MapServer/0',
     owner:['OWNER1','OWNER2'], addr:'ADDR1', pid:'PARCEL_NO',
-    extra:['MUN_NAME','YRBUILT','CLASS','MAILNAME1','MAILADDR1','MAILADDR2'],
+    extra:['MUN_NAME','YRBUILT','CLASS','MAILNAME1','MAILADDR1','MAILADDR2','MARKET_TOT','SQFT','SALE_DATE','SALE_AMNT'],
+    stats:{ val:'MARKET_TOT', sqft:'SQFT', saleDate:'SALE_DATE', salePrice:'SALE_AMNT' },
     where:'OBJECTID>0', bbox:[-83.25,40.14,-82.73,40.44],
     // Delaware routes tax mail to the mortgage servicer (COTALITY etc.) on any financed
     // home, so the mailing name has to be checked against the owner or every mortgaged
@@ -421,7 +440,8 @@ const COUNTIES = [
   { key:'union', name:'Union',
     url:'https://www7.co.union.oh.us/unioncountyohio/rest/services/parcel/MapServer/0',
     owner:['Owner'], addr:'Address', pid:'ACCOUNT',
-    extra:['city','ZipCode','ParcelClass','GISNO'], where:'1=1', bbox:[-83.65,40.12,-83.16,40.50],
+    extra:['city','ZipCode','ParcelClass','GISNO','SaleDate'],
+    stats:{ saleDate:'SaleDate' }, where:'1=1', bbox:[-83.65,40.12,-83.16,40.50],
     // Union keeps mailing addresses in a sibling service; joined on GISNO at fetch time.
     mailJoin:{ url:'https://www7.co.union.oh.us/unioncountyohio/rest/services/parcelOwnerAcreageNBHDpClass/MapServer/0',
                key:'GISNO', fields:['GISNO','mailAddress1','mailCity','mailZip'] },
@@ -429,20 +449,23 @@ const COUNTIES = [
   { key:'madison', name:'Madison',
     url:'https://services1.arcgis.com/Wz3RgwtkgJCGuhMd/arcgis/rest/services/parcel_joined/FeatureServer/0',
     owner:['PPOwner'], addr:'PPAddress_1', pid:'TAXPIN',
-    extra:['PPYearBuilt','PPTotalValue','PPOwnerAddress'], where:'1=1', bbox:[-83.66,39.70,-83.13,40.10],
+    extra:['PPYearBuilt','PPTotalValue','PPOwnerAddress','PPLivingArea','PPSaleDate','PPAmount'],
+    stats:{ val:'PPTotalValue', sqft:'PPLivingArea', saleDate:'PPSaleDate', salePrice:'PPAmount' }, where:'1=1', bbox:[-83.66,39.70,-83.13,40.10],
     // PPOwnerAddress is the owner's own address. PPTaxPayerAddress is the servicer, ignore it.
     occ:{ mail:a=>a.PPOwnerAddress, mailCity:null, mailName:null, flag:null } },
   { key:'licking', name:'Licking',
     url:'https://gis.lickingcounty.gov/server/rest/services/Auditor/Parcels/FeatureServer/0',
     owner:['OwnerName'], addr:'SiteAddress', pid:'Parcel',
-    extra:['SitePostalCity','SitePostalZip','YearBuilt','OwnerAddress','OwnerCity','OwnerOccupied','Homestead'],
+    extra:['SitePostalCity','SitePostalZip','YearBuilt','OwnerAddress','OwnerCity','OwnerOccupied','Homestead','MarketTotalValue','LivingAreaSqFt','T1Date','T1SaleAmount'],
+    stats:{ val:'MarketTotalValue', sqft:'LivingAreaSqFt', saleDate:'T1Date', salePrice:'T1SaleAmount' },
     where:'1=1', bbox:[-82.80,39.90,-82.19,40.32],
     occ:{ mail:a=>a.OwnerAddress, mailCity:a=>a.OwnerCity, mailName:null,
           flag:a=> a.OwnerOccupied==='No' ? 'rental' : a.OwnerOccupied==='Yes' ? 'owner' : null } },
   { key:'fairfield', name:'Fairfield',
     url:'https://gis.co.fairfield.oh.us/arcgis/rest/services/OpenData/ParcelBoundaries/MapServer/0',
     owner:['OWN1','OWN2'], addr:'PADDR1', pid:'PARID',
-    extra:['YRBLT','CLASS','MADDR1','MADDR2','MCITYNAME'], where:'1=1', bbox:[-82.95,39.52,-82.38,39.98],
+    extra:['YRBLT','CLASS','MADDR1','MADDR2','MCITYNAME','APRLAND','APRBLDG','SFLA','SALEDT','PRICE'],
+    stats:{ valSum:['APRLAND','APRBLDG'], sqft:'SFLA', saleDate:'SALEDT', salePrice:'PRICE' }, where:'1=1', bbox:[-82.95,39.52,-82.38,39.98],
     // a leading % means MADDR1 is a care-of line and the street is on MADDR2
     occ:{ mail:a=> (a.MADDR1||'').trim().startsWith('%') ? a.MADDR2 : a.MADDR1,
           mailCity:a=>a.MCITYNAME, mailName:null, flag:null } },
@@ -529,6 +552,42 @@ function assessOccupancy(c, a, siteAddr) {
   if (!addrKey(street) || !addrKey(siteAddr)) return { v:null, mail, why:'address could not be read' };
   return { v: same ? 'owner' : 'rental', mail,
            why: same ? 'owner mail comes here' : 'owner mail goes elsewhere' };
+}
+
+/* ---------------- property figures from the auditor ----------------
+   Value, floor area and the last sale say more about whether a house is worth a
+   conversation than anything a data broker sells, and it is already in the
+   parcel record. Counties disagree on field names, units and date formats. */
+function readStats(c, a) {
+  const cfg = c.stats; if (!cfg) return {};
+  const num = v => { const n = Number(String(v == null ? '' : v).replace(/[$,]/g, '')); return isFinite(n) && n > 0 ? n : null; };
+  const out = {};
+  if (cfg.val) out.val = num(a[cfg.val]);
+  if (cfg.valSum) { const parts = cfg.valSum.map(k => num(a[k])).filter(Boolean); if (parts.length) out.val = parts.reduce((x,y)=>x+y,0); }
+  if (cfg.sqft) out.sqft = num(a[cfg.sqft]);
+  if (cfg.salePrice) out.salePrice = num(a[cfg.salePrice]);
+  if (cfg.saleDate) {
+    const raw = a[cfg.saleDate];
+    let t = null;
+    if (typeof raw === 'number' && raw > 100000000) t = raw;                 // esri epoch ms
+    else if (raw) { const d = Date.parse(String(raw)); if (!isNaN(d)) t = d; }
+    if (t && t > Date.parse('1900-01-01') && t < Date.now() + 86400000) out.saleTs = t;
+  }
+  return out;
+}
+const money = v => v == null ? '' : v >= 1000000 ? '$' + (v/1000000).toFixed(v >= 10000000 ? 0 : 1) + 'M'
+                 : v >= 1000 ? '$' + Math.round(v/1000) + 'k' : '$' + Math.round(v);
+const sqftTxt = v => v == null ? '' : Math.round(v).toLocaleString() + ' sq ft';
+const saleTxt = p => {
+  if (!p.saleTs) return '';
+  const d = new Date(p.saleTs);
+  const yrs = (Date.now() - p.saleTs) / 31557600000;
+  const when = yrs < 1.2 ? d.toLocaleDateString(undefined, {month:'short', year:'numeric'}) : String(d.getFullYear());
+  return 'sold ' + when + (p.salePrice ? ' ' + money(p.salePrice) : '');
+};
+/** the one-line summary shown under the owner on the main screen */
+function statsLine(p) {
+  return [money(p.val), sqftTxt(p.sqft), saleTxt(p)].filter(Boolean).join(' \u00b7 ');
 }
 
 /* ---------------- building footprints (FEMA USA Structures) ----------------
@@ -625,6 +684,7 @@ const state = {
   session: null,        // {id, start, line}
   hubSpan: 140,         // metres across the hub map
   hubSat: false,
+  override: null,      // hand-placed position, {lat, lon, ts}
 };
 window.state = state;   // exposed for the diagnostics panel and automated tests
 
@@ -732,7 +792,7 @@ const TILE = 0.006; // ~0.66 km lat, ~0.51 km lon at 40°N
 /* Bump PARSE_V whenever the county field mapping or attribute parsing changes.
    Cached tiles hold PARSED parcels, so without this an old cache would keep
    serving the old interpretation forever and a fix would never reach anyone. */
-const PARSE_V = 3;
+const PARSE_V = 4;
 const tileKey = (c, lat, lon) => `v${PARSE_V}:${c.key}:${Math.floor(lat/TILE)}:${Math.floor(lon/TILE)}`;
 async function purgeStaleTiles() {
   try {
@@ -821,6 +881,7 @@ async function fetchTile(c, lat, lon, silent) {
     out.forEach((p, i) => {
       const r = assessOccupancy(c, attrs[i], p.addr);
       p.occ = r.v; p.mail = r.mail; p.occWhy = r.why;
+      Object.assign(p, readStats(c, attrs[i]));
     });
 
     // put the owner's name on the house instead of the middle of the lot
@@ -931,6 +992,7 @@ function renderStrip() {
     t.textContent = `±${a} m` + (state.still ? ' · held' : '');
   }
   $('gpsPill').classList.toggle('paused', state.paused);
+  $('fixPill').classList.toggle('hide', !state.override);
   $('countyPill').textContent = state.tilesLoading ? 'loading lots…'
       : state.netErr ? '⚠︎ offline'
       : (state.county ? state.county.name + ' Co.' : '—');
@@ -945,7 +1007,7 @@ function renderHouse() {
   if (!c) {
     $('addr').textContent = state.parcels.size ? 'No lot nearby' : 'Loading lot lines…';
     $('owner').textContent = state.netErr ? 'No signal — parcels unavailable here' : '—';
-    $('alreadyTag').classList.add('hide'); $('rentTag').classList.add('hide');
+    $('alreadyTag').classList.add('hide'); $('rentTag').classList.add('hide'); $('propLine').classList.add('hide');
     drawMini(); return;
   }
   const p = c.p;
@@ -955,6 +1017,9 @@ function renderHouse() {
   const yr = p.extra.RESYRBLT || p.extra.YRBUILT || p.extra.YearBuilt || p.extra.YRBLT || p.extra.PPYearBuilt;
   fitAddr();
   $('owner').textContent = (p.owner || 'Owner not listed') + (yr ? ` · built ${yr}` : '') + ` · ${Math.round(c.d)}m`;
+  const sl = statsLine(p);
+  $('propLine').textContent = sl;
+  $('propLine').classList.toggle('hide', !sl);
   $('rentTag').classList.toggle('hide', !rental);
   const v = visitFor(p.key);
   const other = visitFor(p.key, state.line === 'roof' ? 'appraisal' : 'roof');
@@ -1098,7 +1163,24 @@ function drawMini() {
 }
 
 /* ---------------- marking a door ---------------- */
-const histOf = v => !v ? [] : (v.history && v.history.length ? v.history.slice() : [{status:v.status, ts:v.ts, note:''}]);
+/* One log per door. Status marks and typed notes live in the same stream, in
+   order, each with its own timestamp. Notes stay editable and removable; status
+   entries are the record of what you actually tapped and are not edited. */
+let logSeq = 0;
+const newId = () => 'l' + Date.now().toString(36) + (logSeq++).toString(36);
+function logOf(v) {
+  if (!v) return [];
+  if (v.log && v.log.length) return v.log.slice();
+  // migrate older records: history entries first, then any single notes blob
+  const out = (v.history && v.history.length ? v.history : [{status:v.status, ts:v.ts}])
+    .map(h => ({ id:newId(), ts:h.ts, kind:'status', status:h.status, text:'' }));
+  if (v.notes) out.push({ id:newId(), ts:v.ts, kind:'note', text:v.notes });
+  return out;
+}
+const histOf = v => logOf(v).filter(e => e.kind === 'status').map(e => ({status:e.status, ts:e.ts}));
+const noteText = v => logOf(v).filter(e => e.kind === 'note')
+  .map(e => `[${new Date(e.ts).toLocaleDateString()} ${new Date(e.ts).toLocaleTimeString([], {hour:'numeric', minute:'2-digit'})}] ${e.text}`)
+  .join('\n');
 const histText = v => histOf(v).map(h => {
   const d = new Date(h.ts);
   return `${STATUS[h.status] ? STATUS[h.status].label : h.status} ${d.toLocaleDateString()} ${d.toLocaleTimeString([], {hour:'numeric', minute:'2-digit'})}`;
@@ -1115,6 +1197,7 @@ async function mark(status) {
     ts: Date.now(), lat: state.pos.lat, lon: state.pos.lon, acc: state.pos.acc,
     dist: Math.round(c.d), owner: p.owner, addr: p.addr, extra: p.extra,
     occ: p.occ || null, mail: p.mail || '',
+    val: p.val || null, sqft: p.sqft || null, saleTs: p.saleTs || null, salePrice: p.salePrice || null,
     name:'', phone:'', email:'', notes:'', tags:[], follow:'',
   };
   // carry contact details forward, but only from the same book of business
@@ -1122,7 +1205,7 @@ async function mark(status) {
   if (prev) { v.name=prev.name; v.phone=prev.phone; v.email=prev.email; v.notes=prev.notes; v.tags=prev.tags||[]; v.follow=prev.follow||''; v.prevId=prev.id; }
   // every status this door has ever had, in order. A "talked" that later turns
   // into "don't come back" is the story, and the last status alone loses it.
-  v.history = [...histOf(prev), { status, ts:v.ts, note:'' }];
+  v.log = [...logOf(prev), { id:newId(), ts:v.ts, kind:'status', status, text:'' }];
   state.visits.set(vKey(v.key, v.line), v);
   state.visitLog.push(v);
   state.lastVisitId = v.id;
@@ -1217,7 +1300,6 @@ function pullDetail() {
   editing.name  = $('dName').value.trim();
   editing.phone = $('dPhone').value.trim();
   editing.email = $('dEmail').value.trim();
-  editing.notes = $('dNotes').value.trim();
   editing.follow = $('dFollow').value;
 }
 function openDetail(visit, focusName) {
@@ -1253,7 +1335,7 @@ function openDetail(visit, focusName) {
         : mail ? `<div style="margin-top:6px;color:var(--dim)">Owner mail: ${esc(mail)}${occ==='owner'?' (same address)':''}</div>`
                : (why ? `<div style="margin-top:6px;color:var(--dim)">Occupancy unknown: ${esc(why)}.</div>` : ''));
   $('dName').value = v.name||''; $('dPhone').value = v.phone||'';
-  $('dEmail').value = v.email||''; $('dNotes').value = v.notes||''; $('dFollow').value = v.follow||'';
+  $('dEmail').value = v.email||''; $('dFollow').value = v.follow||'';
   const sw = $('dStatus'); sw.innerHTML = '';
   Object.entries(STATUS).forEach(([k,s]) => {
     const b = document.createElement('button');
@@ -1269,27 +1351,79 @@ function openDetail(visit, focusName) {
     b.onclick = () => { pullDetail(); const s = new Set(editing.tags||[]); s.has(t)?s.delete(t):s.add(t); editing.tags=[...s]; openDetail(editing); };
     tg.appendChild(b);
   });
-  // every status this door has held, so a talk that soured is still on the record
-  const h = histOf(v);
-  const hist = $('dHistory');
-  if (h.length > 1) {
-    hist.classList.remove('hide');
-    hist.innerHTML = '<div class="hLbl">Status history</div>' + h.map(x => {
-      const d = new Date(x.ts), st = STATUS[x.status] || {label:x.status, color:'#94a3b8'};
-      return `<div class="hRow"><i style="background:${st.color}"></i>${esc(st.label)}
-        <span>${d.toLocaleDateString()} ${esc(d.toLocaleTimeString([], {hour:'numeric', minute:'2-digit'}))}</span></div>`;
-    }).join('');
-  } else hist.classList.add('hide');
+  renderLog();
   openSheet('detailSheet');
   if (focusName) setTimeout(() => { const el = $('dName'); el.focus({preventScroll:false}); }, 220);
 }
+/* The log: newest at the bottom, notes editable in place, status marks fixed. */
+function renderLog() {
+  const host = $('dLog'); host.innerHTML = '';
+  const entries = logOf(editing).sort((a,b) => a.ts - b.ts);
+  editing.log = entries;
+  if (!entries.length) { host.innerHTML = '<div class="logEmpty">Nothing logged here yet.</div>'; return; }
+  entries.forEach(e => {
+    const st = e.kind === 'status' ? (STATUS[e.status] || {label:e.status, color:'#94a3b8'}) : null;
+    const row = document.createElement('div');
+    row.className = 'logRow';
+    const d = new Date(e.ts);
+    const when = `${d.toLocaleDateString()} ${d.toLocaleTimeString([], {hour:'numeric', minute:'2-digit'})}`;
+    row.innerHTML = `<i style="background:${st ? st.color : '#64748b'}"></i>
+      <div class="body"><div class="when">${esc(when)}</div>
+      <div class="txt">${st ? esc(st.label) : esc(e.text || '')}</div></div>`;
+    const acts = document.createElement('div'); acts.className = 'act2';
+    if (e.kind === 'note') {
+      const ed = document.createElement('button'); ed.textContent = '✎';
+      ed.onclick = () => startEditEntry(row, e);
+      acts.appendChild(ed);
+    }
+    const del = document.createElement('button'); del.textContent = '🗑';
+    del.onclick = () => {
+      if (!confirm(e.kind === 'status' ? 'Remove this status entry from the log?' : 'Delete this note?')) return;
+      editing.log = logOf(editing).filter(x => x.id !== e.id);
+      renderLog(); buzz(20);
+    };
+    acts.appendChild(del);
+    row.appendChild(acts);
+    host.appendChild(row);
+  });
+  host.scrollTop = host.scrollHeight;
+}
+function startEditEntry(row, e) {
+  const body = row.querySelector('.body');
+  if (body.querySelector('textarea')) return;
+  const ta = document.createElement('textarea');
+  ta.rows = 3; ta.value = e.text || '';
+  body.querySelector('.txt').replaceWith(ta);
+  ta.focus();
+  const commit = () => {
+    const t = ta.value.trim();
+    const list = logOf(editing);
+    const hit = list.find(x => x.id === e.id);
+    if (hit) hit.text = t;
+    editing.log = list.filter(x => x.kind !== 'note' || x.text);
+    renderLog();
+  };
+  ta.addEventListener('blur', commit, {once:true});
+}
+function addLogNote() {
+  const el = $('dNewNote');
+  const t = el.value.trim();
+  if (!t || !editing) return;
+  editing.log = [...logOf(editing), { id:newId(), ts:Date.now(), kind:'note', text:t }];
+  el.value = '';
+  renderLog(); buzz(15);
+}
+
 async function saveDetail() {
   if (!editing) return;
   pullDetail();
-  // a status changed by hand belongs in the history too
-  const h = histOf(editing);
-  if (!h.length || h[h.length-1].status !== editing.status) h.push({ status:editing.status, ts:Date.now(), note:'' });
-  editing.history = h;
+  // a status changed by hand belongs in the log too
+  const lg = logOf(editing);
+  const lastStatus = [...lg].reverse().find(e => e.kind === 'status');
+  if (!lastStatus || lastStatus.status !== editing.status)
+    lg.push({ id:newId(), ts:Date.now(), kind:'status', status:editing.status, text:'' });
+  editing.log = lg;
+  editing.notes = lg.filter(e => e.kind === 'note').map(e => e.text).join(' | ');
   if (editing._new) { delete editing._new; state.visitLog.push(editing); state.lastVisitId = editing.id; }
   state.visits.set(vKey(editing.key, editing.line), editing);
   await DB.put('visits', editing).catch(()=>{});
@@ -1453,8 +1587,16 @@ function refreshMapLayers() {
       .bindTooltip('Your truck'));
   }
   if (state.pos) {
-    ml.addLayer(L.circleMarker([state.pos.lat, state.pos.lon], { radius:7, color:'#fff', weight:2, fillColor:'#38bdf8', fillOpacity:1 }));
-    ml.addLayer(L.circle([state.pos.lat, state.pos.lon], { radius: state.pos.acc, color:'#38bdf8', weight:1, opacity:.4, fillOpacity:.06 }));
+    if (moveMeMode) {
+      const dot = L.marker([state.pos.lat, state.pos.lon], { draggable:true, icon: L.divIcon({
+        className:'', iconSize:[0,0], html:'<div class="medrag"></div>' }) });
+      dot.on('dragend', () => { const p = dot.getLatLng(); setOverride(p.lat, p.lng); });
+      ml.addLayer(dot);
+    } else {
+      ml.addLayer(L.circleMarker([state.pos.lat, state.pos.lon], {
+        radius:7, color: state.override ? '#2dd4bf' : '#fff', weight:2, fillColor:'#38bdf8', fillOpacity:1 }));
+      ml.addLayer(L.circle([state.pos.lat, state.pos.lon], { radius: state.pos.acc, color:'#38bdf8', weight:1, opacity:.4, fillOpacity:.06 }));
+    }
   }
 }
 const shortOwner = o => { const parts = o.split(/\s*&\s*/)[0].trim().split(/\s+/); return parts.slice(0, Math.min(2, parts.length)).join(' '); };
@@ -1617,16 +1759,18 @@ function visitsFor(o) {
 function exportCsv(o) {
   const rows = visitsFor(o);
   if (!rows.length) { flashToast('Nothing matches those options','','#64748b'); return; }
-  const head = ['Date','Time','Work','Status','Address','Owner','Status history','Likely rental','Owner mailing address','County','Parcel ID','Contact name','Phone','Email','Tags','Follow up','Notes','Year built','Latitude','Longitude','GPS accuracy m','Distance to lot m'];
+  const head = ['Date','Time','Work','Status','Address','Owner','Status history','Market value','Floor area sq ft','Last sale date','Last sale price','Likely rental','Owner mailing address','County','Parcel ID','Contact name','Phone','Email','Tags','Follow up','Notes','Year built','Latitude','Longitude','GPS accuracy m','Distance to lot m'];
   const yr = v => v.extra && (v.extra.RESYRBLT||v.extra.YRBUILT||v.extra.YearBuilt||v.extra.YRBLT||v.extra.PPYearBuilt) || '';
   const lines = [head.map(q).join(',')];
   rows.forEach(v => {
     const d = new Date(v.ts);
     lines.push([d.toLocaleDateString(), d.toLocaleTimeString(), LINES[v.line||'roof'].label,
       STATUS[v.status].label, v.addr, v.owner, histText(v),
+      v.val || '', v.sqft ? Math.round(v.sqft) : '',
+      v.saleTs ? new Date(v.saleTs).toLocaleDateString() : '', v.salePrice || '',
       v.occ === 'rental' ? 'YES' : v.occ === 'owner' ? 'no' : '', v.mail || '',
       (COUNTIES.find(c=>c.key===v.county)||{}).name, v.pid, v.name, v.phone, v.email,
-      (v.tags||[]).join('; '), v.follow, v.notes, yr(v),
+      (v.tags||[]).join('; '), v.follow, noteText(v), yr(v),
       v.lat.toFixed(6), v.lon.toFixed(6), Math.round(v.acc||0), v.dist].map(q).join(','));
   });
   download(`canvass-${xName(o)}.csv`, '﻿'+lines.join('\r\n'), 'text/csv');
@@ -1742,7 +1886,10 @@ function startGps() {
     pushFix(pos.coords, now);
     const sm = smoothed();
     if (!sm) return;
-    state.pos = { lat:sm.lat, lon:sm.lon, acc:sm.acc, heading:pos.coords.heading, ts:now, raw:pos.coords.accuracy };
+    // a hand-placed position wins until it is released or goes stale
+    if (state.override && now - state.override.ts > 300000) clearOverride(true);
+    const use = state.override ? { lat:state.override.lat, lon:state.override.lon, acc:5 } : sm;
+    state.pos = { lat:use.lat, lon:use.lon, acc:use.acc, heading:pos.coords.heading, ts:now, raw:pos.coords.accuracy };
 
     /* --- dwell lock --- */
     const speed = recentSpeed();
@@ -1766,16 +1913,16 @@ function startGps() {
 
     /* --- breadcrumbs only while actually moving --- */
     const last = state.track[state.track.length-1];
-    const moved = last ? haversine(last.lat, last.lon, sm.lat, sm.lon) : Infinity;
+    const moved = last ? haversine(last.lat, last.lon, state.pos.lat, state.pos.lon) : Infinity;
     if (!state.still && (!last || (now - lastTrack > 4000 && moved > 6) || moved > 12)) {
       lastTrack = now;
-      pushTrackPoint(sm.lat, sm.lon, now);
+      pushTrackPoint(state.pos.lat, state.pos.lon, now);
     }
 
-    await ensureParcels(sm.lat, sm.lon);
+    await ensureParcels(state.pos.lat, state.pos.lon);
     recompute(); drawMini();
     if (window._map && mapOpts.follow && !$('mapView').classList.contains('hide')) {
-      window._map.setView([sm.lat, sm.lon], window._map.getZoom(), {animate:false});
+      window._map.setView([state.pos.lat, state.pos.lon], window._map.getZoom(), {animate:false});
     }
   }, err => {
     $('gpsDot').className = 'dot bad';
@@ -1960,6 +2107,7 @@ document.addEventListener('visibilitychange', () => {
   else if (hiddenAt && Date.now() - hiddenAt > 120000) lockIfNeeded();
 });
 $('dSave').onclick = saveDetail;
+$('dAddNote').onclick = addLogNote;
 $('dDelete').onclick = deleteDetail;
 $('mExport').onclick = () => { renderExport(); openSheet('exportSheet'); };
 $('xGo').onclick = () => {
@@ -2006,6 +2154,8 @@ $('mapFilter').onclick = () => {
   syncMapBtns(); refreshMapLayers(); buzz(10);
 };
 $('mapDays').onclick = openDays;
+$('mapMoveMe').onclick = toggleMoveMe;
+$('fixPill').onclick = () => clearOverride(false);
 $('daysClose').onclick = () => $('daysPanel').classList.add('hide');
 $('mapErase').onclick = () => { eraseMode ? cancelErase() : startErase(); };
 $('eraseCancel').onclick = cancelErase;
@@ -2044,6 +2194,40 @@ async function testConnections() {
 function renderDiag() {
   $('diag').innerHTML = `Lots cached: ${state.parcels.size} · records: ${state.visitLog.length} · track days: ${state.days.size} · today's breadcrumbs: ${state.track.length}`
     + (state.netErr ? `<br>Last network error: ${esc(state.netErr)}` : '');
+}
+
+/* ---------------- hand-placed position ----------------
+   GPS is sometimes simply wrong, especially under trees or against a big roof.
+   Dragging the blue dot to where you actually are fixes the snap immediately.
+   It releases on its own after five minutes so a forgotten override cannot
+   quietly poison a whole street. */
+function setOverride(lat, lon) {
+  state.override = { lat, lon, ts: Date.now() };
+  state.pos = { ...(state.pos || {}), lat, lon, acc: 5, ts: Date.now() };
+  state.still = false; state.heldKey = null; state.anchor = null;
+  lastTileCenter = null;
+  renderStrip();
+  ensureParcels(lat, lon).then(() => { recompute(); drawMini(); if (window._map) refreshMapLayers(); });
+  recompute(); drawMini();
+  buzz(20);
+  flashToast('Position set by hand', 'Releases on its own in 5 minutes, or tap the chip', '#2dd4bf');
+}
+function clearOverride(quiet) {
+  if (!state.override) return;
+  state.override = null;
+  renderStrip();
+  if (!quiet) flashToast('Back on GPS', '', '#64748b');
+  if (window._map) refreshMapLayers();
+}
+let moveMeMode = false;
+function toggleMoveMe() {
+  moveMeMode = !moveMeMode;
+  $('mapMoveMe').classList.toggle('on', moveMeMode);
+  if (moveMeMode) {
+    mapOpts.follow = false; syncMapBtns();
+    flashToast('Drag the blue dot', 'Drop it where you actually are', '#2dd4bf');
+  }
+  refreshMapLayers();
 }
 
 /* ---------------- sessions ---------------- */
