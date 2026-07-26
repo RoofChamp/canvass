@@ -1,10 +1,10 @@
-/* Roof Champ Canvass — service worker
+/* CanvassEaze — service worker
    App shell is cache-first so the app opens instantly with no signal.
    Map tiles and Leaflet are cached as you use them.
    Parcel queries are network-first with a cache fallback, so a street you
    have already walked still shows its lot lines in a dead zone. */
 
-const SHELL = 'canvass-shell-v5';
+const SHELL = 'canvass-shell-v6';
 const TILES = 'canvass-tiles-v1';
 const DATA  = 'canvass-data-v1';
 
@@ -41,6 +41,11 @@ self.addEventListener('fetch', e => {
   const req = e.request;
   if (req.method !== 'GET') return;
   const url = req.url;
+
+  /* Route answers must never be cached. The catch-all below is cache-first, so
+     without this the first road time ever fetched would be replayed for every trip
+     from then on — and a stale drive time looks exactly like a working one. */
+  if (url.indexOf('router.project-osrm.org') !== -1) return;
 
   // Map tiles: cache-first, capped so the phone does not fill up.
   if (isTile(url)) {

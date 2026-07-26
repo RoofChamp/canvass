@@ -7,8 +7,8 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="apple-mobile-web-app-title" content="Canvass">
-<title>Roof Champ Canvass</title>
+<meta name="apple-mobile-web-app-title" content="CanvassEaze">
+<title>CanvassEaze</title>
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="apple-touch-icon" href="icon-180.png">
 <style>
@@ -67,12 +67,15 @@ input,textarea,select{font:inherit;color:var(--txt);background:var(--card2);bord
 /* ---------- house card ---------- */
 #house{margin:2px 10px 8px;background:var(--card);border:1px solid var(--line);border-radius:16px;padding:12px 14px;flex:0 0 auto;min-height:92px;display:flex;flex-direction:column;justify-content:center;position:relative}
 #addr{font-size:26px;font-weight:800;letter-spacing:-.4px;line-height:1.15;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;padding-right:92px}
-#owner{font-size:15px;color:var(--dim);margin-top:3px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+/* padding-right keeps the owner name clear of the ⇄ house button, which grew to a
+   44px target and started landing on top of it */
+#owner{font-size:15px;color:var(--dim);margin-top:3px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;padding-right:96px}
 #addr.far{color:#fbbf24}
 #propLine{font-size:14px;font-weight:700;color:#7dd3fc;margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;padding-right:6px}
 .warnTri{margin-right:6px;font-size:20px;vertical-align:2px}
 #tagRow{display:flex;gap:6px;flex-wrap:wrap;margin-top:6px}
 #rentTag{font-size:12px;font-weight:800;padding:3px 9px;border-radius:999px;color:#fbbf24;background:rgba(251,191,36,.15);border:1px solid rgba(251,191,36,.5);white-space:nowrap}
+#staleTag{font-size:12px;font-weight:800;padding:3px 9px;border-radius:999px;color:#93a6bb;background:rgba(147,166,187,.14);border:1px solid rgba(147,166,187,.45);white-space:nowrap}
 #swapWrap{position:absolute;right:8px;top:8px;display:flex;gap:6px}
 .mini-btn{background:var(--card2);border:1px solid var(--line);border-radius:10px;padding:7px 10px;font-size:12px;color:var(--dim);font-weight:600}
 #alreadyTag{display:inline-block;font-size:12px;font-weight:700;padding:3px 9px;border-radius:999px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%}
@@ -132,7 +135,10 @@ input,textarea,select{font:inherit;color:var(--txt);background:var(--card2);bord
 .tbtn{background:var(--card2);border:1px solid var(--line);border-radius:12px;padding:9px 11px;font-size:12px;font-weight:800;flex:0 0 auto}
 
 /* ---------- sheets / overlays ---------- */
-.sheet{position:fixed;inset:0;z-index:80;background:rgba(3,7,12,.6);backdrop-filter:blur(3px);display:flex;align-items:flex-end}
+/* --kb is the height the on-screen keyboard is covering. iOS does not shrink the
+   layout viewport when the keyboard opens, so without this a sheet pinned to the
+   bottom of the screen sits underneath it. */
+.sheet{position:fixed;inset:0;z-index:80;background:rgba(3,7,12,.6);backdrop-filter:blur(3px);display:flex;align-items:flex-end;padding-bottom:var(--kb,0px)}
 .sheet.top{align-items:stretch}
 .sheetBody{background:var(--bg);width:100%;max-height:92%;border-radius:22px 22px 0 0;border-top:1px solid var(--line);display:flex;flex-direction:column;padding-bottom:calc(10px + var(--safe-b))}
 .sheetHead{display:flex;align-items:center;gap:10px;padding:14px 16px 8px;flex:0 0 auto}
@@ -198,8 +204,10 @@ label.f{display:block;margin:12px 0 5px;font-size:12px;font-weight:800;color:var
 .lsRow .sub{font-size:11.5px;color:var(--dim);font-weight:700;margin-top:2px}
 .lsRow .kv{display:flex;flex-wrap:wrap;gap:6px;margin-top:7px}
 .lsRow .kv span{font-size:10.5px;font-weight:700;color:var(--dim);border:1px solid var(--line);border-radius:999px;padding:2px 7px}
-.apRow .tick{width:26px;height:26px;border-radius:8px;border:1.5px solid var(--line);background:var(--card2);
-  display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:800;color:transparent;flex:0 0 auto}
+/* The tick arms the delete button, so it is the last control that should be small.
+   It is a div, not a button, so the blanket 44px rule below does not reach it. */
+.apRow .tick{width:44px;height:44px;border-radius:10px;border:1.5px solid var(--line);background:var(--card2);
+  display:flex;align-items:center;justify-content:center;font-size:18px;font-weight:800;color:transparent;flex:0 0 auto}
 .apRow .tick.on{background:#2563eb;border-color:#2563eb;color:#fff}
 /* ---------- go-back route ---------- */
 .rtLeg{display:flex;align-items:center;gap:9px;margin:14px 0 7px;color:var(--dim);font-size:12px;font-weight:800;letter-spacing:.3px}
@@ -242,16 +250,40 @@ label.f{display:block;margin:12px 0 5px;font-size:12px;font-weight:800;color:var
 .logAdd button{background:#2563eb;color:#fff;border-radius:12px;padding:13px 16px;font-weight:800;flex:0 0 auto}
 .logEmpty{font-size:13px;color:var(--dim);padding:4px 2px}
 
+/* ---------- details panel: sections, pinned Save, thumb-sized targets ---------- */
+.dsec{border-top:1px solid var(--line);margin-top:6px}
+.dsecHead{display:flex;align-items:center;gap:10px;width:100%;min-height:44px;padding:11px 2px;
+  font-size:14px;font-weight:800;color:var(--txt);text-align:left}
+.dsecHead i{font-style:normal;color:var(--dim);font-size:13px;width:13px;flex:0 0 auto}
+.dsecHead .cnt{margin-left:auto;font-size:11px;font-weight:700;color:var(--dim)}
+.dsecBody{padding-bottom:10px}
+.fg + .fg{margin-top:2px}
+.sheetFoot{flex:0 0 auto;padding:10px 16px calc(10px + var(--safe-b));
+  border-top:1px solid var(--line);background:var(--bg)}
+.sheetFoot .primary{margin-top:0}
+/* Save has to sit under the thumb, so this sheet is a fixed-height column with a
+   scrolling middle rather than one that grows to fit its content. The body drops
+   its own bottom padding because the footer now pays the safe-area inset. */
+#detailSheet .sheetBody{height:92%;padding-bottom:0}
+#detailSheet .sheetScroll{flex:1 1 auto;min-height:0}
+/* 44px is the size a thumb reliably hits. Everything tappable clears it. */
+.chip,.x,.mini-btn,.mbtn,.tbtn{min-height:44px;display:inline-flex;align-items:center;justify-content:center}
+select{min-height:44px}
+.logRow button,.crmActs button,.apRow button,.dayRow .del,.logAdd button{
+  min-height:44px;min-width:44px;display:inline-flex;align-items:center;justify-content:center}
+
 /* ---------- full map ---------- */
 #mapView{position:fixed;inset:0;z-index:70;background:var(--bg);display:flex;flex-direction:column}
 #leaf{flex:1;min-height:0}
 #mapTop{position:absolute;top:calc(var(--safe-t) + 8px);left:8px;right:8px;z-index:500;display:flex;gap:8px;align-items:flex-start}
-#mapBottom{position:absolute;bottom:calc(var(--safe-b) + 8px);left:8px;right:8px;z-index:500;display:flex;gap:8px;flex-wrap:wrap}
+/* Above the panels, not below them. With seven buttons the bar wraps to two rows,
+   and a panel anchored at a fixed height sat straight on top of them. */
+#mapBottom{position:absolute;bottom:calc(var(--safe-b) + 8px);left:8px;right:8px;z-index:700;display:flex;gap:8px;flex-wrap:wrap}
 .mbtn{background:rgba(15,23,42,.92);border:1px solid var(--line);border-radius:12px;padding:10px 13px;font-size:13px;font-weight:800;color:var(--txt);box-shadow:0 4px 14px rgba(0,0,0,.4)}
 .mbtn.on{background:#2563eb;border-color:#3b82f6}
-#legend{position:absolute;right:8px;bottom:calc(var(--safe-b) + 60px);z-index:500;background:rgba(15,23,42,.92);border:1px solid var(--line);border-radius:12px;padding:8px 10px;font-size:11px;line-height:1.7}
+#legend{position:absolute;right:8px;left:8px;bottom:calc(var(--safe-b) + 60px);z-index:600;background:rgba(11,15,20,.97);border:1px solid var(--line);border-radius:16px;padding:12px 14px;font-size:12px;line-height:1.9;box-shadow:0 12px 40px rgba(0,0,0,.7)}
 #legend i{display:inline-block;width:11px;height:11px;border-radius:3px;margin-right:6px;vertical-align:-1px}
-#daysPanel{position:absolute;left:8px;right:8px;bottom:calc(var(--safe-b) + 60px);z-index:600;background:rgba(11,15,20,.97);border:1px solid var(--line);border-radius:16px;max-height:58%;display:flex;flex-direction:column;box-shadow:0 12px 40px rgba(0,0,0,.7)}
+#daysPanel,#mapShowPanel{position:absolute;left:8px;right:8px;bottom:calc(var(--safe-b) + 60px);z-index:600;background:rgba(11,15,20,.97);border:1px solid var(--line);border-radius:16px;max-height:58%;display:flex;flex-direction:column;box-shadow:0 12px 40px rgba(0,0,0,.7)}
 .dpHead{display:flex;align-items:center;gap:10px;padding:12px 14px 8px;font-weight:800;font-size:15px}
 .dpHead .x{margin-left:auto}
 .dpList{overflow-y:auto;padding:0 10px 6px}
@@ -263,6 +295,8 @@ label.f{display:block;margin:12px 0 5px;font-size:12px;font-weight:800;color:var
 .dayRow .n{font-size:11px;color:var(--dim);font-weight:700}
 .dayRow .del{background:var(--card2);border:1px solid var(--line);border-radius:9px;padding:6px 9px;font-size:13px}
 #eraseBar{position:absolute;top:calc(var(--safe-t) + 60px);left:8px;right:8px;z-index:600;background:rgba(220,38,38,.95);border-radius:14px;padding:11px 13px;display:flex;align-items:center;gap:10px;font-weight:800;font-size:13px;box-shadow:0 8px 24px rgba(0,0,0,.5)}
+#previewBar{position:absolute;top:calc(var(--safe-t) + 60px);left:8px;right:8px;z-index:601;background:rgba(37,99,235,.95);border-radius:14px;padding:11px 13px;display:flex;align-items:center;gap:10px;font-weight:800;font-size:13px;box-shadow:0 8px 24px rgba(0,0,0,.5)}
+#previewBar .mbtn{margin-left:auto;background:rgba(0,0,0,.35)}
 #eraseBar .mbtn{margin-left:auto;background:rgba(0,0,0,.35)}
 .mewrap{position:relative;width:0;height:0}
 .mecone{position:absolute;left:0;top:0;width:96px;height:96px;transform-origin:50% 50%;
@@ -305,6 +339,7 @@ label.f{display:block;margin:12px 0 5px;font-size:12px;font-weight:800;color:var
 .stat b{color:var(--txt);font-size:16px;display:block}
 .nagOk{font-size:12px;color:var(--dim);padding:9px 11px;border:1px solid var(--line);border-radius:12px;margin-bottom:10px}
 .nagWarn{font-size:12.5px;line-height:1.5;color:#fde68a;background:rgba(251,191,36,.12);border:1px solid rgba(251,191,36,.5);border-radius:12px;padding:10px 12px;margin-bottom:10px;font-weight:600}
+.nagBad{font-size:12.5px;line-height:1.5;color:#fecaca;background:rgba(239,68,68,.14);border:1px solid rgba(239,68,68,.6);border-radius:12px;padding:10px 12px;margin-bottom:10px;font-weight:600}
 #lockScreen{position:fixed;inset:0;z-index:300;background:var(--bg);display:flex;align-items:center;justify-content:center;padding:24px}
 #lockBox{display:flex;flex-direction:column;align-items:center;gap:14px;width:100%;max-width:300px}
 #lockTitle{font-size:18px;font-weight:800}
@@ -337,6 +372,7 @@ label.f{display:block;margin:12px 0 5px;font-size:12px;font-weight:800;color:var
     <div id="propLine" class="hide"></div>
     <div id="tagRow">
       <span id="rentTag" class="hide">⚠️ likely rental</span>
+      <span id="staleTag" class="hide"></span>
       <span id="alreadyTag" class="hide"></span>
     </div>
   </div>
@@ -381,7 +417,10 @@ label.f{display:block;margin:12px 0 5px;font-size:12px;font-weight:800;color:var
     <button class="mbtn" id="mapSat">🛰 Satellite</button>
     <button class="mbtn" id="mapFollow">◎ Follow</button>
   </div>
-  <div id="legend">
+  <!-- The key used to be a permanent box in this corner, which the Tracks and
+       Move me buttons were drawn straight over. It is a button you tap now. -->
+  <div id="legend" class="hide">
+    <div class="dpHead" style="padding:0 0 6px;font-size:14px">What the colours mean<button class="x" id="legendClose">Done</button></div>
     <div><i style="background:#22c55e"></i>Talked</div>
     <div><i style="background:#3b82f6"></i>Left material</div>
     <div><i style="background:#f59e0b"></i>No answer</div>
@@ -390,10 +429,20 @@ label.f{display:block;margin:12px 0 5px;font-size:12px;font-weight:800;color:var
     <div style="margin-top:4px;border-top:1px solid var(--line);padding-top:4px">
       <span style="border:1.5px solid #cbd5e1;display:inline-block;width:11px;height:11px;border-radius:3px;margin-right:6px;vertical-align:-1px"></span>Roofing</div>
     <div><span style="border:1.5px dashed #e9d5ff;display:inline-block;width:11px;height:11px;border-radius:3px;margin-right:6px;vertical-align:-1px"></span>Appraisal</div>
+    <div style="margin-top:4px;border-top:1px solid var(--line);padding-top:4px">
+      <span style="display:inline-block;width:11px;height:11px;border-radius:2px;margin-right:6px;vertical-align:-1px;background:repeating-linear-gradient(45deg,#facc15 0 3px,#0b0f14 3px 6px)"></span>Likely a rental</div>
+  </div>
+  <div id="mapShowPanel" class="hide">
+    <div class="dpHead">Show on the map<button class="x" id="mapShowClose">Done</button></div>
+    <div class="dpList" style="padding:0 14px 10px">
+      <div class="chips" id="mapData"></div>
+      <div class="small" style="margin-top:10px">Printed on the house itself, above zoom 18. This is kept separate from the little round map, because a big screen can carry more than a circle can.</div>
+    </div>
   </div>
   <div id="mapBottom">
     <button class="mbtn" id="mapFilter">👁 All work</button>
-    <button class="mbtn" id="mapNames">🏷 Names</button>
+    <button class="mbtn" id="mapShow">🏷 Show</button>
+    <button class="mbtn" id="mapKey">🔑 Key</button>
     <button class="mbtn" id="mapRoute">〰 Tracks</button>
     <button class="mbtn" id="mapDays">📅 Days</button>
     <button class="mbtn" id="mapErase">✂︎ Erase area</button>
@@ -403,6 +452,10 @@ label.f{display:block;margin:12px 0 5px;font-size:12px;font-weight:800;color:var
     <div class="dpHead">Walking tracks by day<button class="x" id="daysClose">Done</button></div>
     <div class="dpList" id="daysList"></div>
     <div class="dpFoot">Tap a day to show or hide it. The trash icon deletes that day for good.</div>
+  </div>
+  <div id="previewBar" class="hide">
+    <span id="previewTxt"></span>
+    <button class="mbtn" id="previewDone">Done</button>
   </div>
   <div id="eraseBar" class="hide">
     <span id="eraseTxt">Drag the box over the track you want gone.</span>
@@ -424,34 +477,62 @@ label.f{display:block;margin:12px 0 5px;font-size:12px;font-weight:800;color:var
     <div class="sheetHead"><h2 id="dTitle">Details</h2><button class="x" data-close="detailSheet">Close</button></div>
     <div class="sheetScroll">
       <div id="dSub" style="color:var(--dim);font-size:13px;margin-bottom:4px"></div>
-      <div id="dProp" class="hide"></div>
-      <label class="f">Status</label>
+
+      <!-- What this door needs, decided by the button that opened the panel.
+           layoutDetail() moves the field groups in and out of here. -->
+      <div id="dPrimary"></div>
+
+      <label class="f">What happened at the door</label>
       <div class="chips" id="dStatus"></div>
-      <label class="f">Contact name</label><input id="dName" placeholder="Homeowner or who you spoke with" autocomplete="off">
-      <div class="small" id="dNameNote" style="margin:-4px 0 2px;color:var(--dim)"></div>
-      <label class="f">Goes by</label><input id="dGoesBy" placeholder="What they actually go by" autocomplete="off">
-      <div class="small" style="margin:-4px 0 2px;color:var(--dim)">The county record stays as it is. This is the name you use.</div>
-      <div class="row"><div style="flex:1"><label class="f">Phone</label><input id="dPhone" type="tel" inputmode="tel" placeholder="(614) 555-0100"></div></div>
-      <label class="f">Email</label><input id="dEmail" type="email" inputmode="email" placeholder="optional" autocapitalize="off">
-      <label class="f">Quick tags</label>
-      <div class="chips" id="dTags"></div>
-      <label class="f">Stage</label>
-      <div class="chips" id="dDispo"></div>
-      <label class="f">Follow up</label>
-      <div class="chips" id="dFollowChips"></div>
-      <input id="dFollow" type="datetime-local">
-      <button class="ghost" id="dIcs" style="margin-top:8px">📅 Add this reminder to my phone calendar</button>
       <div id="dApptBox" class="hide" style="margin-top:10px"></div>
-      <label class="f">Log</label>
-      <div id="dLog"></div>
-      <div class="logAdd">
-        <textarea id="dNewNote" rows="2" placeholder="What happened at the door?"></textarea>
-        <button id="dAddNote">Add</button>
+
+      <div class="dsec"><button class="dsecHead" data-sec="who"><i>▸</i>Who lives here</button>
+        <div class="dsecBody hide" id="dsecWho"></div></div>
+      <div class="dsec"><button class="dsecHead" data-sec="tags"><i>▸</i>Quick tags<span class="cnt" id="dTagCount"></span></button>
+        <div class="dsecBody hide" id="dsecTags"><div class="chips" id="dTags"></div></div></div>
+      <div class="dsec"><button class="dsecHead" data-sec="stage"><i>▸</i>Stage and follow-up<span class="cnt" id="dStageCount"></span></button>
+        <div class="dsecBody hide" id="dsecStage">
+          <label class="f">Stage</label>
+          <div class="chips" id="dDispo"></div>
+          <label class="f">Follow up</label>
+          <div class="chips" id="dFollowChips"></div>
+          <input id="dFollow" type="datetime-local">
+          <button class="ghost" id="dIcs" style="margin-top:8px">📅 Add this reminder to my phone calendar</button>
+        </div></div>
+      <div class="dsec"><button class="dsecHead" data-sec="prop"><i>▸</i>What the auditor holds</button>
+        <div class="dsecBody hide" id="dsecProp"><div id="dProp" class="hide"></div></div></div>
+      <div class="dsec"><button class="dsecHead" data-sec="log"><i>▸</i>Everything logged here<span class="cnt" id="dLogCount"></span></button>
+        <div class="dsecBody hide" id="dsecLog"><div id="dLog"></div></div></div>
+      <div class="dsec"><button class="dsecHead" data-sec="danger"><i>▸</i>Clear or delete this house</button>
+        <div class="dsecBody hide" id="dsecDanger">
+          <button class="ghost" id="dClear">Clear notes, tags and contact</button>
+          <button class="ghost danger" id="dDelete">Delete everything for this house</button>
+        </div></div>
+
+      <!-- Parked when not in use. Nothing here is ever destroyed or rebuilt, so
+           whatever is typed survives being moved between sections. -->
+      <div id="dParked" class="hide">
+        <div class="fg" id="fgName"><label class="f">Contact name</label>
+          <input id="dName" placeholder="Homeowner or who you spoke with" autocomplete="off">
+          <div class="small" id="dNameNote" style="margin:4px 0 2px;color:var(--dim)"></div></div>
+        <div class="fg" id="fgGoesBy"><label class="f">Goes by</label>
+          <input id="dGoesBy" placeholder="What they actually go by" autocomplete="off">
+          <div class="small" style="margin:4px 0 2px;color:var(--dim)">The county record stays as it is. This is the name you use.</div></div>
+        <div class="fg" id="fgPhone"><label class="f">Phone</label>
+          <input id="dPhone" type="tel" inputmode="tel" placeholder="(614) 555-0100"></div>
+        <div class="fg" id="fgEmail"><label class="f">Email</label>
+          <input id="dEmail" type="email" inputmode="email" placeholder="optional" autocapitalize="off"></div>
+        <div class="fg" id="fgReason"><label class="f">Why not to come back</label>
+          <div class="chips" id="dReason"></div>
+          <div class="small" style="margin-top:6px;color:var(--dim)">Tap one and it goes in the log, in your words, so the next person knows.</div></div>
+        <div class="fg" id="fgNote"><label class="f">Add a note</label>
+          <div class="logAdd">
+            <textarea id="dNewNote" rows="2" placeholder="Anything worth remembering"></textarea>
+            <button id="dAddNote">Add</button>
+          </div></div>
       </div>
-      <button class="primary" id="dSave">Save</button>
-      <button class="ghost" id="dClear">Clear notes, tags and contact</button>
-      <button class="ghost danger" id="dDelete">Delete everything for this house</button>
     </div>
+    <div class="sheetFoot"><button class="primary" id="dSave">Save</button></div>
   </div>
 </div>
 
@@ -508,21 +589,33 @@ label.f{display:block;margin:12px 0 5px;font-size:12px;font-weight:800;color:var
     <div class="sheetHead"><h2>Schedule</h2><button class="x" data-close="apptSheet">Close</button></div>
     <div class="sheetScroll">
       <div class="small" id="apptIntro" style="margin-bottom:10px"></div>
+      <label class="f">Show</label>
+      <div class="chips" id="apFilter" style="margin-bottom:10px"></div>
       <div class="chips" id="apptSelBar" style="margin-bottom:10px">
         <button class="chip" id="apSelAll">Select all</button>
-        <button class="chip" id="apSelNone">Clear</button>
+        <button class="chip" id="apSelNone">Clear selection</button>
       </div>
-      <div id="apBulkWrap" class="hide" style="margin-bottom:10px">
+      <div id="apptList"></div>
+      <!-- Below the list on purpose. Above it, un-hiding this block shoved every row
+           down by ~180px mid-selection, so the next tap landed on a different
+           appointment. Chrome's scroll anchoring hid that; Safari has none. -->
+      <div id="apBulkWrap" class="hide" style="margin-top:12px">
         <label class="f" id="apBulkLabel">Set length for the ticked ones</label>
         <div class="chips" id="apBulkMins"></div>
         <div class="row" style="margin-top:6px"><div style="flex:1">
           <input id="apBulkExact" type="number" inputmode="numeric" min="5" max="600" step="5" placeholder="or type minutes, then tap Apply">
         </div><button class="chip" id="apBulkGo" style="align-self:flex-end">Apply</button></div>
       </div>
-      <div id="apptList"></div>
       <button class="primary" id="apIcsSel" style="margin-top:12px">📅 Send selected to my calendar</button>
       <button class="ghost" id="apIcsAll">📅 Send everything on the schedule</button>
       <button class="primary" id="apptNew" style="margin-top:12px">+ Add an appointment</button>
+      <!-- Kept well away from "Clear selection". Two buttons side by side, one
+           clearing a tick and one destroying appointments, is an accident waiting
+           for a bright morning. -->
+      <div id="apDangerWrap" class="hide" style="margin-top:22px;border-top:1px solid var(--line);padding-top:14px">
+        <button class="ghost danger" id="apDelSel">🗑 Delete the ticked ones…</button>
+        <div class="small" style="margin-top:6px">It will say exactly what it is about to do before it does it.</div>
+      </div>
 
       <div id="apptForm" class="hide" style="margin-top:14px;border-top:1px solid var(--line);padding-top:14px">
         <label class="f">What is it</label>
@@ -604,7 +697,12 @@ label.f{display:block;margin:12px 0 5px;font-size:12px;font-weight:800;color:var
       <label class="f">Format</label>
       <div class="chips" id="xFormat"></div>
       <div class="small" id="xCount" style="margin-top:14px"></div>
-      <button class="primary" id="xGo">Download</button>
+      <!-- A map file on screen is a wall of coordinates that tells nobody anything.
+           A plain summary, and a button that puts exactly that on the map. -->
+      <div id="xGeoSummary" class="hide"></div>
+      <button class="ghost hide" id="xShowMe">👁 Show me what is in it</button>
+      <button class="primary" id="xShare">📤 Send it somewhere</button>
+      <button class="ghost" id="xGo">⬇︎ Just download it</button>
       <button class="ghost" id="xView">👁 Just show me the list here</button>
       <div class="small" style="margin-top:6px">A CSV is built for a computer. If it opens badly on the phone, read it here instead.</div>
     </div>
@@ -615,61 +713,100 @@ label.f{display:block;margin:12px 0 5px;font-size:12px;font-weight:800;color:var
   <div class="sheetBody">
     <div class="sheetHead"><h2>Menu</h2><button class="x" data-close="menuSheet">Close</button></div>
     <div class="sheetScroll">
-      <div class="statsbox"></div>
       <div id="backupNag" class="hide"></div>
-      <button class="ghost" id="mCrm">👥 Customers and follow-ups</button>
-      <button class="ghost" id="mRoute">🔁 Go back to (no answers)</button>
-      <button class="ghost" id="mTravel">🏁 Getting back / how long until home</button>
-      <button class="ghost" id="mAppt">📋 Schedule and appointments</button>
-      <button class="ghost" id="mSession">■ End session / session log</button>
-      <button class="ghost" id="mExport">⬇︎ Export a list…</button>
-      <button class="ghost" id="mBackup">💾 Full backup (JSON)</button>
-      <button class="ghost" id="mRestore">⤴︎ Restore from backup</button>
-      <input type="file" id="restoreFile" accept=".json,application/json" class="hide">
-      <label class="f">Vehicle</label>
-      <div class="chips">
-        <button class="chip" id="mPark">🚚 Park here</button>
-        <button class="chip" id="mUnpark">Clear truck pin</button>
-      </div>
-      <div class="small" id="parkInfo" style="margin-top:6px"></div>
-      <label class="f">Lock the app</label>
-      <div class="chips">
-        <button class="chip" id="mSetPin">Set a PIN</button>
-        <button class="chip" id="mClearPin">Turn off</button>
-      </div>
-      <div class="small" id="pinInfo" style="margin-top:6px"></div>
-      <label class="f">Home</label>
-      <div class="chips">
-        <button class="chip" id="mSetHome">🏠 Set to where I am</button>
-        <button class="chip" id="mClearHome">Clear home</button>
-      </div>
-      <div class="small" id="homeInfo" style="margin-top:6px"></div>
-      <label class="f">Travel estimates</label>
-      <div class="small" id="paceInfo" style="margin-bottom:6px"></div>
-      <div class="chips" id="mDriveSpeed"></div>
-      <div class="small" style="margin-top:6px">Drive times are worked out on the phone from straight line distance, so they need no signal and no account. Nudge this if they read consistently long or short.</div>
-      <label class="f">Show on the mini map</label>
-      <div class="chips" id="mHubData"></div>
-      <div class="small" style="margin-top:6px">Printed on the house itself. The circle is small, so keep it to one or two at a time. Shorthand: b94 built 1994, s19 sold 2019, 1840sf floor area.</div>
-      <label class="f">Keep screen awake</label>
-      <div class="chips"><button class="chip" id="mWake">Screen lock off</button></div>
-      <label class="f">Track detail</label>
-      <div class="chips" id="mDetail"></div>
-      <div class="small" style="margin-top:6px">Normal skips points while you stand still, so doors do not collect a knot of dots. Fine records everything, which is what you want for short distances or testing.</div>
-      <label class="f">Snap distance</label>
-      <div class="chips" id="mSnap"></div>
-      <p class="small" style="margin-top:16px">Parcel lines and owner names come from the county auditor GIS for Franklin, Delaware, Union, Madison, Licking, Fairfield and Pickaway counties. Owner name is the tax record — it may lag a recent sale.</p>
-      <button class="ghost" id="mTest" style="margin-top:6px">📡 Check county data connections</button>
-      <div class="small" id="diag" style="margin-top:10px"></div>
-      <div class="small" id="conn" style="margin-top:8px"></div>
-      <button class="ghost danger" id="mWipe" style="margin-top:20px">Erase all data</button>
+
+      <div class="dsec"><button class="dsecHead" data-msec="work"><i>▾</i>Out working</button>
+        <div class="dsecBody" id="msecWork">
+          <button class="ghost" id="mCrm">👥 Customers and follow-ups</button>
+          <button class="ghost" id="mRoute">🔁 Go back to (no answers)</button>
+          <button class="ghost" id="mTravel">🏁 Getting back / how long until home</button>
+          <button class="ghost" id="mAppt">📋 Schedule and appointments</button>
+          <button class="ghost" id="mSession">■ End session / session log</button>
+          <label class="f">The truck</label>
+          <div class="chips">
+            <button class="chip" id="mPark">🚚 Park here</button>
+            <button class="chip" id="mUnpark">Clear truck pin</button>
+          </div>
+          <div class="small" id="parkInfo" style="margin-top:6px"></div>
+        </div></div>
+
+      <div class="dsec"><button class="dsecHead" data-msec="day"><i>▾</i>End of day</button>
+        <div class="dsecBody" id="msecDay">
+          <button class="primary" id="mBackupShare" style="margin-top:0">📤 Full backup — send it somewhere safe</button>
+          <button class="ghost" id="mBackup">💾 Full backup — just download it</button>
+          <div class="small" style="margin-top:5px">Every door, note, tag, stage, follow-up, appointment and walking track, in one file. This is the only thing that can rebuild the app if the phone is lost or the icon is deleted. Get it off the phone.</div>
+          <button class="ghost" id="mRestore" style="margin-top:12px">⤴︎ Restore from a full backup</button>
+          <input type="file" id="restoreFile" accept=".json,application/json" class="hide">
+          <button class="ghost" id="mExport" style="margin-top:16px">⬇︎ Export a list for the computer…</button>
+          <div class="small" style="margin-top:5px">A spreadsheet or a map file, for working at a laptop. Useful, but <b>this is not a backup</b> — it leaves things out and nothing can restore from it.</div>
+        </div></div>
+
+      <div class="dsec"><button class="dsecHead" data-msec="settings"><i>▸</i>Settings</button>
+        <div class="dsecBody hide" id="msecSettings">
+          <label class="f">Home</label>
+          <div class="chips">
+            <button class="chip" id="mSetHome">🏠 Set to where I am</button>
+            <button class="chip" id="mClearHome">Clear home</button>
+          </div>
+          <div class="small" id="homeInfo" style="margin-top:6px"></div>
+
+          <label class="f">What your two books are called</label>
+          <div class="small" style="margin-bottom:6px">The names on the mode pill. Renaming one changes nothing about what is already saved against it.</div>
+          <input id="mLineRoof" maxlength="18" placeholder="Roofing" autocomplete="off">
+          <input id="mLineAppraisal" maxlength="18" placeholder="Appraisal" autocomplete="off" style="margin-top:8px">
+          <button class="chip" id="mLineReset" style="margin-top:8px">Put both names back</button>
+
+          <label class="f">Show on the mini map</label>
+          <div class="chips" id="mHubData"></div>
+          <div class="small" style="margin-top:6px">Printed on the house itself. The circle is small, so keep it to one or two at a time. Shorthand: b94 built 1994, s19 sold 2019, 1840sf floor area.</div>
+
+          <label class="f" for="mDetail">Track detail</label>
+          <select id="mDetail"></select>
+          <div class="small" style="margin-top:6px">Normal skips points while you stand still, so doors do not collect a knot of dots. Fine records everything, which is what you want for short distances or testing.</div>
+
+          <label class="f" for="mSnap">Snap distance</label>
+          <select id="mSnap"></select>
+          <div class="small" style="margin-top:6px">How far a lot can be and still count as the house you just left.</div>
+
+          <label class="f" for="mDriveSpeed">Travel estimates</label>
+          <div class="small" id="paceInfo" style="margin-bottom:6px"></div>
+          <select id="mDriveSpeed"></select>
+          <div class="small" style="margin-top:6px">Nudge this if the times read consistently long or short.</div>
+
+          <label class="f">Keep screen awake</label>
+          <div class="chips"><button class="chip" id="mWake">Screen lock off</button></div>
+
+          <label class="f">When tracking stops by itself</label>
+          <div class="small" style="margin-bottom:6px">Getting home ends the session on its own, and driving stops the breadcrumb trail. Neither of those can be turned off — they only ever save battery and tidy the trail. This one asks you a question, so it can be.</div>
+          <div class="chips"><button class="chip" id="mQuiet">Ask if nothing happens for half an hour</button></div>
+
+          <label class="f">Lock the app</label>
+          <div class="chips">
+            <button class="chip" id="mSetPin">Set a PIN</button>
+            <button class="chip" id="mClearPin">Turn off</button>
+          </div>
+          <div class="small" id="pinInfo" style="margin-top:6px"></div>
+
+          <label class="f">Where the owner names come from</label>
+          <p class="small" style="margin-top:0">County auditor records for Franklin, Delaware, Union, Madison, Licking, Fairfield and Pickaway. Owner name is the tax record — it may lag a recent sale.</p>
+          <button class="ghost" id="mTest">📡 Check county data connections</button>
+          <div class="small" id="diag" style="margin-top:10px"></div>
+          <div class="small" id="conn" style="margin-top:8px"></div>
+
+          <label class="f">Storage on this phone</label>
+          <div id="storageNote" class="small"></div>
+
+          <button class="ghost danger" id="mWipe" style="margin-top:18px">Erase all data</button>
+        </div></div>
+
+      <div id="versionStamp"></div>
     </div>
   </div>
 </div>
 
 <!-- ============ start gate ============ -->
 <div id="gate">
-  <h1>Roof Champ Canvass</h1>
+  <h1>CanvassEaze</h1>
   <p>One screen. Walk away from the door, tap what happened. It figures out the house.</p>
   <div class="statsbox" style="margin:14px 0"></div>
   <button class="primary" id="startBtn">Start canvassing</button>
@@ -678,7 +815,7 @@ label.f{display:block;margin:12px 0 5px;font-size:12px;font-weight:800;color:var
 
 <script>
 /* ==========================================================================
-   Roof Champ Canvass — single-screen door-to-door tracker
+   CanvassEaze — single-screen door-to-door tracker
    ========================================================================== */
 const $ = id => document.getElementById(id);
 
@@ -741,7 +878,30 @@ const COUNTIES = [
     owner:['OWNER'], addr:'ADDRESS', pid:'PARCELID',
     extra:['PPAcres','PPOwnerAdd','PPOwnerA_2'], where:'1=1', bbox:[-83.28,39.40,-82.75,39.83],
     occ:{ mail:a=>a.PPOwnerAdd, mailCity:a=>a.PPOwnerA_2, mailName:null, flag:null } },
+
+  /* ---- last resort, anywhere in Ohio outside the seven above ----
+     OGRIP's statewide layer covers all 88 counties, free, no key, no account. What
+     it does NOT carry is the thing that matters most: there is no owner name on it,
+     and no year built, value, floor area or sale either. It is also years out of
+     date — every parcel carries its own export date and most of them read 2023.
+     It is here so the app is never blank in Ohio, not as a substitute for a county.
+     Anything it produces is labelled as such, with that date, on the house card and
+     in the details panel. Stale data must never be allowed to look live. */
+  { key:'ohio', name:'Ohio statewide', fallback:true,
+    url:'https://services2.arcgis.com/MlJ0G8iWUyC7jAmu/arcgis/rest/services/OhioStatewidePacels_full_view/FeatureServer/0',
+    owner:[], addr:'SitusAddressAll', pid:'StateParcelID',
+    extra:['County','StateLUC','MailAddressAll','MailCity','CurrentTo','CAMADataSite','LocalParcelID'],
+    where:'1=1', bbox:[-84.95, 38.35, -80.45, 42.35],
+    // MailAddressAll arrives as "1816 N HIGH ST | COLUMBUS OH 43201" and is often
+    // simply blank, in which case the occupancy check correctly says nothing.
+    occ:{ mail:a => (a.MailAddressAll || '').split('|')[0].trim(),
+          mailCity:a => ((a.MailAddressAll || '').split('|')[1] || '').trim(),
+          mailName:null, flag:null } },
 ];
+
+/* One place the app's name is written, so the rename is a one-line change rather
+   than a hunt through the file. */
+const APP_NAME = 'CanvassEaze';
 
 const STATUS = {
   talked:   { label:'Talked to',        color:'#22c55e', short:'Talked' },
@@ -757,6 +917,39 @@ const LINES = {
   roof:      { label:'Roofing',   short:'ROOFING',   color:'#0ea5e9', dash:null },
   appraisal: { label:'Appraisal', short:'APPRAISAL', color:'#a855f7', dash:'5 4' },
 };
+/* The two names are editable, because Roofing and Appraisal are exactly right for
+   Travis and meaningless to anybody else. Only the LABEL changes — the stored keys
+   stay 'roof' and 'appraisal' for ever, so no record is touched by a rename and a
+   renamed book still lines up with everything already saved against it.
+   Deliberately still two books: the mode pill is one tap precisely because there
+   are two of them, and it is a core-loop control used hundreds of times a day. */
+const LINE_DEFAULTS = { roof:'Roofing', appraisal:'Appraisal' };
+const LINE_NAME_MAX = 18;
+function lineNamesSaved() {
+  try {
+    const o = JSON.parse(localStorage.getItem('lineNames') || '{}');
+    return (o && typeof o === 'object' && !Array.isArray(o)) ? o : {};
+  } catch (e) { return {}; }
+}
+function applyLineName(k, name) {
+  const clean = String(name == null ? '' : name).replace(/\s+/g, ' ').trim().slice(0, LINE_NAME_MAX);
+  const use = clean || LINE_DEFAULTS[k];
+  LINES[k].label = use;
+  LINES[k].short = use.toUpperCase();
+  return clean;
+}
+function loadLineNames() {
+  const saved = lineNamesSaved();
+  Object.keys(LINE_DEFAULTS).forEach(k => applyLineName(k, saved[k]));
+}
+function setLineName(k, name) {
+  const clean = applyLineName(k, name);
+  const saved = lineNamesSaved();
+  if (clean) saved[k] = clean; else delete saved[k];
+  try { localStorage.setItem('lineNames', JSON.stringify(saved)); } catch (e) {}
+  renderMode(); renderStrip(); renderHouse(); renderStats();
+  if (window._map) refreshMapLayers();
+}
 const dayKey = ts => { const d = new Date(ts); return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`; };
 /* Ten hues evenly round the wheel, stepped 3 slots per calendar day, so
    consecutive days land 108° apart and never look alike. Lightness alternates
@@ -794,31 +987,59 @@ function namesLookRelated(a, b) {
   if (!A.length || !B.length) return true;          // nothing to compare, don't block
   return A.some(w => B.includes(w));                 // one shared surname is enough
 }
-/** returns {v:'rental'|'owner'|null, mail:string, why:string} */
+/* The escrow servicers by name. The tax bill on any financed home goes to one of
+   these, so the mailing address is a corporate one two states away and tells you
+   nothing about who answers the door. Several counties put the servicer straight
+   into the address line, so both the name and the address are checked. */
+const SERVICERS = /\b(COTALITY|CORELOGIC|CORE\s?LOGIC|LERETA|SERVICELINK|LOANCARE|NATIONSTAR|MR\.?\s?COOPER|BLACK\s?KNIGHT|TAX\s?SERVIC(E|ES|ING)|ESCROW)\b/i;
+const servicerName = s => { const m = String(s || '').match(SERVICERS); return m ? m[0].replace(/\s+/g, ' ').trim() : ''; };
+
+/** returns {v:'rental'|'owner'|null, mail:string, why:string, reason:string} */
 function assessOccupancy(c, a, siteAddr) {
   const cfg = c.occ;
-  if (!cfg) return { v:null, mail:'', why:'no mailing data for this county' };
+  if (!cfg) return { v:null, mail:'', why:'no mailing data for this county', reason:'none' };
 
   const flag = cfg.flag ? cfg.flag(a) : null;
   const rawMail = (cfg.mail ? cfg.mail(a) : '') || '';
   const mailCity = (cfg.mailCity ? cfg.mailCity(a) : '') || '';
   const mail = [rawMail, mailCity].map(s => String(s).trim()).filter(s => s && s !== '0').join(', ');
+  const mailName = cfg.mailName ? (cfg.mailName(a) || '') : '';
 
-  if (flag) return { v:flag, mail, why:'county auditor occupancy flag' };
+  if (flag) return { v:flag, mail, why:'county auditor occupancy flag', reason:'flag' };
 
   const street = String(rawMail).trim();
-  if (!street || street === '0') return { v:null, mail, why:'no mailing address on file' };
-  if (/\bP\.?\s?O\.?\s?BOX\b/i.test(street)) return { v:null, mail, why:'owner uses a PO box' };
+  if (!street || street === '0') return { v:null, mail, why:'no mailing address on file', reason:'none' };
+
+  const svc = servicerName(mailName) || servicerName(street) || servicerName(mail);
+  if (svc) return { v:null, mail, reason:'servicer', servicer:svc,
+                    why:'the tax bill goes to a mortgage servicer' };
+
+  if (/\bP\.?\s?O\.?\s?BOX\b/i.test(street))
+    return { v:null, mail, why:'owner uses a PO box', reason:'pobox' };
 
   if (cfg.mailName) {
-    const mn = cfg.mailName(a);
-    if (mn && !namesLookRelated(mn, a[c.owner[0]]))
-      return { v:null, mail, why:'tax bill goes to a third party, likely a mortgage servicer' };
+    if (mailName && !namesLookRelated(mailName, a[c.owner[0]]))
+      return { v:null, mail, reason:'servicer',
+               why:'the tax bill goes to someone other than the owner, most likely a mortgage servicer' };
   }
   const same = addrKey(street) === addrKey(siteAddr);
-  if (!addrKey(street) || !addrKey(siteAddr)) return { v:null, mail, why:'address could not be read' };
-  return { v: same ? 'owner' : 'rental', mail,
+  if (!addrKey(street) || !addrKey(siteAddr))
+    return { v:null, mail, why:'address could not be read', reason:'unreadable' };
+  return { v: same ? 'owner' : 'rental', mail, reason: same ? 'match' : 'elsewhere',
            why: same ? 'owner mail comes here' : 'owner mail goes elsewhere' };
+}
+/* The gap this closes: the panel used to print a Texas address and leave him to
+   work out what it meant. Reading it took knowing what Cotality is. */
+function occExplain(reason, servicer) {
+  if (reason === 'servicer')
+    return `That is a mortgage servicer${servicer ? ` — ${servicer}` : ''}, not a person. `
+         + `The tax bill on any financed home goes there, so it says nothing about who lives here.`;
+  if (reason === 'pobox')
+    return 'That is a PO box. Plenty of owners collect their mail at a box and live in the house, '
+         + 'so it settles nothing either way.';
+  if (reason === 'unreadable')
+    return 'The addresses could not be compared, so no conclusion is drawn from them.';
+  return '';
 }
 
 /* ---------------- property figures from the auditor ----------------
@@ -968,10 +1189,42 @@ const state = {
   appts: [],           // [{id, label, addr, lat, lon, at}] typed in by hand
   driveAdj: 1,         // multiplier on the drive time estimate, nudged from the menu
   hubData: [],         // which auditor figures to print on the hub map
+  mapData: ['owner'],  // and on the big map, kept separate — different sized screens
+  driving: false,      // sustained road speed: the trail stops until you slow down
+  driveHits: 0, calmHits: 0,
+  driveSpeeds: [],     // measured driving speeds, kept off the trail
+  leftHome: false,     // armed once you have genuinely left, so home cannot end a session that started there
+  lastDoorTs: 0,       // when a door was last marked
+  quietAnchor: null,   // where you were when you last actually moved
+  quietAskedAt: 0,
+  quietPrompt: true,   // ask after a long quiet spell
 };
 window.state = state;   // exposed for the diagnostics panel and automated tests
 
 /* ---------------- day tracks ---------------- */
+/* Now that driving suppresses breadcrumbs, a day's points contain jumps: park in one
+   neighbourhood, drive, park in the next. Drawn as one line that reads as a
+   dead-straight road across the city, and counted as distance it turns half a mile
+   walked into ten. Both the map and the session log work in segments instead, and a
+   jump is never drawn and never counted. */
+const TRACK_GAP_M  = 120;
+const TRACK_GAP_MS = 120000;
+function trackSegments(pts) {
+  const segs = [];
+  let cur = [];
+  for (let i = 0; i < pts.length; i++) {
+    if (i) {
+      const a = pts[i-1], b = pts[i];
+      if (haversine(a.lat, a.lon, b.lat, b.lon) > TRACK_GAP_M || (b.ts - a.ts) > TRACK_GAP_MS) {
+        if (cur.length > 1) segs.push(cur);
+        cur = [];
+      }
+    }
+    cur.push(pts[i]);
+  }
+  if (cur.length > 1) segs.push(cur);
+  return segs;
+}
 let dayFlushTimer = null;
 function pushTrackPoint(lat, lon, ts) {
   const k = dayKey(ts);
@@ -1062,13 +1315,19 @@ function ringsBBox(rings) {
 }
 
 /* ---------------- county detection & parcel fetching ---------------- */
+const inBBox = (c, lat, lon) => lon>=c.bbox[0] && lon<=c.bbox[2] && lat>=c.bbox[1] && lat<=c.bbox[3];
 function countiesFor(lat, lon) {
-  const inside = COUNTIES.filter(c => lon>=c.bbox[0] && lon<=c.bbox[2] && lat>=c.bbox[1] && lat<=c.bbox[3]);
+  const real = COUNTIES.filter(c => !c.fallback);
+  const inside = real.filter(c => inBBox(c, lat, lon));
   const rank = c => {
     const cx = (c.bbox[0]+c.bbox[2])/2, cy = (c.bbox[1]+c.bbox[3])/2;
     return haversine(lat, lon, cy, cx);
   };
-  const list = (inside.length ? inside : COUNTIES.slice()).sort((a,b) => rank(a)-rank(b));
+  const list = (inside.length ? inside : real.slice()).sort((a,b) => rank(a)-rank(b));
+  // always last, and only inside Ohio. A real county with owner names beats a
+  // statewide record without them every time.
+  const fb = COUNTIES.find(c => c.fallback);
+  if (fb && inBBox(fb, lat, lon)) list.push(fb);
   return list;
 }
 
@@ -1076,7 +1335,7 @@ const TILE = 0.006; // ~0.66 km lat, ~0.51 km lon at 40°N
 /* Bump PARSE_V whenever the county field mapping or attribute parsing changes.
    Cached tiles hold PARSED parcels, so without this an old cache would keep
    serving the old interpretation forever and a fix would never reach anyone. */
-const PARSE_V = 4;
+const PARSE_V = 5;
 const tileKey = (c, lat, lon) => `v${PARSE_V}:${c.key}:${Math.floor(lat/TILE)}:${Math.floor(lon/TILE)}`;
 async function purgeStaleTiles() {
   try {
@@ -1139,6 +1398,11 @@ async function fetchTile(c, lat, lon, silent) {
       const extra = {}; c.extra.forEach(k => { if (a[k] != null && String(a[k]).trim()) extra[k] = a[k]; });
       const p = { key:`${c.key}:${pid}`, county:c.key, pid, owner, addr, extra, rings,
                   bbox:ringsBBox(rings), cen:ringsCentroid(rings) };
+      if (c.fallback) {                       // so nothing downstream mistakes it for a county record
+        p.fallback = true;
+        p.currentTo = parseWhen(a.CurrentTo);
+        p.camaLink = String(a.CAMADataSite || '');
+      }
       out.push(p); attrs.push(a);
     }
 
@@ -1165,6 +1429,7 @@ async function fetchTile(c, lat, lon, silent) {
     out.forEach((p, i) => {
       const r = assessOccupancy(c, attrs[i], p.addr);
       p.occ = r.v; p.mail = r.mail; p.occWhy = r.why;
+      p.occReason = r.reason; p.servicer = r.servicer || '';
       Object.assign(p, readStats(c, attrs[i]));
     });
 
@@ -1189,10 +1454,21 @@ async function ensureParcels(lat, lon) {
   if (lastTileCenter && haversine(lat, lon, lastTileCenter[0], lastTileCenter[1]) < 60) return;
   lastTileCenter = [lat, lon];
   const cands = countiesFor(lat, lon);
+  /* "already have some parcels" is not the same as "already have parcels HERE".
+     Testing the whole map meant that once any lot had loaded, the loop broke on the
+     first candidate for ever — so driving out of the mapped counties mid-session
+     never reached the statewide layer, which is the one case it exists for. */
+  const haveNearby = () => {
+    for (const p of state.parcels.values()) {
+      const at = p.house || p.cen;
+      if (haversine(lat, lon, at[1], at[0]) < 300) return true;
+    }
+    return false;
+  };
   let got = 0;
   for (const c of cands) {
     got = await fetchTile(c, lat, lon);
-    if (got > 0 || state.parcels.size) { state.county = c; break; }
+    if (got > 0 || haveNearby()) { state.county = c; break; }
   }
   renderStrip(); recompute();
   // quietly warm the neighbouring tiles so walking the block never stalls
@@ -1265,6 +1541,33 @@ function pinHouse(key) {
   state.manualAt = state.pos ? { lat:state.pos.lat, lon:state.pos.lon, ts:Date.now() } : null;
 }
 
+/* The statewide layer is refreshed by each county when it feels like it, so the
+   only honest thing to print is the date on the record in hand. */
+/* The export date arrives as epoch milliseconds from the JSON endpoint, an ISO
+   string from the GeoJSON one, and occasionally as a bare year. All three have to
+   read correctly, or a 2023 record prints as "Jan 1970" and looks like a bug. */
+function parseWhen(x) {
+  if (x == null || x === '') return null;
+  const n = Number(x);
+  if (isFinite(n) && String(x).trim() !== '') {
+    if (n > 1e11) return n;                                   // epoch ms
+    if (n > 1e8 && n < 1e11) return n * 1000;                 // epoch seconds
+    if (n > 1900 && n < 2200) return Date.UTC(n, 0, 1);       // a bare year
+    return null;
+  }
+  const t = Date.parse(x);
+  return isFinite(t) ? t : null;
+}
+const fallbackAge = p => p && p.currentTo
+  ? new Date(p.currentTo).toLocaleDateString([], { month:'short', year:'numeric' })
+  : 'date not stated';
+function fallbackNote(p) {
+  const county = (p.extra && p.extra.County) ? p.extra.County + ' County' : 'this county';
+  return `The app has no direct link to ${esc(county)}, so this came off Ohio's statewide map. `
+    + `That record is from <b>${esc(fallbackAge(p))}</b> and it does not publish an owner name, `
+    + `a year built, a value or a sale. Treat the lot and the address as a guide, not as today's truth.`;
+}
+
 /* ---------------- rendering: strip + house ---------------- */
 function renderStrip() {
   const d = $('gpsDot'), t = $('gpsTxt');
@@ -1280,7 +1583,7 @@ function renderStrip() {
   if (!$('menuSheet').classList.contains('hide')) renderDiag();
   $('countyPill').textContent = state.tilesLoading ? 'loading lots…'
       : state.netErr ? '⚠︎ offline'
-      : (state.county ? state.county.name + ' Co.' : '—');
+      : (state.county ? state.county.name + (state.county.fallback ? '' : ' Co.') : '—');
   const t0 = new Date(); t0.setHours(0,0,0,0);
   const todayN = state.visitLog.filter(v => v.ts >= +t0 && v.line === state.line).length;
   $('menuCount').textContent = todayN;
@@ -1294,7 +1597,8 @@ function renderHouse() {
   if (!c) {
     $('addr').textContent = state.parcels.size ? 'No lot nearby' : 'Loading lot lines…';
     $('owner').textContent = state.netErr ? 'No signal — parcels unavailable here' : '—';
-    $('alreadyTag').classList.add('hide'); $('rentTag').classList.add('hide'); $('propLine').classList.add('hide');
+    $('alreadyTag').classList.add('hide'); $('rentTag').classList.add('hide');
+    $('staleTag').classList.add('hide'); $('propLine').classList.add('hide');
     drawMini(); return;
   }
   const p = c.p;
@@ -1308,6 +1612,9 @@ function renderHouse() {
   $('propLine').textContent = sl;
   $('propLine').classList.toggle('hide', !sl);
   $('rentTag').classList.toggle('hide', !rental);
+  // a record off the statewide layer says so, with its own date, every time
+  $('staleTag').classList.toggle('hide', !p.fallback);
+  if (p.fallback) $('staleTag').textContent = `📋 statewide record${p.currentTo ? ' · ' + fallbackAge(p) : ''}`;
   const v = visitFor(p.key);
   const other = visitFor(p.key, state.line === 'roof' ? 'appraisal' : 'roof');
   const tag = $('alreadyTag');
@@ -1427,14 +1734,16 @@ function drawMini() {
         }
       }
     }
-    // likely rentals get a small yellow triangle on the house
+    /* Likely rentals get the whole lot outlined in yellow-and-black hazard stripes,
+       so it reads on the approach. A triangle on the house only worked once you were
+       standing at it. Not yellow and red: red already means don't come back and amber
+       already means no answer, so a lot striped in those could read at a glance as a
+       door already written off. Black appears nowhere else on this map. */
     if (p.occ === 'rental') {
-      const at = p.house || p.cen, tx = X(at), ty = Y(at), r = 4.2;
-      if (tx > -10 && tx < w + 10 && ty > -10 && ty < h + 10) {
-        g.beginPath(); g.moveTo(tx, ty - r); g.lineTo(tx + r, ty + r * .8); g.lineTo(tx - r, ty + r * .8); g.closePath();
-        g.fillStyle = '#fbbf24'; g.fill();
-        g.strokeStyle = 'rgba(0,0,0,.85)'; g.lineWidth = 1; g.stroke();
-      }
+      g.save();
+      g.setLineDash([]);      g.strokeStyle = '#facc15'; g.lineWidth = 2.6; g.stroke();
+      g.setLineDash([5, 5]);  g.strokeStyle = '#0b0f14'; g.lineWidth = 2.6; g.stroke();
+      g.restore();
     }
   }
   // highlight the currently targeted house
@@ -1594,6 +1903,9 @@ async function mark(status) {
     ts: Date.now(), lat: state.pos.lat, lon: state.pos.lon, acc: state.pos.acc,
     dist: Math.round(c.d), owner: p.owner, addr: p.addr, extra: p.extra,
     occ: p.occ || null, mail: p.mail || '',
+    // carried onto the record so the "that is a mortgage servicer" line still shows
+    // tomorrow, when the parcel is no longer in memory
+    occReason: p.occReason || '', servicer: p.servicer || '',
     val: p.val || null, sqft: p.sqft || null, saleTs: p.saleTs || null, salePrice: p.salePrice || null,
     name:'', goesBy:'', nameFromOwner:false, phone:'', email:'', notes:'', tags:[], follow:'',
   };
@@ -1611,6 +1923,7 @@ async function mark(status) {
   await DB.put('visits', v).catch(()=>{});
   // release any manual pick so the next door snaps on its own again
   state.manualKey = null; state.manualAt = null;
+  state.lastDoorTs = v.ts;          // the quiet-spell backstop counts from the last door
   buzz(status === 'dnr' ? [40,60,40] : 35);
   flashToast(STATUS[status].label, `${p.addr || 'lot ' + p.pid}${p.owner ? ' · ' + p.owner : ''}`, STATUS[status].color);
   renderStrip(); renderHouse(); if (window._map) refreshMapLayers();
@@ -1618,7 +1931,18 @@ async function mark(status) {
   // first so nothing can be lost, then open the panel with the name field ready.
   if (status === 'talked') setTimeout(() => openDetail(v, true), 260);
 }
+/* The quiet-spell question borrows these two buttons. Anything that shows a toast
+   has to hand them back, or the button where Undo lives quietly becomes "stop
+   tracking" for the rest of the day. */
+function restoreToastButtons() {
+  const swap = $('toastSwap'), undo = $('toastUndo');
+  if (swap.dataset.mode !== 'ask') return;
+  swap.innerHTML = 'Wrong<br>house'; undo.textContent = 'Undo';
+  swap.onclick = reassignLast; undo.onclick = undoLast;
+  delete swap.dataset.mode;
+}
 function flashToast(title, sub, color) {
+  restoreToastButtons();
   $('toastTitle').textContent = title;
   $('toastSub').textContent = sub;
   $('toastBar').style.background = color;
@@ -1698,6 +2022,7 @@ async function reassignLast() {
 
 /* ---------------- detail sheet ---------------- */
 let editing = null;
+let dNoteFor = null;      // which record the note box currently belongs to
 /** copy whatever is typed in the form back onto the record being edited,
     so re-rendering the sheet (tag/status taps) never throws away typing */
 function pullDetail() {
@@ -1716,6 +2041,100 @@ function pullDetail() {
   editing.followAt = fv ? Date.parse(fv) : (editing.followAt || null);
   if (fv) editing.followDone = false;
 }
+/* The panel's job changes with the button that opened it. Talked wants a name and
+   a phone number. Don't Come Back wants a reason. Left Material and No Answer are
+   tapped on the move, so they open with almost nothing in front of you.
+   Nothing is ever removed — only the order and what starts open change. */
+const DETAIL_LAYOUT = {
+  talked:   { primary:['fgName','fgPhone','fgNote'], who:['fgGoesBy','fgEmail'],                 open:['log'] },
+  dnr:      { primary:['fgNote','fgReason'],         who:['fgName','fgGoesBy','fgPhone','fgEmail'], open:['log'] },
+  material: { primary:['fgNote'],                    who:['fgName','fgGoesBy','fgPhone','fgEmail'], open:[] },
+  noanswer: { primary:['fgNote'],                    who:['fgName','fgGoesBy','fgPhone','fgEmail'], open:[] },
+};
+const DETAIL_SECTIONS = ['who','tags','stage','prop','log','danger'];
+const FIELD_GROUPS = ['fgName','fgGoesBy','fgPhone','fgEmail','fgReason','fgNote'];
+const dsecBody = k => $('dsec' + k[0].toUpperCase() + k.slice(1));
+function setDSection(k, open) {
+  const body = dsecBody(k), head = document.querySelector(`.dsecHead[data-sec="${k}"]`);
+  if (!body || !head) return;
+  body.classList.toggle('hide', !open);
+  head.setAttribute('aria-expanded', open ? 'true' : 'false');
+  const caret = head.querySelector('i');
+  if (caret) { caret.textContent = open ? '▾' : '▸'; caret.setAttribute('aria-hidden', 'true'); }
+}
+const dSectionOpen = k => { const b = dsecBody(k); return !!b && !b.classList.contains('hide'); };
+/* Re-rendering happens on every chip tap. Re-adapting the layout on each of those
+   would slam a section shut while he was using it, so the defaults are only applied
+   on a fresh open or when the status itself changes. */
+/* Keyed on the record as well as the status. Keying on status alone happens to be
+   safe today because every path that swaps records closes the sheet first, but the
+   day someone adds a "next house" button it would quietly hand one door's layout
+   to another. */
+let dLayoutKey = null, dJustLaidOut = false;
+function layoutDetail(status) {
+  const L = DETAIL_LAYOUT[status] || DETAIL_LAYOUT.talked;
+  const key = (editing ? editing.id : '') + '|' + status;
+  const fresh = $('detailSheet').classList.contains('hide') || dLayoutKey !== key;
+  if (fresh) {
+    const park = $('dParked');
+    FIELD_GROUPS.forEach(id => park.appendChild($(id)));   // park all, then deal them out in order
+    L.primary.forEach(id => $('dPrimary').appendChild($(id)));
+    L.who.forEach(id => $('dsecWho').appendChild($(id)));
+    DETAIL_SECTIONS.forEach(k => setDSection(k, L.open.includes(k)));
+    dLayoutKey = key;
+    dJustLaidOut = true;
+  }
+}
+/* Changing the status re-deals the fields, and a field holding something he has
+   already typed must never land in a section that is shut. It looks like the
+   typing was thrown away even though the record is fine. */
+function revealTypedFields() {
+  if (dSectionOpen('who')) return;
+  if ([...$('dsecWho').querySelectorAll('input')].some(i => i.value.trim())) setDSection('who', true);
+}
+/* A closed section still says what is inside it, so nothing feels hidden. */
+function updateDSectionCounts() {
+  if (!editing) return;
+  const tags = (editing.tags || []).length;
+  $('dTagCount').textContent = tags ? `${tags} on` : '';
+  $('dLogCount').textContent = `${logOf(editing).length} entr${logOf(editing).length === 1 ? 'y' : 'ies'}`;
+  const st = (DISPO[editing.dispo || 'new'] || {}).label || '';
+  const fu = editing.followAt && !editing.followDone ? ' · follow-up set' : '';
+  $('dStageCount').textContent = st + fu;
+}
+/* A reason is a log note, not a new field on the record. Nothing about how a door
+   is stored changes, and the reason reads back in his own words. */
+const DNR_REASONS = ['Asked me not to come back','No soliciting sign','Renter, not the owner',
+                     'Already has a contractor','Dog','Was rude'];
+const reasonText = r => 'Reason: ' + r;
+const hasReason = r => !!editing && logOf(editing).some(e => e.kind === 'note' && e.text === reasonText(r));
+function renderReasonChips() {
+  const host = $('dReason'); if (!host || !editing) return;
+  host.innerHTML = '';
+  DNR_REASONS.forEach(r => {
+    const b = document.createElement('button');
+    b.className = 'chip' + (hasReason(r) ? ' on' : ''); b.textContent = r;
+    /* Written to disk on the tap, not left waiting for Save. This is the one note
+       whose whole job is to stop the next person knocking, and the toast says
+       "saved", so it has to actually be saved. Tapping again takes it back off. */
+    b.onclick = async () => {
+      pullDetail();
+      const on = hasReason(r);
+      editing.log = on
+        ? logOf(editing).filter(e => !(e.kind === 'note' && e.text === reasonText(r)))
+        : [...logOf(editing), { id:newId(), ts:Date.now(), kind:'note', text:reasonText(r) }];
+      await persistEditing();
+      buzz(12);
+      flashToast(on ? 'Reason taken off' : 'Reason saved', r, STATUS.dnr.color);
+      openDetail(editing);
+    };
+    host.appendChild(b);
+  });
+}
+document.querySelectorAll('.dsecHead[data-sec]').forEach(b => {
+  b.onclick = () => { setDSection(b.dataset.sec, !dSectionOpen(b.dataset.sec)); buzz(8); };
+});
+
 function openDetail(visit, focusName) {
   let v = visit;
   if (!v) {
@@ -1737,17 +2156,29 @@ function openDetail(visit, focusName) {
   }
   if (!v) { flashToast('Mark a house first','Tap a status, then add details','#64748b'); return; }
   editing = v;
+  // The note box is the one field not re-seeded from the record, so text left in it
+  // would be presented against the next door and filed there. Clear it on a new house.
+  if (dNoteFor !== v.id) { $('dNewNote').value = ''; dNoteFor = v.id; }
+  layoutDetail(v.status);
+  renderReasonChips();
   $('dTitle').textContent = v.addr || 'Lot ' + v.pid;
   const ln = LINES[v.line || 'roof'];
   const par = state.parcels.get(v.key);
   const occ = v.occ || (par && par.occ) || null;
   const mail = v.mail || (par && par.mail) || '';
   const why = par && par.occWhy;
+  // say in words what a corporate address on the far side of the country means.
+  // Prefer the parcel in hand, fall back to what was stored with the record.
+  const explain = occExplain((par && par.occReason) || v.occReason,
+                             (par && par.servicer) || v.servicer);
+  const viaStatewide = v.county === 'ohio' || (par && par.fallback);
   $('dSub').innerHTML = `<span style="color:${ln.color};font-weight:800">${ln.short}</span> · `
-    + esc(v.owner || 'owner not listed') + ' · ' + esc((COUNTIES.find(c=>c.key===v.county)||{}).name || '?') + ' Co.'
+    + esc(v.owner || 'owner not listed') + ' · ' + esc((COUNTIES.find(c=>c.key===v.county)||{}).name || '?') + (viaStatewide ? '' : ' Co.')
+    + (viaStatewide ? `<div class="nagWarn" style="margin-top:8px">${fallbackNote(par || v)}</div>` : '')
     + (occ === 'rental'
         ? `<div style="margin-top:6px;color:#fbbf24;font-weight:700">⚠️ Likely a rental. Owner's mail goes to ${esc(mail || 'another address')}.</div>`
         : mail ? `<div style="margin-top:6px;color:var(--dim)">Owner mail: ${esc(mail)}${occ==='owner'?' (same address)':''}</div>`
+                 + (explain ? `<div style="margin-top:4px;color:#93a6bb;font-size:12px;line-height:1.45">${esc(explain)}</div>` : '')
                : (why ? `<div style="margin-top:6px;color:var(--dim)">Occupancy unknown: ${esc(why)}.</div>` : ''));
   $('dName').value = v.name||''; $('dGoesBy').value = v.goesBy||'';
   $('dNameNote').textContent = nameIsFromDeed(v) ? 'This came off the county deed, not from the door.' : '';
@@ -1802,11 +2233,19 @@ function openDetail(visit, focusName) {
     clr.onclick = () => { pullDetail(); editing.followAt = null; editing.followDone = false; openDetail(editing); };
     fz.appendChild(clr);
   }
-  $('dFollow').value = (editing.followAt && !editing.followDone)
-    ? new Date(editing.followAt - new Date().getTimezoneOffset()*60000).toISOString().slice(0,16) : '';
+  $('dFollow').value = (editing.followAt && !editing.followDone) ? toLocalInput(editing.followAt) : '';
 
   renderLog();
+  updateDSectionCounts();
   openSheet('detailSheet');
+  if (dJustLaidOut) {
+    revealTypedFields();
+    // has to happen after the sheet is on screen: setting scrollTop on a hidden
+    // element does nothing, and the browser then restores the old position
+    const sc = $('detailSheet').querySelector('.sheetScroll');
+    if (sc) sc.scrollTop = 0;
+    dJustLaidOut = false;
+  }
   if (focusName) setTimeout(() => { const el = $('dName'); el.focus({preventScroll:false}); }, 220);
 }
 /* The log: newest at the bottom. Notes are editable in place; anything in the
@@ -1816,6 +2255,7 @@ function renderLog() {
   const host = $('dLog'); host.innerHTML = '';
   const entries = logOf(editing).sort((a,b) => a.ts - b.ts);
   editing.log = entries;
+  updateDSectionCounts();
   if (!entries.length) { host.innerHTML = '<div class="logEmpty">Nothing logged here yet.</div>'; return; }
   entries.forEach(e => {
     const st = e.kind === 'status' ? (STATUS[e.status] || {label:e.status, color:'#94a3b8'}) : null;
@@ -1870,9 +2310,28 @@ function addLogNote() {
   renderLog(); buzz(15);
 }
 
+/** the one place a record reaches disk, so nothing can half-save it */
+async function persistEditing() {
+  if (!editing) return;
+  if (editing._new) { delete editing._new; state.visitLog.push(editing); state.lastVisitId = editing.id; }
+  state.visits.set(vKey(editing.key, editing.line), editing);
+  await DB.put('visits', editing).catch(()=>{});
+}
+/* Something typed in the note box and never tapped Add is still what he meant to
+   write down. Save keeps it instead of quietly dropping it, which matters more now
+   that Save is always under the thumb and no longer requires scrolling past Add. */
+function flushPendingNote() {
+  const el = $('dNewNote');
+  const t = el ? el.value.trim() : '';
+  if (!t || !editing) return;
+  editing.log = [...logOf(editing), { id:newId(), ts:Date.now(), kind:'note', text:t }];
+  el.value = '';
+}
+
 async function saveDetail() {
   if (!editing) return;
   pullDetail();
+  flushPendingNote();
   applyOwnerNameFallback(editing);
   // a status changed by hand belongs in the log too
   const lg = logOf(editing);
@@ -1881,9 +2340,7 @@ async function saveDetail() {
     lg.push({ id:newId(), ts:Date.now(), kind:'status', status:editing.status, text:'' });
   editing.log = lg;
   editing.notes = lg.filter(e => e.kind === 'note').map(e => e.text).join(' | ');
-  if (editing._new) { delete editing._new; state.visitLog.push(editing); state.lastVisitId = editing.id; }
-  state.visits.set(vKey(editing.key, editing.line), editing);
-  await DB.put('visits', editing).catch(()=>{});
+  await persistEditing();
   closeSheet('detailSheet'); buzz(20);
   flashToast('Saved', editing.addr || '', STATUS[editing.status].color);
   renderStrip(); renderHouse(); if (window._map) refreshMapLayers();
@@ -1940,6 +2397,19 @@ function openSheet(id){ const el = $(id); el.style.zIndex = ++sheetZ; el.classLi
 function closeSheet(id){ $(id).classList.add('hide'); }
 document.querySelectorAll('[data-close]').forEach(b => b.onclick = () => closeSheet(b.dataset.close));
 document.querySelectorAll('.sheet').forEach(s => s.addEventListener('click', e => { if (e.target === s) s.classList.add('hide'); }));
+/* iOS does not shrink the page when the keyboard opens — only the visual viewport
+   moves. Without this, Save sits underneath the keyboard on the panel that opens
+   with the name field already focused, which is the app's commonest flow. */
+if (window.visualViewport) {
+  const vv = window.visualViewport;
+  const syncKeyboard = () => {
+    const covered = Math.max(0, window.innerHeight - vv.height - vv.offsetTop);
+    document.documentElement.style.setProperty('--kb', Math.round(covered) + 'px');
+  };
+  vv.addEventListener('resize', syncKeyboard);
+  vv.addEventListener('scroll', syncKeyboard);
+  syncKeyboard();
+}
 
 /* ---------------- full map (Leaflet, lazy loaded) ---------------- */
 const mapOpts = { sat:false, names:true, tracks:true, filter:'all', follow:true };
@@ -1984,8 +2454,11 @@ async function openMap() {
 async function loadForView() {
   const m = window._map; if (!m || m.getZoom() < 16) return;
   const c = m.getCenter();
-  const cs = countiesFor(c.lat, c.lng);
-  if (cs[0]) { const n = await fetchTile(cs[0], c.lat, c.lng, true); if (n) refreshMapLayers(); }
+  // try each candidate in turn, so panning outside the mapped counties still draws
+  for (const cand of countiesFor(c.lat, c.lng)) {
+    const n = await fetchTile(cand, c.lat, c.lng, true);
+    if (n) { refreshMapLayers(); break; }
+  }
 }
 const passesFilter = line => mapOpts.filter === 'all' || mapOpts.filter === line;
 
@@ -2045,12 +2518,23 @@ function refreshMapLayers() {
           name:'',goesBy:'',nameFromOwner:false,phone:'',email:'',notes:'',tags:[],follow:'', _new:true }, p));
       });
       pl.addLayer(poly);
-      if (mapOpts.names && z >= 18 && p.owner) {
-        const at = p.house || p.cen;   // on the house when we know where it is
-        const warn = p.occ === 'rental' ? '<span class="rentwarn">⚠️</span> ' : '';
-        ll.addLayer(L.marker([at[1], at[0]], { interactive:false, icon: L.divIcon({
-          className:'', html:`<div class="owner-label">${warn}${esc(shortOwner(p.owner))}${p.addr?'<br>'+esc(p.addr.split(' ')[0]):''}</div>`,
-          iconSize:[0,0] }) }));
+      /* Hazard stripes on the lot line: a solid yellow pass with a dashed black pass
+         over it. The solid-versus-dashed difference between the two books stays
+         readable underneath, because this is drawn as a separate ring on top. */
+      if (p.occ === 'rental') {
+        const stripe = { fill:false, interactive:false, lineCap:'butt' };
+        pl.addLayer(L.polygon(latlngs, {...stripe, color:'#facc15', weight:5, opacity:1}));
+        pl.addLayer(L.polygon(latlngs, {...stripe, color:'#0b0f14', weight:5, opacity:1, dashArray:'9 9'}));
+      }
+      if (z >= 18) {
+        const lines = labelLines(p, state.mapData, 3);
+        if (state.mapData.includes('owner') && p.addr) lines.push(p.addr.split(' ')[0]);
+        if (lines.length) {
+          const at = p.house || p.cen;   // on the house when we know where it is
+          ll.addLayer(L.marker([at[1], at[0]], { interactive:false, icon: L.divIcon({
+            className:'', html:`<div class="owner-label">${lines.map(esc).join('<br>')}</div>`,
+            iconSize:[0,0] }) }));
+        }
       }
     }
   }
@@ -2060,11 +2544,13 @@ function refreshMapLayers() {
   if (mapOpts.tracks) {
     for (const d of state.days.values()) {
       if (!d.shown || d.pts.length < 2) continue;
-      rl.addLayer(L.polyline(d.pts.map(t => [t.lat, t.lon]), {
-        color: dayColor(d.day), weight: d.day === state.today ? 4 : 3,
-        opacity: d.day === state.today ? .95 : .7, lineCap:'round',
-        dashArray: d.day === state.today ? null : '1 7',
-      }));
+      for (const seg of trackSegments(d.pts)) {
+        rl.addLayer(L.polyline(seg.map(t => [t.lat, t.lon]), {
+          color: dayColor(d.day), weight: d.day === state.today ? 4 : 3,
+          opacity: d.day === state.today ? .95 : .7, lineCap:'round',
+          dashArray: d.day === state.today ? null : '1 7',
+        }));
+      }
     }
   }
 
@@ -2096,7 +2582,8 @@ function refreshMapLayers() {
 const shortOwner = o => { const parts = o.split(/\s*&\s*/)[0].trim().split(/\s+/); return parts.slice(0, Math.min(2, parts.length)).join(' '); };
 function syncMapBtns() {
   $('mapSat').classList.toggle('on', mapOpts.sat);
-  $('mapNames').classList.toggle('on', mapOpts.names);
+  $('mapShow').classList.toggle('on', !$('mapShowPanel').classList.contains('hide'));
+  $('mapKey').classList.toggle('on', !$('legend').classList.contains('hide'));
   $('mapRoute').classList.toggle('on', mapOpts.tracks);
   $('mapFollow').classList.toggle('on', mapOpts.follow);
   const f = $('mapFilter');
@@ -2137,6 +2624,7 @@ async function openDays() {
     list.appendChild(row);
   });
   $('daysPanel').classList.remove('hide');
+  seatMapPanel($('daysPanel'));
 }
 
 /* ---------------- erase an area of track ----------------
@@ -2312,9 +2800,9 @@ function visitsFor(o) {
     .filter(v => o.status === 'all' || v.status === o.status)
     .sort((a,b)=>a.ts-b.ts);
 }
-function exportCsv(o) {
+function buildCsv(o) {
   const rows = visitsFor(o);
-  if (!rows.length) { flashToast('Nothing matches those options','','#64748b'); return; }
+  if (!rows.length) { flashToast('Nothing matches those options','','#64748b'); return null; }
   const head = ['Date','Time','Work','Status','Address','Owner','Status history','Market value','Floor area sq ft','Last sale date','Last sale price','Likely rental','Owner mailing address','County','Parcel ID','Contact name','Name from deed','Goes by','Area','Phone','Email','Tags','Stage','Follow up','Notes','Year built','Latitude','Longitude','GPS accuracy m','Distance to lot m'];
   const yr = v => yearBuilt(v) || '';
   const lines = [head.map(q).join(',')];
@@ -2331,9 +2819,17 @@ function exportCsv(o) {
       v.followAt ? new Date(v.followAt).toLocaleString() : '', noteText(v), yr(v),
       v.lat.toFixed(6), v.lon.toFixed(6), Math.round(v.acc||0), v.dist].map(q).join(','));
   });
-  download(`canvass-${xName(o)}.csv`, '﻿'+lines.join('\r\n'), 'text/csv');
+  /* The leading ﻿ is a byte-order mark. Without it Excel and Google Sheets read
+     the file as the local codepage, and any apostrophe or accent in a name arrives
+     mangled. The charset on the type is what tells Drive it is a spreadsheet. */
+  return { name:`canvass-${xName(o)}.csv`, text:'﻿' + lines.join('\r\n'),
+           type:'text/csv;charset=utf-8' };
 }
-function exportGeo(o) {
+function exportCsv(o) { const p = buildCsv(o); if (p) download(p.name, p.text, p.type); }
+/* Split out so the preview on the map and the file on disk are built by the same
+   code. A preview that draws something the export does not contain is worse than
+   no preview at all. */
+function geoFeatures(o) {
   const rows = visitsFor(o);
   const feats = rows.map(v => {
     const p = state.parcels.get(v.key);
@@ -2347,23 +2843,146 @@ function exportGeo(o) {
   });
   const from = rangeStart(o.range);
   for (const d of state.days.values()) {
-    const pts = d.pts.filter(p => p.ts >= from);
-    if (pts.length > 1) feats.push({ type:'Feature',
-      properties:{ name:`Walking track ${d.day}`, day:d.day, stroke:dayColor(d.day), 'stroke-width':3 },
-      geometry:{ type:'LineString', coordinates: pts.map(t=>[t.lon,t.lat]) } });
+    // one line per walk, not one per day — a day now contains drives with no points
+    for (const seg of trackSegments(d.pts.filter(p => p.ts >= from))) {
+      feats.push({ type:'Feature',
+        properties:{ name:`Walking track ${d.day}`, day:d.day, stroke:dayColor(d.day), 'stroke-width':3 },
+        geometry:{ type:'LineString', coordinates: seg.map(t=>[t.lon,t.lat]) } });
+    }
   }
   if (state.vehicle) feats.push({ type:'Feature', properties:{name:'Truck', 'marker-color':'#f472b6'},
     geometry:{ type:'Point', coordinates:[state.vehicle.lon, state.vehicle.lat] } });
-  download(`canvass-${xName(o)}.geojson`, JSON.stringify({type:'FeatureCollection',features:feats}), 'application/geo+json');
+  return feats;
 }
-async function backup() {
+function buildGeo(o) {
+  return { name:`canvass-${xName(o)}.geojson`,
+           text: JSON.stringify({type:'FeatureCollection', features:geoFeatures(o)}),
+           type:'application/geo+json' };
+}
+function exportGeo(o) { const p = buildGeo(o); if (p) download(p.name, p.text, p.type); }
+/* One tap into Drive, Files or mail instead of download, then find, then upload.
+   This is also the backup route, so it matters more than it looks. */
+/** 'shared' · 'cancelled' · 'blocked' · false — the caller has to know which */
+async function shareOut(payload) {
+  if (!payload) return false;
+  try {
+    const file = new File([payload.text], payload.name, { type: payload.type });
+    if (navigator.canShare && navigator.share && navigator.canShare({ files:[file] })) {
+      await navigator.share({ files:[file], title: payload.name });
+      return 'shared';
+    }
+  } catch (e) {
+    // swiping the share sheet away is a decision, not a save, and definitely not a backup
+    if (e && e.name === 'AbortError') return 'cancelled';
+    if (e && e.name === 'NotAllowedError') return 'blocked';
+  }
+  return false;
+}
+/** share if the phone can, download if it cannot — either way the file exists */
+async function deliver(payload, sharedMsg) {
+  if (!payload) return false;
+  const r = await shareOut(payload);
+  if (r === 'shared') { flashToast('Sent', sharedMsg || 'Pick where to put it', '#22c55e'); return true; }
+  if (r === 'cancelled') { flashToast('Nothing sent', 'You closed the share sheet', '#64748b'); return false; }
+  download(payload.name, payload.text, payload.type);
+  flashToast('Downloaded', r === 'blocked' ? 'The share sheet would not open, so it went to Downloads'
+                                           : 'This phone cannot share files, so it went to Downloads', '#38bdf8');
+  return true;
+}
+/* Plain words, not a wall of coordinates. He wants to know it holds the right
+   things before he sends it, and a text dump answers nothing. */
+function geoSummary(o) {
+  const feats = geoFeatures(o);
+  const lots   = feats.filter(f => f.geometry.type === 'Polygon').length;
+  const pins   = feats.filter(f => f.geometry.type === 'Point' && f.properties.address !== undefined).length;
+  const tracks = feats.filter(f => f.geometry.type === 'LineString');
+  const days   = new Set(tracks.map(t => t.properties.day)).size;
+  const truck  = feats.some(f => f.properties.name === 'Truck');
+  let trackM = 0;
+  for (const t of tracks) {
+    const c = t.geometry.coordinates;
+    for (let i = 1; i < c.length; i++) trackM += haversine(c[i-1][1], c[i-1][0], c[i][1], c[i][0]);
+  }
+  const houses = lots + pins;
+  if (!houses && !tracks.length && !truck) return 'Nothing matches those options, so the file would be empty.';
+  const bits = [];
+  if (houses) bits.push(`<b>${houses} house${houses === 1 ? '' : 's'}</b>`
+    + (lots && pins ? ` — ${lots} drawn as the lot outline, ${pins} as a single pin where the lot lines were never loaded`
+      : lots ? ' , each drawn as its lot outline' : ' , each as a single pin'));
+  if (days) bits.push(`<b>${days} day${days === 1 ? '' : 's'} of walking track</b>`
+    + ` (${(trackM/1609.34).toFixed(1)} miles in total)`);
+  if (truck) bits.push('<b>your truck pin</b>');
+  return `This file holds ${bits.join(', ')}. It opens in Google My Maps or QGIS.`;
+}
+/* Draws the export itself onto the map, from the same builder, so what he sees is
+   what the file contains rather than something rebuilt alongside it. */
+async function showGeoPreview(o) {
+  const feats = geoFeatures(o);
+  if (!feats.length) { flashToast('Nothing to show', 'No records match those options', '#64748b'); return; }
+  closeSheet('exportSheet'); closeSheet('menuSheet');
+  await openMap();
+  if (!window.L || !window._map) return;
+  if (window._previewLayer) { window._map.removeLayer(window._previewLayer); window._previewLayer = null; }
+  window._previewLayer = L.geoJSON({ type:'FeatureCollection', features:feats }, {
+    style: f => ({ color: f.properties.stroke || f.properties.fill || '#38bdf8',
+                   weight: f.geometry.type === 'LineString' ? 4 : 3, fillOpacity:.3 }),
+    pointToLayer: (f, ll) => L.circleMarker(ll, { radius:7, color:'#fff', weight:2,
+                   fillColor: f.properties['marker-color'] || '#38bdf8', fillOpacity:1 }),
+  }).addTo(window._map);
+  mapOpts.follow = false; syncMapBtns();
+  try { window._map.fitBounds(window._previewLayer.getBounds(), { padding:[36,36] }); } catch (e) {}
+  $('previewTxt').textContent = `Showing exactly what is in the map file — ${feats.length} thing${feats.length === 1 ? '' : 's'}.`;
+  $('previewBar').classList.remove('hide');
+  $('findWrap').classList.add('hide');     // the address search sits right on this bar
+}
+function clearGeoPreview() {
+  if (window._previewLayer && window._map) window._map.removeLayer(window._previewLayer);
+  window._previewLayer = null;
+  $('previewBar').classList.add('hide');
+  if ($('eraseBar').classList.contains('hide')) $('findWrap').classList.remove('hide');
+}
+async function buildBackup() {
   const data = { v:3, exported:new Date().toISOString(),
     home: state.home, appts: state.appts, driveAdj: state.driveAdj,
+    // without these a restore silently reverts his renamed books, which also changes
+    // what the "Work" column says in every spreadsheet he exports afterwards
+    lineNames: lineNamesSaved(), hubData: state.hubData, mapData: state.mapData,
     visits: await DB.all('visits'), days: await DB.all('days'), vehicle: state.vehicle };
-  download(`canvass-backup-${stamp()}.json`, JSON.stringify(data), 'application/json');
+  return { name:`canvass-backup-${stamp()}.json`, text: JSON.stringify(data),
+           type:'application/json' };
+}
+/* Only counts as a backup once the file actually left. A share the user cancels
+   still marks it, because iOS gives no way to tell a cancel from a save — but a
+   share that never opened at all does not. */
+function markBackedUp() {
   localStorage.setItem('lastBackup', String(Date.now()));
-  renderBackupNag();
-  flashToast('Backup saved', 'Use Share to put it in iCloud Drive or OneDrive so it reaches your laptop', '#22c55e');
+  renderBackupNag(); renderStorageNote();
+}
+async function backup() {
+  const p = await buildBackup();
+  download(p.name, p.text, p.type);
+  markBackedUp();
+  flashToast('Backup saved', 'Get it off the phone — Share is one tap quicker', '#22c55e');
+}
+async function backupShare() {
+  const p = await buildBackup();
+  const r = await shareOut(p);
+  /* A cancelled share is NOT a backup. Marking it would show a calm green "backed
+     up today" for a week over a file that never left the phone, and this counter is
+     the only thing standing between him and losing everything. */
+  if (r === 'cancelled') {
+    flashToast('Nothing was sent', 'You closed the share sheet, so this does not count as a backup', '#f59e0b');
+    renderBackupNag();
+    return;
+  }
+  if (r !== 'shared') {
+    download(p.name, p.text, p.type);
+    flashToast('Downloaded instead', r === 'blocked' ? 'The share sheet would not open'
+                                                     : 'This phone cannot share files', '#38bdf8');
+  } else {
+    flashToast('Backup sent', 'Put it in Drive, Files or mail — anywhere but this phone', '#22c55e');
+  }
+  markBackedUp();
 }
 function stamp() {
   const d = new Date();
@@ -2372,6 +2991,20 @@ function stamp() {
 const xName = o => `${o.line==='all'?'all-work':o.line}-${o.range}-${stamp()}`;
 
 /* ---- export sheet ---- */
+/* Only today's track is loaded at boot; the rest arrive when the Days panel is
+   opened. Exporting before that quietly left every earlier day out of the file —
+   and the summary then stated, confidently, that it held one day. */
+let allDaysLoaded = false;
+async function ensureAllDaysLoaded() {
+  if (allDaysLoaded) return;
+  for (const k of await listDayKeys()) await loadDay(k);
+  allDaysLoaded = true;
+}
+function openExport() {
+  renderExport();
+  openSheet('exportSheet');
+  ensureAllDaysLoaded().then(() => { if (!$('exportSheet').classList.contains('hide')) renderExport(); });
+}
 function renderExport() {
   const chip = (host, items, cur, set) => {
     const el = $(host); el.innerHTML = '';
@@ -2388,11 +3021,17 @@ function renderExport() {
   chip('xRange', Object.entries(RANGES).map(([k,l]) => [k,l]), xOpts.range, v => xOpts.range = v);
   chip('xStatus', [['all','All statuses'], ...Object.entries(STATUS).map(([k,s]) => [k, s.label, s.color])],
        xOpts.status, v => xOpts.status = v);
-  chip('xFormat', [['csv','Spreadsheet (CSV)'],['geo','Map file (GeoJSON)']], xOpts.format, v => xOpts.format = v);
+  chip('xFormat', [['csv','Spreadsheet — opens in Excel'],['geo','Map file — opens in Google My Maps']],
+       xOpts.format, v => xOpts.format = v);
   const n = visitsFor(xOpts).length;
-  $('xCount').textContent = n ? `${n} record${n===1?'':'s'} match. The CSV opens in Excel or Google Sheets.`
-                              : 'No records match those options yet.';
+  $('xCount').textContent = n
+    ? `${n} record${n===1?'':'s'} match.` + (xOpts.format === 'csv' ? ' The spreadsheet opens in Excel or Google Sheets.' : '')
+    : 'No records match those options yet.';
   $('xGo').style.opacity = n ? 1 : .45;
+  const geo = xOpts.format === 'geo';
+  $('xGeoSummary').classList.toggle('hide', !geo);
+  $('xShowMe').classList.toggle('hide', !geo);
+  if (geo) { $('xGeoSummary').className = 'nagOk'; $('xGeoSummary').innerHTML = geoSummary(xOpts); }
 }
 
 /* ---------------- geolocation ----------------
@@ -2409,6 +3048,90 @@ const STILL_AFTER = 3500;      // ms of standing before the house locks
 const BREAK_LOCK  = 14;        // metres of real movement that releases the lock
 const SWITCH_GAIN = 6;         // metres a rival must beat the held house by
 const SWITCH_HITS = 2;         // consecutive fixes it must win
+
+/* ---- three ways a forgotten session stops following you around all evening ----
+   The harm being fixed is battery and a messy trail, not privacy: nothing ever
+   leaves the phone. Each rule has its own guard so none of them can fire wrongly. */
+const HOME_RADIUS  = 200;      // metres from home that counts as arriving
+const LEFT_HOME    = 500;      // ...and how far away you must have been first
+const HOME_STOPPED = 1.5;      // m/s — driving past is not arriving
+const HOME_HITS    = 2;        // consecutive fixes near home and stopped
+const DRIVE_ON    = 6.5;       // m/s ≈ 15 mph — sustained, this is driving
+const DRIVE_OFF   = 2.2;       // m/s — back down to walking pace
+const DRIVE_HITS  = 3;         // consecutive fixes before the trail stops
+const CALM_HITS   = 2;         // consecutive fixes before it starts again
+const QUIET_MS    = 30 * 60 * 1000;
+const QUIET_MOVE  = 150;       // metres — below this you have not really gone anywhere
+const DRIVE_SAMPLE_MAX = 240;
+
+/* Driving no longer leaves breadcrumbs, so the speeds are kept here instead. This
+   buffer never draws on the map and never counts toward miles walked; it exists so
+   the offline travel estimate does not go blind the moment the trail is cleaned up. */
+function recordDriveSpeed(sp) {
+  if (!(sp > 4 && sp <= 40)) return;
+  state.driveSpeeds.push(Math.round(sp * 100) / 100);
+  while (state.driveSpeeds.length > DRIVE_SAMPLE_MAX) state.driveSpeeds.shift();
+  // throttled by time, not by count: once the buffer is full a count test is true
+  // on every fix, which meant a synchronous write and a pace recompute every second
+  if (Date.now() - driveSaveAt > 30000) {
+    driveSaveAt = Date.now();
+    try { localStorage.setItem('driveSpeeds', JSON.stringify(state.driveSpeeds)); } catch (e) {}
+    clearPaceCache();
+  }
+}
+let driveSaveAt = 0;
+/* The three rules are kept out of the GPS callback so each can be tested on its
+   own, without needing a car, a house and half an hour. */
+function updateDriving(speed) {
+  if (speed >= DRIVE_ON) { state.driveHits++; state.calmHits = 0; }
+  else if (speed <= DRIVE_OFF) { state.calmHits++; state.driveHits = 0; }
+  const was = state.driving;
+  if (!state.driving && state.driveHits >= DRIVE_HITS) state.driving = true;
+  if (state.driving && state.calmHits >= CALM_HITS) state.driving = false;
+  if (state.driving) recordDriveSpeed(speed);
+  return { driving: state.driving, stopped: was && !state.driving };
+}
+/** true exactly once, on the fix that brings him home after genuinely leaving.
+    Driving past the end of his own road is not arriving, so this wants him near
+    home AND stopped, on two fixes running. Ending a live session by mistake means
+    every door after it is written against a frozen position. */
+function arrivedHome(lat, lon, speed) {
+  if (!state.session || !state.home) return false;
+  const dh = haversine(lat, lon, state.home.lat, state.home.lon);
+  if (dh > LEFT_HOME) { state.leftHome = true; state.homeHits = 0; }
+  if (!state.leftHome) return false;
+  const parked = speed == null || speed < HOME_STOPPED;
+  state.homeHits = (dh <= HOME_RADIUS && parked) ? (state.homeHits || 0) + 1 : 0;
+  if (state.homeHits >= HOME_HITS) { state.leftHome = false; state.homeHits = 0; return true; }
+  return false;
+}
+/** no door marked and no real movement for half an hour, and not just asked */
+function goneQuiet(lat, lon, now) {
+  if (!state.session || !state.quietPrompt) return false;
+  if (!state.quietAnchor || haversine(lat, lon, state.quietAnchor.lat, state.quietAnchor.lon) > QUIET_MOVE)
+    state.quietAnchor = { lat, lon, ts:now };
+  const rooted  = now - state.quietAnchor.ts > QUIET_MS;
+  const noDoors = now - (state.lastDoorTs || state.session.start) > QUIET_MS;
+  if (rooted && noDoors && now - (state.quietAskedAt || 0) > QUIET_MS) { state.quietAskedAt = now; return true; }
+  return false;
+}
+/* A question he can ignore, not a dialog that steals the screen. Do nothing and it
+   fades, tracking carries on, and it asks again after another quiet half hour. */
+function askStillWorking() {
+  const swap = $('toastSwap'), undo = $('toastUndo');
+  $('toastTitle').textContent = 'Still out working?';
+  $('toastSub').textContent = 'No doors and no real movement for half an hour.';
+  $('toastBar').style.background = '#f59e0b';
+  swap.dataset.mode = 'ask';
+  swap.innerHTML = 'Yes,<br>carry on'; undo.textContent = 'Stop';
+  swap.onclick = () => { $('toast').classList.remove('show'); state.quietAnchor = null;
+                         state.lastDoorTs = Date.now(); restoreToastButtons(); buzz(10); };
+  undo.onclick = () => { $('toast').classList.remove('show'); restoreToastButtons(); endSession(); };
+  $('toast').classList.add('show');
+  buzz([15, 60, 15]);
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => { $('toast').classList.remove('show'); restoreToastButtons(); }, 15000);
+}
 
 function pushFix(c, ts) {
   state.fixes.push({ lat:c.latitude, lon:c.longitude, acc:Math.max(c.accuracy||30, 3), ts });
@@ -2477,6 +3200,12 @@ function startGps() {
        but it must not swallow short walks. So: always mark the moment you stop
        and the moment you set off again, keep the distance gate small, and let
        Fine detail switch the suppression off entirely for close-in work. */
+    /* Sustained road speed stops the trail at source, so the drive between
+       neighbourhoods no longer smears down the road and then has to be cleaned up
+       by hand with Erase area. It also makes "miles walked" honest for the first
+       time. Hysteresis both ways: three fixes to start, two to stop. */
+    const stoppedDriving = updateDriving(speed).stopped;
+
     const fine = state.trackDetail === 'fine';
     const minMove = fine ? 1.5 : 3;
     const minGap  = fine ? 2000 : 3000;
@@ -2484,12 +3213,28 @@ function startGps() {
     const justStopped   = !wasStill && state.still;
     const last = state.track[state.track.length-1];
     const moved = last ? haversine(last.lat, last.lon, state.pos.lat, state.pos.lon) : Infinity;
-    const allowed = fine || !state.still || startedMoving || justStopped;
-    if (allowed && (!last || startedMoving || justStopped || (now - lastTrack > minGap && moved > minMove))) {
+    const allowed = !state.driving && (fine || !state.still || startedMoving || justStopped);
+    // stoppedDriving always marks a point, so the walk from the truck starts where
+    // you parked rather than back where you last stood still
+    if (allowed && (!last || startedMoving || justStopped || stoppedDriving
+        || (now - lastTrack > minGap && moved > minMove))) {
       lastTrack = now;
       pushTrackPoint(state.pos.lat, state.pos.lon, now);
     }
     state.lastMoved = moved; state.lastSpeed = speed;
+
+    /* Arriving home ends the session and switches GPS off. Guarded on leftHome so
+       a morning that starts on his own driveway cannot end before he pulls away. */
+    if (arrivedHome(state.pos.lat, state.pos.lon, speed)) {
+      await endSession(true);            // quiet: its own message, and it must not shut the menu
+      buzz([25,60,25]);
+      flashToast('Home — tracking stopped', 'Session ended and GPS is off. Every record is saved.', '#22c55e');
+      return;
+    }
+
+    /* The backstop. Both conditions matter: without the movement test it would
+       interrupt him every time he drove between neighbourhoods. */
+    if (goneQuiet(state.pos.lat, state.pos.lon, now)) askStillWorking();
 
     await ensureParcels(state.pos.lat, state.pos.lon);
     recompute(); drawMini();
@@ -2581,7 +3326,104 @@ function renderStats() {
     <div class="stat"><b style="color:${STATUS.dnr.color}">${by('dnr')}</b>do not return</div>
     <div class="stat"><b style="color:${LINES.roof.color}">${lineTotal('roof')}</b>roofing all time</div>
     <div class="stat"><b style="color:${LINES.appraisal.color}">${lineTotal('appraisal')}</b>appraisal all time</div>`;
-  document.querySelectorAll('.statsbox').forEach(el => el.innerHTML = html);
+  // The wall of tiles used to fill the top half of the menu before a single button
+  // appeared. The day's numbers live in the session log now, which is where anyone
+  // would look to ask how the day went, and the count stays on the menu button.
+  document.querySelectorAll('#gate .statsbox').forEach(el => el.innerHTML = html);
+}
+
+/* ---- the menu's three tiers ----
+   Unlike the details panel, the menu remembers what was left open: what he reaches
+   for varies by the day, and the menu's job is to be findable rather than fast. */
+const MENU_SECTIONS = { work:true, day:true, settings:false };
+const msecBody = k => $('msec' + k[0].toUpperCase() + k.slice(1));
+/* Valid JSON that is not an object — 5, true, "abc" — would sail past a bare
+   try/catch and then throw on `in`, which bricked the whole menu. The menu is the
+   only route to Backup, Restore and Export, so nothing in here may ever throw. */
+function menuSecState() {
+  try {
+    const o = JSON.parse(localStorage.getItem('menuSecs') || '{}');
+    return (o && typeof o === 'object' && !Array.isArray(o)) ? o : {};
+  } catch (e) { return {}; }
+}
+function setMSection(k, open, remember) {
+  const body = msecBody(k), head = document.querySelector(`.dsecHead[data-msec="${k}"]`);
+  if (!body || !head) return;
+  body.classList.toggle('hide', !open);
+  head.setAttribute('aria-expanded', open ? 'true' : 'false');
+  const c = head.querySelector('i');
+  if (c) { c.textContent = open ? '▾' : '▸'; c.setAttribute('aria-hidden', 'true'); }
+  if (remember !== false) {
+    try {
+      const st = menuSecState(); st[k] = open;
+      localStorage.setItem('menuSecs', JSON.stringify(st));
+    } catch (e) {}     // a full quota must not stop the section from opening
+  }
+}
+function restoreMenuSections() {
+  const st = menuSecState();
+  Object.entries(MENU_SECTIONS).forEach(([k, def]) => setMSection(k, k in st ? !!st[k] : def, false));
+}
+document.querySelectorAll('.dsecHead[data-msec]').forEach(b => {
+  b.onclick = () => { const k = b.dataset.msec; setMSection(k, msecBody(k).classList.contains('hide')); buzz(8); };
+});
+
+/* ---- what version is actually on the phone ----
+   Matches the service worker cache name, so "did the update land" is answerable by
+   looking rather than guessing. */
+const BUILD_VERSION = 'v6';
+const BUILD_DATE = '26 July 2026';
+function renderVersionStamp() {
+  const el = $('versionStamp'); if (!el) return;
+  el.className = 'small';
+  el.style.cssText = 'margin-top:20px;text-align:center;color:#5b6b7f';
+  el.textContent = `${APP_NAME} · version ${BUILD_VERSION} · ${BUILD_DATE}`;
+}
+
+/* ---- did the browser agree to protect the data, or not ----
+   iOS clears ordinary site storage after a week unused. A home screen app has its
+   own counter that resets every time it is opened, so daily use covers it — but a
+   week off sick does not, and a refusal is worth knowing about before it costs him. */
+/* Seeded from what the browser said last time, so the menu can answer the question
+   before "Start canvassing" has been tapped this session. */
+let storageGrant = (() => { const v = localStorage.getItem('storageGrant'); return v === '1' ? true : v === '0' ? false : null; })();
+function renderLineNames() {
+  const saved = lineNamesSaved();
+  if ($('mLineRoof')) $('mLineRoof').value = saved.roof || '';
+  if ($('mLineAppraisal')) $('mLineAppraisal').value = saved.appraisal || '';
+}
+$('mLineRoof').onchange = e => { setLineName('roof', e.target.value); renderLineNames(); };
+$('mLineAppraisal').onchange = e => { setLineName('appraisal', e.target.value); renderLineNames(); };
+$('mLineReset').onclick = () => {
+  setLineName('roof', ''); setLineName('appraisal', '');
+  renderLineNames(); buzz(10);
+  flashToast('Names put back', `${LINES.roof.label} and ${LINES.appraisal.label}`, '#38bdf8');
+};
+function renderQuietChip() {
+  const b = $('mQuiet'); if (!b) return;
+  b.classList.toggle('on', !!state.quietPrompt);
+  b.textContent = state.quietPrompt ? 'On — it will ask' : 'Off — it will never ask';
+}
+$('mQuiet').onclick = () => {
+  state.quietPrompt = !state.quietPrompt;
+  localStorage.setItem('quietPrompt', state.quietPrompt ? '1' : '0');
+  renderQuietChip(); buzz(10);
+};
+function renderStorageNote() {
+  const el = $('storageNote'); if (!el) return;
+  const n = state.visitLog.length;
+  if (storageGrant === true) {
+    el.className = 'nagOk';
+    el.textContent = `The browser has agreed to protect this app's storage, so it will not be cleared to free up space. ${n} record${n===1?'':'s'} held here.`;
+  } else if (storageGrant === false) {
+    el.className = 'nagBad';
+    el.innerHTML = `⚠️ <b>The browser refused to protect this app's storage.</b> `
+      + `Your ${n} record${n===1?'':'s'} could be cleared if the phone runs short of space, or after a long spell without opening the app. `
+      + `Back up every time you finish a day until this changes.`;
+  } else {
+    el.className = 'nagOk';
+    el.textContent = 'This browser will not say whether it protects the app\'s storage. Treat the backup file as the only guarantee.';
+  }
 }
 /* What can be printed on the hub map. Order here is the order on screen. */
 const HUB_FIELDS = [
@@ -2613,16 +3455,38 @@ function renderHubDataChips() {
 }
 /* Two lines at most: the owner on top if it is on, the figures underneath.
    Anything more than that is unreadable on a circle this size. */
-function hubLabelLines(p) {
+function labelLines(p, keys, max) {
+  const shows = k => keys.includes(k);
   const val = k => (HUB_FIELDS.find(f => f[0] === k)[2])(p) || '';
   const lines = [];
-  if (hubShows('owner')) { const o = val('owner'); if (o) lines.push(o); }
-  const figures = ['value','built','sold','sqft'].filter(hubShows).map(val).filter(Boolean);
+  if (shows('owner')) { const o = val('owner'); if (o) lines.push(o); }
+  const figures = ['value','built','sold','sqft'].filter(shows).map(val).filter(Boolean);
   if (figures.length) {
     if (lines.length || figures.length <= 3) lines.push(figures.join(' '));
     else { lines.push(figures.slice(0,2).join(' ')); lines.push(figures.slice(2).join(' ')); }
   }
-  return lines.slice(0, 2);
+  return lines.slice(0, max || 2);
+}
+const hubLabelLines = p => labelLines(p, state.hubData, 2);
+/* Same choices as the hub, its own setting, and reachable from the map itself.
+   A phone screen and a full map are not the same amount of room. */
+function renderMapDataChips() {
+  const el = $('mapData'); if (!el) return;
+  el.innerHTML = '';
+  const save = () => { localStorage.setItem('mapData', JSON.stringify(state.mapData)); renderMapDataChips(); refreshMapLayers(); };
+  HUB_FIELDS.forEach(([k, label]) => {
+    const b = document.createElement('button');
+    b.className = 'chip' + (state.mapData.includes(k) ? ' on' : ''); b.textContent = label;
+    b.onclick = () => {
+      state.mapData = state.mapData.includes(k) ? state.mapData.filter(x => x !== k) : [...state.mapData, k];
+      save();
+    };
+    el.appendChild(b);
+  });
+  const off = document.createElement('button');
+  off.className = 'chip' + (state.mapData.length ? '' : ' on'); off.textContent = 'Nothing';
+  off.onclick = () => { state.mapData = []; save(); };
+  el.appendChild(off);
 }
 
 /* The Appointment stage and the schedule are the same fact seen twice, so each
@@ -2632,7 +3496,32 @@ function renderApptLink(v) {
   const booked = apptForVisit(v);
   if (booked) {
     el.classList.remove('hide');
-    el.innerHTML = `<div class="nagOk">📅 Booked for <b>${esc(new Date(booked.at).toLocaleString([], {weekday:'short', month:'short', day:'numeric', hour:'numeric', minute:'2-digit'}))}</b>. It is on the schedule.</div>`;
+    el.innerHTML = `<div class="nagOk">📅 <b>Appt.</b> booked for <b>${esc(new Date(booked.at).toLocaleString([], {weekday:'short', month:'short', day:'numeric', hour:'numeric', minute:'2-digit'}))}</b>. It is on the schedule.</div>`;
+    /* A real date picker rather than a typed box. A bare "2026-08-05" typed into a
+       prompt parses as UTC midnight, which quietly books the previous evening. */
+    const edit = document.createElement('button');
+    edit.className = 'ghost'; edit.textContent = '🕘 Change the time';
+    edit.onclick = () => {
+      if (el.querySelector('.apTimeEdit')) return;
+      const wrap = document.createElement('div');
+      wrap.className = 'apTimeEdit';
+      wrap.style.cssText = 'margin-top:10px;display:flex;gap:8px;align-items:center;flex-wrap:wrap';
+      const inp = document.createElement('input');
+      inp.type = 'datetime-local'; inp.style.flex = '1 1 190px';
+      inp.value = toLocalInput(booked.at);
+      const ok = document.createElement('button'); ok.className = 'chip'; ok.textContent = 'Save time';
+      const no = document.createElement('button'); no.className = 'chip'; no.textContent = 'Cancel';
+      ok.onclick = async () => {
+        const at = inp.value ? new Date(inp.value).getTime() : NaN;
+        if (!isFinite(at)) { flashToast('Pick a date and a time', 'Both are needed', '#f59e0b'); return; }
+        await setScheduleTime({ kind:'appt', ref:booked }, at);
+        renderApptLink(v); renderLog(); updateDSectionCounts();
+      };
+      no.onclick = () => wrap.remove();
+      wrap.append(inp, ok, no);
+      el.appendChild(wrap);
+    };
+    el.appendChild(edit);
     const open = document.createElement('button');
     open.className = 'ghost'; open.textContent = '📋 Open the schedule';
     open.onclick = () => { closeSheet('detailSheet'); openAppts(); };
@@ -2718,24 +3607,33 @@ function renderPropPanel(v) {
     + `It is the background for the call you make at the curb.</div>`;
 }
 
-function renderDetailChips() {
-  const el = $('mDetail'); el.innerHTML = '';
-  [['normal','Normal'],['fine','Fine']].forEach(([v,label]) => {
-    const b = document.createElement('button');
-    b.className = 'chip' + (state.trackDetail === v ? ' on' : ''); b.textContent = label;
-    b.onclick = () => { state.trackDetail = v; localStorage.setItem('trackDetail', v); renderDetailChips();
-      flashToast(v === 'fine' ? 'Fine detail on' : 'Normal detail', v === 'fine' ? 'Every step recorded' : '', '#38bdf8'); };
-    el.appendChild(b);
+/* Set once and forgotten, so these are dropdowns now rather than rows of chips.
+   A chip row earns its space when you flick it often; these you touch twice a year. */
+function fillSelect(el, items, current, onPick) {
+  if (!el) return;
+  el.innerHTML = '';
+  items.forEach(([val, label]) => {
+    const o = document.createElement('option');
+    o.value = String(val); o.textContent = label;
+    el.appendChild(o);
   });
+  el.value = String(current);
+  el.onchange = () => onPick(el.value);
+}
+function renderDetailChips() {
+  fillSelect($('mDetail'), [['normal','Normal — skip points while standing still'],['fine','Fine — record every step']],
+    state.trackDetail, v => {
+      state.trackDetail = v; localStorage.setItem('trackDetail', v);
+      flashToast(v === 'fine' ? 'Fine detail on' : 'Normal detail', v === 'fine' ? 'Every step recorded' : '', '#38bdf8');
+    });
 }
 function renderSnapChips() {
-  const el = $('mSnap'); el.innerHTML = '';
-  [25,45,70,120].forEach(m => {
-    const b = document.createElement('button');
-    b.className = 'chip' + (state.snapMax===m?' on':''); b.textContent = m + ' m';
-    b.onclick = () => { state.snapMax = m; localStorage.setItem('snapMax', m); renderSnapChips(); };
-    el.appendChild(b);
-  });
+  const opts = [25,45,70,120];
+  // a legacy or hand-set value that is not one of these would leave the dropdown blank
+  const cur = opts.includes(state.snapMax) ? state.snapMax
+            : opts.reduce((a, b) => Math.abs(b - state.snapMax) < Math.abs(a - state.snapMax) ? b : a);
+  fillSelect($('mSnap'), opts.map(m => [m, m + ' metres']),
+    cur, v => { state.snapMax = Number(v); localStorage.setItem('snapMax', v); });
 }
 
 /* ---------------- wiring ---------------- */
@@ -2806,7 +3704,21 @@ $('truckPill').onclick = openTravel;
 })();
 $('toastUndo').onclick = undoLast;
 $('toastSwap').onclick = reassignLast;
-$('menuBtn').onclick = () => { renderStats(); renderSnapChips(); renderDetailChips(); renderDiag(); renderParkInfo(); renderBackupNag(); renderPinInfo(); renderHomeInfo(); renderPaceInfo(); renderDriveChips(); renderHubDataChips(); openSheet('menuSheet'); };
+/* The menu is the only way to reach Backup, Restore, Export and the Schedule, so it
+   opens FIRST and every render runs behind a guard. Nothing in here is worth being
+   unable to take a backup over. */
+$('menuBtn').onclick = () => {
+  openSheet('menuSheet');
+  try {
+    renderStats(); renderSnapChips(); renderDetailChips(); renderDiag(); renderParkInfo();
+    renderBackupNag(); renderPinInfo(); renderHomeInfo(); renderPaceInfo(); renderDriveChips();
+    renderHubDataChips(); renderStorageNote(); renderVersionStamp(); renderQuietChip();
+    renderLineNames(); restoreMenuSections();
+  } catch (e) {
+    console.error('menu render', e);
+    flashToast('Part of the menu did not draw', 'Everything still works — tell whoever built this', '#f59e0b');
+  }
+};
 $('mCrm').onclick = openCrm;
 $('crmIcs').onclick = () => addToCalendar(dueList());
 /* The search box lives in static markup on purpose. Rebuilt inside renderCrm it
@@ -2826,7 +3738,7 @@ $('dIcs').onclick = () => { pullDetail(); addToCalendar([editing]); };
 $('mSession').onclick = openSession;
 $('sesKeep').onclick = () => { if (!state.session) { startSession(); setPaused(false); } closeSheet('sessionSheet'); };
 $('sesEnd').onclick = endSession;
-$('sesExport').onclick = () => { xOpts.range = 'today'; renderExport(); closeSheet('sessionSheet'); openSheet('exportSheet'); };
+$('sesExport').onclick = () => { xOpts.range = 'today'; openExport(); closeSheet('sessionSheet'); };
 function renderPinInfo() {
   $('pinInfo').textContent = localStorage.getItem('pin')
     ? 'A PIN is set. The app asks for it when you open it or come back to it.'
@@ -2855,7 +3767,7 @@ $('dSave').onclick = saveDetail;
 $('dAddNote').onclick = addLogNote;
 $('dDelete').onclick = deleteDetail;
 $('dClear').onclick = clearDetailContent;
-$('mExport').onclick = () => { renderExport(); openSheet('exportSheet'); };
+$('mExport').onclick = openExport;
 $('xGo').onclick = () => {
   if (!visitsFor(xOpts).length) return;
   (xOpts.format === 'csv' ? exportCsv : exportGeo)(xOpts);
@@ -2864,6 +3776,9 @@ $('xGo').onclick = () => {
 $('mPark').onclick = () => { if (state.pos) { park(state.pos.lat, state.pos.lon); } else flashToast('No GPS fix yet','','#f59e0b'); };
 $('mUnpark').onclick = () => { unpark(); flashToast('Truck pin cleared','','#64748b'); };
 $('mBackup').onclick = backup;
+$('mBackupShare').onclick = backupShare;
+$('xShare').onclick = () => deliver(xOpts.format === 'csv' ? buildCsv(xOpts) : buildGeo(xOpts),
+  xOpts.format === 'csv' ? 'Drive or Sheets will open it as a spreadsheet' : 'Google My Maps will draw it');
 $('mWake').onclick = toggleWake;
 $('mTest').onclick = testConnections;
 $('mRestore').onclick = () => $('restoreFile').click();
@@ -2880,8 +3795,13 @@ $('restoreFile').onchange = async e => {
     if (Array.isArray(d.appts)) localStorage.setItem('appts', JSON.stringify(d.appts));
     if (d.driveAdj) localStorage.setItem('driveAdj', String(d.driveAdj));
     if (d.vehicle) localStorage.setItem('vehicle', JSON.stringify(d.vehicle));
-    state.days.clear();
-    await loadStored(); renderStats();
+    // what his books are called travels with the data, or a restore renames them back
+    if (d.lineNames && typeof d.lineNames === 'object')
+      localStorage.setItem('lineNames', JSON.stringify(d.lineNames));
+    if (Array.isArray(d.hubData)) localStorage.setItem('hubData', JSON.stringify(d.hubData));
+    if (Array.isArray(d.mapData)) localStorage.setItem('mapData', JSON.stringify(d.mapData));
+    state.days.clear(); allDaysLoaded = false;
+    await loadStored(); loadLineNames(); renderMode(); renderStats();
     flashToast('Restored', `${(d.visits||[]).length} records`, '#22c55e');
   } catch(err) { flashToast('Could not read that file','','#ef4444'); }
 };
@@ -2908,7 +3828,30 @@ $('mapSat').onclick = () => { mapOpts.sat = !mapOpts.sat;
   if (mapOpts.sat) { window._map.removeLayer(window._street); window._satL.addTo(window._map); }
   else { window._map.removeLayer(window._satL); window._street.addTo(window._map); }
   syncMapBtns(); refreshMapLayers(); };
-$('mapNames').onclick = () => { mapOpts.names = !mapOpts.names; syncMapBtns(); refreshMapLayers(); };
+/* Sit the panel on top of the button bar wherever the bar actually is, rather than
+   at a guessed height. The bar wraps to two rows on a narrow phone. */
+function seatMapPanel(el) {
+  const bar = $('mapBottom').getBoundingClientRect();
+  el.style.bottom = Math.round(window.innerHeight - bar.top + 10) + 'px';
+}
+$('mapShow').onclick = () => {
+  const p = $('mapShowPanel');
+  const opening = p.classList.contains('hide');
+  $('legend').classList.add('hide');
+  p.classList.toggle('hide', !opening);
+  if (opening) { renderMapDataChips(); seatMapPanel(p); }
+  syncMapBtns();
+};
+$('mapShowClose').onclick = () => { $('mapShowPanel').classList.add('hide'); syncMapBtns(); };
+$('mapKey').onclick = () => {
+  const l = $('legend');
+  const opening = l.classList.contains('hide');
+  $('mapShowPanel').classList.add('hide');
+  l.classList.toggle('hide', !opening);
+  if (opening) seatMapPanel(l);
+  syncMapBtns();
+};
+$('legendClose').onclick = () => { $('legend').classList.add('hide'); syncMapBtns(); };
 $('mapRoute').onclick = () => { mapOpts.tracks = !mapOpts.tracks; syncMapBtns(); refreshMapLayers(); };
 $('mapFilter').onclick = () => {
   mapOpts.filter = mapOpts.filter === 'all' ? 'roof' : mapOpts.filter === 'roof' ? 'appraisal' : 'all';
@@ -2924,6 +3867,9 @@ $('eraseCancel').onclick = () => { if (routePickBox) endRoutePick(false); else c
 $('eraseGo').onclick = () => { if (routePickBox) endRoutePick(true); else commitErase(); };
 $('mRoute').onclick = () => { closeSheet('menuSheet'); openRoute(); };
 $('xView').onclick = openListView;
+$('xShowMe').onclick = () => showGeoPreview(xOpts);
+$('previewDone').onclick = () => { clearGeoPreview(); buzz(10); };
+$('mapClose').addEventListener('click', clearGeoPreview);
 $('rtFresh').onclick = () => { startFreshRun(); renderRoute(); buzz(20);
   flashToast('Fresh run started', 'Every unanswered door is back on the list', '#22c55e'); };
 let mapsLegFrom = 0;
@@ -3132,7 +4078,7 @@ const icsEsc = t => String(t || '').replace(/[\\;,]/g, m => '\\' + m).replace(/\
     items: {uid, at, mins, summary, location, description} */
 function icsItems(items) {
   const ts = t => new Date(t).toISOString().replace(/[-:]/g, '').split('.')[0] + 'Z';
-  const out = ['BEGIN:VCALENDAR','VERSION:2.0','PRODID:-//Roof Champ Canvass//EN','CALSCALE:GREGORIAN'];
+  const out = ['BEGIN:VCALENDAR','VERSION:2.0','PRODID:-//CanvassEaze//EN','CALSCALE:GREGORIAN'];
   items.forEach(it => {
     out.push('BEGIN:VEVENT',
       `UID:${it.uid}@canvass`,
@@ -3296,7 +4242,10 @@ function measuredPace() {
       else if (dt <= 120 && sp > 4 && sp <= 40) drive.push(sp);
     }
   }
-  return { walk: median(walk), walkN: walk.length, drive: median(drive), driveN: drive.length };
+  // Driving no longer leaves breadcrumbs, so the recorded speeds are now the main
+  // source for the drive figure rather than an extra on top of the trail.
+  const allDrive = drive.concat(state.driveSpeeds || []);
+  return { walk: median(walk), walkN: walk.length, drive: median(allDrive), driveN: allDrive.length };
 }
 let paceCache = null, paceCacheAt = 0;
 function pace() {
@@ -3357,6 +4306,11 @@ function fmtWhenClock(ts) {
                                      : { month:'short', day:'numeric', hour:'numeric', minute:'2-digit' });
 }
 const fmtMiles = m => m < 1000 ? `${Math.round(m)} m` : `${(m/1609.34).toFixed(1)} mi`;
+/* An <input type="datetime-local"> holds wall-clock text with no time zone on it.
+   Converting with TODAY's offset shifts anything on the far side of a daylight-saving
+   change by an hour — a December appointment edited in July reads and saves an hour
+   late, and the .ics goes out wrong too. Use the offset in force at that instant. */
+const toLocalInput = ts => new Date(ts - new Date(ts).getTimezoneOffset() * 60000).toISOString().slice(0, 16);
 
 /* ---------------- the schedule ---------------- */
 /* One list, two sources: appointments typed in here, and follow-ups already
@@ -3411,6 +4365,68 @@ function nextStop() {
   return items.find(i => i.at >= now - 2*HOUR) || null;
 }
 
+/* ---------------- real road times ----------------
+   OSRM's free public server. No key, no account, no card, nothing for him to set up
+   or lose — which was the whole argument for it over Google. What the straight-line
+   model gets badly wrong is geometry: a river, a limited-access stretch of 270, a
+   cul-de-sac that does not connect. That is exactly what this fixes.
+
+   Best-effort by design. OSRM's operators reserve the right to withdraw the service,
+   and out canvassing there is often no signal at all, so the on-phone estimate stays
+   underneath permanently. When the road answer is missing the number gets vaguer;
+   the app does not break.
+
+   Their usage policy requires the data attribution and naming OSRM as the source of
+   the route. Both are printed at the foot of this sheet, not optional. */
+const OSRM_BASE = 'https://router.project-osrm.org/route/v1/driving/';
+const OSRM_TIMEOUT = 6000;
+const ROAD_TTL = 10 * 60 * 1000;
+const roadCache = new Map();
+const roadKey = (a, b) => [a.lat, a.lon, b.lat, b.lon].map(n => Number(n).toFixed(4)).join(',');
+/** what we already know, without going near the network */
+function roadCached(a, b) {
+  if (!a || !b) return undefined;
+  const hit = roadCache.get(roadKey(a, b));
+  return hit && Date.now() - hit.ts < ROAD_TTL ? hit.v : undefined;
+}
+async function roadRoute(a, b) {
+  if (!a || !b) return null;
+  const k = roadKey(a, b);
+  const hit = roadCache.get(k);
+  if (hit && Date.now() - hit.ts < ROAD_TTL) return hit.v;
+  if (navigator.onLine === false) return null;
+  try {
+    const ctl = new AbortController();
+    const timer = setTimeout(() => ctl.abort(), OSRM_TIMEOUT);
+    const res = await fetch(`${OSRM_BASE}${a.lon},${a.lat};${b.lon},${b.lat}`
+      + '?overview=false&alternatives=false&steps=false', { signal: ctl.signal, cache:'no-store' });
+    clearTimeout(timer);
+    const j = await res.json();
+    const r = j && j.routes && j.routes[0];
+    const v = (r && isFinite(r.duration) && isFinite(r.distance)) ? { secs:r.duration, m:r.distance } : null;
+    roadCache.set(k, { ts:Date.now(), v });
+    return v;
+  } catch (e) {
+    // remember the failure for a while too, so a dead zone is not hammered on every render
+    roadCache.set(k, { ts:Date.now(), v:null });
+    return null;
+  }
+}
+/* Only ever the two numbers he actually reads: how long until home, and how long to
+   the next thing booked. Everything else stays instant and offline. */
+async function prefetchRoads(plan) {
+  if (!plan || !plan.ok || !plan.origin) return;
+  const jobs = [];
+  if (state.home && roadCached(plan.origin, state.home) === undefined)
+    jobs.push(roadRoute(plan.origin, state.home));
+  if (plan.next && roadCached(plan.origin, plan.next.stop) === undefined)
+    jobs.push(roadRoute(plan.origin, plan.next.stop));
+  if (!jobs.length) return;
+  await Promise.all(jobs);
+  // second pass finds everything cached, so this cannot loop
+  if (!$('travelSheet').classList.contains('hide')) renderTravel();
+}
+
 /* Answers the phone call: "how long until you're home?" Walk to the truck,
    then drive. If there is no truck the drive starts from where you stand. */
 function travelPlan() {
@@ -3426,6 +4442,8 @@ function travelPlan() {
     plan.walk = { m, secs: walkS, atTruck: m < 15 };
     originLat = truck.lat; originLon = truck.lon;
   }
+  plan.origin = { lat: originLat, lon: originLon };
+  plan.walkS = walkS;
 
   if (state.home) {
     const m = haversine(originLat, originLon, state.home.lat, state.home.lon);
@@ -3614,7 +4632,7 @@ function renderCrm() {
         <div class="o">${esc(under)}</div>
         <div class="m"><span class="dchip" style="color:${dp.color};border-color:${dp.color}66">${esc(dp.label)}</span>
           ${live ? `<span class="${late ? 'lateTxt' : 'dimTxt'}">${esc(whenText(v.followAt))}</span>` : ''}
-          ${booked ? `<span class="dimTxt">📅 ${esc(fmtWhenClock(booked.at))}</span>` : ''}
+          ${booked ? `<span class="dchip" style="color:#7dd3fc;border-color:#7dd3fc66">Appt. ${esc(fmtWhenClock(booked.at))}</span>` : ''}
           ${far ? `<span class="dimTxt">📍 ${esc(far)}</span>` : ''}
           <span class="dimTxt">${esc(LINES[v.line||'roof'].short)}</span>
           <span class="dimTxt">🕘 ${esc(touchedText(lastTouched(v)))}</span></div>
@@ -3665,15 +4683,9 @@ function renderPaceInfo() {
 }
 const DRIVE_ADJ = [['0.8','Quicker'],['0.9','A bit quicker'],['1','As estimated'],['1.15','A bit slower'],['1.3','Slower']];
 function renderDriveChips() {
-  const host = $('mDriveSpeed'); host.innerHTML = '';
-  DRIVE_ADJ.forEach(([val, label]) => {
-    const b = document.createElement('button');
-    const v = parseFloat(val);
-    b.className = 'chip' + (Math.abs((state.driveAdj || 1) - v) < 0.001 ? ' on' : '');
-    b.textContent = label;
-    b.onclick = () => { state.driveAdj = v; localStorage.setItem('driveAdj', String(v)); renderDriveChips(); };
-    host.appendChild(b);
-  });
+  const cur = DRIVE_ADJ.map(d => d[0]).find(v => Math.abs((state.driveAdj || 1) - parseFloat(v)) < 0.001) || '1';
+  fillSelect($('mDriveSpeed'), DRIVE_ADJ, cur,
+    v => { state.driveAdj = parseFloat(v); localStorage.setItem('driveAdj', String(state.driveAdj)); });
 }
 
 function openTravel() { renderTravel(); openSheet('travelSheet'); }
@@ -3685,9 +4697,17 @@ function renderTravel() {
     legs.innerHTML = ''; next.innerHTML = ''; $('tvBasis').textContent = '';
     return;
   }
+  /* The road answer when there is one, the on-phone estimate when there is not —
+     and his own nudge applies to both. OSRM returns free-flow times with no traffic
+     in them, so if his times read short, they read short here too. Dropping the
+     nudge on the road figure would quietly throw away his calibration exactly when
+     the number is being presented as the more authoritative one. */
+  const roadSecs = r => r.secs * (state.driveAdj || 1);
+  const homeRoad = plan.home ? roadCached(plan.origin, state.home) : undefined;
+  const homeSecs = homeRoad ? plan.walkS + roadSecs(homeRoad) : (plan.home ? plan.home.total : 0);
   head.innerHTML = plan.home
-    ? `<div class="tvBig"><b>Home by ${esc(fmtWhenClock(plan.home.eta))}</b>
-         <span>about ${esc(fmtDur(plan.home.total))} from here</span></div>`
+    ? `<div class="tvBig"><b>Home by ${esc(fmtWhenClock(Date.now() + homeSecs * 1000))}</b>
+         <span>about ${esc(fmtDur(homeSecs))} from here${homeRoad ? ' by road' : ''}</span></div>`
     : `<div class="tvBig"><b>No home set</b><span>Set it below and this answers the phone call for you</span></div>`;
 
   const rows = [];
@@ -3700,38 +4720,59 @@ function renderTravel() {
     rows.push(`<div class="tvLeg"><span class="ic">📍</span><div class="lg">No truck parked<small>Timing from where you stand. Hold the round map to drop a pin.</small></div></div>`);
   }
   if (plan.home) {
-    rows.push(`<div class="tvLeg"><span class="ic">🏠</span><div class="lg">Drive home<small>${esc(fmtMiles(plan.home.m))} as the crow flies</small></div>
-         <span class="amt">about ${esc(fmtDur(plan.home.secs))}</span></div>`);
+    const sub = homeRoad
+      ? `${fmtMiles(homeRoad.m)} by road · on the phone it says about ${fmtDur(plan.home.secs)}`
+      : `${fmtMiles(plan.home.m)} straight line`
+        + (navigator.onLine === false ? ' · no signal for road times' : ' · road times not answering');
+    rows.push(`<div class="tvLeg"><span class="ic">🏠</span><div class="lg">Drive home<small>${esc(sub)}</small></div>
+         <span class="amt">about ${esc(fmtDur(homeRoad ? roadSecs(homeRoad) : plan.home.secs))}</span></div>`);
   }
   legs.innerHTML = rows.join('');
 
   if (plan.next) {
     const n = plan.next, s = n.stop;
+    const road = roadCached(plan.origin, s);
+    const total = road ? plan.walkS + roadSecs(road) : n.total;
+    const eta = Date.now() + total * 1000;
+    const late = eta > s.at;
     next.innerHTML = `
-      <div class="tvBig${n.late ? ' warn' : ''}" style="text-align:left">
+      <div class="tvBig${late ? ' warn' : ''}" style="text-align:left">
         <b style="font-size:16px">${esc(s.label)}</b>
         <span>${esc(fmtWhenClock(s.at))}${s.addr ? ' · ' + esc(s.addr) : ''}</span>
         <div style="margin-top:8px;font-size:13px;font-weight:700;color:var(--txt)">
-          About ${esc(fmtDur(n.total))} to get there · ${esc(fmtMiles(n.m))}</div>
-        <div style="margin-top:4px;font-size:13px;font-weight:800;color:${n.late ? '#fca5a5' : '#7dd3fc'}">
-          ${n.late ? `Running late. Leaving now puts you there ${esc(fmtWhenClock(n.eta))}.`
-                   : `Leave by ${esc(fmtWhenClock(n.leaveBy))}`}</div>
+          About ${esc(fmtDur(total))} to get there · ${esc(fmtMiles(road ? road.m : n.m))}${road ? ' by road' : ' straight line'}</div>
+        ${road ? `<div style="margin-top:2px;font-size:11.5px;color:var(--dim);font-weight:700">
+          on the phone it says about ${esc(fmtDur(n.total))}</div>` : ''}
+        <div style="margin-top:4px;font-size:13px;font-weight:800;color:${late ? '#fca5a5' : '#7dd3fc'}">
+          ${late ? `Running late. Leaving now puts you there ${esc(fmtWhenClock(eta))}.`
+                 : `Leave by ${esc(fmtWhenClock(s.at - total * 1000))}`}</div>
       </div>`;
   } else {
     next.innerHTML = `<div class="small">Nothing on the schedule with a location. Add an appointment, or set a follow-up on a door.</div>`;
   }
 
   const p = pace();
-  $('tvBasis').textContent =
-    `Worked out on the phone from straight line distance, so it needs no signal. Walking at ${(p.walk*2.23694).toFixed(1)} mph`
-    + (p.walkMeasured ? ' measured from your own tracks' : ' (default until there is enough of your own walking to measure)')
-    + `. Driving assumes ordinary local roads. These are estimates, not promises.`;
+  const usingRoads = homeRoad !== undefined && homeRoad !== null;
+  $('tvBasis').innerHTML =
+    esc(`Walking at ${(p.walk*2.23694).toFixed(1)} mph`
+      + (p.walkMeasured ? ' measured from your own tracks' : ' (default until there is enough of your own walking to measure)')
+      + '. ')
+    + esc(usingRoads
+        ? 'Driving times follow real roads. The phone\'s own straight-line estimate is shown underneath, and takes over whenever the road service cannot be reached.'
+        : 'Driving times are worked out on the phone from straight line distance, so they need no signal. Real road times appear when there is a connection.')
+    + ' These are estimates, not promises.'
+    + `<div style="margin-top:8px;color:#5b6b7f">Road routing by the OSRM public routing service. `
+    + `Map data © OpenStreetMap contributors, available under the Open Database Licence.</div>`;
+
+  prefetchRoads(plan);
 }
 
 /* ---------------- appointments ---------------- */
 let apptDraft = null;
 function saveAppts() { localStorage.setItem('appts', JSON.stringify(state.appts)); }
-function openAppts() { apptDraft = null; $('apptForm').classList.add('hide'); renderAppts(); openSheet('apptSheet'); }
+/* A selection is a right-now thing. Left armed, this morning's ticks are still
+   sitting under a red Delete button this afternoon. */
+function openAppts() { apptDraft = null; apptSel.clear(); $('apptForm').classList.add('hide'); renderAppts(); openSheet('apptSheet'); }
 /* Half an hour is the honest default: most of these are a knock-back or a quick
    look, not a full inspection. The presets cover the rest and the box covers
    the job that fits none of them. */
@@ -3782,25 +4823,175 @@ function syncApptSendBtn() {
     ? `\u{1F4C5} Send ${apptSel.size} selected to my calendar`
     : '\u{1F4C5} Send selected to my calendar';
   $('apIcsSel').style.opacity = apptSel.size ? 1 : .5;
+  // the destructive button only exists while there is a selection to destroy
+  const dw = $('apDangerWrap');
+  if (dw) {
+    dw.classList.toggle('hide', !apptSel.size);
+    if (apptSel.size) {
+      const chosen = scheduleItems().filter(i => apptSel.has(i.id));
+      const a = chosen.filter(i => i.kind === 'appt').length;
+      const f = chosen.filter(i => i.kind === 'follow').length;
+      const bits = [];
+      if (a) bits.push(`${a} appointment${a === 1 ? '' : 's'}`);
+      if (f) bits.push(`${f} follow-up${f === 1 ? '' : 's'}`);
+      $('apDelSel').textContent = `🗑 Delete ${bits.join(' and ')}…`;
+    }
+  }
 }
+let apFilter = 'all';                        // 'all' | 'appt' | 'follow'
+const AP_FILTERS = [['all','Everything'],['appt','Appointments'],['follow','Follow-ups']];
+function renderApFilter(items) {
+  const host = $('apFilter'); if (!host) return;
+  host.innerHTML = '';
+  const n = { all: items.length,
+              appt: items.filter(i => i.kind === 'appt').length,
+              follow: items.filter(i => i.kind === 'follow').length };
+  AP_FILTERS.forEach(([k, label]) => {
+    const b = document.createElement('button');
+    b.className = 'chip' + (apFilter === k ? ' on' : '');
+    b.textContent = `${label} (${n[k]})`;
+    /* Changing the filter drops the selection. Otherwise ticks made on Everything
+       survive into Appointments, and Delete then destroys follow-ups he cannot see. */
+    b.onclick = () => { if (apFilter !== k) apptSel.clear(); apFilter = k; renderAppts(); buzz(8); };
+    host.appendChild(b);
+  });
+}
+/* A heading per day, so a set of rows can be reached without reading a flat list
+   from the top every time. */
+function apDayLabel(ts) {
+  const start = new Date(ts); start.setHours(0,0,0,0);
+  const today = new Date(); today.setHours(0,0,0,0);
+  const diff = Math.round((+start - +today) / DAY);
+  if (diff === 0) return 'Today';
+  if (diff === 1) return 'Tomorrow';
+  if (diff === -1) return 'Yesterday';
+  const d = new Date(ts).toLocaleDateString([], { weekday:'long', month:'short', day:'numeric' });
+  return diff < 0 ? d + ' \u00b7 gone by' : d;
+}
+/* There was no way to change a time at all. Delete and start again was the only
+   route, and that is most of what felt messy. */
+async function setScheduleTime(it, at) {
+  const when = new Date(at).toLocaleString([], { month:'short', day:'numeric', hour:'numeric', minute:'2-digit' });
+  const logInto = rec => {
+    rec.log = [...logOf(rec), { id:newId(), ts:Date.now(), kind:'note',
+      text:`${it.kind === 'appt' ? 'Appointment' : 'Follow-up'} moved to ${when}.` }];
+    rec.notes = logOf(rec).filter(e => e.kind === 'note').map(e => e.text).join(' | ');
+    state.visits.set(vKey(rec.key, rec.line), rec);
+    return DB.put('visits', rec).catch(()=>{});
+  };
+  if (it.kind === 'appt') {
+    it.ref.at = at;
+    saveAppts();
+    const linked = apptVisit(it.ref);
+    if (linked) await logInto(linked);
+  } else {
+    it.ref.followAt = at; it.ref.followDone = false;
+    await logInto(it.ref);
+  }
+  buzz(20);
+  renderStrip();                 // the due dot on the menu button follows the new time
+  flashToast('Time changed', when, '#22c55e');
+}
+function apEditTime(it, row) {
+  if (row.querySelector('.apTimeEdit')) return;
+  // only one open at a time, or saving one silently throws away what was typed in the other
+  document.querySelectorAll('#apptList .apTimeEdit').forEach(w => w.remove());
+  const wrap = document.createElement('div');
+  wrap.className = 'apTimeEdit';
+  wrap.style.cssText = 'flex-basis:100%;margin-top:9px;display:flex;gap:8px;align-items:center;flex-wrap:wrap';
+  wrap.onclick = e => e.stopPropagation();
+  const inp = document.createElement('input');
+  inp.type = 'datetime-local';
+  inp.style.flex = '1 1 190px';
+  inp.value = toLocalInput(it.at);
+  const ok = document.createElement('button'); ok.className = 'chip'; ok.textContent = 'Save time';
+  const no = document.createElement('button'); no.className = 'chip'; no.textContent = 'Cancel';
+  ok.onclick = async e => {
+    e.stopPropagation();
+    const at = inp.value ? new Date(inp.value).getTime() : NaN;
+    if (!isFinite(at)) { flashToast('Pick a time', 'That is not a date the app can read', '#f59e0b'); return; }
+    await setScheduleTime(it, at);
+    renderAppts();
+  };
+  no.onclick = e => { e.stopPropagation(); wrap.remove(); };
+  wrap.append(inp, ok, no);
+  row.appendChild(wrap);
+  inp.focus();
+}
+/* An appointment is deleted. A follow-up belongs to a door, so it is taken off that
+   door and written into its log rather than destroyed. The confirm names both. */
+async function deleteSelectedSchedule() {
+  const chosen = scheduleItems().filter(i => apptSel.has(i.id));
+  if (!chosen.length) { flashToast('Nothing ticked', 'Tick the rows you want gone first', '#64748b'); return; }
+  const appts = chosen.filter(i => i.kind === 'appt');
+  const follows = chosen.filter(i => i.kind === 'follow');
+  const parts = [];
+  if (appts.length)   parts.push(`Delete ${appts.length} appointment${appts.length === 1 ? '' : 's'}`);
+  if (follows.length) parts.push(`clear ${follows.length} follow-up${follows.length === 1 ? '' : 's'}`);
+  // name them, not just count them: a number alone cannot be checked against what
+  // he thinks he ticked
+  const named = chosen.slice(0, 8).map(i => `  · ${i.kind === 'appt' ? 'Appt.' : 'Follow-up'} — ${i.label}`).join('\n')
+    + (chosen.length > 8 ? `\n  · and ${chosen.length - 8} more` : '');
+  const msg = parts.join(' and ') + '?\n\n' + named + '\n\n'
+    + (appts.length ? 'An appointment is deleted outright.\n' : '')
+    + (follows.length ? 'A follow-up belongs to a house, so it comes off that house and goes into its log. '
+                      + 'The house, its notes and its marks are not touched.\n' : '')
+    + '\nThis cannot be undone.';
+  if (!confirm(msg)) return;
+  if (appts.length) {
+    const ids = new Set(appts.map(a => a.id));
+    state.appts = state.appts.filter(a => !ids.has(a.id));
+    saveAppts();
+  }
+  for (const f of follows) {
+    const v = f.ref;
+    v.followAt = null; v.followDone = false;
+    v.log = [...logOf(v), { id:newId(), ts:Date.now(), kind:'note', text:'Follow-up cleared from the schedule.' }];
+    v.notes = logOf(v).filter(e => e.kind === 'note').map(e => e.text).join(' | ');
+    state.visits.set(vKey(v.key, v.line), v);
+    await DB.put('visits', v).catch(()=>{});
+  }
+  apptSel.clear();
+  renderAppts(); renderStrip(); buzz([30,50,30]);
+  const done = [];
+  if (appts.length)   done.push(`${appts.length} appointment${appts.length === 1 ? '' : 's'} deleted`);
+  if (follows.length) done.push(`${follows.length} follow-up${follows.length === 1 ? '' : 's'} cleared`);
+  flashToast('Schedule tidied', done.join(', '), '#ef4444');
+}
+
 function renderAppts() {
-  const items = scheduleItems();
-  const ids = new Set(items.map(i => i.id));
+  const all = scheduleItems();
+  const ids = new Set(all.map(i => i.id));
   [...apptSel].forEach(id => { if (!ids.has(id)) apptSel.delete(id); });
-  $('apptIntro').textContent = items.length
+  renderApFilter(all);
+  const items = all.filter(i => apFilter === 'all' || i.kind === apFilter);
+  $('apptIntro').textContent = all.length
     ? 'Appointments you typed in and follow-ups from doors, in one list. Tap a row to open the house.'
     : 'Nothing scheduled. Add an appointment, or set a follow-up from a door.';
-  $('apptSelBar').classList.toggle('hide', !items.length);
-  $('apIcsSel').classList.toggle('hide', !items.length);
-  $('apIcsAll').classList.toggle('hide', !items.length);
+  $('apFilter').classList.toggle('hide', !all.length);
+  $('apptSelBar').classList.toggle('hide', !all.length);
+  $('apIcsSel').classList.toggle('hide', !all.length);
+  $('apIcsAll').classList.toggle('hide', !all.length);
   syncApptSendBtn();
   renderBulkMins();
 
   const host = $('apptList'); host.innerHTML = '';
+  if (all.length && !items.length) {
+    host.innerHTML = `<p class="small" style="padding:8px 2px">Nothing under that filter. Tap Everything to see the rest.</p>`;
+  }
+  let lastDay = null;
   items.forEach(it => {
+    const day = apDayLabel(it.at);
+    if (day !== lastDay) {
+      const h = document.createElement('div');
+      h.className = 'rtLeg apDay'; h.textContent = day;
+      host.appendChild(h);
+      lastDay = day;
+    }
     const late = it.at <= Date.now();
     const el = document.createElement('div');
     el.className = 'apRow' + (late ? ' late' : '');
+    el.style.flexWrap = 'wrap';
     const v = it.kind === 'appt' ? apptVisit(it.ref) : it.ref;
     const where = it.lat == null ? '' : (state.pos
       ? fmtMiles(haversine(state.pos.lat, state.pos.lon, it.lat, it.lon)) + ' away' : '');
@@ -3822,7 +5013,7 @@ function renderAppts() {
       <div class="a">${esc(it.label)}${it.assumed ? ' <span class="assumed">(from the deed)</span>' : ''}</div>
       <div class="o">${esc(new Date(it.at).toLocaleString([], {weekday:'short', month:'short', day:'numeric', hour:'numeric', minute:'2-digit'}))}${it.addr ? ' \u00b7 ' + esc(it.addr) : ''}</div>
       <div class="m">
-        <span class="dchip" style="color:${it.kind==='appt'?'#7dd3fc':'#a855f7'};border-color:${it.kind==='appt'?'#7dd3fc66':'#a855f766'}">${it.kind==='appt'?'Appointment':'Follow-up'}</span>
+        <span class="dchip" style="color:${it.kind==='appt'?'#7dd3fc':'#a855f7'};border-color:${it.kind==='appt'?'#7dd3fc66':'#a855f766'}">${it.kind==='appt'?'Appt.':'Follow-up'}</span>
         <span class="${late?'lateTxt':'dimTxt'}">${esc(whenText(it.at))}</span>
         <span class="dimTxt">${esc(minsLabel(minsOf(it)))}</span>
         <span class="dimTxt">${it.lat == null ? '\u26A0\uFE0F no location, so no drive time' : esc(where)}</span>
@@ -3830,17 +5021,24 @@ function renderAppts() {
       </div>`;
     el.appendChild(body);
 
+    const acts = document.createElement('div');
+    acts.style.cssText = 'display:flex;flex-direction:column;gap:5px;flex:0 0 auto';
+    const edit = document.createElement('button');
+    edit.className = 'apEditTime'; edit.textContent = '\uD83D\uDD58 Time';
+    edit.onclick = e => { e.stopPropagation(); apEditTime(it, el); };
+    acts.appendChild(edit);
     if (it.kind === 'appt') {
       const del = document.createElement('button'); del.textContent = '\u{1F5D1}';
       del.onclick = e => {
         e.stopPropagation();
-        if (!confirm('Delete this appointment?')) return;
+        if (!confirm(`Delete the appointment "${it.label}"?\n\nThe house and its notes are not touched.`)) return;
         state.appts = state.appts.filter(a => a.id !== it.id);
         apptSel.delete(it.id);
         saveAppts(); renderAppts(); buzz(20);
       };
-      el.appendChild(del);
+      acts.appendChild(del);
     }
+    el.appendChild(acts);
     /* Every row opens the house it belongs to. An appointment booked against a
        customer opens that record; one dropped on the map finds the nearest lot. */
     el.onclick = async () => {
@@ -3986,7 +5184,12 @@ $('apptNew').onclick = () => {
   $('apLabel').focus();
 };
 $('apCancel').onclick = () => { apptDraft = null; $('apptForm').classList.add('hide'); };
-$('apSelAll').onclick = () => { scheduleItems().forEach(i => apptSel.add(i.id)); renderAppts(); };
+/* Only what is on screen. Select all while filtered to Appointments must not
+   quietly tick the follow-ups too, now that Delete selected exists. */
+$('apSelAll').onclick = () => {
+  scheduleItems().filter(i => apFilter === 'all' || i.kind === apFilter).forEach(i => apptSel.add(i.id));
+  renderAppts();
+};
 $('apBulkGo').onclick = () => {
   const m = cleanMins($('apBulkExact').value);
   if (!m) { flashToast('Type a number of minutes', 'Between 5 and 600', '#f59e0b'); return; }
@@ -3997,6 +5200,7 @@ $('apMinsExact').oninput = e => {
   if (m && apptDraft) { apptDraft.mins = m; renderApMins(); }
 };
 $('apSelNone').onclick = () => { apptSel.clear(); renderAppts(); };
+$('apDelSel').onclick = deleteSelectedSchedule;
 function sendScheduleToCalendar(items, what) {
   if (!items.length) { flashToast('Nothing to send', what, '#64748b'); return; }
   download(`schedule-${stamp()}.ics`, icsItems(items.map(scheduleToIcs)), 'text/calendar');
@@ -4238,7 +5442,10 @@ function startRoutePick() {
 function setBoxBar(mode) {
   const bar = $('eraseBar');
   bar.classList.toggle('picking', mode === 'pick');
-  // the address search sits over this bar, so it stands down while a box is live
+  // the map-file preview shares this strip and sits above it, so it goes first —
+  // and before findWrap is dealt with, because clearing it puts findWrap back
+  if (mode !== null) clearGeoPreview();
+  // the address search sits over this bar too, so it stands down while a box is live
   $('findWrap').classList.toggle('hide', mode !== null);
 }
 function endRoutePick(use) {
@@ -4536,6 +5743,10 @@ function renderRoute() {
 /* ---------------- sessions ---------------- */
 function startSession() {
   state.session = { id:'s'+Date.now(), start:Date.now(), line:state.line };
+  // a fresh session has not left home yet and has not gone quiet yet
+  state.leftHome = false; state.quietAnchor = null; state.quietAskedAt = 0;
+  state.lastDoorTs = Date.now();
+  state.driving = false; state.driveHits = 0; state.calmHits = 0;
   localStorage.setItem('session', JSON.stringify(state.session));
 }
 function sessionStats() {
@@ -4543,8 +5754,9 @@ function sessionStats() {
   const rows = state.visitLog.filter(v => v.ts >= from);
   let metres = 0;
   for (const d of state.days.values())
-    for (let i = 1; i < d.pts.length; i++)
-      if (d.pts[i].ts >= from) metres += haversine(d.pts[i-1].lat, d.pts[i-1].lon, d.pts[i].lat, d.pts[i].lon);
+    for (const seg of trackSegments(d.pts))
+      for (let i = 1; i < seg.length; i++)
+        if (seg[i].ts >= from) metres += haversine(seg[i-1].lat, seg[i-1].lon, seg[i].lat, seg[i].lon);
   return { rows, metres, mins: from ? Math.round((Date.now()-from)/60000) : 0 };
 }
 function openSession() {
@@ -4560,18 +5772,25 @@ function openSession() {
     <div class="stat"><b style="color:${STATUS.dnr.color}">${by('dnr')}</b>do not return</div>
     <div class="stat"><b>${(s.metres/1609).toFixed(2)}</b>miles walked</div>
     <div class="stat"><b>${s.mins}</b>minutes out</div>`;
-  $('sesMeta').textContent = state.session
+  // the tiles that used to fill the top of the menu live here now, which is where
+  // anyone would look to ask how the day went
+  const allTime = l => state.visitLog.filter(v => (v.line||'roof') === l).length;
+  $('sesMeta').textContent = (state.session
     ? `Started ${new Date(state.session.start).toLocaleTimeString([], {hour:'numeric', minute:'2-digit'})}. `
-      + `Roofing ${byLine('roof')}, appraisal ${byLine('appraisal')}. Ending a session stops tracking and saves the battery. Your records stay.`
-    : 'Tracking is stopped. Tap Keep canvassing to start a new session.';
+      + `Roofing ${byLine('roof')}, appraisal ${byLine('appraisal')} this session. Ending a session stops tracking and saves the battery. Your records stay.`
+    : 'Tracking is stopped. Tap Keep canvassing to start a new session.')
+    + ` All time: ${allTime('roof')} roofing, ${allTime('appraisal')} appraisal.`;
   openSheet('sessionSheet');
 }
-async function endSession() {
+async function endSession(quiet) {
   await flushDay();
   setPaused(true);
   state.session = null; localStorage.removeItem('session');
-  closeSheet('sessionSheet'); closeSheet('menuSheet');
-  flashToast('Session ended', 'Tracking stopped. Tap the GPS chip to start again.', '#64748b');
+  closeSheet('sessionSheet');
+  if (!quiet) {
+    closeSheet('menuSheet');
+    flashToast('Session ended', 'Tracking stopped. Tap the GPS chip to start again.', '#64748b');
+  }
   renderStrip();
 }
 
@@ -4582,33 +5801,46 @@ async function endSession() {
 async function guardStorage() {
   try {
     if (navigator.storage && navigator.storage.persist) {
-      const already = await navigator.storage.persisted();
-      if (!already) await navigator.storage.persist();
+      // ask, then check what was actually granted rather than assuming the ask worked
+      let ok = await navigator.storage.persisted();
+      if (!ok) { await navigator.storage.persist().catch(()=>{}); ok = await navigator.storage.persisted(); }
+      storageGrant = !!ok;
+      localStorage.setItem('storageGrant', ok ? '1' : '0');
     }
-  } catch (e) {}
+  } catch (e) { storageGrant = null; }
+  renderStorageNote(); renderBackupNag();
   const standalone = window.matchMedia('(display-mode: standalone)').matches || navigator.standalone === true;
   if (!standalone && state.visitLog.length === 0 && localStorage.getItem('everSaved') === '1') {
     flashToast('Opened in the browser, not the app',
-      'Your records live in the home screen app. Open the Canvass icon instead.', '#f59e0b');
+      'Your records live in the home screen app. Open the CanvassEaze icon instead.', '#f59e0b');
   }
   if (standalone) localStorage.setItem('everSaved', '1');
 }
 const lastBackup = () => +(localStorage.getItem('lastBackup') || 0);
+/* This is the only thing standing between him and losing every door he has knocked,
+   so it counts the days out loud and goes red the moment a week is up. */
+/* A backup stamped in the future — the phone's clock was wrong, then corrected —
+   would otherwise show "-30 days ago", stay green, and say nothing for a month. */
+const backupAgeDays = () => {
+  const t = lastBackup();
+  if (!t || !isFinite(t)) return null;
+  const d = Math.floor((Date.now() - t) / 86400000);
+  return d < 0 ? null : d;                 // in the future is not evidence of a backup
+};
 function renderBackupNag() {
   const el = $('backupNag'); if (!el) return;
-  const days = lastBackup() ? Math.floor((Date.now() - lastBackup()) / 86400000) : null;
   const n = state.visitLog.length;
   if (!n) { el.classList.add('hide'); return; }
-  if (days !== null && days < 7) {
-    el.classList.remove('hide');
-    el.className = 'nagOk';
-    el.textContent = `Backed up ${days === 0 ? 'today' : days + ' day' + (days===1?'':'s') + ' ago'}. ${n} records held on this phone.`;
-    return;
-  }
+  const days = backupAgeDays();
+  const overdue = days === null || days >= 7;
+  const when = days === null ? 'Never backed up'
+             : days === 0    ? 'Last backed up today'
+             : `Last backed up ${days} day${days === 1 ? '' : 's'} ago`;
   el.classList.remove('hide');
-  el.className = 'nagWarn';
-  el.innerHTML = `⚠️ ${days === null ? 'You have never backed up.' : `Last backup was ${days} days ago.`}
-    All ${n} records live only on this phone. Deleting the app icon deletes them.`;
+  el.className = overdue ? 'nagBad' : 'nagOk';
+  el.innerHTML = `<b>${when}.</b> ${n} record${n===1?'':'s'} live only on this phone.`
+    + (overdue ? `<br>Delete the app icon and they are gone. Take a full backup below.` : '')
+    + (storageGrant === false ? `<br>⚠️ The browser has also refused to protect this app's storage — see Settings.` : '');
 }
 
 /* ---------------- PIN lock ---------------- */
@@ -4675,6 +5907,12 @@ async function loadStored() {
         state.appts = Array.isArray(a)
           ? a.filter(x => x && typeof x.at === 'number' && typeof x.id === 'string' && x.id) : []; } catch(e){ state.appts = []; }
   try { const dj = parseFloat(localStorage.getItem('driveAdj')); if (isFinite(dj) && dj > 0) state.driveAdj = dj; } catch(e){}
+  loadLineNames();
+  state.quietPrompt = localStorage.getItem('quietPrompt') !== '0';
+  try { const ds = JSON.parse(localStorage.getItem('driveSpeeds') || '[]');
+        if (Array.isArray(ds)) state.driveSpeeds = ds.filter(n => typeof n === 'number' && n > 4 && n <= 40).slice(-DRIVE_SAMPLE_MAX); } catch(e){}
+  try { const md = JSON.parse(localStorage.getItem('mapData') || 'null');
+        if (Array.isArray(md)) state.mapData = md.filter(k => HUB_FIELDS.some(f => f[0] === k)); } catch(e){}
   try { const hd = JSON.parse(localStorage.getItem('hubData') || '[]');
         state.hubData = Array.isArray(hd) ? hd.filter(k => HUB_FIELDS.some(f => f[0] === k)) : []; } catch(e){ state.hubData = []; }
   state.line = localStorage.getItem('line') === 'appraisal' ? 'appraisal' : 'roof';

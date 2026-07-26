@@ -1,6 +1,6 @@
 {
-  "name": "Roof Champ Canvass",
-  "short_name": "Canvass",
+  "name": "CanvassEaze",
+  "short_name": "CanvassEaze",
   "description": "One-tap door-to-door canvassing tracker with county lot lines and owner names.",
   "start_url": "./index.html",
   "scope": "./",
