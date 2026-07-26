@@ -155,6 +155,15 @@ label.f{display:block;margin:12px 0 5px;font-size:12px;font-weight:800;color:var
 .cand .a{font-weight:800;font-size:15px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .cand .o{font-size:12px;color:var(--dim);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .cand .d{font-size:11px;color:var(--dim);font-weight:700;flex:0 0 auto}
+.etaRow{display:flex;align-items:center;gap:12px;padding:11px 12px;border:1px solid var(--line);
+  border-radius:14px;background:var(--card);margin-bottom:8px}
+.etaLabel{font-weight:800;font-size:14px}
+.etaSub{font-size:11.5px;color:var(--dim);margin-top:2px}
+.etaVal{margin-left:auto;font-weight:900;font-size:19px;white-space:nowrap}
+.etaVerdict{font-size:13px;font-weight:800;padding:9px 12px;border-radius:12px;margin:-2px 0 10px}
+.etaVerdict.ok{color:#86efac;background:rgba(34,197,94,.12);border:1px solid rgba(34,197,94,.4)}
+.etaVerdict.warn{color:#fde68a;background:rgba(251,191,36,.12);border:1px solid rgba(251,191,36,.45)}
+.etaVerdict.bad{color:#fca5a5;background:rgba(239,68,68,.12);border:1px solid rgba(239,68,68,.45)}
 .crmRow{display:flex;align-items:flex-start;gap:10px;padding:11px 12px;border:1px solid var(--line);
   border-radius:14px;background:var(--card);margin-bottom:8px}
 .crmRow.late{border-color:rgba(239,68,68,.55);background:rgba(239,68,68,.08)}
@@ -346,6 +355,9 @@ label.f{display:block;margin:12px 0 5px;font-size:12px;font-weight:800;color:var
       <div id="dSub" style="color:var(--dim);font-size:13px;margin-bottom:4px"></div>
       <label class="f">Status</label>
       <div class="chips" id="dStatus"></div>
+      <label class="f">Owner goes by</label>
+      <input id="dGoesBy" placeholder="What they actually go by" autocomplete="off">
+      <div class="small" id="dOwnerRec" style="margin-top:4px"></div>
       <label class="f">Contact name</label><input id="dName" placeholder="Homeowner or who you spoke with" autocomplete="off">
       <div class="row"><div style="flex:1"><label class="f">Phone</label><input id="dPhone" type="tel" inputmode="tel" placeholder="(614) 555-0100"></div></div>
       <label class="f">Email</label><input id="dEmail" type="email" inputmode="email" placeholder="optional" autocapitalize="off">
@@ -370,12 +382,52 @@ label.f{display:block;margin:12px 0 5px;font-size:12px;font-weight:800;color:var
   </div>
 </div>
 
+<div id="etaSheet" class="sheet hide">
+  <div class="sheetBody">
+    <div class="sheetHead"><h2>Time and schedule</h2><button class="x" data-close="etaSheet">Close</button></div>
+    <div class="sheetScroll">
+      <div id="etaBody"></div>
+      <div class="small" style="margin-top:10px">Drive times are free-flow and do not include live traffic.</div>
+      <label class="f">Home</label>
+      <div class="chips">
+        <button class="chip" id="etaHomeHere">Set home to where I am</button>
+        <button class="chip" id="etaHomeAddr">Type an address</button>
+        <button class="chip" id="etaHomeClear">Clear</button>
+      </div>
+      <div class="small" id="etaHomeInfo" style="margin-top:6px"></div>
+      <label class="f">Schedule</label>
+      <div id="etaSchedule"></div>
+      <button class="primary" id="etaAddAppt">+ Add an appointment</button>
+    </div>
+  </div>
+</div>
+
+<div id="apptSheet" class="sheet hide">
+  <div class="sheetBody">
+    <div class="sheetHead"><h2>New appointment</h2><button class="x" data-close="apptSheet">Close</button></div>
+    <div class="sheetScroll">
+      <label class="f">What</label><input id="apTitle" placeholder="Roof inspection, Miller">
+      <label class="f">When</label><input id="apWhen" type="datetime-local">
+      <label class="f">Where</label><input id="apWhere" placeholder="Street, city">
+      <div class="chips" style="margin-top:8px">
+        <button class="chip" id="apHere">Use where I am</button>
+      </div>
+      <div class="small" id="apInfo" style="margin-top:6px"></div>
+      <button class="primary" id="apSave">Save appointment</button>
+    </div>
+  </div>
+</div>
+
 <div id="crmSheet" class="sheet hide">
   <div class="sheetBody">
     <div class="sheetHead"><h2>Customers</h2><button class="x" data-close="crmSheet">Close</button></div>
     <div class="sheetScroll">
       <div class="statsbox" id="crmHead"></div>
-      <div class="chips" id="crmChips" style="margin-top:12px"></div>
+      <input id="crmSearch" placeholder="Search name, address, phone, notes" autocomplete="off" style="margin-top:12px">
+      <label class="f">Sort by</label>
+      <div class="chips" id="crmSort"></div>
+      <label class="f">Show</label>
+      <div class="chips" id="crmChips"></div>
       <div id="crmList" style="margin-top:12px"></div>
       <button class="ghost" id="crmIcs">📅 Send all follow-ups to my phone calendar</button>
     </div>
@@ -428,6 +480,7 @@ label.f{display:block;margin:12px 0 5px;font-size:12px;font-weight:800;color:var
     <div class="sheetScroll">
       <div class="statsbox"></div>
       <div id="backupNag" class="hide"></div>
+      <button class="ghost" id="mEta">⏱ Time, home and schedule</button>
       <button class="ghost" id="mCrm">👥 Customers and follow-ups</button>
       <button class="ghost" id="mSession">■ End session / session log</button>
       <button class="ghost" id="mExport">⬇︎ Export a list…</button>
@@ -690,7 +743,7 @@ const DB = (() => {
   let db = null;
   const open = () => new Promise((res, rej) => {
     if (db) return res(db);
-    const r = indexedDB.open('canvass', 3);
+    const r = indexedDB.open('canvass', 4);
     r.onupgradeneeded = e => {
       const d = e.target.result;
       if (!d.objectStoreNames.contains('visits'))  d.createObjectStore('visits', {keyPath:'id'});
@@ -699,6 +752,7 @@ const DB = (() => {
       if (!d.objectStoreNames.contains('track'))   d.createObjectStore('track', {keyPath:'id'});
       // one record per day keeps a year of breadcrumbs readable in a single get
       if (!d.objectStoreNames.contains('days'))    d.createObjectStore('days', {keyPath:'day'});
+      if (!d.objectStoreNames.contains('appts'))   d.createObjectStore('appts', {keyPath:'id'});
     };
     r.onsuccess = e => { db = e.target.result; res(db); };
     r.onerror = () => rej(r.error);
@@ -747,6 +801,8 @@ const state = {
   hubSpan: 140,         // metres across the hub map
   hubSat: false,
   trackDetail: 'normal',
+  appts: [],
+  home: null,
   override: null,      // hand-placed position, {lat, lon, ts}
   heading: null,       // degrees clockwise from true north, 0 = north
   headingSrc: null,    // 'compass' or 'course'
@@ -1075,7 +1131,7 @@ function renderHouse() {
   const c = current();
   if (!c) {
     $('addr').textContent = state.parcels.size ? 'No lot nearby' : 'Loading lot lines…';
-    $('owner').textContent = state.netErr ? 'No signal — parcels unavailable here' : '—';
+    $('owner').textContent = state.netErr ? 'No signal, parcels unavailable here' : '—';
     $('alreadyTag').classList.add('hide'); $('rentTag').classList.add('hide'); $('propLine').classList.add('hide');
     drawMini(); return;
   }
@@ -1084,8 +1140,12 @@ function renderHouse() {
   $('addr').innerHTML = (rental ? '<span class="warnTri">⚠️</span>' : '') + esc(p.addr || '(no address on file)');
   $('addr').classList.toggle('far', c.d > state.snapMax);
   const yr = p.extra.RESYRBLT || p.extra.YRBUILT || p.extra.YearBuilt || p.extra.YRBLT || p.extra.PPYearBuilt;
+  // show what they actually go by, keeping the county record visible beside it
+  const known = visitFor(p.key) || visitFor(p.key, state.line === 'roof' ? 'appraisal' : 'roof');
+  const shownOwner = (known && known.goesBy) ? known.goesBy : (p.owner || 'Owner not listed');
   fitAddr();
-  $('owner').textContent = (p.owner || 'Owner not listed') + (yr ? ` · built ${yr}` : '') + ` · ${Math.round(c.d)}m`;
+  $('owner').textContent = shownOwner + (known && known.goesBy && p.owner ? ` (${p.owner})` : '')
+    + (yr ? ` \u00b7 built ${yr}` : '') + ` \u00b7 ${Math.round(c.d)}m`;
   const sl = statsLine(p);
   $('propLine').textContent = sl;
   $('propLine').classList.toggle('hide', !sl);
@@ -1397,6 +1457,7 @@ let editing = null;
     so re-rendering the sheet (tag/status taps) never throws away typing */
 function pullDetail() {
   if (!editing) return;
+  editing.goesBy = $('dGoesBy').value.trim();
   editing.name  = $('dName').value.trim();
   editing.phone = $('dPhone').value.trim();
   editing.email = $('dEmail').value.trim();
@@ -1436,6 +1497,8 @@ function openDetail(visit, focusName) {
         ? `<div style="margin-top:6px;color:#fbbf24;font-weight:700">⚠️ Likely a rental. Owner's mail goes to ${esc(mail || 'another address')}.</div>`
         : mail ? `<div style="margin-top:6px;color:var(--dim)">Owner mail: ${esc(mail)}${occ==='owner'?' (same address)':''}</div>`
                : (why ? `<div style="margin-top:6px;color:var(--dim)">Occupancy unknown: ${esc(why)}.</div>` : ''));
+  $('dGoesBy').value = v.goesBy || '';
+  $('dOwnerRec').textContent = v.owner ? `County record: ${v.owner}` : '';
   $('dName').value = v.name||''; $('dPhone').value = v.phone||'';
   $('dEmail').value = v.email||'';
   const sw = $('dStatus'); sw.innerHTML = '';
@@ -1604,6 +1667,136 @@ async function clearDetailContent() {
   flashToast('Notes and tags cleared', 'The door marks are still there', '#f59e0b');
   openDetail(editing);
   renderStrip(); if (window._map) refreshMapLayers();
+}
+
+/* ---------------- travel time, pace and the schedule ----------------
+   "How long until you're home?" is really three legs: walk to the truck, drive
+   from there, and whatever slack is left before the next thing. Walking pace is
+   measured from his own breadcrumbs rather than assumed, and drive time comes
+   from a real router with a straight-line fallback when there is no signal.
+   Note the routers give free-flow time with no live traffic. */
+const PACE_DEFAULT = 1.35;            // m/s, an ordinary walking pace
+function measuredPace() {
+  let metres = 0, seconds = 0;
+  for (const d of state.days.values()) {
+    for (let i = 1; i < d.pts.length; i++) {
+      const dt = (d.pts[i].ts - d.pts[i-1].ts) / 1000;
+      if (dt <= 0 || dt > 25) continue;                       // ignore gaps and stops
+      const m = haversine(d.pts[i-1].lat, d.pts[i-1].lon, d.pts[i].lat, d.pts[i].lon);
+      if (m < 1 || m / dt > 3.5) continue;                    // ignore noise and driving
+      metres += m; seconds += dt;
+    }
+  }
+  if (seconds < 120 || metres < 150) return { pace: PACE_DEFAULT, measured: false };
+  const pace = Math.min(2.0, Math.max(0.7, metres / seconds));
+  return { pace, measured: true, metres, seconds };
+}
+const routeCache = new Map();
+async function driveTime(from, to) {
+  if (!from || !to) return null;
+  const key = [from.lat, from.lon, to.lat, to.lon].map(n => n.toFixed(4)).join(',');
+  if (routeCache.has(key)) return routeCache.get(key);
+  const straight = haversine(from.lat, from.lon, to.lat, to.lon);
+  const fallback = { mins: Math.round(straight * 1.35 / 1609 / 35 * 60), miles: +(straight*1.35/1609).toFixed(1), est: true };
+  try {
+    const u = `https://router.project-osrm.org/route/v1/driving/${from.lon},${from.lat};${to.lon},${to.lat}?overview=false`;
+    const r = await fetch(u, {mode:'cors'});
+    const j = await r.json();
+    if (j.routes && j.routes[0]) {
+      const out = { mins: Math.round(j.routes[0].duration/60), miles: +(j.routes[0].distance/1609).toFixed(1), est:false };
+      routeCache.set(key, out); return out;
+    }
+  } catch (e) {}
+  try {
+    const u = 'https://valhalla1.openstreetmap.de/route?json=' + encodeURIComponent(JSON.stringify({
+      locations:[{lat:from.lat,lon:from.lon},{lat:to.lat,lon:to.lon}], costing:'auto', units:'miles' }));
+    const r = await fetch(u, {mode:'cors'});
+    const j = await r.json();
+    if (j.trip) {
+      const out = { mins: Math.round(j.trip.summary.time/60), miles: +j.trip.summary.length.toFixed(1), est:false };
+      routeCache.set(key, out); return out;
+    }
+  } catch (e) {}
+  routeCache.set(key, fallback);
+  return fallback;
+}
+async function geocode(q) {
+  const u = 'https://nominatim.openstreetmap.org/search?' + new URLSearchParams({
+    q, format:'json', limit:'1', countrycodes:'us' });
+  const r = await fetch(u, {mode:'cors', headers:{Accept:'application/json'}});
+  const j = await r.json();
+  if (!j.length) return null;
+  return { lat:+j[0].lat, lon:+j[0].lon, label:j[0].display_name };
+}
+const mins = n => n == null ? '—' : n < 60 ? `${n} min` : `${Math.floor(n/60)} hr ${n%60} min`;
+
+/* appointments the user types in, kept beside the door follow-ups */
+async function loadAppts() { state.appts = (await DB.all('appts').catch(()=>[])) || []; }
+function scheduleItems() {
+  const fromFollow = dueList().map(v => ({
+    id:v.id, kind:'follow', at:v.followAt, title:v.goesBy || v.name || v.owner || v.addr,
+    where:v.addr, lat:v.lat, lon:v.lon, visit:v }));
+  const fromAppt = (state.appts||[]).map(a => ({
+    id:a.id, kind:'appt', at:a.at, title:a.title, where:a.where, lat:a.lat, lon:a.lon, appt:a }));
+  return [...fromFollow, ...fromAppt].sort((a,b) => a.at - b.at);
+}
+const nextUp = () => scheduleItems().find(i => i.at > Date.now() - 30*60000) || null;
+
+/* ---------------- the time panel ---------------- */
+async function openEta() {
+  openSheet('etaSheet');
+  const host = $('etaBody');
+  host.innerHTML = '<p style="color:var(--dim)">Working it out…</p>';
+  const { pace, measured } = measuredPace();
+  const pos = state.pos;
+  const home = state.home;
+  const truck = state.vehicle;
+  const next = nextUp();
+
+  const walkFrom = (a, b) => a && b ? Math.round(haversine(a.lat, a.lon, b.lat, b.lon) / pace / 60) : null;
+  const toTruck = walkFrom(pos, truck);
+  const start = truck || pos;                       // you drive from wherever the truck is
+  const [homeDrive, apptDrive] = await Promise.all([
+    home ? driveTime(start, home) : null,
+    next && next.lat ? driveTime(start, {lat:next.lat, lon:next.lon}) : null,
+  ]);
+
+  const block = (label, value, sub) =>
+    `<div class="etaRow"><div><div class="etaLabel">${esc(label)}</div>
+     ${sub ? `<div class="etaSub">${esc(sub)}</div>` : ''}</div>
+     <div class="etaVal">${esc(value)}</div></div>`;
+
+  let html = '';
+  html += block('Walking pace', `${(pace*2.237).toFixed(1)} mph`,
+    measured ? 'measured from your own tracks' : 'default, walk a bit more and it learns yours');
+  html += truck ? block('Walk back to the truck', mins(toTruck),
+      `${Math.round(haversine(pos.lat,pos.lon,truck.lat,truck.lon))} m away`)
+    : block('Truck', 'not parked', 'press and hold the map hub to drop a pin');
+
+  if (home && homeDrive) {
+    const total = (toTruck || 0) + homeDrive.mins;
+    html += block('Home', mins(total),
+      `${toTruck ? mins(toTruck) + ' walk, then ' : ''}${mins(homeDrive.mins)} drive, ${homeDrive.miles} mi`
+      + (homeDrive.est ? ' (rough, no signal)' : ''));
+  } else if (!home) {
+    html += block('Home', 'not set', 'set it below');
+  }
+
+  if (next) {
+    const total = (toTruck || 0) + (apptDrive ? apptDrive.mins : 0);
+    const at = new Date(next.at);
+    const slack = Math.round((next.at - Date.now())/60000) - total;
+    html += block(next.kind === 'appt' ? 'Next appointment' : 'Next follow-up', mins(total),
+      `${next.title || ''} · ${at.toLocaleTimeString([], {hour:'numeric', minute:'2-digit'})}`
+      + (apptDrive ? ` · ${apptDrive.miles} mi` : ''));
+    html += `<div class="etaVerdict ${slack < 0 ? 'bad' : slack < 10 ? 'warn' : 'ok'}">${
+      slack < 0 ? `You are ${mins(-slack)} behind for this one.`
+      : `Leave within ${mins(slack)} and you make it.`}</div>`;
+  } else {
+    html += block('Next appointment', 'nothing booked', 'add one below');
+  }
+  host.innerHTML = html;
+  renderHomeInfo(); renderSchedule();
 }
 
 /* ---------------- sheets ---------------- */
@@ -1927,13 +2120,13 @@ function visitsFor(o) {
 function exportCsv(o) {
   const rows = visitsFor(o);
   if (!rows.length) { flashToast('Nothing matches those options','','#64748b'); return; }
-  const head = ['Date','Time','Work','Status','Address','Owner','Status history','Market value','Floor area sq ft','Last sale date','Last sale price','Likely rental','Owner mailing address','County','Parcel ID','Contact name','Phone','Email','Tags','Stage','Follow up','Notes','Year built','Latitude','Longitude','GPS accuracy m','Distance to lot m'];
+  const head = ['Date','Time','Work','Status','Address','Owner (county record)','Owner goes by','Status history','Market value','Floor area sq ft','Last sale date','Last sale price','Likely rental','Owner mailing address','County','Parcel ID','Contact name','Phone','Email','Tags','Stage','Follow up','Notes','Year built','Latitude','Longitude','GPS accuracy m','Distance to lot m'];
   const yr = v => v.extra && (v.extra.RESYRBLT||v.extra.YRBUILT||v.extra.YearBuilt||v.extra.YRBLT||v.extra.PPYearBuilt) || '';
   const lines = [head.map(q).join(',')];
   rows.forEach(v => {
     const d = new Date(v.ts);
     lines.push([d.toLocaleDateString(), d.toLocaleTimeString(), LINES[v.line||'roof'].label,
-      STATUS[v.status].label, v.addr, v.owner, histText(v),
+      STATUS[v.status].label, v.addr, v.owner, v.goesBy || '', histText(v),
       v.val || '', v.sqft ? Math.round(v.sqft) : '',
       v.saleTs ? new Date(v.saleTs).toLocaleDateString() : '', v.salePrice || '',
       v.occ === 'rental' ? 'YES' : v.occ === 'owner' ? 'no' : '', v.mail || '',
@@ -2239,7 +2432,7 @@ $('hubSat').onclick = e => {
   $('hubSat').classList.toggle('on', state.hubSat);
   buzz(10); drawMini();
 };
-$('truckPill').onclick = openMap;
+$('truckPill').onclick = openEta;
 
 /* Mini map: tap opens the big map, press-and-hold parks the truck.
    The hold must cancel the tap, or you would get a map every time you park. */
@@ -2281,6 +2474,82 @@ $('toastUndo').onclick = undoLast;
 $('toastSwap').onclick = reassignLast;
 $('menuBtn').onclick = () => { renderStats(); renderSnapChips(); renderDetailChips(); renderDiag(); renderParkInfo(); renderBackupNag(); renderPinInfo(); openSheet('menuSheet'); };
 $('mCrm').onclick = openCrm;
+$('mEta').onclick = openEta;
+$('crmSearch').oninput = e => { crmQuery = e.target.value; renderCrm(); };
+$('etaHomeHere').onclick = () => {
+  if (!state.pos) { flashToast('No fix yet','','#f59e0b'); return; }
+  state.home = { lat:state.pos.lat, lon:state.pos.lon, label:'set from your position' };
+  localStorage.setItem('home', JSON.stringify(state.home)); renderHomeInfo(); openEta();
+};
+$('etaHomeAddr').onclick = async () => {
+  const q = prompt('Home address');
+  if (!q) return;
+  $('etaHomeInfo').textContent = 'Looking that up…';
+  try {
+    const g = await geocode(q);
+    if (!g) { $('etaHomeInfo').textContent = 'Could not find that address.'; return; }
+    state.home = g; localStorage.setItem('home', JSON.stringify(g)); renderHomeInfo(); openEta();
+  } catch (e) { $('etaHomeInfo').textContent = 'Address lookup needs signal.'; }
+};
+$('etaHomeClear').onclick = () => { state.home = null; localStorage.removeItem('home'); renderHomeInfo(); openEta(); };
+$('etaAddAppt').onclick = () => {
+  $('apTitle').value = ''; $('apWhere').value = ''; $('apInfo').textContent = '';
+  const d = new Date(Date.now() + 3600000); d.setMinutes(0,0,0);
+  $('apWhen').value = new Date(d - new Date().getTimezoneOffset()*60000).toISOString().slice(0,16);
+  window._apPos = null;
+  openSheet('apptSheet');
+};
+$('apHere').onclick = () => {
+  if (!state.pos) return;
+  window._apPos = { lat:state.pos.lat, lon:state.pos.lon };
+  $('apWhere').value = 'Where I am now';
+  $('apInfo').textContent = 'Using your current position.';
+};
+$('apSave').onclick = async () => {
+  const title = $('apTitle').value.trim() || 'Appointment';
+  const when = $('apWhen').value ? Date.parse($('apWhen').value) : null;
+  if (!when) { flashToast('Pick a date and time','','#f59e0b'); return; }
+  let pos = window._apPos, where = $('apWhere').value.trim();
+  if (!pos && where) {
+    $('apInfo').textContent = 'Looking that address up…';
+    try { const g = await geocode(where); if (g) { pos = {lat:g.lat, lon:g.lon}; where = g.label.split(',').slice(0,3).join(','); } }
+    catch (e) {}
+  }
+  const a = { id:'a'+Date.now(), at:when, title, where, lat:pos?pos.lat:null, lon:pos?pos.lon:null };
+  await DB.put('appts', a); await loadAppts();
+  closeSheet('apptSheet'); buzz(20);
+  flashToast('Appointment saved', pos ? '' : 'No location, so no drive time for this one', '#22c55e');
+  openEta();
+};
+function renderHomeInfo() {
+  $('etaHomeInfo').textContent = state.home
+    ? `Home set${state.home.label ? ': ' + state.home.label.split(',').slice(0,3).join(',') : ''}.`
+    : 'No home set, so there is nothing to count back from.';
+}
+function renderSchedule() {
+  const host = $('etaSchedule'); if (!host) return;
+  const items = scheduleItems().filter(i => i.at > Date.now() - 12*3600000).slice(0, 12);
+  if (!items.length) { host.innerHTML = '<p style="color:var(--dim);font-size:13px">Nothing booked.</p>'; return; }
+  host.innerHTML = '';
+  items.forEach(i => {
+    const d = new Date(i.at);
+    const el = document.createElement('div'); el.className = 'crmRow';
+    el.innerHTML = `<div class="sw" style="background:${i.kind==='appt'?'#a855f7':'#f59e0b'}"></div>
+      <div class="t"><div class="a">${esc(i.title || 'Appointment')}</div>
+      <div class="o">${esc(i.where || '')}</div>
+      <div class="m"><span class="dimTxt">${esc(d.toLocaleDateString())} ${esc(d.toLocaleTimeString([], {hour:'numeric', minute:'2-digit'}))}</span>
+      <span class="dimTxt">${esc(whenText(i.at))}</span></div></div>`;
+    if (i.kind === 'appt') {
+      const acts = document.createElement('div'); acts.className = 'crmActs';
+      const del = document.createElement('button'); del.textContent = '\u2715';
+      del.onclick = async e => { e.stopPropagation();
+        if (!confirm('Remove this appointment?')) return;
+        await DB.del('appts', i.id); await loadAppts(); openEta(); };
+      acts.appendChild(del); el.appendChild(acts);
+    } else el.onclick = () => { closeSheet('etaSheet'); openDetail(i.visit); };
+    host.appendChild(el);
+  });
+}
 $('crmIcs').onclick = () => addToCalendar(dueList());
 $('dIcs').onclick = () => { pullDetail(); addToCalendar([editing]); };
 $('mSession').onclick = openSession;
@@ -2575,16 +2844,35 @@ function addToCalendar(rows) {
 }
 
 /* ---------------- the customer list ---------------- */
-let crmFilter = 'due';
-function openCrm() {
-  renderCrm();
-  openSheet('crmSheet');
+let crmFilter = 'due', crmSort = null, crmQuery = '';
+const effSort = () => crmSort || (crmFilter === 'due' ? 'due' : 'near');
+const SORTS = [
+  ['near',   'Nearest'],
+  ['due',    'Due soonest'],
+  ['name',   'Name A-Z'],
+  ['city',   'City'],
+  ['recent', 'Most recent'],
+  ['value',  'Value high to low'],
+  ['oldsale','Longest since sale'],
+];
+const cityOf = v => {
+  const e = v.extra || {};
+  return (e.MUN_NAME || e.SitePostalCity || e.city || e.MCITYNAME || e.PROP_CITY || '').toString().trim();
+};
+const displayName = v => v.goesBy || v.name || v.owner || v.addr || 'Unnamed';
+function distOf(v) {
+  if (!state.pos) return Infinity;
+  const p = state.parcels.get(v.key);
+  const at = p ? (p.house || p.cen) : null;
+  return at ? haversine(state.pos.lat, state.pos.lon, at[1], at[0])
+            : (v.lat != null ? haversine(state.pos.lat, state.pos.lon, v.lat, v.lon) : Infinity);
 }
+function openCrm() { renderCrm(); openSheet('crmSheet'); }
 function renderCrm() {
-  const all = state.visitLog
-    .filter(v => { const l = state.visits.get(vKey(v.key, v.line)); return l && l.id === v.id; })
-    .filter(v => v.name || v.phone || v.email || v.followAt || (v.dispo && v.dispo !== 'new')
-                 || logOf(v).some(e => e.kind === 'note'));
+  const latest = v => { const l = state.visits.get(vKey(v.key, v.line)); return l && l.id === v.id; };
+  const all = state.visitLog.filter(latest)
+    .filter(v => v.name || v.goesBy || v.phone || v.email || v.followAt
+                 || (v.dispo && v.dispo !== 'new') || logOf(v).some(e => e.kind === 'note'));
   const due = dueList();
   const overdue = due.filter(v => v.followAt <= Date.now());
   const soon = due.filter(v => v.followAt > Date.now() && v.followAt < Date.now() + 7*DAY);
@@ -2595,50 +2883,78 @@ function renderCrm() {
     <div class="stat"><b>${soon.length}</b>this week</div>
     <div class="stat"><b>${all.length}</b>customers</div>`;
 
+  const sz = $('crmSort'); sz.innerHTML = '';
+  SORTS.forEach(([k, label]) => {
+    const b = document.createElement('button');
+    b.className = 'chip' + (effSort() === k ? ' on' : ''); b.textContent = label;
+    b.onclick = () => { crmSort = k; renderCrm(); };
+    sz.appendChild(b);
+  });
+
   const chips = $('crmChips'); chips.innerHTML = '';
-  [['due','Follow-ups'],['all','Everyone'],...Object.entries(DISPO).map(([k,d])=>[k,d.label])].forEach(([k,label]) => {
+  const cities = [...new Set(all.map(cityOf).filter(Boolean))].sort();
+  [['due','Follow-ups'],['all','Everyone'],
+   ...Object.entries(DISPO).map(([k,d])=>['d:'+k, d.label]),
+   ...cities.map(c => ['c:'+c, c])].forEach(([k,label]) => {
     const b = document.createElement('button');
     b.className = 'chip' + (crmFilter === k ? ' on' : ''); b.textContent = label;
     b.onclick = () => { crmFilter = k; renderCrm(); };
     chips.appendChild(b);
   });
 
-  let rows;
-  if (crmFilter === 'due') rows = due;
-  else if (crmFilter === 'all') rows = all.sort((a,b) => b.ts - a.ts);
-  else rows = all.filter(v => (v.dispo || 'new') === crmFilter).sort((a,b) => b.ts - a.ts);
+  let rows = crmFilter === 'due' ? due
+    : crmFilter === 'all' ? all.slice()
+    : crmFilter.startsWith('d:') ? all.filter(v => (v.dispo||'new') === crmFilter.slice(2))
+    : all.filter(v => cityOf(v) === crmFilter.slice(2));
+
+  const q = crmQuery.trim().toLowerCase();
+  if (q) rows = rows.filter(v => [displayName(v), v.owner, v.goesBy, v.name, v.addr, v.phone, v.email,
+      cityOf(v), noteText(v)].filter(Boolean).join(' ').toLowerCase().includes(q));
+
+  const cmp = {
+    near:    (a,b) => distOf(a) - distOf(b),
+    due:     (a,b) => (a.followAt || Infinity) - (b.followAt || Infinity),
+    name:    (a,b) => displayName(a).localeCompare(displayName(b)),
+    city:    (a,b) => (cityOf(a) || 'zzz').localeCompare(cityOf(b) || 'zzz') || displayName(a).localeCompare(displayName(b)),
+    recent:  (a,b) => b.ts - a.ts,
+    value:   (a,b) => (b.val || 0) - (a.val || 0),
+    oldsale: (a,b) => (a.saleTs || 0) - (b.saleTs || 0),
+  }[effSort()];
+  rows = rows.slice().sort(cmp);
 
   const host = $('crmList'); host.innerHTML = '';
   if (!rows.length) {
     host.innerHTML = `<p style="color:var(--dim);padding:10px 2px">${
-      crmFilter === 'due' ? 'No follow-ups scheduled. Set one from a door\u2019s Details panel.'
-                          : 'Nobody here yet.'}</p>`;
+      q ? 'Nothing matches that search.'
+        : crmFilter === 'due' ? 'No follow-ups scheduled. Set one from a door\u2019s Details panel.'
+        : 'Nobody here yet.'}</p>`;
     return;
   }
   rows.forEach(v => {
-    const dp = DISPO[v.dispo || 'new'];
+    const dp = DISPO[v.dispo || 'new'] || DISPO.new;
     const late = v.followAt && v.followAt <= Date.now();
+    const d = distOf(v);
     const el = document.createElement('div');
     el.className = 'crmRow' + (late ? ' late' : '');
     el.innerHTML = `<div class="sw" style="background:${dp.color}"></div>
       <div class="t">
-        <div class="a">${esc(v.name || v.addr || 'Unnamed')}</div>
-        <div class="o">${esc(v.name ? (v.addr || '') : (v.owner || ''))}${v.phone ? ' · ' + esc(v.phone) : ''}</div>
+        <div class="a">${esc(displayName(v))}</div>
+        <div class="o">${esc(v.addr || '')}${cityOf(v) ? ' \u00b7 ' + esc(cityOf(v)) : ''}${v.phone ? ' \u00b7 ' + esc(v.phone) : ''}</div>
         <div class="m"><span class="dchip" style="color:${dp.color};border-color:${dp.color}66">${esc(dp.label)}</span>
+          ${isFinite(d) ? `<span class="dimTxt">${d < 1609 ? Math.round(d) + ' m' : (d/1609).toFixed(1) + ' mi'}</span>` : ''}
           ${v.followAt ? `<span class="${late ? 'lateTxt' : 'dimTxt'}">${esc(whenText(v.followAt))}</span>` : ''}
           <span class="dimTxt">${esc(LINES[v.line||'roof'].short)}</span></div>
       </div>`;
     const acts = document.createElement('div'); acts.className = 'crmActs';
     if (v.followAt) {
-      const snooze = document.createElement('button'); snooze.textContent = '+1d';
-      snooze.onclick = async e => { e.stopPropagation();
-        v.followAt = nextMorning(1); await DB.put('visits', v); renderCrm(); renderStrip(); buzz(12); };
-      const done = document.createElement('button'); done.textContent = '✓';
-      done.onclick = async e => { e.stopPropagation();
-        v.followDone = true;
+      const sn = document.createElement('button'); sn.textContent = '+1d';
+      sn.onclick = async e => { e.stopPropagation(); v.followAt = nextMorning(1);
+        await DB.put('visits', v); renderCrm(); renderStrip(); buzz(12); };
+      const dn = document.createElement('button'); dn.textContent = '\u2713';
+      dn.onclick = async e => { e.stopPropagation(); v.followDone = true;
         v.log = [...logOf(v), { id:newId(), ts:Date.now(), kind:'note', text:'Follow-up completed.' }];
         await DB.put('visits', v); renderCrm(); renderStrip(); buzz(20); };
-      acts.append(snooze, done);
+      acts.append(sn, dn);
     }
     el.appendChild(acts);
     el.onclick = () => { closeSheet('crmSheet'); openDetail(v); };
@@ -2822,6 +3138,8 @@ window.addEventListener('resize', drawMini);
   $('hubSat').classList.toggle('on', state.hubSat);
   try { const ses = localStorage.getItem('session'); if (ses) state.session = JSON.parse(ses); } catch(e){}
   lockIfNeeded();
+  try { const h = localStorage.getItem('home'); if (h) state.home = JSON.parse(h); } catch(e){}
+  await loadAppts();
   await purgeStaleTiles();
   await loadStored();
   if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(()=>{});
