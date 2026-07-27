@@ -431,6 +431,7 @@ select{min-height:44px}
     <div><span style="border:1.5px dashed #e9d5ff;display:inline-block;width:11px;height:11px;border-radius:3px;margin-right:6px;vertical-align:-1px"></span>Appraisal</div>
     <div style="margin-top:4px;border-top:1px solid var(--line);padding-top:4px">
       <span style="display:inline-block;width:11px;height:11px;border-radius:2px;margin-right:6px;vertical-align:-1px;background:repeating-linear-gradient(45deg,#facc15 0 3px,#0b0f14 3px 6px)"></span>Likely a rental</div>
+    <div style="margin-top:4px;border-top:1px solid var(--line);padding-top:4px" id="legendTracks"></div>
   </div>
   <div id="mapShowPanel" class="hide">
     <div class="dpHead">Show on the map<button class="x" id="mapShowClose">Done</button></div>
@@ -951,9 +952,10 @@ function setLineName(k, name) {
   if (window._map) refreshMapLayers();
 }
 const dayKey = ts => { const d = new Date(ts); return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`; };
-/* Ten hues evenly round the wheel, stepped 3 slots per calendar day, so
-   consecutive days land 108° apart and never look alike. Lightness alternates
-   as a second cue for anyone who struggles with hue alone. */
+/* Kept, unused. Walking lines are coloured by book now, not by day — which day a
+   walk belongs to is answered by ticking days on and off in the Days panel. This is
+   left here because it is the only place the day-hue scheme is written down, and
+   whoever wants it back should not have to reinvent it. */
 function dayColor(day) {
   const epochDay = Math.floor(Date.parse(day + 'T12:00:00') / 86400000);
   const i = ((epochDay * 3) % 10 + 10) % 10;
@@ -1209,15 +1211,25 @@ window.state = state;   // exposed for the diagnostics panel and automated tests
    jump is never drawn and never counted. */
 const TRACK_GAP_M  = 120;
 const TRACK_GAP_MS = 120000;
+/* Points recorded before the book was stamped on them have no `ln`. There is no way
+   to work out which book those were, so they read as roofing — which is what almost
+   all of them are. */
+const lnOf = p => p.ln || 'roof';
+const segBook = seg => lnOf(seg[seg.length - 1]);
 function trackSegments(pts) {
   const segs = [];
   let cur = [];
   for (let i = 0; i < pts.length; i++) {
     if (i) {
       const a = pts[i-1], b = pts[i];
-      if (haversine(a.lat, a.lon, b.lat, b.lon) > TRACK_GAP_M || (b.ts - a.ts) > TRACK_GAP_MS) {
+      const jumped = haversine(a.lat, a.lon, b.lat, b.lon) > TRACK_GAP_M || (b.ts - a.ts) > TRACK_GAP_MS;
+      const switched = lnOf(a) !== lnOf(b);
+      if (jumped || switched) {
         if (cur.length > 1) segs.push(cur);
-        cur = [];
+        // switching book mid-walk is not a break in the walk, so the last point is
+        // carried into the next segment and the two colours meet instead of leaving
+        // a hole in the line
+        cur = (switched && !jumped) ? [a] : [];
       }
     }
     cur.push(pts[i]);
@@ -1230,16 +1242,32 @@ function pushTrackPoint(lat, lon, ts) {
   const k = dayKey(ts);
   let d = state.days.get(k);
   if (!d) { d = { day:k, pts:[], shown:true }; state.days.set(k, d); }
-  d.pts.push({ lat, lon, ts });
+  // which book was being logged, so the trail can be coloured by it afterwards
+  d.pts.push({ lat, lon, ts, ln: state.line });
   if (k === state.today) state.track = d.pts;
   // batch writes: a breadcrumb every few seconds should not mean a write every few seconds
   if (!dayFlushTimer) dayFlushTimer = setTimeout(flushDay, 6000);
 }
+/* A write that fails here is silent data loss of the worst kind: the points stay in
+   memory, so the map, the Days panel and miles walked all look right for the rest of
+   the day, and the whole day is gone at the next launch having never said a word. */
+let dayWriteFailed = false;
 async function flushDay() {
   dayFlushTimer = null;
   clearPaceCache();
   const d = state.days.get(state.today);
-  if (d) await DB.put('days', { day:d.day, pts:d.pts }).catch(()=>{});
+  if (!d) return;
+  try {
+    await DB.put('days', { day:d.day, pts:d.pts });
+    dayWriteFailed = false;
+  } catch (e) {
+    if (!dayWriteFailed) {          // say it once, not every six seconds
+      dayWriteFailed = true;
+      flashToast("Could not save today's walking track",
+        'The phone refused the write. Take a full backup now.', '#ef4444');
+      renderBackupNag();
+    }
+  }
 }
 window.addEventListener('pagehide', flushDay);
 document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'hidden') flushDay(); });
@@ -1740,9 +1768,16 @@ function drawMini() {
        already means no answer, so a lot striped in those could read at a glance as a
        door already written off. Black appears nowhere else on this map. */
     if (p.occ === 'rental') {
+      // same rule as the big map: as bold as the lot can carry without hiding the
+      // status colour it is drawn around
+      const lotPx = Math.min(Math.abs(p.bbox[2] - p.bbox[0]) * kx,
+                             Math.abs(p.bbox[3] - p.bbox[1]) * ky) * sc;
+      const sw = Math.max(1.8, Math.min(6, lotPx * 0.22));
+      const dash = Math.max(4, Math.round(sw * 1.5));
       g.save();
-      g.setLineDash([]);      g.strokeStyle = '#facc15'; g.lineWidth = 2.6; g.stroke();
-      g.setLineDash([5, 5]);  g.strokeStyle = '#0b0f14'; g.lineWidth = 2.6; g.stroke();
+      g.lineJoin = 'round';
+      g.setLineDash([]);            g.strokeStyle = '#facc15'; g.lineWidth = sw; g.stroke();
+      g.setLineDash([dash, dash]);  g.strokeStyle = '#0b0f14'; g.lineWidth = sw; g.stroke();
       g.restore();
     }
   }
@@ -2522,9 +2557,18 @@ function refreshMapLayers() {
          over it. The solid-versus-dashed difference between the two books stays
          readable underneath, because this is drawn as a separate ring on top. */
       if (p.occ === 'rental') {
+        /* Scaled to the lot as it appears on screen, not a fixed weight. A ring
+           heavy enough to read at zoom 19 covers a whole lot at zoom 16 — and the
+           status colour underneath is the more important signal of the two. */
+        const a = m.latLngToLayerPoint([p.bbox[1], p.bbox[0]]);
+        const b = m.latLngToLayerPoint([p.bbox[3], p.bbox[2]]);
+        const lotPx = Math.min(Math.abs(b.x - a.x), Math.abs(b.y - a.y));
+        const sw = Math.max(2.5, Math.min(10, lotPx * 0.22));
+        const dash = Math.max(6, Math.round(sw * 1.6));
         const stripe = { fill:false, interactive:false, lineCap:'butt' };
-        pl.addLayer(L.polygon(latlngs, {...stripe, color:'#facc15', weight:5, opacity:1}));
-        pl.addLayer(L.polygon(latlngs, {...stripe, color:'#0b0f14', weight:5, opacity:1, dashArray:'9 9'}));
+        pl.addLayer(L.polygon(latlngs, {...stripe, color:'#facc15', weight:sw, opacity:1}));
+        pl.addLayer(L.polygon(latlngs, {...stripe, color:'#0b0f14', weight:sw, opacity:1,
+          dashArray:`${dash} ${dash}`}));
       }
       if (z >= 18) {
         const lines = labelLines(p, state.mapData, 3);
@@ -2544,10 +2588,14 @@ function refreshMapLayers() {
   if (mapOpts.tracks) {
     for (const d of state.days.values()) {
       if (!d.shown || d.pts.length < 2) continue;
+      /* Coloured by the book that was being logged, not by the day. Which day a
+         walk belongs to is answered by ticking days on and off in the Days panel;
+         which book it was is not answerable any other way. */
       for (const seg of trackSegments(d.pts)) {
         rl.addLayer(L.polyline(seg.map(t => [t.lat, t.lon]), {
-          color: dayColor(d.day), weight: d.day === state.today ? 4 : 3,
-          opacity: d.day === state.today ? .95 : .7, lineCap:'round',
+          color: (LINES[segBook(seg)] || LINES.roof).color,
+          weight: d.day === state.today ? 5 : 3.5,
+          opacity: d.day === state.today ? .95 : .6, lineCap:'round',
           dashArray: d.day === state.today ? null : '1 7',
         }));
       }
@@ -2604,8 +2652,20 @@ async function openDays() {
     row.className = 'dayRow' + (d.shown ? '' : ' off');
     const dt = new Date(k + 'T12:00:00');
     const label = k === state.today ? 'Today' : dt.toLocaleDateString(undefined, {weekday:'short', month:'short', day:'numeric'});
-    row.innerHTML = `<div class="sw" style="background:${dayColor(k)}"></div>
-      <div class="lbl">${esc(label)}</div><div class="n">${d.pts.length} pts</div>`;
+    // the swatch shows which books were walked that day, since that is what the
+    // lines are coloured by now
+    // guarded the same way the map and the export are: a restored backup can carry
+    // any value at all here, and an unguarded lookup would stop the panel opening
+    // for ever — which is also the only way to delete the bad track
+    const book = b => LINES[b] || LINES.roof;
+    const books = [...new Set(trackSegments(d.pts).map(segBook))];
+    const swatch = books.length > 1
+      ? `linear-gradient(180deg, ${book(books[0]).color} 50%, ${book(books[1]).color} 50%)`
+      : book(books[0]).color;
+    const bookTxt = books.length ? [...new Set(books.map(b => book(b).label))].join(' + ') : '';
+    row.innerHTML = `<div class="sw" style="background:${swatch}"></div>
+      <div class="lbl">${esc(label)}${bookTxt ? `<div style="font-size:11px;color:var(--dim);font-weight:700">${esc(bookTxt)}</div>` : ''}</div>
+      <div class="n">${d.pts.length} pts</div>`;
     row.onclick = e => {
       if (e.target.classList.contains('del')) return;
       d.shown = !d.shown; row.classList.toggle('off', !d.shown); refreshMapLayers(); buzz(10);
@@ -2845,8 +2905,10 @@ function geoFeatures(o) {
   for (const d of state.days.values()) {
     // one line per walk, not one per day — a day now contains drives with no points
     for (const seg of trackSegments(d.pts.filter(p => p.ts >= from))) {
+      const bk = LINES[segBook(seg)] || LINES.roof;
       feats.push({ type:'Feature',
-        properties:{ name:`Walking track ${d.day}`, day:d.day, stroke:dayColor(d.day), 'stroke-width':3 },
+        properties:{ name:`Walking track ${d.day} · ${bk.label}`, day:d.day, work:bk.label,
+                     stroke:bk.color, 'stroke-width':3 },
         geometry:{ type:'LineString', coordinates: seg.map(t=>[t.lon,t.lat]) } });
     }
   }
@@ -3371,7 +3433,7 @@ document.querySelectorAll('.dsecHead[data-msec]').forEach(b => {
 /* ---- what version is actually on the phone ----
    Matches the service worker cache name, so "did the update land" is answerable by
    looking rather than guessing. */
-const BUILD_VERSION = 'v6';
+const BUILD_VERSION = 'v7';
 const BUILD_DATE = '26 July 2026';
 function renderVersionStamp() {
   const el = $('versionStamp'); if (!el) return;
@@ -3843,12 +3905,21 @@ $('mapShow').onclick = () => {
   syncMapBtns();
 };
 $('mapShowClose').onclick = () => { $('mapShowPanel').classList.add('hide'); syncMapBtns(); };
+/* The walking lines are coloured by book, and the books are renameable, so the key
+   is built from whatever they are actually called right now. */
+function renderLegendTracks() {
+  const el = $('legendTracks'); if (!el) return;
+  el.innerHTML = ['roof','appraisal'].map(k =>
+    `<div><span style="display:inline-block;width:16px;height:3px;border-radius:2px;margin-right:5px;`
+    + `vertical-align:3px;background:${LINES[k].color}"></span>${esc(LINES[k].label)} walk</div>`).join('')
+    + `<div style="color:var(--dim);font-size:10.5px;margin-top:2px">Today solid, earlier days dotted</div>`;
+}
 $('mapKey').onclick = () => {
   const l = $('legend');
   const opening = l.classList.contains('hide');
   $('mapShowPanel').classList.add('hide');
   l.classList.toggle('hide', !opening);
-  if (opening) seatMapPanel(l);
+  if (opening) { renderLegendTracks(); seatMapPanel(l); }
   syncMapBtns();
 };
 $('legendClose').onclick = () => { $('legend').classList.add('hide'); syncMapBtns(); };
@@ -5838,9 +5909,11 @@ function renderBackupNag() {
              : `Last backed up ${days} day${days === 1 ? '' : 's'} ago`;
   el.classList.remove('hide');
   el.className = overdue ? 'nagBad' : 'nagOk';
+  if (dayWriteFailed) el.className = 'nagBad';
   el.innerHTML = `<b>${when}.</b> ${n} record${n===1?'':'s'} live only on this phone.`
     + (overdue ? `<br>Delete the app icon and they are gone. Take a full backup below.` : '')
-    + (storageGrant === false ? `<br>⚠️ The browser has also refused to protect this app's storage — see Settings.` : '');
+    + (storageGrant === false ? `<br>⚠️ The browser has also refused to protect this app's storage — see Settings.` : '')
+    + (dayWriteFailed ? `<br>⚠️ <b>The phone refused to save your walking track.</b> Back up now — this usually means it has run out of room.` : '');
 }
 
 /* ---------------- PIN lock ---------------- */
