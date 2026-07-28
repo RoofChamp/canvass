@@ -434,6 +434,9 @@ select{min-height:44px}
     <button class="pill hide" id="truckPill">🚚 —</button>
       <button class="pill hide" id="drivePill">🚶 on foot</button>
     <button class="pill hide" id="fixPill">📍 set by hand</button>
+    <!-- which named patch he is standing in. Shares the slot the county name used to
+         hold, which is empty unless the lots are loading or he is in a dead zone. -->
+    <button class="pill hide" id="areaPill">📍 —</button>
     <!-- the doors-done number used to be glued inside the menu button, so the one
          figure he glances at all day was not tappable and the screen behind it was
          buried under a menu item that read like it would end his session -->
@@ -528,6 +531,7 @@ select{min-height:44px}
     <button class="mbtn" id="mapRoute">〰 Tracks</button>
     <button class="mbtn" id="mapDays">📅 Days</button>
     <button class="mbtn" id="mapErase">✂︎ Erase area</button>
+    <button class="mbtn" id="mapNameArea">📍 Name an area</button>
     <button class="mbtn" id="mapMoveMe">📍 Move me</button>
   </div>
   <div id="daysPanel" class="hide">
@@ -753,6 +757,35 @@ select{min-height:44px}
   </div>
 </div>
 
+<div id="areaSheet" class="sheet hide">
+  <div class="sheetBody">
+    <div class="sheetHead"><h2 id="arTitle">Where I've been</h2><button class="x" data-close="areaSheet">Close</button></div>
+    <div class="sheetScroll">
+      <!-- list of named areas -->
+      <div id="arList">
+        <div id="crmSearchWrap"><input id="arSearch" placeholder="Search an area or an address" autocomplete="off" autocapitalize="off">
+          <button class="x hide" id="arSearchClear">✕</button></div>
+        <div class="small" id="arCount" style="margin-top:10px"></div>
+        <div id="arRows" style="margin-top:8px"></div>
+        <button class="primary" id="arNameHere" style="margin-top:14px">📍 Name where I am now</button>
+        <div class="small" style="margin-top:6px;color:var(--dim)">Or open the big map and drag a box round a patch to name it.</div>
+      </div>
+      <!-- one area's dated history -->
+      <div id="arOne" class="hide">
+        <button class="ghost" id="arBack" style="margin-bottom:12px">‹ All areas</button>
+        <div class="statsbox" id="arHead"></div>
+        <div class="small" id="arNote" style="margin-top:10px"></div>
+        <div id="arDays" style="margin-top:10px"></div>
+        <div style="margin-top:18px;border-top:1px solid var(--line);padding-top:12px">
+          <button class="ghost" id="arRename">✎ Rename this area</button>
+          <button class="ghost danger" id="arDelete">Delete this area</button>
+          <div class="small" style="margin-top:6px;color:var(--dim)">Deleting an area removes the name and the shape. Not one door, note or breadcrumb is touched.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
 <div id="listSheet" class="sheet hide">
   <div class="sheetBody">
     <div class="sheetHead"><h2>The list</h2><button class="x" data-close="listSheet">Close</button></div>
@@ -816,6 +849,7 @@ select{min-height:44px}
       <div class="dsec"><button class="dsecHead" data-msec="work"><i>▾</i>Out working</button>
         <div class="dsecBody" id="msecWork">
           <button class="ghost" id="mCrm">👥 Customers and follow-ups</button>
+          <button class="ghost" id="mAreas">📍 Where I've been — areas and old rounds</button>
           <button class="ghost" id="mRoute">🔁 Go back to (no answers)</button>
           <button class="ghost" id="mAppt">📋 Schedule and appointments</button>
           <!-- was "■ End session / session log", which read like a stop button, so the
@@ -1310,6 +1344,7 @@ const state = {
      everything — but a switch, because in a neighbourhood like Linden the county flags
      over half the lots and there are days he wants a clean map. */
   showRentals: true,
+  areas: [],            // named patches: {id, name, kind:'circle'|'box', ...} — see loadStored
   trackDetail: 'normal',
   override: null,      // hand-placed position, {lat, lon, ts}
   heading: null,       // degrees clockwise from true north, 0 = north
@@ -1829,6 +1864,13 @@ function renderStrip() {
   $('countyPill').textContent = county;
   $('countyPill').classList.toggle('hide', !county);
   $('countyPill').classList.toggle('warn', !!state.netErr);
+  /* The named patch he is in. Hidden when he is not in one, and stood down while the
+     county chip has something urgent to say, so the strip never grows a row for this. */
+  const inArea = state.pos ? areasAt(state.pos.lat, state.pos.lon) : [];
+  const showArea = inArea.length && !county;
+  $('areaPill').classList.toggle('hide', !showArea);
+  if (showArea) $('areaPill').textContent = '📍 ' + inArea[0].name
+    + (inArea.length > 1 ? ` +${inArea.length - 1}` : '');
   const t0 = new Date(); t0.setHours(0,0,0,0);
   const todayN = state.visitLog.filter(v => v.ts >= +t0 && v.line === state.line).length;
   $('menuCount').textContent = todayN;
@@ -4006,7 +4048,7 @@ document.querySelectorAll('.dsecHead[data-msec]').forEach(b => {
 /* ---- what version is actually on the phone ----
    Matches the service worker cache name, so "did the update land" is answerable by
    looking rather than guessing. */
-const BUILD_VERSION = 'v9';
+const BUILD_VERSION = 'v10';
 const BUILD_DATE = '28 July 2026';
 function renderVersionStamp() {
   const el = $('versionStamp'); if (!el) return;
@@ -4552,10 +4594,11 @@ $('mapDays').onclick = openDays;
 $('mapMoveMe').onclick = toggleMoveMe;
 $('fixPill').onclick = () => clearOverride(false);
 $('daysClose').onclick = () => $('daysPanel').classList.add('hide');
-$('mapErase').onclick = () => { if (routePickBox) endRoutePick(false); else eraseMode ? cancelErase() : startErase(); };
+$('mapErase').onclick = () => { if (routePickBox) endRoutePick(false); else if (areaPickBox) endAreaPick(false); else eraseMode ? cancelErase() : startErase(); };
+$('mapNameArea').onclick = () => { if (areaPickBox) endAreaPick(false); else startAreaPick(); };
 /* One bar, two jobs: erasing track and picking an area to go back to. */
-$('eraseCancel').onclick = () => { if (routePickBox) endRoutePick(false); else cancelErase(); };
-$('eraseGo').onclick = () => { if (routePickBox) endRoutePick(true); else commitErase(); };
+$('eraseCancel').onclick = () => { if (routePickBox) endRoutePick(false); else if (areaPickBox) endAreaPick(false); else cancelErase(); };
+$('eraseGo').onclick = () => { if (routePickBox) endRoutePick(true); else if (areaPickBox) endAreaPick(true); else commitErase(); };
 $('mRoute').onclick = () => { closeSheet('menuSheet'); openRoute(); };
 $('xView').onclick = openListView;
 $('xShowMe').onclick = () => showGeoPreview(xOpts);
@@ -5061,6 +5104,7 @@ const effSort = () => crmSort || (crmFilter === 'due' ? 'due' : (state.pos ? 'ne
 let crmLine = 'all';        // 'all' | 'roof' | 'appraisal'
 let crmFlags = new Set();   // 'phone' | 'rental'
 let crmArea = '';
+let crmNamed = '';        // one of his own named areas, filtered alongside the automatic ones
 
 const SORTS = [
   ['near',   'Nearest'],
@@ -5170,6 +5214,18 @@ function renderCrm() {
     shownAreas.forEach(a =>
       mkChip(fh, 'area:'+a, a, crmArea === a, () => { crmArea = a; renderCrm(); }));
   }
+  /* His own named areas, on their own row. Side by side with the automatic ones above
+     rather than replacing them: the automatic name is the street or the town, and a
+     patch he has named by hand is a different question, not a better answer to the
+     same one. */
+  if (state.areas.length) {
+    const nh = document.createElement('div');
+    nh.className = 'chips'; nh.style.marginTop = '6px';
+    fh.parentElement.insertBefore(nh, fh.nextSibling);
+    mkChip(nh, 'named:', 'All my areas', !crmNamed, () => { crmNamed = ''; renderCrm(); });
+    state.areas.forEach(a =>
+      mkChip(nh, 'named:'+a.id, '\u{1F4CD} ' + a.name, crmNamed === a.id, () => { crmNamed = a.id; renderCrm(); }));
+  }
 
   let rows;
   if (crmFilter === 'due') rows = due;
@@ -5181,6 +5237,10 @@ function renderCrm() {
   if (crmFlags.has('phone')) rows = rows.filter(v => !!(v.phone || '').trim());
   if (crmFlags.has('rental')) rows = rows.filter(v => v.occ === 'rental');
   if (crmArea) rows = rows.filter(v => areaOf(v) === crmArea);
+  if (crmNamed) {
+    const na = state.areas.find(a => a.id === crmNamed);
+    rows = na ? rows.filter(v => areaContains(na, v.lat, v.lon)) : rows;
+  }
   if (crmQuery.trim()) rows = rows.filter(v => matchesQuery(v, crmQuery));
 
   rows = sortRows(rows, sortNow);
@@ -5958,6 +6018,53 @@ function startRoutePick() {
   $('eraseGo').classList.remove('hide');
   box.refresh();
 }
+/* The second way to name a patch: drag a box round it on the big map. Same box he
+   already knows from Erase area and from picking a go-back area — a third job for one
+   control rather than a third control. */
+let areaPickBox = null;
+function startAreaPick() {
+  if (!window._map) { flashToast('Map still loading', 'Give it a second', '#f59e0b'); return; }
+  if (eraseMode) cancelErase();
+  if (routePickBox) endRoutePick(false);
+  if (areaPickBox) { areaPickBox.destroy(); areaPickBox = null; }
+  let box = null;
+  const count = () => {
+    if (!box) return;
+    const inside = state.visitLog.filter(v => v.lat != null && box.contains(v.lat, v.lon)).length;
+    const b = box.getBounds();
+    const across = Math.round(Math.max(
+      haversine(b.getSouth(), b.getWest(), b.getSouth(), b.getEast()),
+      haversine(b.getSouth(), b.getWest(), b.getNorth(), b.getWest())));
+    $('eraseTxt').textContent = `${across} m across, ${inside} door${inside===1?'':'s'} already logged inside. `
+      + 'Drag the middle to move it, either corner to resize.';
+    $('eraseGo').textContent = 'Name this area';
+    $('eraseGo').style.opacity = 1;
+  };
+  box = makeMapBox(window._map, defaultBoxBounds(window._map), { color:'#0ea5e9', onChange: count });
+  areaPickBox = box;
+  setBoxBar('pick');
+  $('eraseBar').classList.remove('hide');
+  $('eraseGo').classList.remove('hide');
+  box.refresh();
+}
+function endAreaPick(use) {
+  if (!areaPickBox) return;
+  const b = areaPickBox.getBounds();
+  areaPickBox.destroy(); areaPickBox = null;
+  setBoxBar(null);
+  $('eraseBar').classList.add('hide');
+  $('eraseGo').classList.add('hide');
+  if (!use) return;
+  const name = (prompt('Name this area', '') || '').trim();
+  if (!name) return;
+  state.areas.push({ id:'ar'+Date.now()+Math.random().toString(36).slice(2,5), name, kind:'box',
+                     s:b.getSouth(), n:b.getNorth(), w:b.getWest(), e:b.getEast(), made:Date.now() });
+  saveAreas(); renderStrip(); buzz(20);
+  const s = areaSummary(state.areas[state.areas.length-1]);
+  flashToast('Area named', s.days
+    ? `${name} — ${s.days} round${s.days===1?'':'s'} you have already done inside it are on the list`
+    : `${name} — nothing logged inside it yet`, '#22c55e');
+}
 /* One bar serves two jobs, so it must not look destructive while picking. */
 function setBoxBar(mode) {
   const bar = $('eraseBar');
@@ -6132,6 +6239,233 @@ function runFind() {
     } finally { findAbort = null; }
   }, 280);
 }
+
+/* ---------------- named areas: "Where I've been" ----------------
+   An area is a NAME and a SHAPE, kept in localStorage. Nothing is written onto a door,
+   so naming a patch this afternoon immediately shows every time he has ever worked it.
+   Two shapes: a circle dropped where he stands, and a box drawn on the big map. */
+const AREA_SIZES = [['small', 150, 'One street'], ['medium', 400, 'A few blocks'], ['large', 900, 'A subdivision']];
+const saveAreas = () => localStorage.setItem('areas', JSON.stringify(state.areas));
+function areaContains(a, lat, lon) {
+  if (!a || lat == null || lon == null) return false;
+  if (a.kind === 'box') return lat >= a.s && lat <= a.n && lon >= a.w && lon <= a.e;
+  return haversine(lat, lon, a.lat, a.lon) <= (a.r || 150);
+}
+/** every named area a point falls in. Areas may overlap; a door belongs to all of them. */
+const areasAt = (lat, lon) => state.areas.filter(a => areaContains(a, lat, lon));
+/** roughly how far across, for the list — a box is measured on its longer side */
+function areaSpan(a) {
+  if (a.kind !== 'box') return (a.r || 150) * 2;
+  return Math.max(haversine(a.s, a.w, a.s, a.e), haversine(a.s, a.w, a.n, a.w));
+}
+/* A day counts as "I was there" when he marked TWO OR MORE doors inside the area.
+   One door is not canvassing — his words. Breadcrumbs are deliberately NOT required:
+   the walking trail is the record most likely to fail, and a twenty-door morning must
+   not vanish from the history because the GPS had a bad time of it. */
+const AREA_MIN_DOORS = 2;
+function areaHistory(a) {
+  const byDay = new Map();
+  const take = k => { if (!byDay.has(k)) byDay.set(k, { day:k, doors:[], metres:0, appts:0 }); return byDay.get(k); };
+  for (const v of state.visitLog) {
+    if (v.lat == null || !areaContains(a, v.lat, v.lon)) continue;
+    take(dayKey(v.ts)).doors.push(v);
+  }
+  // miles walked inside the area, per day, following the trail rather than the crow
+  for (const d of state.days.values()) {
+    for (const seg of trackSegments(d.pts)) {
+      for (let i = 1; i < seg.length; i++) {
+        if (!areaContains(a, seg[i].lat, seg[i].lon)) continue;
+        const rec = byDay.get(dayKey(seg[i].ts));
+        if (rec) rec.metres += haversine(seg[i-1].lat, seg[i-1].lon, seg[i].lat, seg[i].lon);
+      }
+    }
+  }
+  // appointments booked against a door inside the area, counted on the day of the door
+  for (const ap of state.appts) {
+    const v = state.visitLog.find(x => x.key === ap.key && (x.line||'roof') === (ap.line||'roof'));
+    if (!v || !areaContains(a, v.lat, v.lon)) continue;
+    const rec = byDay.get(dayKey(v.ts));
+    if (rec) rec.appts++;
+  }
+  return [...byDay.values()]
+    .filter(r => r.doors.length >= AREA_MIN_DOORS)
+    .map(r => {
+      const ts = r.doors.map(v => v.ts).sort((x, y) => x - y);
+      const by = s => r.doors.filter(v => v.status === s).length;
+      return { ...r, first: ts[0], last: ts[ts.length-1],
+               mins: Math.max(1, Math.round((ts[ts.length-1] - ts[0]) / 60000)),
+               talked: by('talked'), material: by('material'), noanswer: by('noanswer'), dnr: by('dnr'),
+               quoted: r.doors.filter(v => ['quoted','signed'].includes(v.dispo)).length };
+    })
+    .sort((x, y) => y.day.localeCompare(x.day));
+}
+/** the one number that answers "have I worked this patch": days, doors, last time */
+function areaSummary(a) {
+  const h = areaHistory(a);
+  return { days: h.length, doors: h.reduce((n, r) => n + r.doors.length, 0),
+           last: h.length ? h[0].day : null, appts: h.reduce((n, r) => n + r.appts, 0), history: h };
+}
+
+let arQuery = '', arOpen = null;
+const dayLabel = k => {
+  const d = new Date(k + 'T12:00:00');
+  return k === state.today ? 'Today'
+    : d.toLocaleDateString([], { weekday:'short', day:'numeric', month:'short' });
+};
+function openAreas() { arOpen = null; arQuery = ''; $('arSearch').value = ''; renderAreas(); openSheet('areaSheet'); }
+function renderAreas() {
+  $('arList').classList.toggle('hide', !!arOpen);
+  $('arOne').classList.toggle('hide', !arOpen);
+  if (arOpen) return renderAreaOne();
+  $('arTitle').textContent = "Where I've been";
+  const q = arQuery.trim().toUpperCase();
+  /* Searching an ADDRESS finds the areas that contain it — that is how he asked the
+     question: "search a canvas spot and find the old records of when i was there". */
+  let rows = state.areas;
+  if (q) {
+    const hits = new Set(state.areas.filter(a => a.name.toUpperCase().includes(q)).map(a => a.id));
+    for (const v of state.visitLog)
+      if (v.addr && v.addr.toUpperCase().includes(q))
+        areasAt(v.lat, v.lon).forEach(a => hits.add(a.id));
+    for (const p of state.parcels.values())
+      if (p.addr && p.addr.toUpperCase().includes(q))
+        areasAt(p.cen[1], p.cen[0]).forEach(a => hits.add(a.id));
+    rows = state.areas.filter(a => hits.has(a.id));
+  }
+  const here = state.pos ? new Set(areasAt(state.pos.lat, state.pos.lon).map(a => a.id)) : new Set();
+  $('arCount').textContent = !state.areas.length
+    ? 'No areas named yet. Name where you are, or drag a box on the big map.'
+    : q ? `${rows.length} of ${state.areas.length} match "${arQuery.trim()}".`
+        : `${state.areas.length} area${state.areas.length===1?'':'s'}.`;
+  const host = $('arRows'); host.innerHTML = '';
+  rows.map(a => ({ a, s: areaSummary(a) }))
+      .sort((x, y) => (y.s.last || '').localeCompare(x.s.last || ''))
+      .forEach(({ a, s }) => {
+    const el = document.createElement('div');
+    el.className = 'crmRow' + (here.has(a.id) ? ' late' : '');
+    const bits = [`${s.days} day${s.days===1?'':'s'}`, `${s.doors} door${s.doors===1?'':'s'}`];
+    if (s.appts) bits.push(`${s.appts} booked`);
+    bits.push(Math.round(areaSpan(a)) + ' m across');
+    el.innerHTML = `<div class="sw" style="background:${here.has(a.id) ? '#f59e0b' : '#334155'}"></div>
+      <div class="t"><div class="a">${esc(a.name)}${here.has(a.id) ? ' · you are here' : ''}</div>
+      <div class="o">${s.last ? 'Last worked ' + esc(dayLabel(s.last)) : 'Never worked'} · ${bits.join(' · ')}</div></div>`;
+    el.onclick = () => { arOpen = a.id; renderAreas(); };
+    host.appendChild(el);
+  });
+}
+function renderAreaOne() {
+  const a = state.areas.find(x => x.id === arOpen);
+  if (!a) { arOpen = null; return renderAreas(); }
+  const s = areaSummary(a);
+  $('arTitle').textContent = a.name;
+  $('arHead').innerHTML = `
+    <div class="stat"><b>${s.days}</b>day${s.days===1?'':'s'} worked</div>
+    <div class="stat"><b>${s.doors}</b>doors</div>
+    <div class="stat"><b>${s.appts}</b>booked</div>
+    <div class="stat"><b>${Math.round(areaSpan(a))}</b>m across</div>`;
+  $('arNote').textContent = s.days
+    ? 'A day counts here when you marked two or more doors inside it. Tap one to see that round.'
+    : 'Nothing logged inside this area yet. Two or more doors on a day makes it a round.';
+  const host = $('arDays'); host.innerHTML = '';
+  s.history.forEach(r => {
+    const el = document.createElement('div');
+    el.className = 'crmRow';
+    const clock = t => new Date(t).toLocaleTimeString([], { hour:'numeric', minute:'2-digit' });
+    const got = [];
+    if (r.talked)   got.push(`${r.talked} talked`);
+    if (r.material) got.push(`${r.material} material`);
+    if (r.noanswer) got.push(`${r.noanswer} no answer`);
+    if (r.dnr)      got.push(`${r.dnr} don't come back`);
+    const extra = [];
+    if (r.appts)  extra.push(`${r.appts} booked`);
+    if (r.quoted) extra.push(`${r.quoted} quoted`);
+    el.innerHTML = `<div class="sw" style="background:#0ea5e9"></div>
+      <div class="t">
+        <div class="a">${esc(dayLabel(r.day))} · ${r.doors.length} door${r.doors.length===1?'':'s'}${
+          r.metres ? ` · ${(r.metres/1609).toFixed(2)} mi walked` : ''}</div>
+        <div class="o">${esc(clock(r.first))}–${esc(clock(r.last))} · ${fmtDur(r.mins*60)} out${
+          got.length ? ' · ' + esc(got.join(', ')) : ''}${extra.length ? ' · ' + esc(extra.join(', ')) : ''}</div>
+      </div>`;
+    el.onclick = () => openAreaDay(a, r);
+    host.appendChild(el);
+  });
+}
+/* One round: the map as it was that day, and everything logged at those doors. */
+function openAreaDay(a, r) {
+  const lines = [];
+  for (const v of [...r.doors].sort((x, y) => x.ts - y.ts)) {
+    const t = new Date(v.ts).toLocaleTimeString([], { hour:'numeric', minute:'2-digit' });
+    const st = (STATUS[v.status] || { label:v.status }).label;
+    lines.push(`<div class="lsRow"><b>${esc(v.addr || 'Unnamed lot')}</b>
+      <div class="kv"><span>${esc(t)}</span><span>${esc(st)}</span><span>${esc((LINES[v.line||'roof']||{label:v.line}).label)}</span></div>
+      ${logOf(v).filter(e => dayKey(e.ts) === r.day)
+        .map(e => `<div class="note">${esc(e.kind === 'status'
+          ? (STATUS[e.status]||{label:e.status}).label
+          : e.text || '')}</div>`).join('')}</div>`);
+  }
+  $('lsCount').innerHTML = `<b>${esc(a.name)} — ${esc(dayLabel(r.day))}</b><br>`
+    + `${r.doors.length} door${r.doors.length===1?'':'s'}`
+    + (r.metres ? ` · ${(r.metres/1609).toFixed(2)} miles walked here` : '')
+    + ` · ${fmtDur(r.mins*60)} out`
+    + `<br><button class="chip" id="lsMapDay" style="margin-top:8px">🗺 Show this day on the map</button>`;
+  $('lsList').innerHTML = lines.join('');
+  openSheet('listSheet');
+  $('lsMapDay').onclick = async () => {
+    /* Show that day's walking and nothing else, so the round reads on its own. */
+    for (const k of await listDayKeys()) { const d = await loadDay(k); d.shown = (k === r.day); }
+    closeSheet('listSheet'); closeSheet('areaSheet');
+    await openMap();
+    const c = a.kind === 'box' ? [(a.s + a.n)/2, (a.w + a.e)/2] : [a.lat, a.lon];
+    focusMapOn(c[0], c[1], 17);
+    refreshMapLayers();
+    flashToast(`${a.name} — ${dayLabel(r.day)}`, 'Only that day\'s walking is showing. Days panel puts the rest back.', '#0ea5e9');
+  };
+}
+/** name the patch he is standing in */
+async function nameAreaHere() {
+  if (!state.pos) { flashToast('No position yet', 'Wait for a GPS fix', '#f59e0b'); return; }
+  const size = await askChoice('How big is this patch?',
+    'It is a circle around where you are standing right now.',
+    AREA_SIZES.map(([k, m, what]) => ({ key:k, label:`${what} — about ${m*2} m across`, sub:`${m} m in every direction` }))
+      .concat([{ key:null, label:'Cancel', sub:'Nothing is named.' }]));
+  if (!size) return;
+  const m = (AREA_SIZES.find(s => s[0] === size) || [,150])[1];
+  const guess = nearestParcel(state.pos.lat, state.pos.lon);
+  const name = (prompt('Name this area', guess && guess.addr ? streetOf(guess) : '') || '').trim();
+  if (!name) return;
+  state.areas.push({ id:'ar'+Date.now()+Math.random().toString(36).slice(2,5), name,
+                     kind:'circle', lat:state.pos.lat, lon:state.pos.lon, r:m, made:Date.now() });
+  saveAreas(); renderAreas(); renderStrip(); buzz(20);
+  flashToast('Area named', `${name} — every round you have ever done inside it is on the list now`, '#22c55e');
+}
+$('mAreas').onclick = () => { closeSheet('menuSheet'); openAreas(); };
+$('areaPill').onclick = () => {
+  const here = state.pos ? areasAt(state.pos.lat, state.pos.lon) : [];
+  openAreas();
+  if (here.length === 1) { arOpen = here[0].id; renderAreas(); }   // straight to the one he is in
+};
+$('arNameHere').onclick = nameAreaHere;
+$('arBack').onclick = () => { arOpen = null; renderAreas(); };
+$('arSearch').oninput = e => { arQuery = e.target.value; $('arSearchClear').classList.toggle('hide', !arQuery); renderAreas(); };
+$('arSearchClear').onclick = () => { arQuery = ''; $('arSearch').value = ''; $('arSearchClear').classList.add('hide'); renderAreas(); $('arSearch').focus(); };
+$('arRename').onclick = () => {
+  const a = state.areas.find(x => x.id === arOpen); if (!a) return;
+  const name = (prompt('Rename this area', a.name) || '').trim();
+  if (!name) return;
+  a.name = name; saveAreas(); renderAreas(); renderStrip(); buzz(15);
+};
+$('arDelete').onclick = () => {
+  const a = state.areas.find(x => x.id === arOpen); if (!a) return;
+  const s = areaSummary(a);
+  /* Counts what goes, like everything else destructive — and says plainly what does
+     NOT go, because deleting a shape looks like it might take the rounds with it. */
+  if (!confirm(`Delete the area "${a.name}"?\n\n`
+    + `The name and the shape go. ${s.days} day${s.days===1?'':'s'} of rounds and `
+    + `${s.doors} door${s.doors===1?'':'s'} stay exactly where they are — this only removes the label.`)) return;
+  state.areas = state.areas.filter(x => x.id !== a.id);
+  saveAreas(); arOpen = null; renderAreas(); renderStrip(); buzz(25);
+  flashToast('Area deleted', 'No doors or breadcrumbs were touched', '#64748b');
+};
 
 /* ---------------- the call sheet ----------------
    A self-contained page of whatever the customer list is currently showing. It shares
@@ -6555,6 +6889,13 @@ async function loadStored() {
   try { const a = JSON.parse(localStorage.getItem('appts') || '[]');
         state.appts = Array.isArray(a)
           ? a.filter(x => x && typeof x.at === 'number' && typeof x.id === 'string' && x.id) : []; } catch(e){ state.appts = []; }
+  /* Named areas. localStorage, like appointments and the truck pin — a name and four
+     numbers each, so even a hundred of them is nothing. Deliberately NOT a new store on
+     the database and deliberately NOT a field on the door record: an area is a shape,
+     and which doors are in it is worked out by asking, which is what makes naming one
+     today light up everything already logged inside it. */
+  try { const ar = JSON.parse(localStorage.getItem('areas') || '[]');
+        state.areas = Array.isArray(ar) ? ar.filter(x => x && x.id && x.name) : []; } catch(e){ state.areas = []; }
   try { const dj = parseFloat(localStorage.getItem('driveAdj')); if (isFinite(dj) && dj > 0) state.driveAdj = dj; } catch(e){}
   loadLineNames();
   state.quietPrompt = localStorage.getItem('quietPrompt') !== '0';
