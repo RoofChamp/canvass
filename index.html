@@ -302,6 +302,25 @@ label.f{display:block;margin:12px 0 5px;font-size:12px;font-weight:800;color:var
 .dsecHead i{font-style:normal;color:var(--dim);font-size:13px;width:13px;flex:0 0 auto}
 .dsecHead .cnt{margin-left:auto;font-size:11px;font-weight:700;color:var(--dim)}
 .dsecBody{padding-bottom:10px}
+/* Quick tags and Stage, out of their accordions and always open. Deliberately NO
+   min-height on these chips: the shared .chip{min-height:44px} floor has to keep
+   doing its work. Adding one here drops them to about 33px, which is the mistake
+   that was already made once on the book row. */
+.inlineBlk{border-top:1px solid var(--line);margin-top:12px;padding-top:10px}
+.inlineBlk > .f{margin-bottom:2px;display:flex;align-items:center;gap:8px}
+.inlineBlk > .f .cnt{margin-left:auto;font-size:11px;font-weight:700;color:var(--dim)}
+.inlineBlk .chip{padding:7px 11px;font-size:12.5px}
+.subLab{font-size:11px;font-weight:800;color:var(--dim);letter-spacing:.05em;
+        text-transform:uppercase;margin:9px 0 2px}
+/* Off the screen but still focusable, so showPicker() and the focus-then-click
+   fallback both work and the value still round-trips through toLocalInput(). */
+.offscreenDate{position:absolute;left:-9999px;width:1px;height:1px;opacity:0}
+/* min-height here explicitly: this button is NOT a .chip, so the shared 44px floor
+   never reached it. On a 375pt phone the run wraps and it collapsed to 33px. */
+#dPickDate{background:#f1f5f9;border:1px solid #cbd5e1;color:#0f172a;font-weight:800;
+           border-radius:999px;padding:7px 13px;font-size:12.5px;
+           min-height:44px;display:inline-flex;align-items:center;justify-content:center}
+#dPickDate:active{background:#e2e8f0}
 .fg + .fg{margin-top:2px}
 .sheetFoot{flex:0 0 auto;padding:10px 16px calc(10px + var(--safe-b));
   border-top:1px solid var(--line);background:var(--bg)}
@@ -361,6 +380,16 @@ select{min-height:44px}
 #findClear{position:absolute;right:8px;top:9px;background:none;border:0;color:var(--dim);font-size:15px;font-weight:800;padding:4px 7px}
 #findList{margin-top:6px;background:rgba(15,21,29,.98);border:1px solid var(--line);border-radius:12px;
   box-shadow:0 10px 30px rgba(0,0,0,.6);overflow:hidden;max-height:46vh;overflow-y:auto}
+/* The same search inside the appointment form. It sits in the page rather than floating
+   over a map, so it is positioned relatively and the list pushes the fields below it
+   down instead of covering them. Rows and notes reuse .findRow / .findNote. */
+#apFindWrap{position:relative}
+#apFind{background:var(--card2);border:1px solid var(--line);border-radius:12px;
+  padding:11px 38px 11px 13px;font-size:14px;font-weight:600;width:100%}
+#apFindClear{position:absolute;right:6px;top:7px;background:none;border:0;color:var(--dim);
+  font-size:15px;font-weight:800;padding:4px 7px;min-height:32px}
+#apFindList{margin-top:6px;background:var(--card);border:1px solid var(--line);border-radius:12px;
+  overflow:hidden;max-height:38vh;overflow-y:auto}
 .findRow{display:flex;align-items:center;gap:9px;padding:10px 12px;border-top:1px solid var(--line)}
 .findRow:first-child{border-top:0}
 .findRow .t{flex:1;min-width:0}
@@ -482,6 +511,7 @@ select{min-height:44px}
     <div><span style="border:1.5px dashed #e9d5ff;display:inline-block;width:11px;height:11px;border-radius:3px;margin-right:6px;vertical-align:-1px"></span>Appraisal</div>
     <div style="margin-top:4px;border-top:1px solid var(--line);padding-top:4px">
       <span style="display:inline-block;width:11px;height:11px;border-radius:2px;margin-right:6px;vertical-align:-1px;background:repeating-linear-gradient(45deg,#facc15 0 3px,#0b0f14 3px 6px)"></span>Likely a rental</div>
+    <div><span style="display:inline-block;width:11px;height:11px;border-radius:50%;margin-right:6px;vertical-align:-1px;background:#a855f7;border:2px solid #f5f3ff"></span>Appraisal flyer left — worth a roofing knock</div>
     <div style="margin-top:4px;border-top:1px solid var(--line);padding-top:4px" id="legendTracks"></div>
   </div>
   <div id="mapShowPanel" class="hide">
@@ -554,19 +584,27 @@ select{min-height:44px}
       <div class="chips" id="dStatus"></div>
       <div id="dApptBox" class="hide" style="margin-top:10px"></div>
 
+      <!-- Quick tags and Stage came out of their accordions. They are the two he reaches
+           for on nearly every door, and a chevron between him and them was a tap that
+           bought nothing. A top border keeps them reading as separate blocks. -->
+      <div class="inlineBlk">
+        <label class="f">Quick tags<span class="cnt" id="dTagCount"></span></label>
+        <div class="chips" id="dTags"></div>
+      </div>
+      <div class="inlineBlk">
+        <label class="f">Stage and follow-up<span class="cnt" id="dStageCount"></span></label>
+        <div class="chips" id="dDispo"></div>
+        <div class="subLab">Come back</div>
+        <div class="chips" id="dFollowChips"></div>
+        <!-- The real date control lives off-screen. On the page it rendered as a
+             near-invisible box that overlapped the chips above it. The pill opens it. -->
+        <input id="dFollow" type="datetime-local" class="offscreenDate">
+        <!-- meaningless without a date, and a whole row back when it is not in use -->
+        <button class="ghost hide" id="dIcs" style="margin-top:8px">📅 Add to phone calendar</button>
+      </div>
+
       <div class="dsec"><button class="dsecHead" data-sec="who"><i>▸</i>Who lives here</button>
         <div class="dsecBody hide" id="dsecWho"></div></div>
-      <div class="dsec"><button class="dsecHead" data-sec="tags"><i>▸</i>Quick tags<span class="cnt" id="dTagCount"></span></button>
-        <div class="dsecBody hide" id="dsecTags"><div class="chips" id="dTags"></div></div></div>
-      <div class="dsec"><button class="dsecHead" data-sec="stage"><i>▸</i>Stage and follow-up<span class="cnt" id="dStageCount"></span></button>
-        <div class="dsecBody hide" id="dsecStage">
-          <label class="f">Stage</label>
-          <div class="chips" id="dDispo"></div>
-          <label class="f">Follow up</label>
-          <div class="chips" id="dFollowChips"></div>
-          <input id="dFollow" type="datetime-local">
-          <button class="ghost" id="dIcs" style="margin-top:8px">📅 Add this reminder to my phone calendar</button>
-        </div></div>
       <div class="dsec"><button class="dsecHead" data-sec="prop"><i>▸</i>What the auditor holds</button>
         <div class="dsecBody hide" id="dsecProp"><div id="dProp" class="hide"></div></div></div>
       <div class="dsec"><button class="dsecHead" data-sec="log"><i>▸</i>Everything logged here<span class="cnt" id="dLogCount"></span></button>
@@ -620,6 +658,8 @@ select{min-height:44px}
       <div class="chips" id="crmFilters" style="margin-top:6px"></div>
       <div class="small" id="crmCount" style="margin-top:10px"></div>
       <div id="crmList" style="margin-top:8px"></div>
+      <button class="primary" id="crmShare" style="margin-top:14px">📄 Share this list — call sheet</button>
+      <div class="small" style="margin-top:6px;color:var(--dim)">Sends exactly what you are looking at. Open it and use Share → Print → Save as PDF if you want it on paper.</div>
       <button class="ghost" id="crmIcs">📅 Send all follow-ups to my phone calendar</button>
     </div>
   </div>
@@ -676,10 +716,15 @@ select{min-height:44px}
       <div id="apptForm" class="hide" style="margin-top:14px;border-top:1px solid var(--line);padding-top:14px">
         <label class="f">What is it</label>
         <input id="apLabel" placeholder="Kolar estimate" autocomplete="off">
-        <label class="f">Address (for your eyes only)</label>
-        <input id="apAddr" placeholder="109 Maple Ridge Dr" autocomplete="off">
+        <!-- One field instead of two. The chip row and the separate "Address (for your
+             eyes only)" box both went in v8: this search shows the address in plain
+             words AND sets the point on the map, so the two could not disagree. -->
         <label class="f">Where is it</label>
-        <div class="chips" id="apWhere"></div>
+        <div id="apFindWrap">
+          <input id="apFind" placeholder="Find an address" autocomplete="off" autocapitalize="characters" enterkeyhint="search">
+          <button id="apFindClear" class="x hide">✕</button>
+          <div id="apFindList" class="hide"></div>
+        </div>
         <div class="small" id="apWhereInfo" style="margin-top:6px"></div>
         <label class="f">When</label>
         <input id="apAt" type="datetime-local">
@@ -829,6 +874,10 @@ select{min-height:44px}
 
           <label class="f">Keep screen awake</label>
           <div class="chips"><button class="chip" id="mWake">Screen lock off</button></div>
+
+          <label class="f">Likely rentals on the maps</label>
+          <div class="small" style="margin-bottom:6px">Lots the county flags as rentals, or where the owner's post goes somewhere else, get a yellow-and-black edge on both maps. In some neighbourhoods that is half the street, so you can turn it off.</div>
+          <div class="chips"><button class="chip" id="mRentals">Show likely rentals</button></div>
 
           <label class="f">When tracking stops by itself</label>
           <div class="small" style="margin-bottom:6px">Getting home ends the session on its own, and driving stops the breadcrumb trail. Neither of those can be turned off — they only ever save battery and tidy the trail. This one asks you a question, so it can be.</div>
@@ -1072,6 +1121,22 @@ function assessOccupancy(c, a, siteAddr) {
   if (/\bP\.?\s?O\.?\s?BOX\b/i.test(street))
     return { v:null, mail, why:'owner uses a PO box', reason:'pobox' };
 
+  /* A care-of line is a person's name with the address buried after it, and there is no
+     reliable way to pull the street back out. Franklin publishes plenty of these and,
+     unlike Fairfield, offers no separate field to fall back on. Measured against 3,600
+     live Columbus parcels, every one of these came out "rental". */
+  if (/\bC\s?\/\s?O\b|%/i.test(street))
+    return { v:null, mail, why:'the tax bill goes care of someone else', reason:'careof' };
+
+  /* Some parcels carry a street with no house number at all — "N JEFFERSON AVE". The
+     comparison below is meaningless for those, and all 32 of them in the same live
+     sample came out "rental" while looking exactly like the real thing. */
+  /* Test the KEY, not the raw string. "#4 PARK PL", "LOT 12 RIVER RD" and "APT 3 45 ELM ST"
+     all reduce to a numbered key the comparison handles perfectly well — only a lot with
+     no number anywhere is beyond it. */
+  if (!/\d/.test(addrKey(siteAddr)))
+    return { v:null, mail, why:'the county has no house number for this lot', reason:'nonumber' };
+
   if (cfg.mailName) {
     if (mailName && !namesLookRelated(mailName, a[c.owner[0]]))
       return { v:null, mail, reason:'servicer',
@@ -1094,6 +1159,12 @@ function occExplain(reason, servicer) {
          + 'so it settles nothing either way.';
   if (reason === 'unreadable')
     return 'The addresses could not be compared, so no conclusion is drawn from them.';
+  if (reason === 'careof')
+    return 'The tax bill is addressed care of someone else, so the street on it is theirs '
+         + 'rather than the owner\'s. It settles nothing about who lives here.';
+  if (reason === 'nonumber')
+    return 'The county has no house number on file for this lot, so there is nothing to '
+         + 'compare the owner\'s mailing address against.';
   return '';
 }
 
@@ -1235,6 +1306,10 @@ const state = {
   session: null,        // {id, start, line}
   hubSpan: 140,         // metres across the hub map
   hubSat: false,
+  /* The rental hazard stripes on both maps. On by default because he asked for them on
+     everything — but a switch, because in a neighbourhood like Linden the county flags
+     over half the lots and there are days he wants a clean map. */
+  showRentals: true,
   trackDetail: 'normal',
   override: null,      // hand-placed position, {lat, lon, ts}
   heading: null,       // degrees clockwise from true north, 0 = north
@@ -1499,7 +1574,8 @@ const TILE = 0.006; // ~0.66 km lat, ~0.51 km lon at 40°N
 /* Bump PARSE_V whenever the county field mapping or attribute parsing changes.
    Cached tiles hold PARSED parcels, so without this an old cache would keep
    serving the old interpretation forever and a fix would never reach anyone. */
-const PARSE_V = 5;
+// 6: care-of and no-house-number lots stopped being read as rentals (v8)
+const PARSE_V = 6;
 const tileKey = (c, lat, lon) => `v${PARSE_V}:${c.key}:${Math.floor(lat/TILE)}:${Math.floor(lon/TILE)}`;
 async function purgeStaleTiles() {
   try {
@@ -1908,17 +1984,29 @@ function drawMini() {
        standing at it. Not yellow and red: red already means don't come back and amber
        already means no answer, so a lot striped in those could read at a glance as a
        door already written off. Black appears nowhere else on this map. */
-    if (p.occ === 'rental') {
+    if (p.occ === 'rental' && state.showRentals) {
       // same rule as the big map: as bold as the lot can carry without hiding the
       // status colour it is drawn around
       const lotPx = Math.min(Math.abs(p.bbox[2] - p.bbox[0]) * kx,
                              Math.abs(p.bbox[3] - p.bbox[1]) * ky) * sc;
-      const sw = Math.max(1.8, Math.min(6, lotPx * 0.22));
+      const sw = Math.max(1.8, Math.min(6, lotPx * 0.17));
       const dash = Math.max(4, Math.round(sw * 1.5));
       g.save();
       g.lineJoin = 'round';
       g.setLineDash([]);            g.strokeStyle = '#facc15'; g.lineWidth = sw; g.stroke();
       g.setLineDash([dash, dash]);  g.strokeStyle = '#0b0f14'; g.lineWidth = sw; g.stroke();
+      g.restore();
+    }
+    /* Appraisal flyer already through this door — a violet dot on the house. Same rule
+       as the big map, and not gated by which book he is logging, because the point is
+       to spot it while he is knocking the other one. */
+    if (flyerLeft(p.key)) {
+      const at = p.house || p.cen;
+      const cx = X(at), cy = Y(at);
+      g.save();
+      g.beginPath(); g.arc(cx, cy, 4.5, 0, Math.PI*2);
+      g.fillStyle = '#a855f7'; g.fill();
+      g.lineWidth = 1.6; g.strokeStyle = '#f5f3ff'; g.stroke();
       g.restore();
     }
   }
@@ -2231,7 +2319,9 @@ const DETAIL_LAYOUT = {
   material: { primary:['fgNote'],                    who:['fgName','fgGoesBy','fgPhone','fgEmail'], open:[] },
   noanswer: { primary:['fgNote'],                    who:['fgName','fgGoesBy','fgPhone','fgEmail'], open:[] },
 };
-const DETAIL_SECTIONS = ['who','tags','stage','prop','log','danger'];
+// 'tags' and 'stage' left this list in v8: they are always-open inline blocks now,
+// not accordions, so there is nothing to open or shut.
+const DETAIL_SECTIONS = ['who','prop','log','danger'];
 const FIELD_GROUPS = ['fgName','fgGoesBy','fgPhone','fgEmail','fgReason','fgNote'];
 const dsecBody = k => $('dsec' + k[0].toUpperCase() + k.slice(1));
 function setDSection(k, open) {
@@ -2408,13 +2498,28 @@ function openDetail(visit, focusName) {
     b3.onclick = () => { pullDetail(); editing.followAt = fn(); editing.followDone = false; openDetail(editing); };
     fz.appendChild(b3);
   });
+  /* Sits on the same wrapped run as the three presets, so picking a date is one of the
+     choices rather than a separate control below them. The real input is off-screen. */
+  const pick = document.createElement('button');
+  pick.id = 'dPickDate'; pick.type = 'button';
+  pick.textContent = editing.followAt ? '📅 ' + fmtWhenClock(editing.followAt) : '📅 Pick a date';
+  pick.onclick = () => {
+    const inp = $('dFollow');
+    // showPicker is the clean way; iOS Safari has not always had it, hence the fallback
+    try { if (typeof inp.showPicker === 'function') { inp.showPicker(); return; } } catch (e) {}
+    inp.focus(); inp.click();
+  };
+  fz.appendChild(pick);
   if (editing.followAt) {
     const clr = document.createElement('button');
     clr.className = 'chip'; clr.textContent = '✕ clear'; clr.style.color = '#fca5a5';
     clr.onclick = () => { pullDetail(); editing.followAt = null; editing.followDone = false; openDetail(editing); };
     fz.appendChild(clr);
   }
+  // still round-trips through toLocalInput — that is the DST fix, do not simplify it
   $('dFollow').value = (editing.followAt && !editing.followDone) ? toLocalInput(editing.followAt) : '';
+  // the calendar button is meaningless without a date, and a row back when unused
+  $('dIcs').classList.toggle('hide', !(editing.followAt && !editing.followDone));
 
   renderLog();
   updateDSectionCounts();
@@ -2458,6 +2563,7 @@ async function moveBook(to) {
   const from = editing.line || 'roof';
   if (to === from) return;
   pullDetail();
+  flushPendingNote();      // a note typed but not yet added is still what he meant to write
   // never saved, so there is nothing on disk to move and nothing to warn about
   if (editing._new) { editing.line = to; openDetail(editing); buzz(15); return; }
   const oldSlot = vKey(editing.key, from);
@@ -2473,7 +2579,27 @@ async function moveBook(to) {
     + `${LINES[to].label}. Both sets end up in the one book. Nothing is deleted, and the newest mark is the one that shows.\n`;
   msg += `\nYour walking track is not touched.`;
   if (!confirm(msg)) return;
-  for (const v of mine) { v.line = to; await DB.put('visits', v).catch(()=>{}); }
+  /* Every record moves or none does. Writing them one at a time and shrugging off the
+     failures left memory saying one book and the disk saying the other — the house
+     would jump back at the next launch with nothing said. Nothing else in the app
+     rewrites a slot key, so there is no second chance to notice. */
+  const done = [];
+  let failed = false;
+  for (const v of mine) {
+    v.line = to;
+    try { await DB.put('visits', v); done.push(v); }
+    catch (e) { failed = true; break; }
+  }
+  if (failed) {
+    for (const v of mine) v.line = from;                 // put memory back as it was
+    for (const v of done) await DB.put('visits', v).catch(()=>{});
+    flashToast('Nothing was moved',
+      'The phone refused to save the change, so the house stays where it was. Take a full backup now.',
+      '#ef4444');
+    renderBackupNag();
+    openDetail(editing);
+    return;
+  }
   if (booked.length) { booked.forEach(a => a.line = to); saveAppts(); }
   // rebuild both slots the same way a restart would: newest record wins
   state.visits.delete(oldSlot);
@@ -2520,9 +2646,15 @@ function renderLog() {
       if (next.length) {
         if (!confirm(e.kind === 'status' ? 'Remove this status entry from the log?' : 'Delete this note?')) return;
         editing.log = next;
+        /* Straight to disk. Removing a line reads as done and finished, and closing
+           the panel without tapping Save used to bring every one of them back. */
+        await persistEditing();
         renderLog(); buzz(20);
         return;
       }
+      /* A door that has never been marked has nothing to wipe and no history to keep,
+         so there is nothing to ask about. */
+      if (editing._new) { closeSheet('detailSheet'); return; }
       /* The last line. With nothing logged there is no history left for this door, and
          the app has no such thing as a marked-but-blank house — so this asks which he
          means rather than deciding for him. */
@@ -2543,7 +2675,9 @@ function renderLog() {
                  + '. Your walking track is not touched. Cannot be undone.' },
           { key:null,  label:'Leave it alone', sub:'Nothing is removed.' },
         ]);
-      if (pick === 'keep') { editing.log = []; renderLog(); buzz(20); }
+      // "keep" has to reach disk too, or the emptied log walks back in on the next
+      // reload — which is the whole bug this round set out to kill
+      if (pick === 'keep') { editing.log = []; await persistEditing(); renderLog(); buzz(20); }
       else if (pick === 'wipe') await wipeHouse();
     };
     acts.appendChild(del);
@@ -2576,6 +2710,7 @@ function startEditEntry(row, e) {
       return;
     }
     editing.log = cleaned;
+    persistEditing();          // an edit that looks committed has to be committed
     renderLog();
   };
   ta.addEventListener('blur', commit, {once:true});
@@ -2617,7 +2752,9 @@ async function saveDetail() {
   const lg = logOf(editing);
   const lastStatus = [...lg].reverse().find(e => e.kind === 'status');
   if (lg.length && (!lastStatus || lastStatus.status !== editing.status))
-    lg.push({ id:newId(), ts:Date.now(), kind:'status', status:editing.status, text:'' });
+    // stamped with when the door was actually worked, not with when he happened to be
+    // typing. Date.now() here made every export claim the wrong time.
+    lg.push({ id:newId(), ts:editing.ts || Date.now(), kind:'status', status:editing.status, text:'' });
   editing.log = lg;
   editing.notes = lg.filter(e => e.kind === 'note').map(e => e.text).join(' | ');
   await persistEditing();
@@ -2701,8 +2838,8 @@ function askChoice(title, body, opts) {
     $('askTitle').textContent = title;
     $('askBody').innerHTML = body;
     const host = $('askBtns'); host.innerHTML = '';
-    let done = false;
-    const finish = k => { if (done) return; done = true; closeSheet('askSheet'); resolve(k); };
+    let done = false, cleanup = () => {};
+    const finish = k => { if (done) return; done = true; cleanup(); closeSheet('askSheet'); resolve(k); };
     opts.forEach((o, i) => {
       const b = document.createElement('button');
       b.className = (i === 0 ? 'primary' : 'ghost') + (o.danger ? ' danger' : '');
@@ -2712,9 +2849,14 @@ function askChoice(title, body, opts) {
       b.onclick = () => finish(o.key);
       host.appendChild(b);
     });
-    // tapping the dimmed area behind it is the same as backing out
+    /* Tapping the dimmed area behind it is the same as backing out. NOT {once:true}:
+       that gets spent by the first tap anywhere inside the sheet — the title, the body,
+       the padding — after which the backdrop stops answering and the promise never
+       settles. On a truck screen a stray tap is normal. */
     const sheet = $('askSheet');
-    sheet.addEventListener('click', e => { if (e.target === sheet) finish(null); }, { once:true });
+    const onBackdrop = e => { if (e.target === sheet) finish(null); };
+    sheet.addEventListener('click', onBackdrop);
+    cleanup = () => sheet.removeEventListener('click', onBackdrop);
     openSheet('askSheet');
   });
 }
@@ -2785,6 +2927,13 @@ async function loadForView() {
   }
 }
 const passesFilter = line => mapOpts.filter === 'all' || mapOpts.filter === line;
+/* An appraisal flyer through the door is a house worth a roofing knock later. It is
+   read off what is already stored — the Appraisal book plus "Left material" — so no
+   new field, no new tap, and it works backwards over everything already logged. */
+function flyerLeft(parcelKey) {
+  const v = state.visits.get(vKey(parcelKey, 'appraisal'));
+  return !!v && v.status === 'material';
+}
 
 function refreshMapLayers() {
   const m = window._map; if (!m) return;
@@ -2845,19 +2994,33 @@ function refreshMapLayers() {
       /* Hazard stripes on the lot line: a solid yellow pass with a dashed black pass
          over it. The solid-versus-dashed difference between the two books stays
          readable underneath, because this is drawn as a separate ring on top. */
-      if (p.occ === 'rental') {
+      if (p.occ === 'rental' && state.showRentals) {
         /* Scaled to the lot as it appears on screen, not a fixed weight. A ring
            heavy enough to read at zoom 19 covers a whole lot at zoom 16 — and the
-           status colour underneath is the more important signal of the two. */
+           status colour underneath is the more important signal of the two.
+           Toned down in v8: measured against live Franklin data, about 30% of lots in
+           an ordinary Columbus neighbourhood are rentals and 52% in Linden, so at the
+           old weight a third to a half of the screen was hazard stripes and nothing
+           else on the map was saying anything. */
         const a = m.latLngToLayerPoint([p.bbox[1], p.bbox[0]]);
         const b = m.latLngToLayerPoint([p.bbox[3], p.bbox[2]]);
         const lotPx = Math.min(Math.abs(b.x - a.x), Math.abs(b.y - a.y));
-        const sw = Math.max(2.5, Math.min(10, lotPx * 0.22));
+        const sw = Math.max(1.8, Math.min(6, lotPx * 0.17));
         const dash = Math.max(6, Math.round(sw * 1.6));
         const stripe = { fill:false, interactive:false, lineCap:'butt' };
         pl.addLayer(L.polygon(latlngs, {...stripe, color:'#facc15', weight:sw, opacity:1}));
         pl.addLayer(L.polygon(latlngs, {...stripe, color:'#0b0f14', weight:sw, opacity:1,
           dashArray:`${dash} ${dash}`}));
+      }
+      /* A house where an appraisal flyer was left. Deliberately NOT gated by the book
+         filter: the whole point is to see, while knocking roofing, which houses have
+         already had a flyer through the door. Violet reads against every status colour
+         and against the yellow-and-black rental ring. */
+      if (flyerLeft(p.key)) {
+        const at = p.house || p.cen;
+        pl.addLayer(L.circleMarker([at[1], at[0]], {
+          radius: z >= 18 ? 6 : 4.5, weight: 2, color: '#f5f3ff',
+          fillColor: '#a855f7', fillOpacity: 1, interactive: false }));
       }
       if (z >= MAP_LABEL_ZOOM) {
         const lines = labelLines(p, state.mapData, 3);
@@ -3843,7 +4006,7 @@ document.querySelectorAll('.dsecHead[data-msec]').forEach(b => {
 /* ---- what version is actually on the phone ----
    Matches the service worker cache name, so "did the update land" is answerable by
    looking rather than guessing. */
-const BUILD_VERSION = 'v8';
+const BUILD_VERSION = 'v9';
 const BUILD_DATE = '28 July 2026';
 function renderVersionStamp() {
   const el = $('versionStamp'); if (!el) return;
@@ -3880,6 +4043,17 @@ $('mQuiet').onclick = () => {
   state.quietPrompt = !state.quietPrompt;
   localStorage.setItem('quietPrompt', state.quietPrompt ? '1' : '0');
   renderQuietChip(); buzz(10);
+};
+function renderRentalChip() {
+  const b = $('mRentals'); if (!b) return;
+  b.classList.toggle('on', !!state.showRentals);
+  b.textContent = state.showRentals ? 'On — marked on both maps' : 'Off — maps stay clean';
+}
+$('mRentals').onclick = () => {
+  state.showRentals = !state.showRentals;
+  localStorage.setItem('showRentals', state.showRentals ? '1' : '0');
+  renderRentalChip(); buzz(10);
+  drawMini(); if (window._map) refreshMapLayers();
 };
 function renderStorageNote() {
   const el = $('storageNote'); if (!el) return;
@@ -4027,7 +4201,9 @@ function renderApptLink(v) {
     setTimeout(() => {
       $('apptNew').click();
       $('apLabel').value = displayName(rec);
-      $('apAddr').value = rec.addr || '';
+      apptDraft.addr = rec.addr || '';
+      $('apFind').value = rec.addr || '';
+      $('apFindClear').classList.toggle('hide', !rec.addr);
       if (rec.lat != null) {
         apptDraft.lat = rec.lat; apptDraft.lon = rec.lon;
         apptDraft.src = 'cust'; apptDraft.srcLabel = displayName(rec);
@@ -4206,7 +4382,7 @@ $('menuBtn').onclick = () => {
   try {
     renderStats(); renderSnapChips(); renderDetailChips(); renderDiag(); renderParkInfo();
     renderBackupNag(); renderPinInfo(); renderHomeInfo(); renderPaceInfo(); renderDriveChips();
-    renderHubDataChips(); renderStorageNote(); renderVersionStamp(); renderQuietChip();
+    renderHubDataChips(); renderStorageNote(); renderVersionStamp(); renderQuietChip(); renderRentalChip();
     renderLineNames(); restoreMenuSections();
   } catch (e) {
     console.error('menu render', e);
@@ -4215,6 +4391,7 @@ $('menuBtn').onclick = () => {
 };
 $('mCrm').onclick = openCrm;
 $('crmIcs').onclick = () => addToCalendar(dueList());
+$('crmShare').onclick = sharePhoneList;
 /* The search box lives in static markup on purpose. Rebuilt inside renderCrm it
    would lose the caret on every keystroke. */
 $('crmSearch').oninput = e => { crmQuery = e.target.value; renderCrm(); };
@@ -4226,6 +4403,10 @@ $('mClearHome').onclick = () => {
   flashToast('Home cleared', '', '#64748b');
 };
 $('dIcs').onclick = () => { pullDetail(); addToCalendar([editing]); };
+/* The date control is off-screen, so picking a date changes nothing he can see unless
+   the panel is redrawn. Redraw: the pill then shows the date, the clear chip appears,
+   and the calendar button comes out of hiding. */
+$('dFollow').onchange = () => { pullDetail(); if (editing) openDetail(editing); };
 $('mSession').onclick = openSession;
 $('doneBtn').onclick = () => { openSession(); buzz(10); };
 $('sesKeep').onclick = () => { if (!state.session) { startSession(); setPaused(false); } closeSheet('sessionSheet'); };
@@ -4316,6 +4497,15 @@ $('findInput').oninput = runFind;
 $('findInput').onfocus = runFind;
 $('findClear').onclick = () => { $('findInput').value = ''; renderFind([], ''); $('findClear').classList.add('hide'); $('findInput').focus(); };
 $('findInput').onkeydown = e => { if (e.key === 'Enter') { e.preventDefault(); if (findRows.length) goToFind(0); } };
+$('apFind').oninput = runApFind;
+$('apFind').onfocus = runApFind;
+$('apFindClear').onclick = () => {
+  $('apFind').value = '';
+  if (apptDraft) { apptDraft.lat = null; apptDraft.lon = null; apptDraft.addr = ''; apptDraft.src = null; apptDraft.key = null; apptDraft.line = null; }
+  $('apFindClear').classList.add('hide');
+  renderApFind(apFindHere(), ''); renderApWhere(); $('apFind').focus();
+};
+$('apFind').onkeydown = e => { if (e.key === 'Enter') { e.preventDefault(); if (apFindRows.length) pickApFind(0); } };
 $('mapSat').onclick = () => { mapOpts.sat = !mapOpts.sat;
   if (mapOpts.sat) { window._map.removeLayer(window._street); window._satL.addTo(window._map); }
   else { window._map.removeLayer(window._satL); window._street.addTo(window._map); }
@@ -4546,14 +4736,12 @@ function nextMorning(days) {
   const d = new Date(); d.setDate(d.getDate() + days); d.setHours(9, 0, 0, 0);
   return +d;
 }
+/* Three, not seven. Seven presets took two full rows and he used three of them.
+   Anything that is not 1, 3 or 7 days is typed on the date picker. */
 const FOLLOWUPS = [
-  ['1 hour',    () => Date.now() + HOUR],
-  ['3 hours',   () => Date.now() + 3*HOUR],
-  ['Tomorrow',  () => nextMorning(1)],
-  ['2 days',    () => nextMorning(2)],
-  ['1 week',    () => nextMorning(7)],
-  ['2 weeks',   () => nextMorning(14)],
-  ['1 month',   () => nextMorning(30)],
+  ['1 day',  () => nextMorning(1)],
+  ['3 days', () => nextMorning(3)],
+  ['7 days', () => nextMorning(7)],
 ];
 const dueList = () => state.visitLog
   .filter(v => v.followAt && !v.followDone)
@@ -4996,6 +5184,8 @@ function renderCrm() {
   if (crmQuery.trim()) rows = rows.filter(v => matchesQuery(v, crmQuery));
 
   rows = sortRows(rows, sortNow);
+  // held so "Share this list" sends exactly what he is looking at, filters and all
+  crmShown = rows;
 
   const narrowed = before - rows.length;
   $('crmCount').textContent = !before ? ''
@@ -5407,14 +5597,8 @@ function recordAt(lat, lon, line) {
     val:best.val||null, sqft:best.sqft||null, saleTs:best.saleTs||null, salePrice:best.salePrice||null,
     name:'', goesBy:'', nameFromOwner:false, phone:'', email:'', notes:'', tags:[], follow:'', _new:true };
 }
-/* Location comes from something already on the phone rather than a typed address,
-   because resolving an address means a geocoding service, an account and signal. */
-const AP_WHERE = [
-  ['here',  'Where I am now'],
-  ['cust',  'A customer'],
-  ['home',  'Home'],
-  ['truck', 'The truck'],
-];
+/* AP_WHERE, pickApptWhere and openCustPicker went in v8. The address search that
+   replaced them does the same job in one field, and shows the address in words. */
 function renderApMins() {
   const host = $('apMins'); if (!host) return;
   const cur = (apptDraft && cleanMins(apptDraft.mins)) || APPT_MINS_DEFAULT;
@@ -5432,70 +5616,93 @@ function renderApMins() {
   }
 }
 function renderApWhere() {
-  const host = $('apWhere'); host.innerHTML = '';
-  AP_WHERE.forEach(([k, label]) => {
-    const b = document.createElement('button');
-    b.className = 'chip' + (apptDraft && apptDraft.src === k ? ' on' : '');
-    b.textContent = label;
-    b.onclick = () => pickApptWhere(k);
-    host.appendChild(b);
-  });
   const d = apptDraft;
   $('apWhereInfo').textContent = !d || d.lat == null
-    ? 'Pick where it is so the app can work out the drive.'
-    : `Location set${d.srcLabel ? ' from ' + d.srcLabel : ''}. Saved as a point on the map.`;
+    ? 'Type a street or a house number. It opens on the address you are standing at.'
+    : `${d.addr || 'Location set'}${d.srcLabel ? ' — ' + d.srcLabel : ''}. Saved as a point on the map.`;
 }
-function pickApptWhere(k) {
-  const d = apptDraft;
-  if (k === 'here') {
-    if (!state.pos) { flashToast('No position yet', '', '#f59e0b'); return; }
-    d.lat = state.pos.lat; d.lon = state.pos.lon; d.src = k; d.srcLabel = 'where you are';
-  } else if (k === 'home') {
-    if (!state.home) { flashToast('No home set', 'Set it in the menu first', '#f59e0b'); return; }
-    d.lat = state.home.lat; d.lon = state.home.lon; d.src = k; d.srcLabel = 'home';
-  } else if (k === 'truck') {
-    if (!state.vehicle) { flashToast('No truck parked', 'Hold the round map to drop a pin', '#f59e0b'); return; }
-    d.lat = state.vehicle.lat; d.lon = state.vehicle.lon; d.src = k; d.srcLabel = 'the truck';
-  } else if (k === 'cust') {
-    openCustPicker(v => {
-      d.lat = v.lat; d.lon = v.lon; d.src = 'cust'; d.srcLabel = displayName(v);
-      if (!$('apAddr').value) $('apAddr').value = v.addr || '';
-      if (!$('apLabel').value) $('apLabel').value = displayName(v);
-      d.key = v.key; d.line = v.line || 'roof';
-      renderApWhere();
-    });
-    return;
+/* The appointment form's own address search. Same rows and the same county service as
+   the big map's, with one real difference: there is no map here, so the county to ask
+   comes from where he is standing rather than from a map centre. */
+let apFindTimer = null, apFindAbort = null, apFindRows = [];
+function renderApFind(rows, note) {
+  const host = $('apFindList');
+  apFindRows = rows;
+  if (!rows.length && !note) { host.classList.add('hide'); host.innerHTML = ''; return; }
+  host.classList.remove('hide');
+  host.innerHTML = '';
+  rows.forEach((r, i) => {
+    const el = document.createElement('div');
+    el.className = 'findRow';
+    el.innerHTML = `<div class="t"><b>${esc(r.addr)}</b><em>${esc(r.owner || 'no name on record')}</em></div>`
+      + (r.tag ? `<span class="tag">${esc(r.tag)}</span>` : '');
+    el.onclick = () => pickApFind(i);
+    host.appendChild(el);
+  });
+  if (note) {
+    const n = document.createElement('div');
+    n.className = 'findNote'; n.textContent = note;
+    host.appendChild(n);
   }
-  renderApWhere();
 }
-function openCustPicker(onPick) {
-  const render = () => {
-    const q = $('pcSearch').value;
-    const rows = state.visitLog
-      .filter(v => { const l = state.visits.get(vKey(v.key, v.line)); return l && l.id === v.id; })
-      .filter(v => v.lat != null)
-      .filter(v => matchesQuery(v, q))
-      .sort((a, b) => b.ts - a.ts)
-      .slice(0, 60);
-    const host = $('pcList'); host.innerHTML = '';
-    if (!rows.length) { host.innerHTML = `<p style="color:var(--dim);padding:10px 2px">Nothing matches.</p>`; return; }
-    rows.forEach(v => {
-      const el = document.createElement('div');
-      el.className = 'apRow';
-      el.innerHTML = `<div class="t"><div class="a">${esc(displayName(v))}</div>
-        <div class="o">${esc(v.addr || '')}</div></div>`;
-      el.onclick = () => { closeSheet('pickCustSheet'); onPick(v); };
-      host.appendChild(el);
-    });
-  };
-  $('pcSearch').value = '';
-  $('pcSearch').oninput = render;
-  render();
-  openSheet('pickCustSheet');
+function pickApFind(i) {
+  const r = apFindRows[i]; if (!r || !apptDraft) return;
+  const d = apptDraft;
+  d.lat = r.lat; d.lon = r.lon; d.addr = r.addr;
+  d.src = 'find'; d.srcLabel = r.here ? 'where you are standing' : '';
+  /* Only a door already in his books carries a slot key. A lot picked off the county
+     service is just a point until he knocks it, and writing a key here would tie the
+     appointment to a record that does not exist. */
+  const known = [...state.visits.values()].find(v => v.key === r.key);
+  d.key = known ? known.key : null;
+  d.line = known ? (known.line || 'roof') : null;
+  if (!$('apLabel').value && known) $('apLabel').value = displayName(known);
+  $('apFind').value = r.addr;
+  $('apFindClear').classList.remove('hide');
+  renderApFind([], '');
+  $('apFind').blur();
+  renderApWhere(); buzz(15);
+}
+/** what he is standing at, so the search opens with something useful in it */
+function apFindHere() {
+  if (!state.pos) return [];
+  const p = nearestParcel(state.pos.lat, state.pos.lon);
+  if (!p) return [];
+  const at = p.house || p.cen;
+  return [{ addr: p.addr, owner: shortOwner(p.owner || ''), lat: at[1], lon: at[0],
+            key: p.key, tag: 'where you are', here: true }];
+}
+function runApFind() {
+  const q = $('apFind').value;
+  $('apFindClear').classList.toggle('hide', !q);
+  if (apFindAbort) { apFindAbort.abort(); apFindAbort = null; }
+  if (findNorm(q).length < 2) { renderApFind(apFindHere(), ''); return; }
+  const local = findLocal(q);
+  renderApFind(local, local.length ? '' : 'Nothing loaded matches. Checking the county…');
+  clearTimeout(apFindTimer);
+  apFindTimer = setTimeout(async () => {
+    if (findNorm(q).length < 3 || !state.pos) return;
+    apFindAbort = new AbortController();
+    try {
+      const remote = await findRemoteAt(q, state.pos.lat, state.pos.lon, apFindAbort.signal);
+      if ($('apFind').value !== q) return;                    // he kept typing
+      const have = new Set(local.map(r => findNorm(r.addr)));
+      const merged = local.concat(remote.filter(r => !have.has(findNorm(r.addr))));
+      renderApFind(merged.slice(0, 14), merged.length ? '' : 'No match in this county.');
+    } catch (e) {
+      if (e.name === 'AbortError') return;
+      if (!local.length) renderApFind([], navigator.onLine
+        ? 'The county service did not answer. Streets already loaded can still be searched.'
+        : 'No signal, so only streets already loaded can be searched.');
+    } finally { apFindAbort = null; }
+  }, 280);
 }
 $('apptNew').onclick = () => {
-  apptDraft = { id:'a' + Date.now() + Math.random().toString(36).slice(2,6), lat:null, lon:null, src:null, mins:APPT_MINS_DEFAULT };
-  $('apLabel').value = ''; $('apAddr').value = '';
+  apptDraft = { id:'a' + Date.now() + Math.random().toString(36).slice(2,6), lat:null, lon:null, addr:'', src:null, mins:APPT_MINS_DEFAULT };
+  $('apLabel').value = '';
+  $('apFind').value = ''; $('apFindClear').classList.add('hide');
+  // opens showing the address he is standing at, so the commonest case is one tap
+  renderApFind(apFindHere(), '');
   const d = new Date(Date.now() + HOUR);
   d.setMinutes(0, 0, 0);
   $('apAt').value = new Date(d.getTime() - d.getTimezoneOffset()*60000).toISOString().slice(0,16);
@@ -5529,7 +5736,7 @@ $('apSave').onclick = () => {
   if (!isFinite(at)) { flashToast('Pick a time', 'An appointment needs a when', '#f59e0b'); return; }
   state.appts = [...state.appts.filter(a => a.id !== d.id), {
     id:d.id, label:($('apLabel').value || '').trim() || 'Appointment',
-    addr:($('apAddr').value || '').trim(), lat:d.lat, lon:d.lon, at,
+    addr:(d.addr || '').trim(), lat:d.lat, lon:d.lon, at,
     mins: cleanMins(d.mins) || APPT_MINS_DEFAULT,
     key:d.key || null, line:d.line || null,
   }];
@@ -5819,11 +6026,12 @@ function findLocal(q) {
     return a.addr.localeCompare(b.addr);
   }).slice(0, 12);
 }
-/** ask the auditor service covering the current view, by address */
-async function findRemote(q, signal) {
-  if (!window._map) return [];
-  const c0 = window._map.getCenter();
-  const c = countiesFor(c0.lat, c0.lng)[0];
+/** ask the auditor service covering a point, by address.
+    The appointment form has no map to take a centre from, so the point is passed in
+    rather than read off window._map. The big map passes its centre; the form passes
+    where he is standing. */
+async function findRemoteAt(q, lat, lon, signal) {
+  const c = countiesFor(lat, lon)[0];
   if (!c) return [];
   const needle = findNorm(q).replace(/'/g, "''");
   if (needle.length < 3) return [];
@@ -5854,6 +6062,12 @@ async function findRemote(q, signal) {
                key: `${c.key}:${String(a[c.pid] ?? '').trim()}`, tag: c.name });
   }
   return out;
+}
+/** the big map's version: the county comes from whatever it is looking at */
+function findRemote(q, signal) {
+  if (!window._map) return Promise.resolve([]);
+  const c0 = window._map.getCenter();
+  return findRemoteAt(q, c0.lat, c0.lng, signal);
 }
 let findTimer = null, findAbort = null, findRows = [];
 function renderFind(rows, note) {
@@ -5917,6 +6131,99 @@ function runFind() {
         : 'No signal, so only streets already loaded can be searched.');
     } finally { findAbort = null; }
   }, 280);
+}
+
+/* ---------------- the call sheet ----------------
+   A self-contained page of whatever the customer list is currently showing. It shares
+   from the phone and prints to PDF from iOS through the normal Share → Print route.
+   NOT a real PDF: that would mean fetching a library, and this app has to work in a
+   dead zone. Everything is inline, so the file opens with no signal and nothing to load. */
+let crmShown = [];
+function phoneListHtml(rows, heading) {
+  const when = new Date().toLocaleString([], {weekday:'short', day:'numeric', month:'short',
+                                              hour:'numeric', minute:'2-digit'});
+  const cell = v => {
+    const name = displayName(v);
+    // only worth a line when it is telling him something the name above does not
+    const deed = (v.owner && name !== v.owner && !nameIsFromDeed(v)) ? v.owner : '';
+    const st  = (STATUS[v.status] || {label:v.status || ''}).label;
+    const dz  = DISPO[v.dispo || 'new'] ? DISPO[v.dispo || 'new'].label : '';
+    const due = v.followAt && !v.followDone
+      ? new Date(v.followAt).toLocaleString([], {weekday:'short', day:'numeric', month:'short', hour:'numeric', minute:'2-digit'})
+      : '';
+    const overdue = v.followAt && !v.followDone && v.followAt < Date.now();
+    /* The last thing that HAPPENED at the door, which means the last status mark — not
+       simply the last log line. Taking the last line of any kind printed the newest note
+       here and again in the note box underneath. */
+    const last = logOf(v).filter(e => e.kind === 'status').slice(-1)[0];
+    const lastTxt = last ? (STATUS[last.status] || {label:last.status}).label
+                         : (STATUS[v.status] || {label:v.status || ''}).label;
+    const lastWhen = new Date(last ? last.ts : v.ts).toLocaleDateString([], {day:'numeric', month:'short'});
+    const notes = noteText(v);
+    const tel = (v.phone || '').replace(/[^\d+]/g, '');
+    return `<article>
+      <h2>${esc(name)}${v.phone ? ` <a class="tel" href="tel:${esc(tel)}">${esc(v.phone)}</a>` : ''}</h2>
+      <p class="addr">${esc(v.addr || 'Unnamed lot')}</p>
+      <p class="meta">
+        <span class="bk ${(v.line||'roof')==='appraisal'?'ap':'rf'}">${esc((LINES[v.line||'roof']||{label:v.line}).label)}</span>
+        ${st ? `<span>${esc(st)}</span>` : ''}
+        ${dz ? `<span>${esc(dz)}</span>` : ''}
+        ${due ? `<span class="${overdue ? 'due late' : 'due'}">Come back ${esc(due)}</span>` : ''}
+        ${deed ? `<span class="deed">Deed: ${esc(deed)}</span>` : ''}
+      </p>
+      ${lastTxt ? `<p class="last"><b>Last at the door</b> ${esc(lastWhen)} — ${esc(lastTxt)}</p>` : ''}
+      ${notes ? `<div class="note">${esc(notes)}</div>` : ''}
+    </article>`;
+  };
+  return `<!doctype html><html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>${esc(heading)}</title>
+<style>
+  :root{color-scheme:light}
+  *{box-sizing:border-box}
+  body{margin:0;padding:18px 16px 40px;background:#fff;color:#111827;
+       font:15px/1.45 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif}
+  header{border-bottom:2px solid #111827;padding-bottom:10px;margin-bottom:14px}
+  h1{margin:0;font-size:20px;letter-spacing:-.2px}
+  .sub{color:#6b7280;font-size:12.5px;margin-top:3px}
+  article{border:1px solid #e5e7eb;border-radius:10px;padding:11px 13px;margin-bottom:10px;
+          break-inside:avoid;page-break-inside:avoid}
+  h2{margin:0 0 2px;font-size:16px;display:flex;flex-wrap:wrap;gap:8px;align-items:baseline}
+  .tel{font-size:15px;font-weight:700;color:#1d4ed8;text-decoration:none;white-space:nowrap}
+  .addr{margin:0 0 6px;font-size:13.5px;color:#374151}
+  .meta{margin:0;display:flex;flex-wrap:wrap;gap:6px;font-size:11.5px}
+  .meta span{border:1px solid #d1d5db;border-radius:999px;padding:1px 8px;color:#374151}
+  .bk.rf{border-color:#0ea5e9;color:#0369a1}
+  .bk.ap{border-color:#a855f7;color:#7e22ce}
+  .due{border-color:#f59e0b;color:#92400e}
+  .due.late{border-color:#ef4444;color:#b91c1c;font-weight:700}
+  .deed{color:#6b7280}
+  .last{margin:7px 0 0;font-size:12.5px;color:#374151}
+  /* Notes are the reason he is looking at this at all, so they do not read as small print. */
+  .note{margin-top:8px;padding:8px 10px;border-left:4px solid #f59e0b;background:#fffbeb;
+        border-radius:0 8px 8px 0;font-size:14px;white-space:pre-wrap}
+  footer{margin-top:16px;color:#6b7280;font-size:11.5px}
+  @media print{ body{padding:0} article{border-color:#9ca3af} .tel{color:#111827} }
+</style></head><body>
+<header><h1>${esc(heading)}</h1>
+<div class="sub">${rows.length} ${rows.length === 1 ? 'person' : 'people'} · made ${esc(when)} · CanvassEaze</div></header>
+${rows.length ? rows.map(cell).join('\n') : '<p>Nothing matches those filters.</p>'}
+<footer>Phone numbers are tappable. To print: Share → Print → pinch out → Save as PDF.</footer>
+</body></html>`;
+}
+async function sharePhoneList() {
+  const rows = crmShown || [];
+  if (!rows.length) { flashToast('Nothing to share', 'Change the filters so there is a list first', '#64748b'); return; }
+  const heading = crmFilter === 'due' ? 'Follow-ups due' : 'Call sheet';
+  const p = { name:`call-sheet-${stamp()}.html`, text: phoneListHtml(rows, heading), type:'text/html' };
+  const r = await shareOut(p);
+  if (r === 'cancelled') { flashToast('Nothing was sent', 'You closed the share sheet', '#f59e0b'); return; }
+  if (r !== 'shared') {
+    download(p.name, p.text, p.type);
+    flashToast('Downloaded instead', 'Open it from Files, then Share → Print to make a PDF', '#38bdf8');
+    return;
+  }
+  flashToast('Call sheet sent', `${rows.length} ${rows.length===1?'person':'people'}`, '#22c55e');
 }
 
 const LIST_VIEW_MAX = 300;
@@ -6291,6 +6598,8 @@ window.addEventListener('resize', drawMini);
   const hs = localStorage.getItem('hubSpan'); if (hs) state.hubSpan = +hs;
   state.trackDetail = localStorage.getItem('trackDetail') === 'fine' ? 'fine' : 'normal';
   state.hubSat = localStorage.getItem('hubSat') === '1';
+  // default ON: he asked for them on everything, the switch is for the days he does not
+  state.showRentals = localStorage.getItem('showRentals') !== '0';
   state.headUp = localStorage.getItem('headUp') === '1';
   $('hubRot').classList.toggle('on', state.headUp);
   $('hubSat').classList.toggle('on', state.hubSat);

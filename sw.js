@@ -4,7 +4,7 @@
    Parcel queries are network-first with a cache fallback, so a street you
    have already walked still shows its lot lines in a dead zone. */
 
-const SHELL = 'canvass-shell-v8';
+const SHELL = 'canvass-shell-v9';
 const TILES = 'canvass-tiles-v1';
 const DATA  = 'canvass-data-v1';
 
