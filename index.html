@@ -37,23 +37,46 @@ input,textarea,select{font:inherit;color:var(--txt);background:var(--card2);bord
 .pill{display:inline-flex;align-items:center;gap:5px;background:var(--card);border:1px solid var(--line);border-radius:999px;padding:4px 9px;white-space:nowrap}
 .dot{width:8px;height:8px;border-radius:50%;background:#64748b;flex:0 0 auto}
 .dot.good{background:#22c55e}.dot.ok{background:#f59e0b}.dot.bad{background:#ef4444}
-#stripSpacer{flex:1}
-#strip{overflow:hidden}
-#strip .pill{flex:0 1 auto;overflow:hidden;text-overflow:ellipsis}
+/* keeps the count and the menu hard right on whichever row they land on, so the menu
+   stays where his thumb already goes for it whether the strip wraps or not */
+/* keeps the count and the menu hard right on whichever row they land on, so the menu
+   stays where his thumb already goes for it whether the strip wraps or not */
+#stripEnd{margin-left:auto;display:flex;align-items:center;gap:8px;flex:0 0 auto}
+#countyPill.warn{background:#3f1d1d;border-color:#ef4444;color:#fecaca;font-weight:800}
+/* Wrap rather than shave. With the truck parked AND the walking chip up, the old rule
+   squeezed ROOFING down to "ROOFI" and Franklin Co. to half a word — and which book he
+   is in is the one thing here that must never be ambiguous. A second line costs a few
+   pixels of height on the rare occasion everything is showing at once. */
+#strip{overflow:hidden;flex-wrap:wrap;row-gap:6px}
+#strip .pill{flex:0 0 auto;white-space:nowrap}
 #countyPill{min-width:0}
 #menuBtn{flex:0 0 auto;position:relative;display:flex;align-items:center;gap:6px;font-size:20px;
-  padding:4px 4px 4px 10px;color:var(--dim);border-radius:999px}
-#menuCount{font-size:13px;font-weight:800;color:var(--txt);background:var(--card);border:1px solid var(--line);
-  border-radius:999px;padding:3px 9px;line-height:1}
+  padding:4px 6px 4px 6px;color:var(--dim);border-radius:999px;min-height:44px;min-width:44px;
+  justify-content:center}
+/* Its own button now, and it says what the number is. Opens how today is going. */
+#doneBtn{flex:0 0 auto;display:flex;align-items:center;gap:5px;min-height:44px;
+  font-size:11px;font-weight:800;letter-spacing:.03em;color:var(--dim);
+  background:var(--card);border:1px solid var(--line);border-radius:999px;padding:0 11px}
+#doneBtn:active{background:var(--card2)}
+#menuCount{font-size:14px;font-weight:900;color:var(--txt);line-height:1}
 #menuDot{position:absolute;top:0;right:1px;width:9px;height:9px;border-radius:50%;background:#ef4444;
   box-shadow:0 0 0 2px var(--bg)}
-#strip{overflow:hidden}
-#strip .pill{flex:0 1 auto;overflow:hidden;text-overflow:ellipsis}
+/* Wrap rather than shave. With the truck parked AND the walking chip up, the old rule
+   squeezed ROOFING down to "ROOFI" and Franklin Co. to half a word — and which book he
+   is in is the one thing here that must never be ambiguous. A second line costs a few
+   pixels of height on the rare occasion everything is showing at once. */
+#strip{overflow:hidden;flex-wrap:wrap;row-gap:6px}
+#strip .pill{flex:0 0 auto;white-space:nowrap}
 #countyPill{min-width:0}
 #menuBtn{flex:0 0 auto;position:relative;display:flex;align-items:center;gap:6px;font-size:20px;
-  padding:4px 4px 4px 10px;color:var(--dim);border-radius:999px}
-#menuCount{font-size:13px;font-weight:800;color:var(--txt);background:var(--card);border:1px solid var(--line);
-  border-radius:999px;padding:3px 9px;line-height:1}
+  padding:4px 6px 4px 6px;color:var(--dim);border-radius:999px;min-height:44px;min-width:44px;
+  justify-content:center}
+/* Its own button now, and it says what the number is. Opens how today is going. */
+#doneBtn{flex:0 0 auto;display:flex;align-items:center;gap:5px;min-height:44px;
+  font-size:11px;font-weight:800;letter-spacing:.03em;color:var(--dim);
+  background:var(--card);border:1px solid var(--line);border-radius:999px;padding:0 11px}
+#doneBtn:active{background:var(--card2)}
+#menuCount{font-size:14px;font-weight:900;color:var(--txt);line-height:1}
 #menuDot{position:absolute;top:0;right:1px;width:9px;height:9px;border-radius:50%;background:#ef4444;
   box-shadow:0 0 0 2px var(--bg)}
 #modePill{font-weight:900;letter-spacing:.6px;font-size:11px;padding:5px 11px;border-width:1px;border-style:solid}
@@ -62,6 +85,9 @@ input,textarea,select{font:inherit;color:var(--txt);background:var(--card2);bord
 #truckPill{background:#3b0d24;border-color:#f472b6;color:#fbcfe8;font-weight:800}
 #gpsPill.paused{background:#2a1608;border-color:#f59e0b;color:#fcd34d}
 #fixPill{background:#0b2f2a;border-color:#2dd4bf;color:#99f6e4;font-weight:800}
+#drivePill{font-weight:800}
+#drivePill.driving{background:#3b0d24;border-color:#f472b6;color:#fbcfe8}
+#drivePill.set{box-shadow:inset 0 0 0 1px currentColor}
 #menuBtn{font-size:20px;padding:2px 8px;color:var(--dim)}
 
 /* ---------- house card ---------- */
@@ -81,7 +107,12 @@ input,textarea,select{font:inherit;color:var(--txt);background:var(--card2);bord
 #alreadyTag{display:inline-block;font-size:12px;font-weight:700;padding:3px 9px;border-radius:999px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%}
 
 /* ---------- big buttons with a radial map hub in the middle ---------- */
-:root{ --hub: clamp(124px, 41vw, 176px); }
+/* Bigger after a day in the field: the four buttons have room to spare and the map
+   is what he actually reads between taps. */
+/* 67vw, picked off rendered phone-sized shots after the zoom buttons moved under the
+   map — hanging off the sides, they were what capped this. Real widths: SE 251,
+   iPhone 14/15/16 261, 16 Pro 263, Pro Max 278. The ceiling only binds on a Pro Max. */
+:root{ --hub: clamp(195px, 67vw, 278px); }
 #gridWrap{flex:1 1 auto;position:relative;padding:0 10px;min-height:0;display:flex}
 #grid{flex:1;display:grid;grid-template-columns:1fr 1fr;grid-template-rows:1fr 1fr;gap:10px;min-height:0}
 .act{border-radius:20px;display:flex;flex-direction:column;gap:3px;font-weight:800;letter-spacing:-.3px;color:#fff;box-shadow:inset 0 -4px 0 rgba(0,0,0,.22);transition:transform .06s ease,filter .06s ease;padding:14px}
@@ -112,8 +143,11 @@ input,textarea,select{font:inherit;color:var(--txt);background:var(--card2);bord
   box-shadow:0 3px 10px rgba(0,0,0,.5)}
 .hubBtn:active{background:#1c2430}
 .hubBtn.on{background:#2563eb;border-color:#60a5fa}
-#hubOut{left:50%;top:50%;transform:translate(calc(-50% - var(--hub)/2 - 6px), calc(-50% + var(--hub)/2 - 12px))}
-#hubIn {left:50%;top:50%;transform:translate(calc(-50% + var(--hub)/2 + 6px), calc(-50% + var(--hub)/2 - 12px))}
+/* − and + sit side by side under the hub, mirroring 🛰 and 🧭 above it. They used to
+   hang off the left and right edges, which is the widest the whole assembly ever got
+   and the thing that stopped the map growing. */
+#hubOut{left:50%;top:50%;transform:translate(calc(-50% - 22px), calc(-50% + var(--hub)/2 + 22px))}
+#hubIn {left:50%;top:50%;transform:translate(calc(-50% + 22px), calc(-50% + var(--hub)/2 + 22px))}
 #hubSat{left:50%;top:50%;transform:translate(calc(-50% - 22px), calc(-50% - var(--hub)/2 - 22px));font-size:14px}
 #hubRot{left:50%;top:50%;transform:translate(calc(-50% + 22px), calc(-50% - var(--hub)/2 - 22px));font-size:14px}
 #b-talked{background:var(--talked)} #b-material{background:var(--material)}
@@ -150,6 +184,13 @@ label.f{display:block;margin:12px 0 5px;font-size:12px;font-weight:800;color:var
 .chip{background:var(--card2);border:1px solid var(--line);border-radius:999px;padding:9px 13px;font-size:13px;font-weight:700;color:var(--dim)}
 .chip.on{background:#1e3a5f;border-color:#3b82f6;color:#dbeafe}
 .chips{display:flex;flex-wrap:wrap;gap:8px;margin-top:4px}
+/* Which book this door is filed under, and the one tap that moves it. */
+.bookRow{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin:2px 0 12px}
+.bookRow .bookLab{font-size:12px;font-weight:700;color:var(--dim);letter-spacing:.03em}
+/* No min-height override here on purpose. These two chips move a door between books —
+   the one control in the panel that rewrites the slot key — so they take the 44px
+   floor from the shared .chip rule like everything else. An override here quietly
+   shrank them to 38px, the only undersized targets in the whole panel. */
 .primary{background:#2563eb;color:#fff;border-radius:14px;padding:16px;font-weight:800;width:100%;font-size:16px;margin-top:18px}
 .ghost{background:var(--card2);border:1px solid var(--line);border-radius:14px;padding:14px;font-weight:700;width:100%;margin-top:10px;color:var(--txt)}
 .danger{color:#fca5a5}
@@ -204,6 +245,10 @@ label.f{display:block;margin:12px 0 5px;font-size:12px;font-weight:800;color:var
 .lsRow .sub{font-size:11.5px;color:var(--dim);font-weight:700;margin-top:2px}
 .lsRow .kv{display:flex;flex-wrap:wrap;gap:6px;margin-top:7px}
 .lsRow .kv span{font-size:10.5px;font-weight:700;color:var(--dim);border:1px solid var(--line);border-radius:999px;padding:2px 7px}
+/* What he typed is the point of the row. It was the same dim grey as the metadata. */
+.lsRow .note{font-size:13.5px;line-height:1.5;color:var(--txt);background:var(--card2);
+  border-left:3px solid #7dd3fc;border-radius:0 10px 10px 0;padding:8px 10px;margin-top:9px;
+  font-weight:600;white-space:pre-wrap;word-break:break-word}
 /* The tick arms the delete button, so it is the last control that should be small.
    It is a div, not a button, so the blanket 44px rule below does not reach it. */
 .apRow .tick{width:44px;height:44px;border-radius:10px;border:1.5px solid var(--line);background:var(--card2);
@@ -358,9 +403,15 @@ select{min-height:44px}
     <button class="pill" id="modePill">ROOFING</button>
     <span class="pill" id="countyPill">—</span>
     <button class="pill hide" id="truckPill">🚚 —</button>
+      <button class="pill hide" id="drivePill">🚶 on foot</button>
     <button class="pill hide" id="fixPill">📍 set by hand</button>
-    <span id="stripSpacer"></span>
-    <button id="menuBtn"><span id="menuCount">0</span> ☰<span id="menuDot" class="hide"></span></button>
+    <!-- the doors-done number used to be glued inside the menu button, so the one
+         figure he glances at all day was not tappable and the screen behind it was
+         buried under a menu item that read like it would end his session -->
+    <span id="stripEnd">
+      <button id="doneBtn" aria-label="how today is going"><b id="menuCount">0</b> today</button>
+      <button id="menuBtn">☰<span id="menuDot" class="hide"></span></button>
+    </span>
   </div>
 
   <div id="house">
@@ -437,7 +488,7 @@ select{min-height:44px}
     <div class="dpHead">Show on the map<button class="x" id="mapShowClose">Done</button></div>
     <div class="dpList" style="padding:0 14px 10px">
       <div class="chips" id="mapData"></div>
-      <div class="small" style="margin-top:10px">Printed on the house itself, above zoom 18. This is kept separate from the little round map, because a big screen can carry more than a circle can.</div>
+      <div class="small" id="mapDataNote" style="margin-top:10px"></div>
     </div>
   </div>
   <div id="mapBottom">
@@ -473,11 +524,27 @@ select{min-height:44px}
   </div>
 </div>
 
+<!-- A confirm with more than two answers. The browser's own confirm() only does yes/no,
+     and it renders as a cramped grey box with small type — wrong for a screen used at
+     arm's length in a truck. Big buttons, full words, and what it will destroy counted
+     out before the buttons, never after. -->
+<div id="askSheet" class="sheet hide">
+  <div class="sheetBody">
+    <div class="sheetHead"><h2 id="askTitle"></h2></div>
+    <div class="sheetScroll" style="padding:0 16px 4px">
+      <div id="askBody" class="small" style="font-size:14px;line-height:1.45;color:var(--txt)"></div>
+    </div>
+    <div style="padding:10px 16px calc(6px + var(--safe-b))" id="askBtns"></div>
+  </div>
+</div>
+
 <div id="detailSheet" class="sheet hide">
   <div class="sheetBody">
     <div class="sheetHead"><h2 id="dTitle">Details</h2><button class="x" data-close="detailSheet">Close</button></div>
     <div class="sheetScroll">
       <div id="dSub" style="color:var(--dim);font-size:13px;margin-bottom:4px"></div>
+      <!-- A door marked under the wrong book was previously stuck there. -->
+      <div id="dBookRow" class="bookRow"></div>
 
       <!-- What this door needs, decided by the button that opened the panel.
            layoutDetail() moves the field groups in and out of here. -->
@@ -571,19 +638,10 @@ select{min-height:44px}
   </div>
 </div>
 
-<div id="travelSheet" class="sheet hide">
-  <div class="sheetBody">
-    <div class="sheetHead"><h2>Getting back</h2><button class="x" data-close="travelSheet">Close</button></div>
-    <div class="sheetScroll">
-      <div id="tvHeadline"></div>
-      <div id="tvLegs" style="margin-top:10px"></div>
-      <div id="tvNext" style="margin-top:14px"></div>
-      <div class="small" id="tvBasis" style="margin-top:14px"></div>
-      <button class="ghost" id="tvSchedule" style="margin-top:10px">📋 Schedule and appointments</button>
-      <button class="ghost" id="tvSetHome">🏠 Set home to where I am now</button>
-    </div>
-  </div>
-</div>
+<!-- The "Getting back" sheet was removed in v8, along with the OSRM road lookups it was
+     the only user of. The truck chip now opens the big map on the truck instead. The
+     "Go back to" route planner is untouched — it works out its own figures from
+     ROAD_DETOUR and his measured driving speed, and never needed the network. -->
 
 <div id="apptSheet" class="sheet hide">
   <div class="sheetBody">
@@ -603,9 +661,6 @@ select{min-height:44px}
       <div id="apBulkWrap" class="hide" style="margin-top:12px">
         <label class="f" id="apBulkLabel">Set length for the ticked ones</label>
         <div class="chips" id="apBulkMins"></div>
-        <div class="row" style="margin-top:6px"><div style="flex:1">
-          <input id="apBulkExact" type="number" inputmode="numeric" min="5" max="600" step="5" placeholder="or type minutes, then tap Apply">
-        </div><button class="chip" id="apBulkGo" style="align-self:flex-end">Apply</button></div>
       </div>
       <button class="primary" id="apIcsSel" style="margin-top:12px">📅 Send selected to my calendar</button>
       <button class="ghost" id="apIcsAll">📅 Send everything on the schedule</button>
@@ -630,9 +685,6 @@ select{min-height:44px}
         <input id="apAt" type="datetime-local">
         <label class="f">How long</label>
         <div class="chips" id="apMins"></div>
-        <div class="row" style="margin-top:6px"><div style="flex:1">
-          <input id="apMinsExact" type="number" inputmode="numeric" min="5" max="600" step="5" placeholder="or type minutes">
-        </div></div>
         <button class="primary" id="apSave" style="margin-top:12px">Save appointment</button>
         <button class="ghost" id="apCancel">Cancel</button>
       </div>
@@ -720,9 +772,10 @@ select{min-height:44px}
         <div class="dsecBody" id="msecWork">
           <button class="ghost" id="mCrm">👥 Customers and follow-ups</button>
           <button class="ghost" id="mRoute">🔁 Go back to (no answers)</button>
-          <button class="ghost" id="mTravel">🏁 Getting back / how long until home</button>
           <button class="ghost" id="mAppt">📋 Schedule and appointments</button>
-          <button class="ghost" id="mSession">■ End session / session log</button>
+          <!-- was "■ End session / session log", which read like a stop button, so the
+               stats screen behind it went unfound. Ending is a button inside. -->
+          <button class="ghost" id="mSession">📊 How today's going — doors, miles, hours</button>
           <label class="f">The truck</label>
           <div class="chips">
             <button class="chip" id="mPark">🚚 Park here</button>
@@ -738,7 +791,7 @@ select{min-height:44px}
           <div class="small" style="margin-top:5px">Every door, note, tag, stage, follow-up, appointment and walking track, in one file. This is the only thing that can rebuild the app if the phone is lost or the icon is deleted. Get it off the phone.</div>
           <button class="ghost" id="mRestore" style="margin-top:12px">⤴︎ Restore from a full backup</button>
           <input type="file" id="restoreFile" accept=".json,application/json" class="hide">
-          <button class="ghost" id="mExport" style="margin-top:16px">⬇︎ Export a list for the computer…</button>
+          <button class="ghost" id="mExport" style="margin-top:16px">⬇︎ Export…</button>
           <div class="small" style="margin-top:5px">A spreadsheet or a map file, for working at a laptop. Useful, but <b>this is not a backup</b> — it leaves things out and nothing can restore from it.</div>
         </div></div>
 
@@ -1192,7 +1245,9 @@ const state = {
   driveAdj: 1,         // multiplier on the drive time estimate, nudged from the menu
   hubData: [],         // which auditor figures to print on the hub map
   mapData: ['owner'],  // and on the big map, kept separate — different sized screens
-  driving: false,      // sustained road speed: the trail stops until you slow down
+  driving: false,      // in a vehicle: the trail stops until you are on foot again
+  moveTrail: [],       // recent positions, for judging ground covered
+  driveOverride: null, // null = work it out · 'foot' · 'drive' — deliberately not persisted
   driveHits: 0, calmHits: 0,
   driveSpeeds: [],     // measured driving speeds, kept off the trail
   leftHome: false,     // armed once you have genuinely left, so home cannot end a session that started there
@@ -1238,46 +1293,127 @@ function trackSegments(pts) {
   return segs;
 }
 let dayFlushTimer = null;
+/* Every day that has been touched since the last write. A point logged either side of
+   midnight lands under its own date, and only saving today's would leave the other
+   day in memory alone — right on the screen until the next launch, then gone. */
+const pendingDays = new Set();
 function pushTrackPoint(lat, lon, ts) {
   const k = dayKey(ts);
   let d = state.days.get(k);
-  if (!d) { d = { day:k, pts:[], shown:true }; state.days.set(k, d); }
+  /* readFailed:true because this day was invented, not read. A GPS fix can land while
+     a restore or a wipe is still working, and without this the six-second write would
+     put this one fresh point straight over a whole restored day. */
+  if (!d) { d = { day:k, pts:[], shown:true, readFailed:true }; state.days.set(k, d); }
   // which book was being logged, so the trail can be coloured by it afterwards
   d.pts.push({ lat, lon, ts, ln: state.line });
   if (k === state.today) state.track = d.pts;
+  pendingDays.add(k);
   // batch writes: a breadcrumb every few seconds should not mean a write every few seconds
   if (!dayFlushTimer) dayFlushTimer = setTimeout(flushDay, 6000);
 }
 /* A write that fails here is silent data loss of the worst kind: the points stay in
    memory, so the map, the Days panel and miles walked all look right for the rest of
    the day, and the whole day is gone at the next launch having never said a word. */
-let dayWriteFailed = false;
+let dayWriteFailed = false, dayReadFailed = false;
 async function flushDay() {
-  dayFlushTimer = null;
+  if (dayFlushTimer) { clearTimeout(dayFlushTimer); dayFlushTimer = null; }
   clearPaceCache();
-  const d = state.days.get(state.today);
-  if (!d) return;
-  try {
-    await DB.put('days', { day:d.day, pts:d.pts });
-    dayWriteFailed = false;
-  } catch (e) {
-    if (!dayWriteFailed) {          // say it once, not every six seconds
-      dayWriteFailed = true;
-      flashToast("Could not save today's walking track",
-        'The phone refused the write. Take a full backup now.', '#ef4444');
-      renderBackupNag();
+  const keys = new Set(pendingDays);
+  keys.add(state.today);
+  for (const k of keys) {
+    const d = state.days.get(k);
+    if (!d) { pendingDays.delete(k); continue; }
+    /* A day that never read back cleanly must not be written over. Whatever little is
+       in memory would replace a real day's walking and there is no getting it back.
+       Try the read once more and merge what comes back; if it still will not read,
+       say so and leave what is stored alone. */
+    if (d.readFailed && !(await mergeStoredDay(d))) continue;
+    try {
+      /* IndexedDB copies the array at put() time, so a breadcrumb pushed during this
+         await is not in the record. Only clear the key if nothing arrived — otherwise
+         the last point of a day going over midnight is dropped for good. */
+      const n = d.pts.length;
+      await DB.put('days', { day:d.day, pts:d.pts });
+      if (d.pts.length === n) pendingDays.delete(k);
+      dayWriteFailed = false;
+    } catch (e) {
+      if (!dayWriteFailed) {          // say it once, not every six seconds
+        dayWriteFailed = true;
+        flashToast("Could not save today's walking track",
+          'The phone refused the write. Take a full backup now.', '#ef4444');
+        renderBackupNag();
+      }
     }
   }
+}
+/** Second go at a day whose first read failed. Returns true when it is safe to write.
+    Points are merged into the existing array rather than replacing it, so anything
+    already holding on to d.pts — state.track, the map trail — stays pointed at it. */
+async function mergeStoredDay(d) {
+  let rec;
+  try { rec = await DB.get('days', d.day); }
+  catch (e) {
+    if (!dayReadFailed) {
+      dayReadFailed = true;
+      flashToast("Cannot read back the walking track",
+        'Not saving over it until it reads. Take a full backup now.', '#ef4444');
+      renderBackupNag();
+    }
+    return false;                     // leave the stored day exactly as it is
+  }
+  const had = (rec && rec.pts) || [];
+  const seen = new Set(d.pts.map(p => p.ts));
+  const missing = had.filter(p => !seen.has(p.ts));
+  if (missing.length) {
+    const merged = missing.concat(d.pts).sort((a, b) => a.ts - b.ts);
+    d.pts.length = 0;
+    for (const p of merged) d.pts.push(p);
+  }
+  d.readFailed = false;
+  dayReadFailed = false;
+  return true;
 }
 window.addEventListener('pagehide', flushDay);
 document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'hidden') flushDay(); });
 
+/* Reads in flight, keyed by day. Two callers asking for the same day at the same time
+   used to end up with two different objects for it — the map drawing one and the Days
+   panel row toggling the other, so tapping a day to hide it did nothing at all. */
+const dayLoads = new Map();
 async function loadDay(k) {
-  if (state.days.has(k)) return state.days.get(k);
-  const rec = await DB.get('days', k).catch(()=>null);
-  const d = { day:k, pts:(rec && rec.pts) || [], shown:true };
-  state.days.set(k, d);
-  return d;
+  const have = state.days.get(k);
+  if (have && !have.readFailed) return have;
+  /* A day whose read failed is holding an empty array that is not the truth. Left
+     alone it reads as "0 pts" for the rest of the run, drops out of exports, and the
+     bin on its row deletes the real thing. So try again every time it is asked for. */
+  if (have) { await mergeStoredDay(have); return have; }
+  if (dayLoads.has(k)) return dayLoads.get(k);
+  /* A read that FAILS is not the same as a day with nothing in it. Treating the two
+     alike is how a whole day's walking used to disappear: the empty array went into
+     memory, and the next six-second write put it straight over the real thing. */
+  const p = (async () => {
+    let rec = null, readFailed = false;
+    try { rec = await DB.get('days', k); }
+    catch (e) { readFailed = true; }
+    let d = state.days.get(k);
+    if (d) {
+      /* A breadcrumb landed while the read was in the air. Fill that array rather than
+         replace it: replacing it drops the new point and strands state.track on an
+         orphan that nothing ever writes. */
+      const stored = (rec && rec.pts) || [];
+      const seen = new Set(d.pts.map(q => q.ts));
+      const merged = stored.filter(q => !seen.has(q.ts)).concat(d.pts).sort((a, b) => a.ts - b.ts);
+      d.pts.length = 0;
+      for (const q of merged) d.pts.push(q);
+      d.readFailed = readFailed;
+    } else {
+      d = { day:k, pts:(rec && rec.pts) || [], shown:true, readFailed };
+      state.days.set(k, d);
+    }
+    return d;
+  })();
+  dayLoads.set(k, p);
+  try { return await p; } finally { dayLoads.delete(k); }
 }
 async function listDayKeys() {
   const all = await DB.all('days').catch(()=>[]);
@@ -1607,11 +1743,16 @@ function renderStrip() {
     t.textContent = `±${a} m` + (state.still ? ' · held' : '');
   }
   $('gpsPill').classList.toggle('paused', state.paused);
+  renderDrivePill();
   $('fixPill').classList.toggle('hide', !state.override);
   if (!$('menuSheet').classList.contains('hide')) renderDiag();
-  $('countyPill').textContent = state.tilesLoading ? 'loading lots…'
-      : state.netErr ? '⚠︎ offline'
-      : (state.county ? state.county.name + (state.county.fallback ? '' : ' Co.') : '—');
+  /* The county name is not news — it is the same county all day, and it is on the
+     details panel anyway. But this chip is also how a dead zone announces itself, so
+     it stays and only speaks when it has something to say. */
+  const county = state.tilesLoading ? 'loading lots…' : state.netErr ? '⚠︎ offline' : '';
+  $('countyPill').textContent = county;
+  $('countyPill').classList.toggle('hide', !county);
+  $('countyPill').classList.toggle('warn', !!state.netErr);
   const t0 = new Date(); t0.setHours(0,0,0,0);
   const todayN = state.visitLog.filter(v => v.ts >= +t0 && v.line === state.line).length;
   $('menuCount').textContent = todayN;
@@ -1911,7 +2052,11 @@ let logSeq = 0;
 const newId = () => 'l' + Date.now().toString(36) + (logSeq++).toString(36);
 function logOf(v) {
   if (!v) return [];
-  if (v.log && v.log.length) return v.log.slice();
+  /* Array.isArray, not .length. An emptied log is [], which is falsy on .length, so
+     this used to fall through to the migration below and regrow a status entry from
+     v.status. Delete the last line, it came back. Delete it again, it came back again,
+     for ever. A record that never had a log is undefined and still migrates. */
+  if (Array.isArray(v.log)) return v.log.slice();
   // migrate older records: history entries first, then any single notes blob
   const out = (v.history && v.history.length ? v.history : [{status:v.status, ts:v.ts}])
     .map(h => ({ id:newId(), ts:h.ts, kind:'status', status:h.status, text:'' }));
@@ -2215,6 +2360,7 @@ function openDetail(visit, focusName) {
         : mail ? `<div style="margin-top:6px;color:var(--dim)">Owner mail: ${esc(mail)}${occ==='owner'?' (same address)':''}</div>`
                  + (explain ? `<div style="margin-top:4px;color:#93a6bb;font-size:12px;line-height:1.45">${esc(explain)}</div>` : '')
                : (why ? `<div style="margin-top:6px;color:var(--dim)">Occupancy unknown: ${esc(why)}.</div>` : ''));
+  renderBookRow();
   $('dName').value = v.name||''; $('dGoesBy').value = v.goesBy||'';
   $('dNameNote').textContent = nameIsFromDeed(v) ? 'This came off the county deed, not from the door.' : '';
   renderPropPanel(withParcelStats(v, state.parcels.get(v.key)));
@@ -2283,6 +2429,67 @@ function openDetail(visit, focusName) {
   }
   if (focusName) setTimeout(() => { const el = $('dName'); el.focus({preventScroll:false}); }, 220);
 }
+/* ---- moving a door between books ----
+   A house marked under Roofing when he meant Appraisal used to be stuck there:
+   the two books are separate slots keyed by vKey(parcel, book), and nothing in
+   the app rewrote that key. This moves the whole slot — every record for the
+   house in that book, with its notes, tags, stage and follow-up — plus any
+   appointment booked against it. Nothing is deleted, including when the other
+   book already holds the same house: both sets simply end up in the one book. */
+function renderBookRow() {
+  const host = $('dBookRow');
+  if (!host || !editing) return;
+  host.innerHTML = '';
+  const cur = editing.line || 'roof';
+  const lab = document.createElement('span');
+  lab.className = 'bookLab'; lab.textContent = 'Filed under';
+  host.appendChild(lab);
+  Object.entries(LINES).forEach(([k, l]) => {
+    const b = document.createElement('button');
+    b.className = 'chip' + (k === cur ? ' on' : '');
+    b.textContent = l.label;
+    if (k === cur) { b.style.background = l.color + '2e'; b.style.borderColor = l.color; b.style.color = l.color; }
+    b.onclick = () => moveBook(k);
+    host.appendChild(b);
+  });
+}
+async function moveBook(to) {
+  if (!editing || !LINES[to]) return;
+  const from = editing.line || 'roof';
+  if (to === from) return;
+  pullDetail();
+  // never saved, so there is nothing on disk to move and nothing to warn about
+  if (editing._new) { editing.line = to; openDetail(editing); buzz(15); return; }
+  const oldSlot = vKey(editing.key, from);
+  const newSlot = vKey(editing.key, to);
+  const mine   = state.visitLog.filter(x => vKey(x.key, x.line) === oldSlot);
+  const there  = state.visitLog.filter(x => vKey(x.key, x.line) === newSlot);
+  const booked = state.appts.filter(a => a.key === editing.key && (a.line || 'roof') === from);
+  const label  = editing.addr || editing.pid;
+  let msg = `Move ${label} from ${LINES[from].label} to ${LINES[to].label}?\n\n`
+    + `${mine.length} record${mine.length === 1 ? '' : 's'}, with every note, tag, stage and follow-up, goes across.\n`
+    + (booked.length ? `${booked.length} scheduled appointment${booked.length === 1 ? '' : 's'} moves too.\n` : '');
+  if (there.length) msg += `\nThis house already has ${there.length} record${there.length === 1 ? '' : 's'} under `
+    + `${LINES[to].label}. Both sets end up in the one book. Nothing is deleted, and the newest mark is the one that shows.\n`;
+  msg += `\nYour walking track is not touched.`;
+  if (!confirm(msg)) return;
+  for (const v of mine) { v.line = to; await DB.put('visits', v).catch(()=>{}); }
+  if (booked.length) { booked.forEach(a => a.line = to); saveAppts(); }
+  // rebuild both slots the same way a restart would: newest record wins
+  state.visits.delete(oldSlot);
+  const all = [...there, ...mine].sort((a,b) => a.ts - b.ts);
+  if (all.length) state.visits.set(newSlot, all[all.length-1]);
+  // show the record the map and the strip now show, or the panel and the map disagree
+  editing = state.visits.get(newSlot) || editing;
+  buzz([20,40,20]);
+  flashToast(`Moved to ${LINES[to].label}`,
+    (to === state.line ? 'It shows on this round now' : `Switch to ${LINES[to].label} to see it on the round screen`),
+    LINES[to].color);
+  openDetail(editing);
+  renderStrip(); renderHouse(); renderStats(); renderAppts();
+  if (window._map) refreshMapLayers();
+}
+
 /* The log: newest at the bottom. Notes are editable in place; anything in the
    log including a status mark can be deleted, behind a confirm. Travis settled
    that on 2026-07-26: a mistapped door should be cleanable. */
@@ -2308,10 +2515,36 @@ function renderLog() {
       acts.appendChild(ed);
     }
     const del = document.createElement('button'); del.textContent = '🗑';
-    del.onclick = () => {
-      if (!confirm(e.kind === 'status' ? 'Remove this status entry from the log?' : 'Delete this note?')) return;
-      editing.log = logOf(editing).filter(x => x.id !== e.id);
-      renderLog(); buzz(20);
+    del.onclick = async () => {
+      const next = logOf(editing).filter(x => x.id !== e.id);
+      if (next.length) {
+        if (!confirm(e.kind === 'status' ? 'Remove this status entry from the log?' : 'Delete this note?')) return;
+        editing.log = next;
+        renderLog(); buzz(20);
+        return;
+      }
+      /* The last line. With nothing logged there is no history left for this door, and
+         the app has no such thing as a marked-but-blank house — so this asks which he
+         means rather than deciding for him. */
+      const h = houseHoldings();
+      const goes = [`${h.mine.length} record${h.mine.length===1?'':'s'}`];
+      if (h.notes) goes.push(`${h.notes} note${h.notes===1?'':'s'}`);
+      if (h.phone) goes.push('the contact details');
+      if (h.tags)  goes.push(`${h.tags} tag${h.tags===1?'':'s'}`);
+      const pick = await askChoice(`That is the last line in the log`,
+        `<b>${esc(h.label)}</b> — filed under ${esc(h.book)}.<br><br>`
+        + `Removing it leaves nothing logged at this house.`,
+        [
+          { key:'keep', label:'Keep the house, empty the log',
+            sub:'It stays on the map marked as it is. Only the history goes.' },
+          { key:'wipe', label:'Wipe the house from ' + h.book, danger:true,
+            sub: goes.join(', ') + (h.booked.length
+                 ? `, and ${h.booked.length} booked appointment${h.booked.length===1?'':'s'}` : '')
+                 + '. Your walking track is not touched. Cannot be undone.' },
+          { key:null,  label:'Leave it alone', sub:'Nothing is removed.' },
+        ]);
+      if (pick === 'keep') { editing.log = []; renderLog(); buzz(20); }
+      else if (pick === 'wipe') await wipeHouse();
     };
     acts.appendChild(del);
     row.appendChild(acts);
@@ -2330,8 +2563,19 @@ function startEditEntry(row, e) {
     const t = ta.value.trim();
     const list = logOf(editing);
     const hit = list.find(x => x.id === e.id);
+    const was = hit ? hit.text : '';
     if (hit) hit.text = t;
-    editing.log = list.filter(x => x.kind !== 'note' || x.text);
+    const cleaned = list.filter(x => x.kind !== 'note' || x.text);
+    /* Emptying the log is a decision with a question attached to it. It must not happen
+       as a side effect of clearing a text box. */
+    if (!cleaned.length) {
+      if (hit) hit.text = was;
+      editing.log = list;
+      flashToast('Note kept', 'Clearing the box will not empty the log — use the bin, it asks what to do with the house', '#38bdf8');
+      renderLog();
+      return;
+    }
+    editing.log = cleaned;
     renderLog();
   };
   ta.addEventListener('blur', commit, {once:true});
@@ -2368,10 +2612,11 @@ async function saveDetail() {
   pullDetail();
   flushPendingNote();
   applyOwnerNameFallback(editing);
-  // a status changed by hand belongs in the log too
+  // a status changed by hand belongs in the log too — but an emptied log was emptied
+  // on purpose, and putting an entry back here is the other half of the regrowth bug
   const lg = logOf(editing);
   const lastStatus = [...lg].reverse().find(e => e.kind === 'status');
-  if (!lastStatus || lastStatus.status !== editing.status)
+  if (lg.length && (!lastStatus || lastStatus.status !== editing.status))
     lg.push({ id:newId(), ts:Date.now(), kind:'status', status:editing.status, text:'' });
   editing.log = lg;
   editing.notes = lg.filter(e => e.kind === 'note').map(e => e.text).join(' | ');
@@ -2380,16 +2625,35 @@ async function saveDetail() {
   flashToast('Saved', editing.addr || '', STATUS[editing.status].color);
   renderStrip(); renderHouse(); if (window._map) refreshMapLayers();
 }
+/** everything that hangs off one house in one book, so it can be counted before it is
+    destroyed and the same wipe can be reached from more than one place */
+function houseHoldings() {
+  const slot = vKey(editing.key, editing.line);
+  const mine = state.visitLog.filter(x => vKey(x.key, x.line) === slot);
+  const booked = state.appts.filter(a => a.key === editing.key && (a.line || 'roof') === (editing.line || 'roof'));
+  const notes = mine.reduce((n, v) => n + logOf(v).filter(e => e.kind === 'note').length, 0);
+  const tags  = new Set(mine.flatMap(v => v.tags || [])).size;
+  const phone = mine.some(v => v.phone || v.email);
+  return { slot, mine, booked, notes, tags, phone,
+           label: editing.addr || editing.pid || 'this house',
+           book: LINES[editing.line||'roof'].label };
+}
 async function deleteDetail() {
+  if (!editing) return;
+  const h = houseHoldings();
+  if (!confirm(`Delete EVERYTHING for ${h.label} in ${h.book}?\n\n`
+    + `${h.mine.length} record${h.mine.length===1?'':'s'}, every note, tag, stage and follow-up for this house goes.\n`
+    + (h.booked.length ? `${h.booked.length} scheduled appointment${h.booked.length===1?'':'s'} for it goes too.\n` : '')
+    + `Your walking track is not touched. This cannot be undone.`)) return;
+  await wipeHouse();
+}
+/** the wipe itself, with no asking. Everything that calls this has already counted
+    out loud what is about to go and been told yes. */
+async function wipeHouse() {
   if (!editing) return;
   const slot = vKey(editing.key, editing.line);
   const mine = state.visitLog.filter(x => vKey(x.key, x.line) === slot);
-  const label = editing.addr || editing.pid;
   const booked = state.appts.filter(a => a.key === editing.key && (a.line || 'roof') === (editing.line || 'roof'));
-  if (!confirm(`Delete EVERYTHING for ${label} in ${LINES[editing.line||'roof'].label}?\n\n`
-    + `${mine.length} record${mine.length===1?'':'s'}, every note, tag, stage and follow-up for this house goes.\n`
-    + (booked.length ? `${booked.length} scheduled appointment${booked.length===1?'':'s'} for it goes too.\n` : '')
-    + `Your walking track is not touched. This cannot be undone.`)) return;
   for (const v of mine) await DB.del('visits', v.id).catch(()=>{});
   state.visitLog = state.visitLog.filter(x => vKey(x.key, x.line) !== slot);
   state.visits.delete(slot);
@@ -2430,6 +2694,30 @@ async function clearDetailContent() {
 let sheetZ = 80;
 function openSheet(id){ const el = $(id); el.style.zIndex = ++sheetZ; el.classList.remove('hide'); }
 function closeSheet(id){ $(id).classList.add('hide'); }
+/** A confirm that can have more than two answers, in words, on big buttons.
+    opts: [{ key, label, sub, danger }] — resolves with the key, or null if backed out. */
+function askChoice(title, body, opts) {
+  return new Promise(resolve => {
+    $('askTitle').textContent = title;
+    $('askBody').innerHTML = body;
+    const host = $('askBtns'); host.innerHTML = '';
+    let done = false;
+    const finish = k => { if (done) return; done = true; closeSheet('askSheet'); resolve(k); };
+    opts.forEach((o, i) => {
+      const b = document.createElement('button');
+      b.className = (i === 0 ? 'primary' : 'ghost') + (o.danger ? ' danger' : '');
+      if (i === 0) b.style.marginTop = '4px';
+      b.innerHTML = esc(o.label)
+        + (o.sub ? `<div style="font-size:11.5px;font-weight:600;opacity:.75;margin-top:3px">${esc(o.sub)}</div>` : '');
+      b.onclick = () => finish(o.key);
+      host.appendChild(b);
+    });
+    // tapping the dimmed area behind it is the same as backing out
+    const sheet = $('askSheet');
+    sheet.addEventListener('click', e => { if (e.target === sheet) finish(null); }, { once:true });
+    openSheet('askSheet');
+  });
+}
 document.querySelectorAll('[data-close]').forEach(b => b.onclick = () => closeSheet(b.dataset.close));
 document.querySelectorAll('.sheet').forEach(s => s.addEventListener('click', e => { if (e.target === s) s.classList.add('hide'); }));
 /* iOS does not shrink the page when the keyboard opens — only the visual viewport
@@ -2481,7 +2769,8 @@ async function openMap() {
     window._routeLayer  = L.layerGroup().addTo(m);
     window._meLayer     = L.layerGroup().addTo(m);
     m.on('dragstart', () => { mapOpts.follow = false; syncMapBtns(); });
-    m.on('moveend', () => { refreshMapLayers(); loadForView(); });
+    m.on('moveend', () => { refreshMapLayers(); loadForView(); renderMapDataNote(); });
+    m.on('zoomend', renderMapDataNote);
   }
   setTimeout(() => { window._map.invalidateSize(); if (state.pos && mapOpts.follow) window._map.setView([state.pos.lat,state.pos.lon]); refreshMapLayers(); }, 60);
   syncMapBtns();
@@ -2570,7 +2859,7 @@ function refreshMapLayers() {
         pl.addLayer(L.polygon(latlngs, {...stripe, color:'#0b0f14', weight:sw, opacity:1,
           dashArray:`${dash} ${dash}`}));
       }
-      if (z >= 18) {
+      if (z >= MAP_LABEL_ZOOM) {
         const lines = labelLines(p, state.mapData, 3);
         if (state.mapData.includes('owner') && p.addr) lines.push(p.addr.split(' ')[0]);
         if (lines.length) {
@@ -2665,7 +2954,7 @@ async function openDays() {
     const bookTxt = books.length ? [...new Set(books.map(b => book(b).label))].join(' + ') : '';
     row.innerHTML = `<div class="sw" style="background:${swatch}"></div>
       <div class="lbl">${esc(label)}${bookTxt ? `<div style="font-size:11px;color:var(--dim);font-weight:700">${esc(bookTxt)}</div>` : ''}</div>
-      <div class="n">${d.pts.length} pts</div>`;
+      <div class="n">${d.readFailed ? '?? pts' : `${d.pts.length} pts`}</div>`;
     row.onclick = e => {
       if (e.target.classList.contains('del')) return;
       d.shown = !d.shown; row.classList.toggle('off', !d.shown); refreshMapLayers(); buzz(10);
@@ -2674,9 +2963,20 @@ async function openDays() {
     del.className = 'del'; del.textContent = '🗑';
     del.onclick = async ev => {
       ev.stopPropagation();
-      if (!confirm(`Delete the walking track for ${label}? Your door records are not affected.`)) return;
+      /* Say how much is about to go, and never guess. A day that has not read back is
+         showing an empty array, so a bin press here used to say nothing and delete a
+         whole day's walking. Make it read first, and refuse if it will not. */
+      if (d.readFailed && !(await mergeStoredDay(d))) {
+        flashToast('Not deleting anything',
+          "That day's track will not read back, so there is no telling what would go. Try again in a moment.",
+          '#ef4444');
+        return;
+      }
+      const n = d.pts.length;
+      if (!confirm(`Delete the walking track for ${label}?\n\nThat is ${n} breadcrumb${n===1?'':'s'} and it cannot be undone. Your door records are not affected.`)) return;
       await DB.del('days', k).catch(()=>{});
       state.days.delete(k);
+      pendingDays.delete(k);
       if (k === state.today) { state.track = []; await loadDay(state.today); state.track = state.days.get(state.today).pts; }
       openDays(); refreshMapLayers(); buzz(30);
     };
@@ -2815,16 +3115,28 @@ async function commitErase() {
   if (!eraseBox) return cancelErase();
   const bb = eraseBox.getBounds();
   const s = bb.getSouth(), n = bb.getNorth(), w = bb.getWest(), e = bb.getEast();
+  /* Every day has to read back before anything is counted or deleted. A day that will
+     not read is holding an empty array, so the box counts it as nothing — and then
+     wipes the stored record in full. That is how "clear 20 points" took a morning. */
+  for (const d of [...state.days.values()]) {
+    if (d.readFailed && !(await mergeStoredDay(d))) {
+      flashToast('Not clearing anything',
+        'A day of walking track will not read back, so the count cannot be trusted. Try again in a moment.',
+        '#ef4444');
+      return;
+    }
+  }
   const hit = pointsInBox();
   if (!hit) { flashToast('Nothing in that box', 'Drag it over the track you want gone', '#64748b'); return; }
   if (!confirm(`Clear ${hit} track point${hit===1?'':'s'} inside the box? Door records are not affected.`)) return;
   for (const d of state.days.values()) {
     const before = d.pts.length;
-    d.pts = d.pts.filter(p => !(p.lat>=s && p.lat<=n && p.lon>=w && p.lon<=e));
-    if (d.pts.length !== before) {
-      if (d.pts.length) await DB.put('days', {day:d.day, pts:d.pts}).catch(()=>{});
-      else { await DB.del('days', d.day).catch(()=>{}); }
-    }
+    const keep = d.pts.filter(p => !(p.lat>=s && p.lat<=n && p.lon>=w && p.lon<=e));
+    if (keep.length === before) continue;
+    d.pts.length = 0;                       // in place, so state.track stays pointed at it
+    for (const p of keep) d.pts.push(p);
+    if (d.pts.length) await DB.put('days', {day:d.day, pts:d.pts}).catch(()=>{});
+    else { await DB.del('days', d.day).catch(()=>{}); pendingDays.delete(d.day); }
   }
   state.track = (state.days.get(state.today) || {pts:[]}).pts;
   buzz(40);
@@ -3004,14 +3316,31 @@ function clearGeoPreview() {
   if ($('eraseBar').classList.contains('hide')) $('findWrap').classList.remove('hide');
 }
 async function buildBackup() {
+  /* If a store will not read, this must NOT quietly hand back a file with that part
+     missing. A short backup file looks exactly like a good one, and restoring it
+     months later would put the hole back over everything. Refuse, and name the part.
+     These reads had no guard at all, so a failure threw into nothing: no file, no
+     message — the Backup button simply did nothing while the app was telling him to
+     take a backup. */
+  let visits, days;
+  try { visits = await DB.all('visits'); } catch (e) { throw new Error('your door records'); }
+  try { days   = await DB.all('days');   } catch (e) { throw new Error('your walking track'); }
   const data = { v:3, exported:new Date().toISOString(),
     home: state.home, appts: state.appts, driveAdj: state.driveAdj,
     // without these a restore silently reverts his renamed books, which also changes
     // what the "Work" column says in every spreadsheet he exports afterwards
     lineNames: lineNamesSaved(), hubData: state.hubData, mapData: state.mapData,
-    visits: await DB.all('visits'), days: await DB.all('days'), vehicle: state.vehicle };
+    visits, days, vehicle: state.vehicle };
   return { name:`canvass-backup-${stamp()}.json`, text: JSON.stringify(data),
            type:'application/json' };
+}
+/** Never silent. A backup that did not happen has to say so, loudly and in words. */
+function backupFailed(e) {
+  const what = (e && e.message) || 'part of your data';
+  flashToast('Backup did NOT happen',
+    `The phone would not read ${what}, so no file was made. Close the app right down, open it again, and try once more.`,
+    '#ef4444');
+  renderBackupNag();
 }
 /* Only counts as a backup once the file actually left. A share the user cancels
    still marks it, because iOS gives no way to tell a cancel from a save — but a
@@ -3021,13 +3350,15 @@ function markBackedUp() {
   renderBackupNag(); renderStorageNote();
 }
 async function backup() {
-  const p = await buildBackup();
+  let p;
+  try { p = await buildBackup(); } catch (e) { return backupFailed(e); }
   download(p.name, p.text, p.type);
   markBackedUp();
   flashToast('Backup saved', 'Get it off the phone — Share is one tap quicker', '#22c55e');
 }
 async function backupShare() {
-  const p = await buildBackup();
+  let p;
+  try { p = await buildBackup(); } catch (e) { return backupFailed(e); }
   const r = await shareOut(p);
   /* A cancelled share is NOT a backup. Marking it would show a calm green "backed
      up today" for a week over a file that never left the phone, and this counter is
@@ -3118,10 +3449,22 @@ const HOME_RADIUS  = 200;      // metres from home that counts as arriving
 const LEFT_HOME    = 500;      // ...and how far away you must have been first
 const HOME_STOPPED = 1.5;      // m/s — driving past is not arriving
 const HOME_HITS    = 2;        // consecutive fixes near home and stopped
-const DRIVE_ON    = 6.5;       // m/s ≈ 15 mph — sustained, this is driving
-const DRIVE_OFF   = 2.2;       // m/s — back down to walking pace
-const DRIVE_HITS  = 3;         // consecutive fixes before the trail stops
-const CALM_HITS   = 2;         // consecutive fixes before it starts again
+/* Instant speed cannot tell a 12 mph scouting crawl from a brisk walk, and scouting
+   is most of the driving he actually does — which is why the old 15 mph rule never
+   fired when it mattered. Distance actually covered over three minutes can tell them
+   apart: a brisk walk manages about 250 m in that time, and any vehicle manages far
+   more however slowly it is crawling. */
+const VEH_WINDOW_MS = 180000;  // three minutes
+const VEH_DIST_M    = 400;     // covered in the window → a vehicle
+/* 300, not 150. An ordinary walking pace covers about 234 m in three minutes, so at
+   150 the app would decide he was still driving while he was walking a street — trail
+   off, miles walked stuck at zero, all day. A vehicle crawling at even 12 mph covers
+   900 m in the same window, so there is still plenty of daylight between them. */
+const VEH_CLEAR_M   = 300;     // ...and back under this before it says on foot again
+const DRIVE_ON      = 9;       // m/s ≈ 20 mph — obvious enough to decide without waiting
+const DRIVE_OFF     = 2.2;     // m/s — walking pace
+const DRIVE_ON_HITS = 2;       // road-speed fixes running before it believes the road
+const CALM_HITS_OFF = 3;       // walking-pace fixes running that give the trail back
 const QUIET_MS    = 30 * 60 * 1000;
 const QUIET_MOVE  = 150;       // metres — below this you have not really gone anywhere
 const DRIVE_SAMPLE_MAX = 240;
@@ -3144,12 +3487,47 @@ function recordDriveSpeed(sp) {
 let driveSaveAt = 0;
 /* The three rules are kept out of the GPS callback so each can be tested on its
    own, without needing a car, a house and half an hour. */
-function updateDriving(speed) {
-  if (speed >= DRIVE_ON) { state.driveHits++; state.calmHits = 0; }
-  else if (speed <= DRIVE_OFF) { state.calmHits++; state.driveHits = 0; }
+function pushMoveTrail(lat, lon, ts) {
+  state.moveTrail.push({ lat, lon, ts });
+  const cut = ts - VEH_WINDOW_MS * 1.5;
+  while (state.moveTrail.length && state.moveTrail[0].ts < cut) state.moveTrail.shift();
+}
+/** ground actually covered in the last window, following the path rather than the
+    straight line, so a loop round a block still counts as having gone somewhere */
+function coveredRecently(now) {
+  const from = now - VEH_WINDOW_MS;
+  const pts = state.moveTrail.filter(p => p.ts >= from);
+  let m = 0;
+  for (let i = 1; i < pts.length; i++) m += haversine(pts[i-1].lat, pts[i-1].lon, pts[i].lat, pts[i].lon);
+  return { m, span: pts.length > 1 ? pts[pts.length-1].ts - pts[0].ts : 0 };
+}
+/* Automatic, but overridable. The guess is shown on a chip he can tap, because no
+   rule is going to be right every time and a wrong guess quietly eats his trail. */
+function updateDriving(speed, now) {
   const was = state.driving;
-  if (!state.driving && state.driveHits >= DRIVE_HITS) state.driving = true;
-  if (state.driving && state.calmHits >= CALM_HITS) state.driving = false;
+  if (state.driveOverride) {
+    state.driving = state.driveOverride === 'drive';
+    state.driveHits = 0; state.calmHits = 0;
+  } else {
+    /* One fix is not evidence. A cold fix, a wifi-to-satellite handoff, or stepping out
+       from under trees can read as road speed for a single reading, and latching on
+       that switched the trail off with no way back until three solid minutes of fixes
+       arrived. Two readings running is still instant enough to be useful. */
+    state.driveHits = speed >= DRIVE_ON  ? state.driveHits + 1 : 0;
+    state.calmHits  = speed <  DRIVE_OFF ? state.calmHits  + 1 : 0;
+    const { m, span } = coveredRecently(now || Date.now());
+    if (state.driveHits >= DRIVE_ON_HITS) {
+      state.driving = true;                     // plainly a road speed, twice running
+    } else if (span >= VEH_WINDOW_MS * 0.6) {   // a real window of data to judge on
+      state.driving = m >= (state.driving ? VEH_CLEAR_M : VEH_DIST_M);
+    } else if (state.driving && state.calmHits >= CALM_HITS_OFF) {
+      /* The way back out when there is no window to judge on. Fixes go sparse with the
+         phone in a pocket or the app in the background, and without this the trail
+         could stay off for the rest of the day having said nothing. Sitting at a red
+         light does not trigger it: there the window is full and says vehicle. */
+      state.driving = false;
+    }
+  }
   if (state.driving) recordDriveSpeed(speed);
   return { driving: state.driving, stopped: was && !state.driving };
 }
@@ -3256,7 +3634,12 @@ function startGps() {
     }
 
     renderStrip(); renderTruck();
-    if (dayKey(now) !== state.today) { await flushDay(); state.today = dayKey(now); await loadDay(state.today); }
+    // over midnight: save yesterday, then point today's trail at the new day's array
+    // rather than leaving it aimed at yesterday's, which made the counts read wrong
+    if (dayKey(now) !== state.today) {
+      await flushDay(); state.today = dayKey(now);
+      state.track = (await loadDay(state.today)).pts;
+    }
 
     /* Suppressing points while standing stops the knot of dots at every door,
        but it must not swallow short walks. So: always mark the moment you stop
@@ -3266,7 +3649,8 @@ function startGps() {
        neighbourhoods no longer smears down the road and then has to be cleaned up
        by hand with Erase area. It also makes "miles walked" honest for the first
        time. Hysteresis both ways: three fixes to start, two to stop. */
-    const stoppedDriving = updateDriving(speed).stopped;
+    pushMoveTrail(state.pos.lat, state.pos.lon, now);
+    const stoppedDriving = updateDriving(speed, now).stopped;
 
     const fine = state.trackDetail === 'fine';
     const minMove = fine ? 1.5 : 3;
@@ -3337,6 +3721,32 @@ function unpark() {
   renderTruck(); renderParkInfo(); if (window._map) refreshMapLayers();
 }
 /** Chip only exists while it is useful: parked, and far enough away to matter. */
+/* Shows what it decided and lets him overrule it. Cycles: work it out → on foot →
+   driving → work it out. Never persisted: an override left on overnight would
+   silently eat the next morning's trail. */
+function renderDrivePill() {
+  const el = $('drivePill'); if (!el) return;
+  if (!state.session || state.paused || !state.pos) { el.classList.add('hide'); return; }
+  el.classList.remove('hide');
+  const set = !!state.driveOverride;
+  el.textContent = (state.driving ? '🚗 driving' : '🚶 on foot') + (set ? ' · set' : '');
+  el.classList.toggle('driving', state.driving);
+  el.classList.toggle('set', set);
+}
+function cycleDriveOverride() {
+  state.driveOverride = state.driveOverride === null ? 'foot'
+                      : state.driveOverride === 'foot' ? 'drive' : null;
+  updateDriving(state.lastSpeed || 0, Date.now());
+  buzz(10);
+  flashToast(
+    state.driveOverride === 'foot'  ? 'Set to on foot' :
+    state.driveOverride === 'drive' ? 'Set to driving' : 'Back to working it out',
+    state.driveOverride
+      ? 'The trail follows this until you tap again'
+      : 'It judges by how much ground you cover, not by speed',
+    '#38bdf8');
+  renderStrip();
+}
 function renderTruck() {
   const el = $('truckPill');
   if (!state.vehicle || !state.pos) { el.classList.add('hide'); return; }
@@ -3433,8 +3843,8 @@ document.querySelectorAll('.dsecHead[data-msec]').forEach(b => {
 /* ---- what version is actually on the phone ----
    Matches the service worker cache name, so "did the update land" is answerable by
    looking rather than guessing. */
-const BUILD_VERSION = 'v7';
-const BUILD_DATE = '26 July 2026';
+const BUILD_VERSION = 'v8';
+const BUILD_DATE = '28 July 2026';
 function renderVersionStamp() {
   const el = $('versionStamp'); if (!el) return;
   el.className = 'small';
@@ -3549,6 +3959,20 @@ function renderMapDataChips() {
   off.className = 'chip' + (state.mapData.length ? '' : ' on'); off.textContent = 'Nothing';
   off.onclick = () => { state.mapData = []; save(); };
   el.appendChild(off);
+  renderMapDataNote();
+}
+/* Labels are unreadable much further out than this, so they are not drawn — but
+   failing silently made the whole feature look broken from a street-level view. */
+const MAP_LABEL_ZOOM = 18;
+function renderMapDataNote() {
+  const el = $('mapDataNote'); if (!el) return;
+  const z = window._map ? window._map.getZoom() : null;
+  const tooFar = z != null && z < MAP_LABEL_ZOOM;
+  el.className = tooFar ? 'nagWarn' : 'small';
+  el.innerHTML = tooFar
+    ? `⚠️ <b>Zoomed too far out to print these.</b> They start showing two or three taps closer in. `
+      + `Nothing is wrong with your choices — there is no room for the words at this scale.`
+    : 'Printed on the house itself. Kept separate from the little round map, because a big screen can carry more than a circle can.';
 }
 
 /* The Appointment stage and the schedule are the same fact seen twice, so each
@@ -3706,6 +4130,7 @@ $('swapBtn').onclick = openCandidates;
 $('house').addEventListener('dblclick', openCandidates);
 $('modePill').onclick = toggleMode;
 $('gpsPill').onclick = () => setPaused(!state.paused);
+$('drivePill').onclick = cycleDriveOverride;
 const setHubSpan = v => { state.hubSpan = Math.max(60, Math.min(600, v)); localStorage.setItem('hubSpan', state.hubSpan); drawMini(); };
 $('hubIn').onclick  = e => { e.stopPropagation(); setHubSpan(Math.round(state.hubSpan / 1.6)); buzz(8); };
 $('hubOut').onclick = e => { e.stopPropagation(); setHubSpan(Math.round(state.hubSpan * 1.6)); buzz(8); };
@@ -3726,7 +4151,14 @@ $('hubSat').onclick = e => {
   $('hubSat').classList.toggle('on', state.hubSat);
   buzz(10); drawMini();
 };
-$('truckPill').onclick = openTravel;
+/* Was the "Getting back" sheet. Now it does the obvious thing: shows you the truck.
+   Falls back to opening the map where you stand if the pin has gone. */
+$('truckPill').onclick = async () => {
+  await openMap();
+  const t = state.vehicle;
+  if (t) focusMapOn(t.lat, t.lon, Math.max(17, window._map ? window._map.getZoom() : 17));
+  buzz(10);
+};
 
 /* Mini map: tap opens the big map, press-and-hold parks the truck.
    The hold must cancel the tap, or you would get a map every time you park. */
@@ -3787,10 +4219,7 @@ $('crmIcs').onclick = () => addToCalendar(dueList());
    would lose the caret on every keystroke. */
 $('crmSearch').oninput = e => { crmQuery = e.target.value; renderCrm(); };
 $('crmSearchClear').onclick = () => { crmQuery = ''; $('crmSearch').value = ''; renderCrm(); $('crmSearch').focus(); };
-$('mTravel').onclick = () => { closeSheet('menuSheet'); openTravel(); };
 $('mAppt').onclick = () => { closeSheet('menuSheet'); openAppts(); };
-$('tvSchedule').onclick = () => { closeSheet('travelSheet'); openAppts(); };
-$('tvSetHome').onclick = () => { setHomeHere(); renderTravel(); };
 $('mSetHome').onclick = () => { setHomeHere(); renderHomeInfo(); };
 $('mClearHome').onclick = () => {
   state.home = null; localStorage.removeItem('home'); renderHomeInfo();
@@ -3798,6 +4227,7 @@ $('mClearHome').onclick = () => {
 };
 $('dIcs').onclick = () => { pullDetail(); addToCalendar([editing]); };
 $('mSession').onclick = openSession;
+$('doneBtn').onclick = () => { openSession(); buzz(10); };
 $('sesKeep').onclick = () => { if (!state.session) { startSession(); setPaused(false); } closeSheet('sessionSheet'); };
 $('sesEnd').onclick = endSession;
 $('sesExport').onclick = () => { xOpts.range = 'today'; openExport(); closeSheet('sessionSheet'); };
@@ -4429,111 +4859,8 @@ function apptForVisit(v) {
 /** true when the door has a booking that has not happened yet */
 const hasFutureAppt = v => { const a = apptForVisit(v); return !!a && a.at >= Date.now(); };
 
-/** the next thing worth driving to: the soonest one that still has a location */
-function nextStop() {
-  const items = scheduleItems().filter(i => i.lat != null && i.lon != null);
-  const now = Date.now();
-  return items.find(i => i.at >= now - 2*HOUR) || null;
-}
-
-/* ---------------- real road times ----------------
-   OSRM's free public server. No key, no account, no card, nothing for him to set up
-   or lose — which was the whole argument for it over Google. What the straight-line
-   model gets badly wrong is geometry: a river, a limited-access stretch of 270, a
-   cul-de-sac that does not connect. That is exactly what this fixes.
-
-   Best-effort by design. OSRM's operators reserve the right to withdraw the service,
-   and out canvassing there is often no signal at all, so the on-phone estimate stays
-   underneath permanently. When the road answer is missing the number gets vaguer;
-   the app does not break.
-
-   Their usage policy requires the data attribution and naming OSRM as the source of
-   the route. Both are printed at the foot of this sheet, not optional. */
-const OSRM_BASE = 'https://router.project-osrm.org/route/v1/driving/';
-const OSRM_TIMEOUT = 6000;
-const ROAD_TTL = 10 * 60 * 1000;
-const roadCache = new Map();
-const roadKey = (a, b) => [a.lat, a.lon, b.lat, b.lon].map(n => Number(n).toFixed(4)).join(',');
-/** what we already know, without going near the network */
-function roadCached(a, b) {
-  if (!a || !b) return undefined;
-  const hit = roadCache.get(roadKey(a, b));
-  return hit && Date.now() - hit.ts < ROAD_TTL ? hit.v : undefined;
-}
-async function roadRoute(a, b) {
-  if (!a || !b) return null;
-  const k = roadKey(a, b);
-  const hit = roadCache.get(k);
-  if (hit && Date.now() - hit.ts < ROAD_TTL) return hit.v;
-  if (navigator.onLine === false) return null;
-  try {
-    const ctl = new AbortController();
-    const timer = setTimeout(() => ctl.abort(), OSRM_TIMEOUT);
-    const res = await fetch(`${OSRM_BASE}${a.lon},${a.lat};${b.lon},${b.lat}`
-      + '?overview=false&alternatives=false&steps=false', { signal: ctl.signal, cache:'no-store' });
-    clearTimeout(timer);
-    const j = await res.json();
-    const r = j && j.routes && j.routes[0];
-    const v = (r && isFinite(r.duration) && isFinite(r.distance)) ? { secs:r.duration, m:r.distance } : null;
-    roadCache.set(k, { ts:Date.now(), v });
-    return v;
-  } catch (e) {
-    // remember the failure for a while too, so a dead zone is not hammered on every render
-    roadCache.set(k, { ts:Date.now(), v:null });
-    return null;
-  }
-}
-/* Only ever the two numbers he actually reads: how long until home, and how long to
-   the next thing booked. Everything else stays instant and offline. */
-async function prefetchRoads(plan) {
-  if (!plan || !plan.ok || !plan.origin) return;
-  const jobs = [];
-  if (state.home && roadCached(plan.origin, state.home) === undefined)
-    jobs.push(roadRoute(plan.origin, state.home));
-  if (plan.next && roadCached(plan.origin, plan.next.stop) === undefined)
-    jobs.push(roadRoute(plan.origin, plan.next.stop));
-  if (!jobs.length) return;
-  await Promise.all(jobs);
-  // second pass finds everything cached, so this cannot loop
-  if (!$('travelSheet').classList.contains('hide')) renderTravel();
-}
-
-/* Answers the phone call: "how long until you're home?" Walk to the truck,
-   then drive. If there is no truck the drive starts from where you stand. */
-function travelPlan() {
-  const from = state.pos;
-  if (!from) return { ok:false, why:'no position yet' };
-  const plan = { ok:true, legs:[], walk:null, home:null, next:null, at:Date.now() };
-
-  const truck = state.vehicle;
-  let originLat = from.lat, originLon = from.lon, walkS = 0;
-  if (truck) {
-    const m = haversine(from.lat, from.lon, truck.lat, truck.lon);
-    walkS = m < 15 ? 0 : walkSecs(m);
-    plan.walk = { m, secs: walkS, atTruck: m < 15 };
-    originLat = truck.lat; originLon = truck.lon;
-  }
-  plan.origin = { lat: originLat, lon: originLon };
-  plan.walkS = walkS;
-
-  if (state.home) {
-    const m = haversine(originLat, originLon, state.home.lat, state.home.lon);
-    const secs = driveSecs(m);
-    plan.home = { m, secs, total: walkS + secs, eta: Date.now() + (walkS + secs) * 1000 };
-  }
-
-  const stop = nextStop();
-  if (stop) {
-    const m = haversine(originLat, originLon, stop.lat, stop.lon);
-    const secs = driveSecs(m);
-    const total = walkS + secs;
-    plan.next = { stop, m, secs, total,
-                  eta: Date.now() + total * 1000,
-                  leaveBy: stop.at - total * 1000,
-                  late: Date.now() + total * 1000 > stop.at };
-  }
-  return plan;
-}
+/* "Getting back" and the OSRM road lookups went with it in v8. nextStop(),
+   travelPlan() and the road cache had no other caller. */
 
 /* ---------------- the customer list ---------------- */
 let crmFilter = 'due';
@@ -4759,84 +5086,6 @@ function renderDriveChips() {
     v => { state.driveAdj = parseFloat(v); localStorage.setItem('driveAdj', String(state.driveAdj)); });
 }
 
-function openTravel() { renderTravel(); openSheet('travelSheet'); }
-function renderTravel() {
-  const plan = travelPlan();
-  const head = $('tvHeadline'), legs = $('tvLegs'), next = $('tvNext');
-  if (!plan.ok) {
-    head.innerHTML = `<div class="tvBig"><b>No position yet</b><span>Waiting on a GPS fix</span></div>`;
-    legs.innerHTML = ''; next.innerHTML = ''; $('tvBasis').textContent = '';
-    return;
-  }
-  /* The road answer when there is one, the on-phone estimate when there is not —
-     and his own nudge applies to both. OSRM returns free-flow times with no traffic
-     in them, so if his times read short, they read short here too. Dropping the
-     nudge on the road figure would quietly throw away his calibration exactly when
-     the number is being presented as the more authoritative one. */
-  const roadSecs = r => r.secs * (state.driveAdj || 1);
-  const homeRoad = plan.home ? roadCached(plan.origin, state.home) : undefined;
-  const homeSecs = homeRoad ? plan.walkS + roadSecs(homeRoad) : (plan.home ? plan.home.total : 0);
-  head.innerHTML = plan.home
-    ? `<div class="tvBig"><b>Home by ${esc(fmtWhenClock(Date.now() + homeSecs * 1000))}</b>
-         <span>about ${esc(fmtDur(homeSecs))} from here${homeRoad ? ' by road' : ''}</span></div>`
-    : `<div class="tvBig"><b>No home set</b><span>Set it below and this answers the phone call for you</span></div>`;
-
-  const rows = [];
-  if (plan.walk) {
-    rows.push(plan.walk.atTruck
-      ? `<div class="tvLeg"><span class="ic">🚚</span><div class="lg">You are at the truck<small>No walk back needed</small></div></div>`
-      : `<div class="tvLeg"><span class="ic">🚶</span><div class="lg">Walk to the truck<small>${esc(fmtMiles(plan.walk.m))}</small></div>
-           <span class="amt">about ${esc(fmtDur(plan.walk.secs))}</span></div>`);
-  } else {
-    rows.push(`<div class="tvLeg"><span class="ic">📍</span><div class="lg">No truck parked<small>Timing from where you stand. Hold the round map to drop a pin.</small></div></div>`);
-  }
-  if (plan.home) {
-    const sub = homeRoad
-      ? `${fmtMiles(homeRoad.m)} by road · on the phone it says about ${fmtDur(plan.home.secs)}`
-      : `${fmtMiles(plan.home.m)} straight line`
-        + (navigator.onLine === false ? ' · no signal for road times' : ' · road times not answering');
-    rows.push(`<div class="tvLeg"><span class="ic">🏠</span><div class="lg">Drive home<small>${esc(sub)}</small></div>
-         <span class="amt">about ${esc(fmtDur(homeRoad ? roadSecs(homeRoad) : plan.home.secs))}</span></div>`);
-  }
-  legs.innerHTML = rows.join('');
-
-  if (plan.next) {
-    const n = plan.next, s = n.stop;
-    const road = roadCached(plan.origin, s);
-    const total = road ? plan.walkS + roadSecs(road) : n.total;
-    const eta = Date.now() + total * 1000;
-    const late = eta > s.at;
-    next.innerHTML = `
-      <div class="tvBig${late ? ' warn' : ''}" style="text-align:left">
-        <b style="font-size:16px">${esc(s.label)}</b>
-        <span>${esc(fmtWhenClock(s.at))}${s.addr ? ' · ' + esc(s.addr) : ''}</span>
-        <div style="margin-top:8px;font-size:13px;font-weight:700;color:var(--txt)">
-          About ${esc(fmtDur(total))} to get there · ${esc(fmtMiles(road ? road.m : n.m))}${road ? ' by road' : ' straight line'}</div>
-        ${road ? `<div style="margin-top:2px;font-size:11.5px;color:var(--dim);font-weight:700">
-          on the phone it says about ${esc(fmtDur(n.total))}</div>` : ''}
-        <div style="margin-top:4px;font-size:13px;font-weight:800;color:${late ? '#fca5a5' : '#7dd3fc'}">
-          ${late ? `Running late. Leaving now puts you there ${esc(fmtWhenClock(eta))}.`
-                 : `Leave by ${esc(fmtWhenClock(s.at - total * 1000))}`}</div>
-      </div>`;
-  } else {
-    next.innerHTML = `<div class="small">Nothing on the schedule with a location. Add an appointment, or set a follow-up on a door.</div>`;
-  }
-
-  const p = pace();
-  const usingRoads = homeRoad !== undefined && homeRoad !== null;
-  $('tvBasis').innerHTML =
-    esc(`Walking at ${(p.walk*2.23694).toFixed(1)} mph`
-      + (p.walkMeasured ? ' measured from your own tracks' : ' (default until there is enough of your own walking to measure)')
-      + '. ')
-    + esc(usingRoads
-        ? 'Driving times follow real roads. The phone\'s own straight-line estimate is shown underneath, and takes over whenever the road service cannot be reached.'
-        : 'Driving times are worked out on the phone from straight line distance, so they need no signal. Real road times appear when there is a connection.')
-    + ' These are estimates, not promises.'
-    + `<div style="margin-top:8px;color:#5b6b7f">Road routing by the OSRM public routing service. `
-    + `Map data © OpenStreetMap contributors, available under the Open Database Licence.</div>`;
-
-  prefetchRoads(plan);
-}
 
 /* ---------------- appointments ---------------- */
 let apptDraft = null;
@@ -5173,7 +5422,7 @@ function renderApMins() {
   DURATIONS.forEach(([m, label]) => {
     const b = document.createElement('button');
     b.className = 'chip' + (cur === m ? ' on' : ''); b.textContent = label;
-    b.onclick = () => { if (apptDraft) apptDraft.mins = m; $('apMinsExact').value = ''; renderApMins(); };
+    b.onclick = () => { if (apptDraft) apptDraft.mins = m; renderApMins(); };
     host.appendChild(b);
   });
   if (!DURATIONS.some(d => d[0] === cur)) {
@@ -5246,7 +5495,7 @@ function openCustPicker(onPick) {
 }
 $('apptNew').onclick = () => {
   apptDraft = { id:'a' + Date.now() + Math.random().toString(36).slice(2,6), lat:null, lon:null, src:null, mins:APPT_MINS_DEFAULT };
-  $('apLabel').value = ''; $('apAddr').value = ''; $('apMinsExact').value = '';
+  $('apLabel').value = ''; $('apAddr').value = '';
   const d = new Date(Date.now() + HOUR);
   d.setMinutes(0, 0, 0);
   $('apAt').value = new Date(d.getTime() - d.getTimezoneOffset()*60000).toISOString().slice(0,16);
@@ -5261,15 +5510,8 @@ $('apSelAll').onclick = () => {
   scheduleItems().filter(i => apFilter === 'all' || i.kind === apFilter).forEach(i => apptSel.add(i.id));
   renderAppts();
 };
-$('apBulkGo').onclick = () => {
-  const m = cleanMins($('apBulkExact').value);
-  if (!m) { flashToast('Type a number of minutes', 'Between 5 and 600', '#f59e0b'); return; }
-  $('apBulkExact').value = ''; applyBulkMins(m);
-};
-$('apMinsExact').oninput = e => {
-  const m = cleanMins(e.target.value);
-  if (m && apptDraft) { apptDraft.mins = m; renderApMins(); }
-};
+// the two "or type minutes" boxes and the Apply button that went with the first of
+// them were removed in v8. The presets cover it.
 $('apSelNone').onclick = () => { apptSel.clear(); renderAppts(); };
 $('apDelSel').onclick = deleteSelectedSchedule;
 function sendScheduleToCalendar(items, what) {
@@ -5704,7 +5946,7 @@ function openListView() {
       <div class="sub">${esc(displayName(v))}${nameIsFromDeed(v) ? ' (from the deed)' : ''}${
         v.owner && displayName(v) !== v.owner ? ' \u00b7 deed: ' + esc(v.owner) : ''}</div>
       <div class="kv">${bits.map(b => `<span>${esc(b)}</span>`).join('')}</div>
-      ${noteText(v) ? `<div class="sub" style="margin-top:6px">${esc(noteText(v))}</div>` : ''}`;
+      ${noteText(v) ? `<div class="note">${esc(noteText(v))}</div>` : ''}`;
     el.onclick = () => { closeSheet('listSheet'); openDetail(v); };
     host.appendChild(el);
   });
@@ -5818,17 +6060,29 @@ function startSession() {
   state.leftHome = false; state.quietAnchor = null; state.quietAskedAt = 0;
   state.lastDoorTs = Date.now();
   state.driving = false; state.driveHits = 0; state.calmHits = 0;
+  state.moveTrail = []; state.driveOverride = null;   // a fresh day judges for itself
   localStorage.setItem('session', JSON.stringify(state.session));
+}
+/* The clock starts at the first door marked, not when the app was opened. Opening it
+   at noon to look at the map and starting work at half two read as two and a half
+   hours out, which made every minutes-out figure a fiction. */
+function workingSince() {
+  if (!state.session) return null;
+  const first = state.visitLog.find(v => v.ts >= state.session.start);   // oldest first
+  return first ? first.ts : null;
 }
 function sessionStats() {
   const from = state.session ? state.session.start : 0;
+  const since = workingSince();
   const rows = state.visitLog.filter(v => v.ts >= from);
   let metres = 0;
   for (const d of state.days.values())
     for (const seg of trackSegments(d.pts))
       for (let i = 1; i < seg.length; i++)
         if (seg[i].ts >= from) metres += haversine(seg[i-1].lat, seg[i-1].lon, seg[i].lat, seg[i].lon);
-  return { rows, metres, mins: from ? Math.round((Date.now()-from)/60000) : 0 };
+  // distance still counts from the session, because walking to the first door is
+  // real walking. Only the clock moves.
+  return { rows, metres, since, mins: since ? Math.round((Date.now() - since)/60000) : 0 };
 }
 function openSession() {
   const s = sessionStats();
@@ -5846,11 +6100,14 @@ function openSession() {
   // the tiles that used to fill the top of the menu live here now, which is where
   // anyone would look to ask how the day went
   const allTime = l => state.visitLog.filter(v => (v.line||'roof') === l).length;
+  const clock = t => new Date(t).toLocaleTimeString([], {hour:'numeric', minute:'2-digit'});
   $('sesMeta').textContent = (state.session
-    ? `Started ${new Date(state.session.start).toLocaleTimeString([], {hour:'numeric', minute:'2-digit'})}. `
-      + `Roofing ${byLine('roof')}, appraisal ${byLine('appraisal')} this session. Ending a session stops tracking and saves the battery. Your records stay.`
+    ? (s.since
+        ? `Working since ${clock(s.since)}, counted from your first door — not from when the app was opened (${clock(state.session.start)}). `
+        : `Nothing marked yet. The clock starts at your first door, not now. `)
+      + `${LINES.roof.label} ${byLine('roof')}, ${LINES.appraisal.label} ${byLine('appraisal')} this session. Ending a session stops tracking and saves the battery. Your records stay.`
     : 'Tracking is stopped. Tap Keep canvassing to start a new session.')
-    + ` All time: ${allTime('roof')} roofing, ${allTime('appraisal')} appraisal.`;
+    + ` All time: ${allTime('roof')} ${LINES.roof.label.toLowerCase()}, ${allTime('appraisal')} ${LINES.appraisal.label.toLowerCase()}.`;
   openSheet('sessionSheet');
 }
 async function endSession(quiet) {
@@ -5909,11 +6166,15 @@ function renderBackupNag() {
              : `Last backed up ${days} day${days === 1 ? '' : 's'} ago`;
   el.classList.remove('hide');
   el.className = overdue ? 'nagBad' : 'nagOk';
-  if (dayWriteFailed) el.className = 'nagBad';
+  if (dayWriteFailed || dayReadFailed) el.className = 'nagBad';
   el.innerHTML = `<b>${when}.</b> ${n} record${n===1?'':'s'} live only on this phone.`
     + (overdue ? `<br>Delete the app icon and they are gone. Take a full backup below.` : '')
     + (storageGrant === false ? `<br>⚠️ The browser has also refused to protect this app's storage — see Settings.` : '')
-    + (dayWriteFailed ? `<br>⚠️ <b>The phone refused to save your walking track.</b> Back up now — this usually means it has run out of room.` : '');
+    + (dayWriteFailed ? `<br>⚠️ <b>The phone refused to save your walking track.</b> Back up now — this usually means it has run out of room.` : '')
+    /* The toast for this shows once and is gone in fifteen seconds. Without a line
+       here the app would go on quietly refusing to save the track with nothing on
+       screen to say so. */
+    + (dayReadFailed ? `<br>⚠️ <b>The phone cannot read your walking track back.</b> Nothing is being saved over it until it can. Back up now.` : '');
 }
 
 /* ---------------- PIN lock ---------------- */
@@ -5961,13 +6222,21 @@ async function loadStored() {
   if (legacy.length) {
     const byDay = new Map();
     legacy.forEach(t => { const k = dayKey(t.ts); if (!byDay.has(k)) byDay.set(k, []); byDay.get(k).push(t); });
+    /* Same trap as loadDay had: a read that FAILS is not a day with nothing in it. If
+       this cannot read a day back, writing the old points on their own would drop
+       whatever was already there. Skip that day, and leave the old store alone so the
+       whole thing is retried at the next launch rather than thrown away. */
+    let allRead = true;
     for (const [k, pts] of byDay) {
-      const existing = await DB.get('days', k).catch(()=>null);
+      let existing = null;
+      try { existing = await DB.get('days', k); }
+      catch (e) { allRead = false; continue; }
       const merged = [...((existing && existing.pts) || []), ...pts.map(p => ({lat:p.lat, lon:p.lon, ts:p.ts}))]
         .sort((a,b)=>a.ts-b.ts);
-      await DB.put('days', { day:k, pts:merged }).catch(()=>{});
+      try { await DB.put('days', { day:k, pts:merged }); }
+      catch (e) { allRead = false; }
     }
-    await DB.clear('track').catch(()=>{});
+    if (allRead) await DB.clear('track').catch(()=>{});
   }
 
   state.today = dayKey(Date.now());
