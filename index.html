@@ -513,7 +513,7 @@ select{min-height:44px}
       <span style="border:1.5px solid #cbd5e1;display:inline-block;width:11px;height:11px;border-radius:3px;margin-right:6px;vertical-align:-1px"></span>Roofing</div>
     <div><span style="border:1.5px dashed #e9d5ff;display:inline-block;width:11px;height:11px;border-radius:3px;margin-right:6px;vertical-align:-1px"></span>Appraisal</div>
     <div style="margin-top:4px;border-top:1px solid var(--line);padding-top:4px">
-      <span style="display:inline-block;width:11px;height:11px;border-radius:2px;margin-right:6px;vertical-align:-1px;background:repeating-linear-gradient(45deg,#facc15 0 3px,#0b0f14 3px 6px)"></span>Likely a rental</div>
+      <span style="display:inline-block;width:11px;height:11px;border-radius:2px;margin-right:6px;vertical-align:-1px;background:rgba(234,179,8,.30);border:1px solid rgba(234,179,8,.5)"></span>Likely a rental</div>
     <div><span style="display:inline-block;width:11px;height:11px;border-radius:50%;margin-right:6px;vertical-align:-1px;background:#a855f7;border:2px solid #f5f3ff"></span>Appraisal flyer left — worth a roofing knock</div>
     <div style="margin-top:4px;border-top:1px solid var(--line);padding-top:4px" id="legendTracks"></div>
   </div>
@@ -910,7 +910,7 @@ select{min-height:44px}
           <div class="chips"><button class="chip" id="mWake">Screen lock off</button></div>
 
           <label class="f">Likely rentals on the maps</label>
-          <div class="small" style="margin-bottom:6px">Lots the county flags as rentals, or where the owner's post goes somewhere else, get a yellow-and-black edge on both maps. In some neighbourhoods that is half the street, so you can turn it off.</div>
+          <div class="small" style="margin-bottom:6px">Lots the county flags as rentals, or where the owner's post goes somewhere else, get a soft yellow wash on both maps. In some neighbourhoods that is half the street. Tap to go faint → bold → off.</div>
           <div class="chips"><button class="chip" id="mRentals">Show likely rentals</button></div>
 
           <label class="f">When tracking stops by itself</label>
@@ -962,6 +962,7 @@ const COUNTIES = [
     url:'https://gis.franklincountyohio.gov/hosting/rest/services/ParcelFeatures/Parcel_Features/MapServer/0',
     owner:['OWNERNME1','OWNERNME2'], addr:'SITEADDRESS', pid:'PARCELID',
     extra:['ZIPCD','RESYRBLT','CLASSDSCRP','MAILNME1','MAILNME2','OWNEROCCUPIED','HOMSTD','RENTAL','TOTVALUEBASE','RESFLRAREA','SALEDATE','SALEPRICE'],
+    cls:a=>a.CLASSDSCRP,
     stats:{ val:'TOTVALUEBASE', sqft:'RESFLRAREA', saleDate:'SALEDATE', salePrice:'SALEPRICE' },
     where:'1=1', bbox:[-83.25,39.79,-82.76,40.16],
     occ:{ mail:a=>a.MAILNME1, mailCity:a=>a.MAILNME2, mailName:null,
@@ -972,6 +973,7 @@ const COUNTIES = [
     url:'https://maps.delco-gis.org/arcgiswebadaptor/rest/services/DelawareCountyData/MapServer/0',
     owner:['OWNER1','OWNER2'], addr:'ADDR1', pid:'PARCEL_NO',
     extra:['MUN_NAME','YRBUILT','CLASS','MAILNAME1','MAILADDR1','MAILADDR2','MARKET_TOT','SQFT','SALE_DATE','SALE_AMNT'],
+    cls:a=>a.CLASS,
     stats:{ val:'MARKET_TOT', sqft:'SQFT', saleDate:'SALE_DATE', salePrice:'SALE_AMNT' },
     where:'OBJECTID>0', bbox:[-83.25,40.14,-82.73,40.44],
     // Delaware routes tax mail to the mortgage servicer (COTALITY etc.) on any financed
@@ -982,6 +984,7 @@ const COUNTIES = [
     url:'https://www7.co.union.oh.us/unioncountyohio/rest/services/parcel/MapServer/0',
     owner:['Owner'], addr:'Address', pid:'ACCOUNT',
     extra:['city','ZipCode','ParcelClass','GISNO','SaleDate'],
+    cls:a=>a.ParcelClass,
     stats:{ saleDate:'SaleDate' }, where:'1=1', bbox:[-83.65,40.12,-83.16,40.50],
     // Union keeps mailing addresses in a sibling service; joined on GISNO at fetch time.
     mailJoin:{ url:'https://www7.co.union.oh.us/unioncountyohio/rest/services/parcelOwnerAcreageNBHDpClass/MapServer/0',
@@ -990,14 +993,16 @@ const COUNTIES = [
   { key:'madison', name:'Madison',
     url:'https://services1.arcgis.com/Wz3RgwtkgJCGuhMd/arcgis/rest/services/parcel_joined/FeatureServer/0',
     owner:['PPOwner'], addr:'PPAddress_1', pid:'TAXPIN',
-    extra:['PPYearBuilt','PPTotalValue','PPOwnerAddress','PPLivingArea','PPSaleDate','PPAmount'],
+    extra:['PPYearBuilt','PPTotalValue','PPOwnerAddress','PPLivingArea','PPSaleDate','PPAmount','PPClassCode'],
+    cls:a=>a.PPClassCode,
     stats:{ val:'PPTotalValue', sqft:'PPLivingArea', saleDate:'PPSaleDate', salePrice:'PPAmount' }, where:'1=1', bbox:[-83.66,39.70,-83.13,40.10],
     // PPOwnerAddress is the owner's own address. PPTaxPayerAddress is the servicer, ignore it.
     occ:{ mail:a=>a.PPOwnerAddress, mailCity:null, mailName:null, flag:null } },
   { key:'licking', name:'Licking',
     url:'https://gis.lickingcounty.gov/server/rest/services/Auditor/Parcels/FeatureServer/0',
     owner:['OwnerName'], addr:'SiteAddress', pid:'Parcel',
-    extra:['SitePostalCity','SitePostalZip','YearBuilt','OwnerAddress','OwnerCity','OwnerOccupied','Homestead','MarketTotalValue','LivingAreaSqFt','T1Date','T1SaleAmount'],
+    extra:['SitePostalCity','SitePostalZip','YearBuilt','OwnerAddress','OwnerCity','OwnerOccupied','Homestead','MarketTotalValue','LivingAreaSqFt','T1Date','T1SaleAmount','Landuse'],
+    cls:a=>a.Landuse,
     stats:{ val:'MarketTotalValue', sqft:'LivingAreaSqFt', saleDate:'T1Date', salePrice:'T1SaleAmount' },
     where:'1=1', bbox:[-82.80,39.90,-82.19,40.32],
     occ:{ mail:a=>a.OwnerAddress, mailCity:a=>a.OwnerCity, mailName:null,
@@ -1006,6 +1011,7 @@ const COUNTIES = [
     url:'https://gis.co.fairfield.oh.us/arcgis/rest/services/OpenData/ParcelBoundaries/MapServer/0',
     owner:['OWN1','OWN2'], addr:'PADDR1', pid:'PARID',
     extra:['YRBLT','CLASS','MADDR1','MADDR2','MCITYNAME','APRLAND','APRBLDG','SFLA','SALEDT','PRICE'],
+    cls:a=>a.CLASS,
     stats:{ valSum:['APRLAND','APRBLDG'], sqft:'SFLA', saleDate:'SALEDT', salePrice:'PRICE' }, where:'1=1', bbox:[-82.95,39.52,-82.38,39.98],
     // a leading % means MADDR1 is a care-of line and the street is on MADDR2
     occ:{ mail:a=> (a.MADDR1||'').trim().startsWith('%') ? a.MADDR2 : a.MADDR1,
@@ -1028,6 +1034,7 @@ const COUNTIES = [
     url:'https://services2.arcgis.com/MlJ0G8iWUyC7jAmu/arcgis/rest/services/OhioStatewidePacels_full_view/FeatureServer/0',
     owner:[], addr:'SitusAddressAll', pid:'StateParcelID',
     extra:['County','StateLUC','MailAddressAll','MailCity','CurrentTo','CAMADataSite','LocalParcelID'],
+    cls:a=>a.StateLUC,
     where:'1=1', bbox:[-84.95, 38.35, -80.45, 42.35],
     // MailAddressAll arrives as "1816 N HIGH ST | COLUMBUS OH 43201" and is often
     // simply blank, in which case the occupancy check correctly says nothing.
@@ -1133,9 +1140,48 @@ const SERVICERS = /\b(COTALITY|CORELOGIC|CORE\s?LOGIC|LERETA|SERVICELINK|LOANCAR
 const servicerName = s => { const m = String(s || '').match(SERVICERS); return m ? m[0].replace(/\s+/g, ' ').trim() : ''; };
 
 /** returns {v:'rental'|'owner'|null, mail:string, why:string, reason:string} */
+/* ---------------- is anybody's home? ----------------
+   A barbershop was reading as "likely a rental", and rightly so by the old rule: the
+   owner's post goes to her house, like every shop owner's. But owner-occupancy is a
+   question about a HOME, and asking it of a business gets a wrong answer every time.
+   Measured on his own cached parcels: 118 of 1,083 rental flags were on churches,
+   offices, shops, schools and warehouses — 46% of every business on his map.
+
+   Ohio's land use codes, confirmed against live county data rather than assumed:
+   1xx agricultural · 3xx industrial · 4xx commercial · 5xx RESIDENTIAL ·
+   6xx exempt (churches, township land) · 8xx public utility. Only the 500s are homes.
+   Some counties publish the words instead ("OFFICE BUILDING 1-2 STORIES"), some a
+   number, and Union and Licking publish both ("447: Com-Office"). */
+const LUC_FAMILY = { '1':'farm or vacant land', '3':'industrial', '4':'commercial',
+                     '6':'exempt or public', '8':'a utility' };
+const DWELLING_WORDS = /DWELL|CONDO|APARTMENT|SINGLE FAMILY|TWO FAMILY|THREE FAMILY|FOUR FAMILY|RESIDENT|MOBILE HOME|MANUFACTURED HOME/i;
+/** {resid: true|false|null, label} — null means the county told us nothing, so nothing changes */
+function propertyKind(c, a) {
+  const raw = (c && c.cls && a) ? c.cls(a) : null;
+  const s = raw == null ? '' : String(raw).trim();
+  if (!s || s === '0') return { resid:null, label:'' };
+  const num = s.match(/^(\d{3})/);
+  // words after a leading code — "447: Com-Office" reads better than "447"
+  const words = s.replace(/^\d{3}\s*[:\-]?\s*/, '').trim();
+  const nice = w => !w ? '' : (w.length > 4 && w === w.toUpperCase()
+    ? w.toLowerCase().replace(/\b[a-z]/g, m => m.toUpperCase()) : w);
+  if (num) {
+    const resid = num[1][0] === '5';
+    return { resid, label: resid ? '' : (nice(words) || LUC_FAMILY[num[1][0]] || 'not a home') };
+  }
+  if (DWELLING_WORDS.test(s)) return { resid:true, label:'' };
+  return { resid:false, label: nice(s) };
+}
 function assessOccupancy(c, a, siteAddr) {
   const cfg = c.occ;
   if (!cfg) return { v:null, mail:'', why:'no mailing data for this county', reason:'none' };
+
+  /* Before anything else. If nobody lives here, who owns it and where their post goes
+     settles nothing, and the auditor's rental flag is about a tenancy rather than a
+     household. Apartments and two-families are dwellings and still get judged. */
+  const kind = propertyKind(c, a);
+  if (kind.resid === false)
+    return { v:null, mail:'', why:'nobody lives here', reason:'notahome', kind:kind.label };
 
   const flag = cfg.flag ? cfg.flag(a) : null;
   const rawMail = (cfg.mail ? cfg.mail(a) : '') || '';
@@ -1193,6 +1239,9 @@ function occExplain(reason, servicer) {
          + 'so it settles nothing either way.';
   if (reason === 'unreadable')
     return 'The addresses could not be compared, so no conclusion is drawn from them.';
+  if (reason === 'notahome')
+    return 'Owner-occupancy is a question about a home, so it is not asked here. The '
+         + 'owner\'s post going somewhere else means nothing on a business.';
   if (reason === 'careof')
     return 'The tax bill is addressed care of someone else, so the street on it is theirs '
          + 'rather than the owner\'s. It settles nothing about who lives here.';
@@ -1343,7 +1392,11 @@ const state = {
   /* The rental hazard stripes on both maps. On by default because he asked for them on
      everything — but a switch, because in a neighbourhood like Linden the county flags
      over half the lots and there are days he wants a clean map. */
-  showRentals: true,
+  /* Off / faint / bold. Was a boolean over hazard stripes on the lot line; measured on
+     his own street those stripes merged neighbouring rentals into one blob and covered
+     the owner names, so they became a soft wash instead. Strength is his to set in
+     daylight rather than mine to guess off a screen. */
+  rentalMark: 'faint',
   areas: [],            // named patches: {id, name, kind:'circle'|'box', ...} — see loadStored
   trackDetail: 'normal',
   override: null,      // hand-placed position, {lat, lon, ts}
@@ -1610,7 +1663,8 @@ const TILE = 0.006; // ~0.66 km lat, ~0.51 km lon at 40°N
    Cached tiles hold PARSED parcels, so without this an old cache would keep
    serving the old interpretation forever and a fix would never reach anyone. */
 // 6: care-of and no-house-number lots stopped being read as rentals (v8)
-const PARSE_V = 6;
+// 7: property class pulled in per county, so businesses stop reading as rentals (v11)
+const PARSE_V = 7;
 const tileKey = (c, lat, lon) => `v${PARSE_V}:${c.key}:${Math.floor(lat/TILE)}:${Math.floor(lon/TILE)}`;
 async function purgeStaleTiles() {
   try {
@@ -1704,7 +1758,7 @@ async function fetchTile(c, lat, lon, silent) {
     out.forEach((p, i) => {
       const r = assessOccupancy(c, attrs[i], p.addr);
       p.occ = r.v; p.mail = r.mail; p.occWhy = r.why;
-      p.occReason = r.reason; p.servicer = r.servicer || '';
+      p.occReason = r.reason; p.servicer = r.servicer || ''; p.occKind = r.kind || '';
       Object.assign(p, readStats(c, attrs[i]));
     });
 
@@ -1809,6 +1863,11 @@ const current = () => state.candidates[state.candIndex] || null;
 /* A house can hold one record per book of business, so the lookup key is
    parcel + line. Without this, marking a roofing door would overwrite the
    appraisal record on the same address. */
+/** How strong the rental wash is drawn, on both maps. Faint is the default because a
+    rental is a different conversation, not a hazard; bold exists for bright daylight,
+    where a screen washes out. His to set, not mine to guess from a screenshot. */
+const rentalWash = () => state.rentalMark === 'bold' ? 0.36 : 0.20;
+
 const vKey = (parcelKey, line) => `${line || 'roof'}|${parcelKey}`;
 const visitFor = (parcelKey, line) => state.visits.get(vKey(parcelKey, line === undefined ? state.line : line));
 function pinHouse(key) {
@@ -1997,20 +2056,45 @@ function drawMini() {
 
   const labelJobs = [];
   const wantLabels = state.hubData.length > 0;
+  /* TWO PASSES, deliberately. Neighbouring lots share an edge, and a stroke is centred
+     on the path, so a lot drawn later used to paint the inner half of its neighbour's
+     border. That barely showed while the fill was doing the work at 0.80; now the
+     border carries the recognition it would be obvious. Fills first, then every edge. */
+  const near = [];
   for (const p of state.parcels.values()) {
     if (Math.abs(p.cen[1]-lat)*ky > span || Math.abs(p.cen[0]-lon)*kx > span) continue;
-    const v = visitFor(p.key) || visitFor(p.key, state.line === 'roof' ? 'appraisal' : 'roof');
+    near.push({ p, v: visitFor(p.key) || visitFor(p.key, state.line === 'roof' ? 'appraisal' : 'roof') });
+  }
+  const trace = p => {
     g.beginPath();
     for (const ring of p.rings) {
       ring.forEach((pt,i) => i ? g.lineTo(X(pt), Y(pt)) : g.moveTo(X(pt), Y(pt)));
       g.closePath();
     }
-    if (v) { g.fillStyle = STATUS[v.status].color + 'cc'; g.fill(); }
-    g.strokeStyle = v ? '#0f151d' : (state.hubSat ? 'rgba(255,255,255,.55)' : '#3a4a5e');
-    g.lineWidth = v ? 1 : .8; g.stroke();
-    /* Queue up any figures the user asked to see. They are drawn after the
-       rotation is unwound, so heading-up mode never prints text upside down.
-       Skip lots too small on screen to hold a word. */
+  };
+
+  // ---- pass one: fills ----
+  for (const { p, v } of near) {
+    trace(p);
+    /* Light, so the roof and the yard read straight through it. It used to be 0.80,
+       which hid the very thing he is looking at. The border does the recognising now. */
+    if (v) { g.fillStyle = STATUS[v.status].color + '40'; g.fill(); }
+    /* The rental wash goes on lots he has NOT worked. Once a door is marked, his own
+       mark is the thing that matters, and two translucent fills stacked just make mud.
+       The panel still says "likely a rental" when he opens the house. */
+    if (!v && p.occ === 'rental' && state.rentalMark !== 'off') {
+      g.save(); g.globalAlpha = rentalWash(); g.fillStyle = '#eab308'; g.fill(); g.restore();
+    }
+  }
+
+  // ---- pass two: edges, then anything sitting on top ----
+  for (const { p, v } of near) {
+    trace(p);
+    /* A marked lot is edged in its own status colour, thick enough to read on the move.
+       This is what lets the fill go so light. */
+    g.strokeStyle = v ? STATUS[v.status].color : (state.hubSat ? 'rgba(255,255,255,.55)' : '#3a4a5e');
+    g.lineWidth = v ? 3 : .8;
+    g.stroke();
     if (wantLabels) {
       const bw = Math.abs(p.bbox[2] - p.bbox[0]) * kx * sc;
       if (bw >= 16) {
@@ -2021,32 +2105,13 @@ function drawMini() {
         }
       }
     }
-    /* Likely rentals get the whole lot outlined in yellow-and-black hazard stripes,
-       so it reads on the approach. A triangle on the house only worked once you were
-       standing at it. Not yellow and red: red already means don't come back and amber
-       already means no answer, so a lot striped in those could read at a glance as a
-       door already written off. Black appears nowhere else on this map. */
-    if (p.occ === 'rental' && state.showRentals) {
-      // same rule as the big map: as bold as the lot can carry without hiding the
-      // status colour it is drawn around
-      const lotPx = Math.min(Math.abs(p.bbox[2] - p.bbox[0]) * kx,
-                             Math.abs(p.bbox[3] - p.bbox[1]) * ky) * sc;
-      const sw = Math.max(1.8, Math.min(6, lotPx * 0.17));
-      const dash = Math.max(4, Math.round(sw * 1.5));
-      g.save();
-      g.lineJoin = 'round';
-      g.setLineDash([]);            g.strokeStyle = '#facc15'; g.lineWidth = sw; g.stroke();
-      g.setLineDash([dash, dash]);  g.strokeStyle = '#0b0f14'; g.lineWidth = sw; g.stroke();
-      g.restore();
-    }
-    /* Appraisal flyer already through this door — a violet dot on the house. Same rule
-       as the big map, and not gated by which book he is logging, because the point is
-       to spot it while he is knocking the other one. */
+    /* Appraisal flyer already through this door — a violet dot on the house. Not gated
+       by which book he is logging, because the point is to spot it while knocking the
+       other one. */
     if (flyerLeft(p.key)) {
       const at = p.house || p.cen;
-      const cx = X(at), cy = Y(at);
       g.save();
-      g.beginPath(); g.arc(cx, cy, 4.5, 0, Math.PI*2);
+      g.beginPath(); g.arc(X(at), Y(at), 4.5, 0, Math.PI*2);
       g.fillStyle = '#a855f7'; g.fill();
       g.lineWidth = 1.6; g.strokeStyle = '#f5f3ff'; g.stroke();
       g.restore();
@@ -2057,7 +2122,13 @@ function drawMini() {
   if (c) {
     g.beginPath();
     for (const ring of c.p.rings) { ring.forEach((pt,i)=> i?g.lineTo(X(pt),Y(pt)):g.moveTo(X(pt),Y(pt))); g.closePath(); }
-    g.strokeStyle = '#ffffff'; g.lineWidth = 1.8; g.stroke();
+    /* Was 1.8px white. Marked lots now carry a 3px status-coloured border, so a thinner
+       white line stopped reading as "this is the one". A dark backing under a white line
+       keeps it separate from a pale status colour as well as from the dark map. */
+    g.save();
+    g.strokeStyle = 'rgba(11,15,20,.85)'; g.lineWidth = 5.5; g.stroke();
+    g.strokeStyle = '#ffffff';            g.lineWidth = 2.5; g.stroke();
+    g.restore();
   }
   // route trail
   const trail = state.track.slice(-160);
@@ -2483,11 +2554,20 @@ function openDetail(visit, focusName) {
   // Prefer the parcel in hand, fall back to what was stored with the record.
   const explain = occExplain((par && par.occReason) || v.occReason,
                              (par && par.servicer) || v.servicer);
+  /* Worked out from `extra`, which the record already carries — so a business still
+     reads as a business tomorrow, with no new field on the record. */
+  const kindNow = propertyKind(COUNTIES.find(c => c.key === v.county), (par && par.extra) || v.extra);
+  const notAHome = kindNow.resid === false
+                || ((par && par.occReason) || v.occReason) === 'notahome';
+  const kindLabel = kindNow.label || (par && par.occKind) || '';
   const viaStatewide = v.county === 'ohio' || (par && par.fallback);
   $('dSub').innerHTML = `<span style="color:${ln.color};font-weight:800">${ln.short}</span> · `
     + esc(v.owner || 'owner not listed') + ' · ' + esc((COUNTIES.find(c=>c.key===v.county)||{}).name || '?') + (viaStatewide ? '' : ' Co.')
     + (viaStatewide ? `<div class="nagWarn" style="margin-top:8px">${fallbackNote(par || v)}</div>` : '')
-    + (occ === 'rental'
+    + (notAHome
+        ? `<div style="margin-top:6px;color:#93c5fd;font-weight:700">🏢 Not a home${kindLabel ? ' — ' + esc(kindLabel) : ''}.</div>`
+          + `<div style="margin-top:4px;color:#93a6bb;font-size:12px;line-height:1.45">${esc(occExplain('notahome'))}</div>`
+        : occ === 'rental'
         ? `<div style="margin-top:6px;color:#fbbf24;font-weight:700">⚠️ Likely a rental. Owner's mail goes to ${esc(mail || 'another address')}.</div>`
         : mail ? `<div style="margin-top:6px;color:var(--dim)">Owner mail: ${esc(mail)}${occ==='owner'?' (same address)':''}</div>`
                  + (explain ? `<div style="margin-top:4px;color:#93a6bb;font-size:12px;line-height:1.45">${esc(explain)}</div>` : '')
@@ -3033,26 +3113,17 @@ function refreshMapLayers() {
           name:'',goesBy:'',nameFromOwner:false,phone:'',email:'',notes:'',tags:[],follow:'', _new:true }, p));
       });
       pl.addLayer(poly);
-      /* Hazard stripes on the lot line: a solid yellow pass with a dashed black pass
-         over it. The solid-versus-dashed difference between the two books stays
-         readable underneath, because this is drawn as a separate ring on top. */
-      if (p.occ === 'rental' && state.showRentals) {
-        /* Scaled to the lot as it appears on screen, not a fixed weight. A ring
-           heavy enough to read at zoom 19 covers a whole lot at zoom 16 — and the
-           status colour underneath is the more important signal of the two.
-           Toned down in v8: measured against live Franklin data, about 30% of lots in
-           an ordinary Columbus neighbourhood are rentals and 52% in Linden, so at the
-           old weight a third to a half of the screen was hazard stripes and nothing
-           else on the map was saying anything. */
-        const a = m.latLngToLayerPoint([p.bbox[1], p.bbox[0]]);
-        const b = m.latLngToLayerPoint([p.bbox[3], p.bbox[2]]);
-        const lotPx = Math.min(Math.abs(b.x - a.x), Math.abs(b.y - a.y));
-        const sw = Math.max(1.8, Math.min(6, lotPx * 0.17));
-        const dash = Math.max(6, Math.round(sw * 1.6));
-        const stripe = { fill:false, interactive:false, lineCap:'butt' };
-        pl.addLayer(L.polygon(latlngs, {...stripe, color:'#facc15', weight:sw, opacity:1}));
-        pl.addLayer(L.polygon(latlngs, {...stripe, color:'#0b0f14', weight:sw, opacity:1,
-          dashArray:`${dash} ${dash}`}));
+      /* A soft wash over the lot, not a ring around it. Checked against his own street:
+         the hazard ring merged neighbouring rentals into a single shape so they could
+         not be counted, and it sat on top of the owner names and house numbers, which
+         are what he actually knocks with. A fill does neither.
+         A mark on the HOUSE was tried and rejected: the county has no building
+         footprint for about 44% of rentals, so half the dots would land at the lot
+         centroid — the middle of the back garden — which is exactly why he lost the
+         last one. The lot is the only geometry we always have. */
+      if (p.occ === 'rental' && state.rentalMark !== 'off') {
+        pl.addLayer(L.polygon(latlngs, { stroke:false, interactive:false,
+          fillColor:'#eab308', fillOpacity: rentalWash() }));
       }
       /* A house where an appraisal flyer was left. Deliberately NOT gated by the book
          filter: the whole point is to see, while knocking roofing, which houses have
@@ -4048,7 +4119,7 @@ document.querySelectorAll('.dsecHead[data-msec]').forEach(b => {
 /* ---- what version is actually on the phone ----
    Matches the service worker cache name, so "did the update land" is answerable by
    looking rather than guessing. */
-const BUILD_VERSION = 'v10';
+const BUILD_VERSION = 'v11';
 const BUILD_DATE = '28 July 2026';
 function renderVersionStamp() {
   const el = $('versionStamp'); if (!el) return;
@@ -4088,12 +4159,16 @@ $('mQuiet').onclick = () => {
 };
 function renderRentalChip() {
   const b = $('mRentals'); if (!b) return;
-  b.classList.toggle('on', !!state.showRentals);
-  b.textContent = state.showRentals ? 'On — marked on both maps' : 'Off — maps stay clean';
+  b.classList.toggle('on', state.rentalMark !== 'off');
+  b.textContent = state.rentalMark === 'off'  ? 'Off — maps stay clean'
+                : state.rentalMark === 'bold' ? 'Bold — easy to read in daylight'
+                                              : 'Faint — a wash you notice, not a warning';
 }
 $('mRentals').onclick = () => {
-  state.showRentals = !state.showRentals;
-  localStorage.setItem('showRentals', state.showRentals ? '1' : '0');
+  // cycles, so one control covers all three without a second row of chips
+  state.rentalMark = state.rentalMark === 'faint' ? 'bold'
+                   : state.rentalMark === 'bold'  ? 'off' : 'faint';
+  localStorage.setItem('rentalMark', state.rentalMark);
   renderRentalChip(); buzz(10);
   drawMini(); if (window._map) refreshMapLayers();
 };
@@ -6940,7 +7015,10 @@ window.addEventListener('resize', drawMini);
   state.trackDetail = localStorage.getItem('trackDetail') === 'fine' ? 'fine' : 'normal';
   state.hubSat = localStorage.getItem('hubSat') === '1';
   // default ON: he asked for them on everything, the switch is for the days he does not
-  state.showRentals = localStorage.getItem('showRentals') !== '0';
+  /* Migrates the v8/v9 on-off switch: anyone who had it off keeps it off. */
+  const rm = localStorage.getItem('rentalMark');
+  state.rentalMark = ['off','faint','bold'].includes(rm) ? rm
+                   : (localStorage.getItem('showRentals') === '0' ? 'off' : 'faint');
   state.headUp = localStorage.getItem('headUp') === '1';
   $('hubRot').classList.toggle('on', state.headUp);
   $('hubSat').classList.toggle('on', state.hubSat);
