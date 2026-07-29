@@ -1645,8 +1645,8 @@ const state = {
   home: null,          // {lat, lon, ts} — where "how long until you're home" points
   appts: [],           // [{id, label, addr, lat, lon, at}] typed in by hand
   driveAdj: 1,         // multiplier on the drive time estimate, nudged from the menu
-  hubData: [],         // which auditor figures to print on the hub map
-  mapData: ['owner'],  // and on the big map, kept separate — different sized screens
+  hubData: ['num'],    // which auditor figures to print on the hub map
+  mapData: ['num','owner'],  // and on the big map, kept separate — different sized screens
   driving: false,      // in a vehicle: the trail stops until you are on foot again
   moveTrail: [],       // recent positions, for judging ground covered
   driveOverride: null, // null = work it out · 'foot' · 'drive' — deliberately not persisted
@@ -3737,7 +3737,6 @@ function refreshMapLayers() {
       }
       if (z >= MAP_LABEL_ZOOM) {
         const lines = labelLines(p, state.mapData, 3);
-        if (state.mapData.includes('owner') && p.addr) lines.push(p.addr.split(' ')[0]);
         if (lines.length) {
           const at = p.house || p.cen;   // on the house when we know where it is
           ll.addLayer(L.marker([at[1], at[0]], { interactive:false, icon: L.divIcon({
@@ -5020,7 +5019,7 @@ document.querySelectorAll('.dsecHead[data-msec]').forEach(b => {
 /* ---- what version is actually on the phone ----
    Matches the service worker cache name, so "did the update land" is answerable by
    looking rather than guessing. */
-const BUILD_VERSION = 'v15';
+const BUILD_VERSION = 'v16';
 const BUILD_DATE = '29 July 2026';
 function renderVersionStamp() {
   const el = $('versionStamp'); if (!el) return;
@@ -5091,6 +5090,10 @@ function renderStorageNote() {
 }
 /* What can be printed on the hub map. Order here is the order on screen. */
 const HUB_FIELDS = [
+  /* First, because on a map of lots it is the one label that tells him where he is. The
+     number only — the street is the same for the whole screen, and the full address would
+     not fit on a lot at hub size. */
+  ['num',   'House number', p => (p.addr || '').trim().split(/\s+/)[0] || ''],
   ['owner', 'Owner',      p => shortOwner(p.owner || '').slice(0, 13)],
   ['value', 'Value',      p => money(p.val)],
   ['built', 'Year built', p => { const y = yearBuilt(p); return y ? 'b' + String(y).slice(-2) : ''; }],
@@ -5121,8 +5124,11 @@ function renderHubDataChips() {
    Anything more than that is unreadable on a circle this size. */
 function labelLines(p, keys, max) {
   const shows = k => keys.includes(k);
-  const val = k => (HUB_FIELDS.find(f => f[0] === k)[2])(p) || '';
+  /* A restored file can carry a key this build has never heard of, and the unguarded
+     lookup threw — which would have taken the whole map label pass down with it. */
+  const val = k => { const f = HUB_FIELDS.find(x => x[0] === k); return f ? (f[2](p) || '') : ''; };
   const lines = [];
+  if (shows('num'))   { const n = val('num');   if (n) lines.push(n); }
   if (shows('owner')) { const o = val('owner'); if (o) lines.push(o); }
   const figures = ['value','built','sold','sqft'].filter(shows).map(val).filter(Boolean);
   if (figures.length) {
@@ -9170,8 +9176,18 @@ function loadSettings() {
         if (Array.isArray(ds)) state.driveSpeeds = ds.filter(n => typeof n === 'number' && n > 4 && n <= 40).slice(-DRIVE_SAMPLE_MAX); } catch(e){}
   try { const md = JSON.parse(localStorage.getItem('mapData') || 'null');
         if (Array.isArray(md)) state.mapData = md.filter(k => HUB_FIELDS.some(f => f[0] === k)); } catch(e){}
-  try { const hd = JSON.parse(localStorage.getItem('hubData') || '[]');
-        state.hubData = Array.isArray(hd) ? hd.filter(k => HUB_FIELDS.some(f => f[0] === k)) : []; } catch(e){ state.hubData = []; }
+  /* Absent is NOT the same as empty here. The `|| '[]'` this used to carry meant a phone
+     that had never touched the setting was handed an empty list, which silently overrode
+     the built-in default — so adding a default did nothing at all. A stored `[]` is a real
+     choice (he tapped Nothing) and is still honoured; a missing key leaves the default
+     alone, the same way mapData below has always worked. */
+  try {
+    const rawHub = localStorage.getItem('hubData');
+    if (rawHub !== null) {
+      const hd = JSON.parse(rawHub);
+      state.hubData = Array.isArray(hd) ? hd.filter(k => HUB_FIELDS.some(f => f[0] === k)) : [];
+    }
+  } catch(e){ state.hubData = []; }
   state.line = localStorage.getItem('line') === 'appraisal' ? 'appraisal' : 'roof';
   loadSwitches();
 }
