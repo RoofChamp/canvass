@@ -288,7 +288,8 @@ label.f{display:block;margin:12px 0 5px;font-size:12px;font-weight:800;color:var
 .logRow .when{font-size:10.5px;color:var(--dim);font-weight:700;letter-spacing:.3px}
 .logRow .txt{font-size:14px;font-weight:600;line-height:1.35;white-space:pre-wrap;word-break:break-word}
 .logRow .act2{display:flex;gap:5px;flex:0 0 auto}
-.logRow button{background:var(--card2);border:1px solid var(--line);border-radius:9px;padding:5px 8px;font-size:12px}
+.logRow button{background:var(--card2);border:1px solid var(--line);border-radius:9px;padding:5px 8px;font-size:15px;
+  min-width:40px;min-height:40px;display:inline-flex;align-items:center;justify-content:center}
 .logRow textarea{margin-top:4px}
 .logAdd{display:flex;gap:8px;align-items:flex-end;margin-top:9px}
 .logAdd textarea{flex:1}
@@ -414,6 +415,10 @@ select{min-height:44px}
 .nagOk{font-size:12px;color:var(--dim);padding:9px 11px;border:1px solid var(--line);border-radius:12px;margin-bottom:10px}
 .nagWarn{font-size:12.5px;line-height:1.5;color:#fde68a;background:rgba(251,191,36,.12);border:1px solid rgba(251,191,36,.5);border-radius:12px;padding:10px 12px;margin-bottom:10px;font-weight:600}
 .nagBad{font-size:12.5px;line-height:1.5;color:#fecaca;background:rgba(239,68,68,.14);border:1px solid rgba(239,68,68,.6);border-radius:12px;padding:10px 12px;margin-bottom:10px;font-weight:600}
+/* Full width, on the main screen, under the strip. Deliberately loud and deliberately
+   not dismissable: it goes when the thing it is about is fixed, and not before. */
+#alertBar{display:block;width:calc(100% - 20px);margin:0 10px 6px;text-align:left;font-size:13px;line-height:1.45;
+  color:#fff;background:#b91c1c;border:1px solid #ef4444;border-radius:12px;padding:10px 12px;font-weight:700;flex:0 0 auto}
 #lockScreen{position:fixed;inset:0;z-index:300;background:var(--bg);display:flex;align-items:center;justify-content:center;padding:24px}
 #lockBox{display:flex;flex-direction:column;align-items:center;gap:14px;width:100%;max-width:300px}
 #lockTitle{font-size:18px;font-weight:800}
@@ -445,6 +450,13 @@ select{min-height:44px}
       <button id="menuBtn">☰<span id="menuDot" class="hide"></span></button>
     </span>
   </div>
+
+  <!-- The one place on the MAIN screen that says something has gone wrong with saving.
+       This warning used to live only inside the menu, which is shut all day: a door that
+       the phone refused to write showed the ordinary green toast, every count agreed with
+       it, and nothing said a word until he happened to open the menu — by which time it
+       had usually cleared itself. A thing he must act on cannot live behind a tap. -->
+  <button id="alertBar" class="hide"></button>
 
   <div id="house">
     <div id="swapWrap">
@@ -1429,6 +1441,10 @@ const DB = (() => {
 })();
 
 /* ---------------- state ---------------- */
+/* Named, because loadSwitches has to be able to put a setting back to its default when
+   the key is absent. A literal in two places is a default that drifts. */
+const SNAP_MAX_DEFAULT = 45;    // metres
+const HUB_SPAN_DEFAULT = 140;   // metres across the hub map
 const state = {
   pos: null,            // {lat, lon, acc, heading, ts}
   county: null,         // county cfg
@@ -1445,7 +1461,7 @@ const state = {
   lastVisitId: null,
   tilesLoading: 0,
   tilesDone: new Set(),
-  snapMax: 45,          // metres — furthest a parcel can be and still auto-snap
+  snapMax: SNAP_MAX_DEFAULT,   // metres — furthest a parcel can be and still auto-snap
   started: false,
   wake: null,
   netErr: '',
@@ -1458,7 +1474,7 @@ const state = {
   switchCand: null,     // candidate waiting to win the hysteresis test
   switchCount: 0,
   session: null,        // {id, start, line}
-  hubSpan: 140,         // metres across the hub map
+  hubSpan: HUB_SPAN_DEFAULT,   // metres across the hub map
   hubSat: false,
   /* The rental hazard stripes on both maps. On by default because he asked for them on
      everything — but a switch, because in a neighbourhood like Linden the county flags
@@ -1557,6 +1573,11 @@ let dayWriteFailed = false, dayReadFailed = false;
    at that moment the records that were still sitting there really are gone.
    While this is true the app refuses to erase anything and says so in red. */
 let visitsReadFailed = false;
+/* Set when "erase every door" got part of the way and then stopped. The danger in that
+   state is not the erase — it is the backup: buildBackup reads the STORE, so a backup
+   taken while half the stores are empty writes a file with nothing in it and stamps it
+   as today's, over the last good one. While this is true, backing up is refused. */
+let wipeHalfDone = false;
 async function flushDay() {
   if (dayFlushTimer) { clearTimeout(dayFlushTimer); dayFlushTimer = null; }
   clearPaceCache();
@@ -1577,13 +1598,16 @@ async function flushDay() {
       const n = d.pts.length;
       await DB.put('days', { day:d.day, pts:d.pts });
       if (d.pts.length === n) pendingDays.delete(k);
-      dayWriteFailed = false;
+      /* Only when there is nothing left waiting. Clearing on any single success meant
+         one good write of today cleared a warning about an older day that was still
+         refusing, and from then on the app said nothing at all about it. */
+      if (!pendingDays.size) dayWriteFailed = false;
     } catch (e) {
       if (!dayWriteFailed) {          // say it once, not every six seconds
         dayWriteFailed = true;
         flashToast("Could not save today's walking track",
           'The phone refused the write. Take a full backup now.', '#ef4444');
-        renderBackupNag();
+        renderWriteAlerts();
       }
     }
   }
@@ -1599,7 +1623,7 @@ async function mergeStoredDay(d) {
       dayReadFailed = true;
       flashToast("Cannot read back the walking track",
         'Not saving over it until it reads. Take a full backup now.', '#ef4444');
-      renderBackupNag();
+      renderWriteAlerts();
     }
     return false;                     // leave the stored day exactly as it is
   }
@@ -1615,8 +1639,13 @@ async function mergeStoredDay(d) {
   dayReadFailed = false;
   return true;
 }
-window.addEventListener('pagehide', flushDay);
-document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'hidden') flushDay(); });
+/* Everything that is only in memory gets one last go when the app goes away: the
+   breadcrumbs, the door records the phone refused earlier, and the note box he may have
+   left open — a call comes in mid-sentence and iOS can evict the app an hour later,
+   and nothing else on any of those three paths would ever have written. */
+function flushAll() { if (logEditClose) logEditClose(); flushDay(); flushVisits(); }
+window.addEventListener('pagehide', flushAll);
+document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'hidden') flushAll(); });
 
 /* Reads in flight, keyed by day. Two callers asking for the same day at the same time
    used to end up with two different objects for it — the map drawing one and the Days
@@ -2329,7 +2358,16 @@ function drawCompass(g, w, h, rotDeg) {
    order, each with its own timestamp. Notes stay editable and removable; status
    entries are the record of what you actually tapped and are not edited. */
 let logSeq = 0;
-const newId = () => 'l' + Date.now().toString(36) + (logSeq++).toString(36);
+/* The random tail is not decoration. `logSeq` restarts at nought every launch, so two
+   phones — or this phone before and after a reload — that write a log entry in the same
+   millisecond produced the SAME id. Nothing collides today because every record comes
+   from one phone and ids are only ever compared, never parsed. The moment anything
+   arrives from somewhere else, a restore merging by id would treat two different notes
+   as one and keep whichever it saw last. Same shape as the visit, appointment and area
+   ids, which have always carried randomness. Old ids stay valid; this only changes what
+   new ones look like. */
+const newId = () => 'l' + Date.now().toString(36) + (logSeq++).toString(36)
+                        + Math.random().toString(36).slice(2,6);
 function logOf(v) {
   if (!v) return [];
   /* Array.isArray, not .length. An emptied log is [], which is falsy on .length, so
@@ -2380,7 +2418,11 @@ async function mark(status) {
   state.visits.set(vKey(v.key, v.line), v);
   state.visitLog.push(v);
   state.lastVisitId = v.id;
-  await DB.put('visits', v).catch(()=>{});
+  /* The toast below keeps its Undo and Wrong house buttons whether this landed or not —
+     taking them away would be a second thing going wrong at once. The refusal is told
+     instead by the standing red line in the backup nag, which saveVisit raises and which
+     does not disappear after four seconds. */
+  await saveVisit(v);
   // release any manual pick so the next door snaps on its own again
   state.manualKey = null; state.manualAt = null;
   state.lastDoorTs = v.ts;          // the quiet-spell backstop counts from the last door
@@ -2649,9 +2691,15 @@ function renderReasonChips() {
       editing.log = on
         ? logOf(editing).filter(e => !(e.kind === 'note' && e.text === reasonText(r)))
         : [...logOf(editing), { id:newId(), ts:Date.now(), kind:'note', text:reasonText(r) }];
-      await persistEditing();
+      const ok = await persistEditing();
       buzz(12);
-      flashToast(on ? 'Reason taken off' : 'Reason saved', r, STATUS.dnr.color);
+      /* Its whole job is to stop the next person knocking, so it must not say "saved"
+         over a write that was refused. On a house not yet filed there is nothing on disk
+         to update and nothing has been lost — Save is what files it. */
+      if (!ok) flashToast('NOT saved — the phone refused it', 'Free some space and try again.', '#ef4444');
+      else if (editing._new) flashToast(on ? 'Reason taken off' : 'Reason noted',
+        'Tap Save to keep this house', STATUS.dnr.color);
+      else flashToast(on ? 'Reason taken off' : 'Reason saved', r, STATUS.dnr.color);
       openDetail(editing);
     };
     host.appendChild(b);
@@ -2861,7 +2909,7 @@ async function moveBook(to) {
     flashToast('Nothing was moved',
       'The phone refused to save the change, so the house stays where it was. Take a full backup now.',
       '#ef4444');
-    renderBackupNag();
+    renderWriteAlerts();
     openDetail(editing);
     return;
   }
@@ -2885,6 +2933,13 @@ async function moveBook(to) {
    log including a status mark can be deleted, behind a confirm. Travis settled
    that on 2026-07-26: a mistapped door should be cleanable. */
 function renderLog() {
+  /* A redraw destroys any box that was open, so the editor goes with it. Nulling the
+     handle is not enough: the closure stays armed, keeps its blur listener on the
+     detached textarea, and if that blur ever lands it writes stale text back and redraws
+     the log out from under whatever has replaced it. Disarm it, then drop it. `cancel`
+     is idempotent, so a commit that is itself mid-redraw is safe. */
+  if (logEditClose && logEditClose.cancel) logEditClose.cancel();
+  logEditClose = null;
   const host = $('dLog'); host.innerHTML = '';
   const entries = logOf(editing).sort((a,b) => a.ts - b.ts);
   editing.log = entries;
@@ -2894,18 +2949,32 @@ function renderLog() {
     const st = e.kind === 'status' ? (STATUS[e.status] || {label:e.status, color:'#94a3b8'}) : null;
     const row = document.createElement('div');
     row.className = 'logRow';
+    /* So a pencil tap can find the row that is on screen NOW, rather than the one it was
+       drawn next to. See startEditEntry. */
+    row.dataset.eid = e.id;
     const d = new Date(e.ts);
     const when = `${d.toLocaleDateString()} ${d.toLocaleTimeString([], {hour:'numeric', minute:'2-digit'})}`;
     row.innerHTML = `<i style="background:${st ? st.color : '#64748b'}"></i>
       <div class="body"><div class="when">${esc(when)}</div>
       <div class="txt">${st ? esc(st.label) : esc(e.text || '')}</div></div>`;
     const acts = document.createElement('div'); acts.className = 'act2';
+    /* Pressing one of these must not take the focus off a box that is open. If it does,
+       the box blurs, commits and redraws the whole log BETWEEN the press and the release
+       — and a button that is removed mid-press never fires a click at all, so the tap
+       does nothing whatsoever. Both of these buttons do their own tidying up, so giving
+       up the default focus change costs nothing. */
+    const keepFocus = b => b.addEventListener('mousedown', ev => ev.preventDefault());
     if (e.kind === 'note') {
       const ed = document.createElement('button'); ed.textContent = '✎';
-      ed.onclick = () => startEditEntry(row, e);
+      ed.setAttribute('aria-label', 'edit this note'); ed.title = 'Edit';
+      ed.onclick = () => startEditEntry(e);
+      keepFocus(ed);
       acts.appendChild(ed);
     }
     const del = document.createElement('button'); del.textContent = '🗑';
+    del.setAttribute('aria-label', e.kind === 'status' ? 'remove this status entry' : 'delete this note');
+    del.title = 'Delete';
+    keepFocus(del);
     del.onclick = async () => {
       const next = logOf(editing).filter(x => x.id !== e.id);
       if (next.length) {
@@ -2913,13 +2982,21 @@ function renderLog() {
         editing.log = next;
         /* Straight to disk. Removing a line reads as done and finished, and closing
            the panel without tapping Save used to bring every one of them back. */
-        await persistEditing();
-        renderLog(); buzz(20);
+        const ok = await persistEditing();
+        renderLog();
+        if (ok) buzz(20);
+        else flashToast('That is still on the phone', 'The line is off the screen but the phone refused the write. Free some space and try again.', '#ef4444');
         return;
       }
       /* A door that has never been marked has nothing to wipe and no history to keep,
-         so there is nothing to ask about. */
-      if (editing._new) { closeSheet('detailSheet'); return; }
+         so there is nothing to ask about.
+         cancelLogEditor FIRST, and it is not optional. Closing the sheet hides the
+         element an open editor lives in, which blurs it, which fires the commit — and
+         `persistEditing` on a `_new` record does not update it, it CREATES it. Without
+         this, binning the only note of a house he had decided against filed that very
+         house: on the map, in the day's count, in every export, with the note he had
+         just tried to throw away sitting in it. */
+      if (editing._new) { cancelLogEditor(); closeSheet('detailSheet'); return; }
       /* The last line. With nothing logged there is no history left for this door, and
          the app has no such thing as a marked-but-blank house — so this asks which he
          means rather than deciding for him. */
@@ -2942,7 +3019,13 @@ function renderLog() {
         ]);
       // "keep" has to reach disk too, or the emptied log walks back in on the next
       // reload — which is the whole bug this round set out to kill
-      if (pick === 'keep') { editing.log = []; await persistEditing(); renderLog(); buzz(20); }
+      if (pick === 'keep') {
+        editing.log = [];
+        const ok = await persistEditing();
+        renderLog();
+        if (ok) buzz(20);
+        else flashToast('That is still on the phone', 'The log is clear on screen but the phone refused the write. Free some space and try again.', '#ef4444');
+      }
       else if (pick === 'wipe') await wipeHouse();
     };
     acts.appendChild(del);
@@ -2951,24 +3034,77 @@ function renderLog() {
   });
   host.scrollTop = host.scrollHeight;
 }
-function startEditEntry(row, e) {
+/* Tapping the second pencil while typing in the first used to throw the second editor
+   away, and on iOS the typing with it.
+   The order of events is the whole problem. A pencil's blur lands BEFORE its click, so
+   the first editor committed and redrew the entire log — and the click that followed then
+   built a textarea inside the row it had been drawn next to, which by then had been
+   thrown away. An editor in a detached node: invisible, unreachable, uncloseable, and on
+   iOS taking the typing with it.
+   The first attempt at this deferred the redraw by a tick and skipped it if another box
+   had opened. That was not enough, and a probe proved it: the browser can run a
+   zero-delay timer in the gap BETWEEN the blur and the click, so the redraw still landed
+   first. Anything that reasons about the order of those two events is guessing.
+   So nothing here reasons about it. Two facts make the ordering irrelevant:
+   1. The text goes onto the record on every keystroke, so nothing rides on a `blur` at
+      all — which matters on its own account, because WebKit does not reliably fire one
+      when an element is removed.
+   2. A pencil looks the row up by entry id at the moment it is tapped, instead of holding
+      on to the row it was drawn beside. Redraw or no redraw, early or late, it finds the
+      row that is on screen now and opens the box in it. */
+let logEditClose = null;
+function startEditEntry(e) {
+  const host = $('dLog');
+  if (!host) return;
+  /* Another box already open — close it here, deliberately and in the open, rather than
+     leaving it to a blur that has been prevented from happening. */
+  if (logEditClose) { const c = logEditClose; logEditClose = null; c(); }
+  const row = [...host.querySelectorAll('.logRow')].find(r => r.dataset.eid === e.id);
+  if (!row) return;
   const body = row.querySelector('.body');
-  if (body.querySelector('textarea')) return;
+  if (!body || body.querySelector('textarea')) return;
+  const txt = body.querySelector('.txt');
+  if (!txt) return;
   const ta = document.createElement('textarea');
   ta.rows = 3; ta.value = e.text || '';
-  body.querySelector('.txt').replaceWith(ta);
+  /* The note as it stood BEFORE any of this typing. It has to be captured here: the live
+     handler below overwrites the entry on every keystroke, so by the time commit runs the
+     record no longer remembers what was there. Reading it at commit time meant that
+     backspacing a note down to nothing and being told "Note kept" kept the last single
+     letter typed — the app quietly truncating a note under a message promising it had
+     not touched it. */
+  const original = e.text || '';
+  txt.replaceWith(ta);
   ta.focus();
+  /* Live, on every keystroke: the record holds what is on screen, so nothing depends on a
+     blur that WebKit may never fire. An empty box is left alone here — clearing one is
+     only ever decided at commit, below, where it can be refused and explained. */
+  ta.addEventListener('input', () => {
+    const t = ta.value.trim();
+    if (!t) return;
+    const hit = logOf(editing).find(x => x.id === e.id);
+    if (hit) hit.text = t;
+  });
+  let done = false;
   const commit = () => {
+    /* Run once, whoever calls it. It is reachable three ways — the blur listener, the
+       next pencil calling it through logEditClose, and a discard cancelling it — and
+       `{once:true}` only covers the first of those. Without this, closing one editor
+       could commit twice, and the second pass would redraw the log out from under the
+       box that had just replaced it. */
+    if (done) return;
+    done = true;
+    if (logEditClose === commit) logEditClose = null;
+    if (!editing) return;
     const t = ta.value.trim();
     const list = logOf(editing);
     const hit = list.find(x => x.id === e.id);
-    const was = hit ? hit.text : '';
     if (hit) hit.text = t;
     const cleaned = list.filter(x => x.kind !== 'note' || x.text);
     /* Emptying the log is a decision with a question attached to it. It must not happen
        as a side effect of clearing a text box. */
     if (!cleaned.length) {
-      if (hit) hit.text = was;
+      if (hit) hit.text = original;
       editing.log = list;
       flashToast('Note kept', 'Clearing the box will not empty the log — use the bin, it asks what to do with the house', '#38bdf8');
       renderLog();
@@ -2978,23 +3114,96 @@ function startEditEntry(row, e) {
     persistEditing();          // an edit that looks committed has to be committed
     renderLog();
   };
+  /* Throw the editor away without writing anything — for the paths that are discarding
+     the whole record, where committing would create the very thing being discarded. */
+  commit.cancel = () => { done = true; if (logEditClose === commit) logEditClose = null; };
   ta.addEventListener('blur', commit, {once:true});
+  logEditClose = commit;
 }
+/* Called by anything that is about to throw the record away rather than save it. */
+function cancelLogEditor() { if (logEditClose && logEditClose.cancel) logEditClose.cancel(); logEditClose = null; }
 function addLogNote() {
   const el = $('dNewNote');
   const t = el.value.trim();
   if (!t || !editing) return;
   editing.log = [...logOf(editing), { id:newId(), ts:Date.now(), kind:'note', text:t }];
   el.value = '';
+  /* Add is a deliberate act and used to reach nothing but the screen — type a note, tap
+     Add, close the panel with the X, and it was gone. Straight to disk now, the same as
+     editing and removing a line already do. A house that has never been filed is left
+     alone by persistEditing itself, so there is no guard needed here. */
+  persistEditing().then(ok => {
+    if (!ok) flashToast('That note is not on the phone yet',
+      'The phone refused the write. Free some space and take a full backup.', '#ef4444');
+  });
   renderLog(); buzz(15);
 }
 
 /** the one place a record reaches disk, so nothing can half-save it */
-async function persistEditing() {
-  if (!editing) return;
+/* A refused write here used to be swallowed whole — `.catch(()=>{})` — and the caller
+   went straight on to a green "Saved". The record was already in memory, so the strip,
+   the house, the map, the day's count and the backup nag all agreed with the lie, and
+   the door was simply gone at the next launch with nothing ever said. The walking track,
+   the backup and the restore all refuse to claim a success they did not get; the door
+   records are the thing this app exists to hold and were the one write with no handling
+   at all. Returns true when it really landed, so callers can tell him the truth.
+   `pendingVisits` is the retry set, the same shape `pendingDays` has always had for the
+   walking track. Without it a refused door record was lost for good, and the warning
+   about it cleared itself the moment any OTHER record wrote successfully. */
+let visitWriteFailed = false;
+const pendingVisits = new Map();
+/* `file` is what separates updating a record from CREATING one, and only Save may create.
+   Without it, binning a note, fixing a typo or tapping a reason chip on a house he had
+   opened but never marked FILED that house — a "Talked" door he never knocked, on the
+   map, in the day's count and in the spreadsheet he sends the office. The record stays in
+   memory either way; Save is what commits it, which is what Save is for. */
+async function persistEditing(opts) {
+  if (!editing) return false;
+  const file = !!(opts && opts.file);
+  if (editing._new && !file) return true;   // nothing on disk to update yet, nothing lost
   if (editing._new) { delete editing._new; state.visitLog.push(editing); state.lastVisitId = editing.id; }
   state.visits.set(vKey(editing.key, editing.line), editing);
-  await DB.put('visits', editing).catch(()=>{});
+  return saveVisit(editing);
+}
+async function saveVisit(v) {
+  try {
+    await DB.put('visits', v);
+    /* Only this record is off the list. Clearing the flag on any success at all meant a
+       small record written thirty seconds later wiped the warning about a big one that
+       was never saved, and nothing anywhere ever mentioned it again. */
+    pendingVisits.delete(v.id);
+    visitWriteFailed = pendingVisits.size > 0;
+    renderWriteAlerts();
+    return true;
+  } catch (err) {
+    pendingVisits.set(v.id, v);
+    visitWriteFailed = true;
+    renderWriteAlerts();
+    return false;
+  }
+}
+/* Another go at every door the phone refused, on the same beat as the walking track. */
+async function flushVisits() {
+  if (!pendingVisits.size) return;
+  for (const [id, v] of [...pendingVisits]) {
+    try { await DB.put('visits', v); pendingVisits.delete(id); } catch (err) { /* next time */ }
+  }
+  visitWriteFailed = pendingVisits.size > 0;
+  renderWriteAlerts();
+}
+/* The main screen and the menu, together, so the two can never disagree. */
+function renderWriteAlerts() { renderAlertBar(); renderBackupNag(); }
+function renderAlertBar() {
+  const el = $('alertBar'); if (!el) return;
+  const lines = [];
+  if (visitsReadFailed) lines.push('⚠️ The phone will not hand back your door records. Do NOT delete the app — tap here.');
+  if (visitWriteFailed) lines.push(`⚠️ ${pendingVisits.size} door record${pendingVisits.size===1?'':'s'} would not save. What is on screen is not on the phone — tap here.`);
+  if (dayWriteFailed)   lines.push('⚠️ The phone refused to save your walking track — tap here.');
+  if (dayReadFailed)    lines.push('⚠️ The phone cannot read your walking track back — tap here.');
+  if (wipeHalfDone)     lines.push('⚠️ Erasing everything did not finish. Do NOT back up yet — tap here.');
+  if (!lines.length) { el.classList.add('hide'); return; }
+  el.classList.remove('hide');
+  el.innerHTML = lines.join('<br>');
 }
 /* Something typed in the note box and never tapped Add is still what he meant to
    write down. Save keeps it instead of quietly dropping it, which matters more now
@@ -3022,9 +3231,22 @@ async function saveDetail() {
     lg.push({ id:newId(), ts:editing.ts || Date.now(), kind:'status', status:editing.status, text:'' });
   editing.log = lg;
   editing.notes = lg.filter(e => e.kind === 'note').map(e => e.text).join(' | ');
-  await persistEditing();
-  closeSheet('detailSheet'); buzz(20);
-  flashToast('Saved', editing.addr || '', STATUS[editing.status].color);
+  /* The ONLY call that may file a house. Everything else in the panel updates a record
+     that already exists and leaves an unmarked house unfiled. */
+  const landed = await persistEditing({ file: true });
+  buzz(20);
+  /* Save has no Undo button to protect, so this one says it outright rather than leaving
+     it to the standing line. A green "Saved" over a write the phone refused is the app
+     telling him the one thing he most needs to know is not true — and the panel STAYS UP,
+     because "tap Save again" is no use once the Save button has gone with it. */
+  if (landed) {
+    closeSheet('detailSheet');
+    flashToast('Saved', editing.addr || '', STATUS[editing.status].color);
+  } else {
+    flashToast('NOT saved — the phone refused it',
+      `${editing.addr || 'This door'} is still on screen but is not on the phone. This nearly always `
+      + `means no room left. Free some space and tap Save again — this panel is staying open until it works.`, '#ef4444');
+  }
   renderStrip(); renderHouse(); if (window._map) refreshMapLayers();
 }
 /** everything that hangs off one house in one book, so it can be counted before it is
@@ -3393,7 +3615,17 @@ async function openDays() {
       }
       const n = d.pts.length;
       if (!confirm(`Delete the walking track for ${label}?\n\nThat is ${n} breadcrumb${n===1?'':'s'} and it cannot be undone. Your door records are not affected.`)) return;
-      await DB.del('days', k).catch(()=>{});
+      /* Swallowing this gave him the success buzz for a delete that had not happened,
+         and then the row came back the next time the panel was opened with no
+         explanation. Nothing is removed from memory unless the disk agreed. */
+      try { await DB.del('days', k); }
+      catch (err) {
+        dayWriteFailed = true; renderWriteAlerts();
+        flashToast('That day is still here',
+          'The phone refused to delete it. Nothing has been changed. This nearly always means no room left — free some space and take a full backup.',
+          '#ef4444');
+        return;
+      }
       state.days.delete(k);
       pendingDays.delete(k);
       if (k === state.today) { state.track = []; await loadDay(state.today); state.track = state.days.get(state.today).pts; }
@@ -3548,18 +3780,53 @@ async function commitErase() {
   const hit = pointsInBox();
   if (!hit) { flashToast('Nothing in that box', 'Drag it over the track you want gone', '#64748b'); return; }
   if (!confirm(`Clear ${hit} track point${hit===1?'':'s'} inside the box? Door records are not affected.`)) return;
+  /* The points come out of memory FIRST and reach the disk second, so a refused write
+     leaves the screen showing them gone and the phone still holding them. That used to
+     be swallowed by `.catch(()=>{})` under a message saying "Cleared N track points" —
+     the app claiming a destructive thing had worked when it had not. */
+  let failedDays = 0;
   for (const d of state.days.values()) {
     const before = d.pts.length;
     const keep = d.pts.filter(p => !(p.lat>=s && p.lat<=n && p.lon>=w && p.lon<=e));
     if (keep.length === before) continue;
     d.pts.length = 0;                       // in place, so state.track stays pointed at it
     for (const p of keep) d.pts.push(p);
-    if (d.pts.length) await DB.put('days', {day:d.day, pts:d.pts}).catch(()=>{});
-    else { await DB.del('days', d.day).catch(()=>{}); pendingDays.delete(d.day); }
+    if (d.pts.length) {
+      /* Same guard flushDay carries and for the same reason: IndexedDB copies the array
+         at put() time, so a breadcrumb that lands during the await is not in the record.
+         Only call the day done if nothing arrived while we waited. */
+      const n2 = d.pts.length;
+      try { await DB.put('days', {day:d.day, pts:d.pts}); if (d.pts.length === n2) pendingDays.delete(d.day); }
+      catch (err) { failedDays++; pendingDays.add(d.day); }
+    } else {
+      try { await DB.del('days', d.day); pendingDays.delete(d.day); }
+      /* Retried as an empty day rather than a delete. flushDay writes whatever is in
+         memory, which is now nothing, and that empties the stored day just as well. */
+      catch (err) { failedDays++; pendingDays.add(d.day); }
+    }
   }
   state.track = (state.days.get(state.today) || {pts:[]}).pts;
   buzz(40);
-  flashToast(`Cleared ${hit} track points`, '', '#f59e0b');
+  if (failedDays) {
+    /* Two things had to be put right in this message after a reviewer read it against
+       the code. It used to promise the points "will come back when you next open the
+       app" while the line above queues the day for another go — and flushDay runs on
+       pagehide, so the retry usually happens as he closes the app, immediately before
+       the "next open" it described. Both outcomes are possible and the message now says
+       so in that order. And `dayWriteFailed` is set, because without it the call below
+       repaints the same banner it was already showing: renderBackupNag only raises the
+       standing warning off that flag, and a toast is gone in four seconds. */
+    dayWriteFailed = true;
+    flashToast('Only part of that cleared',
+      `${hit} point${hit===1?'':'s'} gone from the screen, but ${failedDays} day${failedDays===1?'':'s'} `
+      + `of walking track the phone refused to save — nearly always no room left. The app will keep `
+      + `trying on its own. If it never gets through, those points are back the next time you open it. `
+      + `Free some space, and take a full backup.`,
+      '#ef4444');
+    renderWriteAlerts();
+  } else {
+    flashToast(`Cleared ${hit} track point${hit===1?'':'s'}`, '', '#f59e0b');
+  }
   cancelErase(); drawMini();
 }
 
@@ -3769,6 +4036,13 @@ const BACKUP_MERGE = ['appts', 'areas'];
    right now, and a stale one would send him to where he parked last Tuesday. */
 
 async function buildBackup() {
+  /* Refused outright while an erase-everything stopped half way. In that state the
+     stores on disk have been cleared but memory has not, so the screen still shows every
+     door — and this reads the STORE. It would hand back a file with nothing in it,
+     `markBackedUp` would stamp it as today's, and the last good backup would be a week
+     older than the green tick claims. The one moment a backup is most tempting is the
+     one moment it does the most damage. */
+  if (wipeHalfDone) throw new Error('an erase that did not finish — close the app right down and open it again first');
   /* If a store will not read, this must NOT quietly hand back a file with that part
      missing. A short backup file looks exactly like a good one, and restoring it
      months later would put the hole back over everything. Refuse, and name the part.
@@ -4240,7 +4514,11 @@ function renderParkInfo() {
 /* Remembered, like every other switch in Settings. It used to be forced back on at every
    launch, so switching it off lasted until he next opened the app. On by default, which
    is what it has always done. */
-let wakeWanted = localStorage.getItem('wake') !== '0';
+/* Owned by loadSwitches(), which is the only thing that reads the key — here and after
+   a restore, from the one place. This is just the value it holds until the boot block
+   runs, a few lines of parsing away. Reading the key here as well would be a second
+   copy of the same rule, and second copies drift. */
+let wakeWanted = true;
 let wakeBusy = false;
 const wakeHeld = () => !!state.wake && !state.wake.released;
 
@@ -4280,6 +4558,19 @@ function renderWakeChip() {
    directly instead: this one talks back when it fails, and a phone that refuses the lock
    would otherwise throw an orange message over the top of whatever Start was saying,
    every single morning, about something he did not ask for at that moment. */
+/* A restore can now turn this switch off underneath a lock that is being held — before
+   v13 nothing outside toggleWake could change `wakeWanted`, so nothing had to. Without
+   this the chip reads "Screen lock off" while the screen stays awake for the rest of the
+   day, which is the exact state grabWake's own note says must not happen. */
+async function syncWakeToWant() {
+  if (!wakeWanted && state.wake) {
+    try { await state.wake.release(); } catch (e) {}
+    state.wake = null;
+  } else if (wakeWanted && !wakeHeld() && state.started) {
+    await grabWake();
+  }
+  renderWakeChip();
+}
 async function toggleWake() {
   if (wakeWanted) {
     wakeWanted = false;
@@ -4376,7 +4667,7 @@ document.querySelectorAll('.dsecHead[data-msec]').forEach(b => {
 /* ---- what version is actually on the phone ----
    Matches the service worker cache name, so "did the update land" is answerable by
    looking rather than guessing. */
-const BUILD_VERSION = 'v12';
+const BUILD_VERSION = 'v13';
 const BUILD_DATE = '29 July 2026';
 function renderVersionStamp() {
   const el = $('versionStamp'); if (!el) return;
@@ -4751,6 +5042,7 @@ $('toastSwap').onclick = reassignLast;
 /* The menu is the only way to reach Backup, Restore, Export and the Schedule, so it
    opens FIRST and every render runs behind a guard. Nothing in here is worth being
    unable to take a backup over. */
+$('alertBar').onclick = () => $('menuBtn').click();
 $('menuBtn').onclick = () => {
   openSheet('menuSheet');
   try {
@@ -4986,8 +5278,24 @@ $('restoreFile').onchange = async e => {
        "Restored" over the top of it would replace the one message that matters with a
        green tick — and the counts below would be nonsense anyway, because every read
        above failed too. */
-    if (visitsReadFailed) { try { e.target.value = ''; } catch (err) {} return; }
-    renderStats(); renderAreas(); renderSoundChip(); renderWakeChip();
+    /* The switches DID land in memory even on this path — loadSettings runs at the very
+       front of loadStored, above the read that failed — so they are redrawn here too.
+       Leaving them stale would put the screen and the record in disagreement, which is
+       the whole thing this change exists to stop, and doing it under an already-red
+       warning is the worst moment for it. */
+    if (visitsReadFailed) {
+      renderSwitchUi(); syncWakeToWant(); drawMini();
+      try { e.target.value = ''; } catch (err) {}
+      return;
+    }
+    /* renderSwitchUi and drawMini because the file's settings have just landed in memory
+       for the first time. Without them the hub keeps the old span, the old satellite
+       setting and the old rotation, and every Settings chip states the value the app
+       had a second ago — which reads as the restore having quietly done nothing.
+       syncWakeToWant because a restored file can switch the screen lock off while one is
+       being held, and nothing else would ever let go of it. */
+    renderStats(); renderAreas(); renderSoundChip();
+    renderSwitchUi(); syncWakeToWant(); drawMini();
 
     const said = `${wrote} door record${wrote===1?'':'s'} put back`
       + (kept ? `, ${kept} already here and left alone` : '')
@@ -5028,9 +5336,35 @@ $('mWipe').onclick = async () => {
     + `• every walking track on this phone\n`
     + (nP ? `• ${nP} booked appointment${nP===1?'':'s'}\n` : '')
     + (state.home ? `• where home is set to\n` : '')
+    // it calls unpark() below, and a list that leaves something out reads as complete
+    + (state.vehicle ? `• where the truck is parked\n` : '')
     + (nA ? `\nYour ${nA} named area${nA===1?'':'s'} will be kept.\n` : '')
     + `\nThis cannot be undone.`)) return;
-  await DB.clear('visits'); await DB.clear('track'); await DB.clear('tiles'); await DB.clear('days');
+  /* Four unguarded clears in a row, in an async handler: one rejection became an
+     unhandled promise, every line below stopped, and NOTHING was said. The doors were
+     gone from the disk while still sitting on screen and in every count, because memory
+     was never cleared. */
+  let cleared = true;
+  for (const store of ['visits', 'track', 'tiles', 'days']) {
+    try { await DB.clear(store); } catch (err) { cleared = false; }
+  }
+  if (!cleared) {
+    /* Memory is left exactly as it was, so the screen is the last honest account of what
+       he had — but it is only in memory, and telling him to take a backup here would be
+       the worst instruction in the app. `visits` is the FIRST store cleared, so by the
+       time a later one refuses the store on disk is usually already empty: buildBackup
+       reads the store, would hand back a file with nothing in it, and markBackedUp would
+       stamp it as today's over the last good one. So: refuse backups until he has
+       restarted and can see what is really there, and say that plainly. */
+    wipeHalfDone = true;
+    flashToast('That did not finish',
+      'The phone refused part of it, so some of your records are probably already gone and some may not be. '
+      + 'What is on screen is only in memory now. Do NOT take a backup — it would save an empty file over your last good one. '
+      + 'Close the app right down and open it again to see what is really there.',
+      '#ef4444');
+    renderWriteAlerts();
+    return;
+  }
   state.visitLog = []; state.visits.clear(); state.track = []; state.days.clear(); state.lastVisitId = null;
   state.home = null; state.appts = []; state.driveAdj = 1;
   saveHome(); saveAppts(); localStorage.removeItem('driveAdj'); clearPaceCache();
@@ -7288,7 +7622,7 @@ async function guardStorage() {
       localStorage.setItem('storageGrant', ok ? '1' : '0');
     }
   } catch (e) { storageGrant = null; }
-  renderStorageNote(); renderBackupNag();
+  renderStorageNote(); renderWriteAlerts();
   const standalone = window.matchMedia('(display-mode: standalone)').matches || navigator.standalone === true;
   if (!standalone && state.visitLog.length === 0 && localStorage.getItem('everSaved') === '1') {
     flashToast('Opened in the browser, not the app',
@@ -7329,8 +7663,11 @@ function renderBackupNag() {
              : `Last backed up ${days} day${days === 1 ? '' : 's'} ago`;
   el.classList.remove('hide');
   el.className = overdue ? 'nagBad' : 'nagOk';
-  if (dayWriteFailed || dayReadFailed) el.className = 'nagBad';
+  if (dayWriteFailed || dayReadFailed || visitWriteFailed) el.className = 'nagBad';
   el.innerHTML = `<b>${when}.</b> ${n} record${n===1?'':'s'} live only on this phone.`
+    /* The most serious of the three. A door that would not save is still on screen and
+       still in the count above, so every other thing he can look at agrees it is there. */
+    + (visitWriteFailed ? `<br>⚠️ <b>The phone refused to save a door record.</b> What is on screen may not be on the phone. Take a full backup now — this usually means it has run out of room.` : '')
     + (overdue ? `<br>Delete the app icon and they are gone. Take a full backup below.` : '')
     + (storageGrant === false ? `<br>⚠️ The browser has also refused to protect this app's storage — see Settings.` : '')
     + (dayWriteFailed ? `<br>⚠️ <b>The phone refused to save your walking track.</b> Back up now — this usually means it has run out of room.` : '')
@@ -7388,7 +7725,7 @@ async function loadStored() {
     flashToast('Cannot read your door records',
       'Your records are almost certainly still on this phone — the app just cannot get at them right now. '
       + 'Do NOT delete the app. Close it right down, open it again, and take a full backup.', '#ef4444');
-    renderBackupNag(); renderMode(); renderStrip(); renderTruck();
+    renderWriteAlerts(); renderMode(); renderStrip(); renderTruck();
     return;                      // leave the door records exactly as they were
   }
   vs = vs || [];
@@ -7465,6 +7802,72 @@ function loadSettings() {
   try { const hd = JSON.parse(localStorage.getItem('hubData') || '[]');
         state.hubData = Array.isArray(hd) ? hd.filter(k => HUB_FIELDS.some(f => f[0] === k)) : []; } catch(e){ state.hubData = []; }
   state.line = localStorage.getItem('line') === 'appraisal' ? 'appraisal' : 'roof';
+  loadSwitches();
+}
+
+/* Every switch in Settings that a backup carries, read back into memory in ONE place.
+   These used to be read only in the boot block at the very bottom of the file, which
+   runs once and never again. A restore writes all of them to disk and then calls
+   loadSettings — so the file's values landed on the phone while the app went on using
+   the ones from launch. The restore said "Restored", and seven settings had not come
+   back. Worse, memory then won: the next tap of any one of those chips wrote the stale
+   value straight back over the restored one, so the file's setting was not merely
+   ignored, it was destroyed.
+   The rule this follows is the one BACKUP_LOCAL already follows for the journey to and
+   from the file: one list, walked by every path, so a setting cannot be added to half
+   of it. BACKUP_SWITCHES below names the keys this function owns, and a test fails if a
+   key in BACKUP_LOCAL is neither owned here, read by loadSettings, nor listed as read
+   fresh from storage every time it is needed. */
+/* Owned by loadSwitches. Read into memory here and nowhere else. */
+const BACKUP_SWITCHES = ['snapMax','hubSpan','trackDetail','hubSat','headUp','rentalMark','wake'];
+/* Not held in memory at all — read straight from storage at the moment they are used, so
+   a restore takes effect without anything having to reload them. */
+const BACKUP_ONDEMAND = ['menuSecs'];
+function loadSwitches() {
+  /* Corrected values are written straight back. Substituting a default in memory and
+     leaving the bad one on disk means every backup from then on carries the bad one to
+     the next handset, and the chips snap to the nearest sane option so it is never
+     visible to correct. */
+  const put = (k, v) => { try { if (localStorage.getItem(k) !== String(v)) localStorage.setItem(k, String(v)); } catch (err) {} };
+  const s  = localStorage.getItem('snapMax');
+  state.snapMax = (s && isFinite(+s) && +s > 0) ? +s : SNAP_MAX_DEFAULT;
+  if (s !== null) put('snapMax', state.snapMax);
+  const hs = localStorage.getItem('hubSpan');
+  state.hubSpan = (hs && isFinite(+hs) && +hs > 0) ? Math.max(60, Math.min(600, +hs)) : HUB_SPAN_DEFAULT;
+  if (hs !== null) put('hubSpan', state.hubSpan);
+  state.trackDetail = localStorage.getItem('trackDetail') === 'fine' ? 'fine' : 'normal';
+  state.hubSat = localStorage.getItem('hubSat') === '1';
+  state.headUp = localStorage.getItem('headUp') === '1';
+  /* Migrates the v8/v9 on-off switch: anyone who had it off keeps it off. Written back
+     the moment it is worked out, because `showRentals` is not one of the things a backup
+     carries — so a phone still on the old key would have had the stripes switched back
+     on by a restore onto a new handset, having never asked for them. */
+  const rm = localStorage.getItem('rentalMark');
+  if (['off','faint','bold'].includes(rm)) state.rentalMark = rm;
+  else {
+    state.rentalMark = localStorage.getItem('showRentals') === '0' ? 'off' : 'faint';
+    try { localStorage.setItem('rentalMark', state.rentalMark); } catch (err) {}
+  }
+  /* On by default, which is what it has always done, so anything that is not an
+     explicit '0' means on. */
+  wakeWanted = localStorage.getItem('wake') !== '0';
+}
+
+/* The switches above are also things on screen. After a restore the chips have to be
+   redrawn or they sit there stating the value the app had a moment ago — which reads
+   exactly like the restore not having worked. Safe to call before the elements exist,
+   because it is also wanted early in the boot block. */
+function renderSwitchUi() {
+  try {
+    const r = $('hubRot'); if (r) r.classList.toggle('on', state.headUp);
+    const t = $('hubSat'); if (t) t.classList.toggle('on', state.hubSat);
+    if (typeof renderRentalChip  === 'function') renderRentalChip();
+    if (typeof renderDetailChips === 'function') renderDetailChips();
+    if (typeof renderSnapChips   === 'function') renderSnapChips();
+    if (typeof renderQuietChip   === 'function') renderQuietChip();
+    if (typeof renderHubDataChips === 'function') renderHubDataChips();
+    if (typeof renderMapDataChips === 'function') renderMapDataChips();
+  } catch (e) {}    // a chip that will not draw must never stop a restore finishing
 }
 
 function renderMode() {
@@ -7494,18 +7897,10 @@ $('startBtn').onclick = async () => {
 };
 window.addEventListener('resize', drawMini);
 (async () => {
-  const s = localStorage.getItem('snapMax'); if (s) state.snapMax = +s;
-  const hs = localStorage.getItem('hubSpan'); if (hs) state.hubSpan = +hs;
-  state.trackDetail = localStorage.getItem('trackDetail') === 'fine' ? 'fine' : 'normal';
-  state.hubSat = localStorage.getItem('hubSat') === '1';
-  // default ON: he asked for them on everything, the switch is for the days he does not
-  /* Migrates the v8/v9 on-off switch: anyone who had it off keeps it off. */
-  const rm = localStorage.getItem('rentalMark');
-  state.rentalMark = ['off','faint','bold'].includes(rm) ? rm
-                   : (localStorage.getItem('showRentals') === '0' ? 'off' : 'faint');
-  state.headUp = localStorage.getItem('headUp') === '1';
-  $('hubRot').classList.toggle('on', state.headUp);
-  $('hubSat').classList.toggle('on', state.hubSat);
+  /* The same one call the restore makes. These used to be read here and ONLY here, which
+     is why a restore could write them to disk and leave the app running the old ones. */
+  loadSwitches();
+  renderSwitchUi();
   try { const ses = localStorage.getItem('session'); if (ses) state.session = JSON.parse(ses); } catch(e){}
   lockIfNeeded();
   await purgeStaleTiles();
