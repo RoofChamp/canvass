@@ -160,7 +160,10 @@ input,textarea,select{font:inherit;color:var(--txt);background:var(--card2);bord
 .bbtn:active{background:var(--card2)}
 
 /* ---------- toast ---------- */
-#toast{position:fixed;left:8px;right:8px;top:calc(var(--safe-t) + 6px);z-index:60;background:#0f172a;border:1px solid var(--line);border-radius:16px;padding:10px 12px;display:flex;align-items:center;gap:10px;box-shadow:0 12px 32px rgba(0,0,0,.6);transform:translateY(-140%);transition:transform .22s cubic-bezier(.2,.9,.3,1)}
+/* z-index 90, above the scout and sort takeovers at 80. It used to be 60, which put
+   every warning those two screens raise BEHIND the screen that raised it — including
+   "Marked, but NOT saved" while the count on the button went up. */
+#toast{position:fixed;left:8px;right:8px;top:calc(var(--safe-t) + 6px);z-index:90;background:#0f172a;border:1px solid var(--line);border-radius:16px;padding:10px 12px;display:flex;align-items:center;gap:10px;box-shadow:0 12px 32px rgba(0,0,0,.6);transform:translateY(-140%);transition:transform .22s cubic-bezier(.2,.9,.3,1)}
 #toast.show{transform:translateY(0)}
 #toastBar{width:5px;align-self:stretch;border-radius:4px;background:#22c55e;flex:0 0 auto}
 #toastTxt{flex:1;min-width:0}
@@ -338,6 +341,46 @@ select{min-height:44px}
   min-height:44px;min-width:44px;display:inline-flex;align-items:center;justify-content:center}
 
 /* ---------- full map ---------- */
+/* Big enough to hit from a phone mount at thirty miles an hour without looking for long.
+   Three buttons share the screen equally, so each one is roughly a third of the glass. */
+#scoutView,#sortView{position:fixed;inset:0;z-index:80;background:var(--bg);display:flex;flex-direction:column;
+  padding-top:var(--safe-t);padding-bottom:var(--safe-b)}
+#scoutTop,#sortTop{display:flex;align-items:flex-start;justify-content:space-between;gap:10px;padding:10px 12px 6px}
+#scoutTitle,#sortTitle{font-size:17px;font-weight:800}
+#scoutExit,#sortExit{background:var(--card);border:1px solid var(--line);color:var(--txt);border-radius:12px;
+  padding:12px 18px;font-size:15px;font-weight:700;min-height:48px}
+#scoutBtns{flex:1;min-height:0;display:flex;flex-direction:column;gap:10px;padding:4px 12px}
+.scoutBtn{flex:1;display:flex;align-items:center;justify-content:flex-start;gap:14px;
+  border-radius:18px;border:2px solid var(--line);background:var(--card);color:var(--txt);
+  font-size:26px;font-weight:800;padding:0 22px;text-align:left}
+.scoutBtn .ic{font-size:34px;line-height:1}
+.scoutBtn .cnt{margin-left:auto;font-size:15px;font-weight:700;color:var(--dim)}
+.scoutBtn:active{filter:brightness(1.25)}
+/* Big and obvious for a third of a second. The old 2% squeeze was imperceptible in a
+   moving truck even when it did render. */
+.scoutBtn.hit{background:#1e3a5f;filter:brightness(1.5);transform:scale(.97);transition:none}
+#marksView{position:fixed;inset:0;z-index:80;background:var(--bg);display:flex;flex-direction:column;
+  padding-top:var(--safe-t);padding-bottom:var(--safe-b)}
+#scoutFoot{padding:8px 12px 12px;display:flex;flex-direction:column;gap:6px}
+#sortBody,#marksBody{flex:1;min-height:0;overflow:auto;padding:0 12px 16px}
+#sortFoot{padding:6px 12px 12px}
+.markRow{display:flex;align-items:center;gap:10px;width:100%;text-align:left;background:var(--card);
+  border:1px solid var(--line);color:var(--txt);border-radius:14px;padding:12px;margin-bottom:8px;min-height:56px}
+.markRow .dia{width:14px;height:14px;flex:0 0 auto;transform:rotate(45deg);border-radius:3px;border:2px solid}
+.markRow .who{flex:1;min-width:0}
+.markRow .a{font-size:15px;font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.markRow .b{font-size:12px;color:var(--dim)}
+.sideHead{font-size:13px;font-weight:800;color:var(--dim);margin:12px 0 2px;text-transform:uppercase;letter-spacing:.04em}
+/* The block, drawn from the county lot lines on a canvas — no map tiles, so a storm
+   street he has never opened still draws with no signal. */
+#blockWrap{margin-top:10px}
+#blockMap{width:100%;height:280px;border-radius:14px;border:1px solid var(--line);background:#0f151d;display:block;touch-action:manipulation}
+.sortCard{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:12px;margin-bottom:12px}
+.sortWhat{font-size:17px;font-weight:800;margin-bottom:2px}
+.sortAddr{display:block;width:100%;text-align:left;background:var(--card2);border:1px solid var(--line);
+  color:var(--txt);border-radius:12px;padding:12px 14px;font-size:15px;font-weight:600;margin-top:8px;min-height:48px}
+.sortAddr .m{display:block;font-size:12px;font-weight:600;color:var(--dim);margin-top:2px}
+.sortSkip{margin-top:10px;display:flex;gap:8px;flex-wrap:wrap}
 #mapView{position:fixed;inset:0;z-index:70;background:var(--bg);display:flex;flex-direction:column}
 #leaf{flex:1;min-height:0}
 #mapTop{position:absolute;top:calc(var(--safe-t) + 8px);left:8px;right:8px;z-index:500;display:flex;gap:8px;align-items:flex-start}
@@ -500,6 +543,56 @@ select{min-height:44px}
 </div>
 
 <!-- ============ full map ============ -->
+<!-- Scouting from the truck. A full-screen takeover on purpose: the main screen is for
+     knocking and does not change, and there is exactly one way out of here, in words. -->
+<div id="scoutView" class="hide">
+  <div id="scoutTop">
+    <div>
+      <div id="scoutTitle">Scouting from the truck</div>
+      <div id="scoutSub" class="small">Tap what you see. Sort it out when you stop.</div>
+    </div>
+    <!-- The only control up here, away from the three big ones. Sorting used to be a
+         full-width button twenty-two pixels under Damage: one low tap opened the sorting
+         screen, and the next tap — aimed at Damage, at thirty miles an hour — landed on
+         an address button and filed a house he never saw. -->
+    <button id="scoutExit">Stop scouting</button>
+  </div>
+  <div id="scoutBtns"></div>
+  <div id="scoutFoot">
+    <div class="small" id="scoutHint"></div>
+  </div>
+</div>
+
+<!-- Parked. One card per mark, the nearest addresses as big buttons, one tap each. -->
+<div id="sortView" class="hide">
+  <div id="sortTop">
+    <div>
+      <div id="sortTitle">Which house was it?</div>
+      <div class="small" id="sortSub"></div>
+    </div>
+    <button id="sortExit">Done</button>
+  </div>
+  <div id="sortBody"></div>
+  <div id="sortFoot">
+    <button class="chip" id="sortUndo">Undo the last one</button>
+  </div>
+</div>
+
+<!-- What the scouting was FOR. Without this the marks are diamonds on a map he cannot
+     tap, and an afternoon's driving and a quarter of an hour's sorting deliver nothing.
+     One list with a filter, which is what he asked for. -->
+<div id="marksView" class="hide">
+  <div id="sortTop">
+    <div>
+      <div id="sortTitle">Houses you scouted</div>
+      <div class="small" id="marksSub"></div>
+    </div>
+    <button id="marksExit">Done</button>
+  </div>
+  <div class="chips" id="marksFilter" style="padding:0 12px 8px"></div>
+  <div id="marksBody"></div>
+</div>
+
 <div id="mapView" class="hide">
   <div id="leaf"></div>
   <div id="findWrap">
@@ -527,6 +620,12 @@ select{min-height:44px}
     <div style="margin-top:4px;border-top:1px solid var(--line);padding-top:4px">
       <span style="display:inline-block;width:11px;height:11px;border-radius:2px;margin-right:6px;vertical-align:-1px;background:rgba(234,179,8,.30);border:1px solid rgba(234,179,8,.5)"></span>Likely a rental</div>
     <div><span style="display:inline-block;width:11px;height:11px;border-radius:50%;margin-right:6px;vertical-align:-1px;background:#a855f7;border:2px solid #f5f3ff"></span>Appraisal flyer left — worth a roofing knock</div>
+    <div style="margin-top:4px;border-top:1px solid var(--line);padding-top:4px;font-weight:700">Scouted from the truck — seen, not knocked</div>
+    <div><span style="display:inline-block;width:10px;height:10px;margin-right:8px;vertical-align:-1px;transform:rotate(45deg);border:2px solid #a855f7;border-radius:2px"></span>Yard sign</div>
+    <div><span style="display:inline-block;width:10px;height:10px;margin-right:8px;vertical-align:-1px;transform:rotate(45deg);border:2px solid #38bdf8;border-radius:2px"></span>Tarp</div>
+    <div><span style="display:inline-block;width:10px;height:10px;margin-right:8px;vertical-align:-1px;transform:rotate(45deg);border:2px solid #f59e0b;border-radius:2px"></span>Damage</div>
+    <div style="color:var(--dim)">Hollow means still to sort. Filled means you have put it on a house.
+      The diamond sits where the truck was, not on the lot.</div>
     <div style="margin-top:4px;border-top:1px solid var(--line);padding-top:4px" id="legendTracks"></div>
   </div>
   <div id="mapShowPanel" class="hide">
@@ -863,6 +962,8 @@ select{min-height:44px}
           <button class="ghost" id="mCrm">👥 Customers and follow-ups</button>
           <button class="ghost" id="mAreas">📍 Where I've been — areas and old rounds</button>
           <button class="ghost" id="mRoute">🔁 Go back to (no answers)</button>
+          <button class="ghost" id="mScout">🚚 Scout from the truck — mark what you drive past</button>
+          <button class="ghost" id="mMarks">🔎 Houses you scouted — sort them and knock them</button>
           <button class="ghost" id="mAppt">📋 Schedule and appointments</button>
           <!-- was "■ End session / session log", which read like a stop button, so the
                stats screen behind it went unfound. Ending is a button inside. -->
@@ -1485,6 +1586,10 @@ const state = {
      daylight rather than mine to guess off a screen. */
   rentalMark: 'faint',
   areas: [],            // named patches: {id, name, kind:'circle'|'box', ...} — see loadStored
+  /* Scout marks — things spotted from the truck and not yet knocked. Their OWN list, with
+     their own marker on both maps, because a thing he drove past is not a door he worked
+     and must never touch a knock count. Nothing here is ever written onto a door record. */
+  marks: [],
   trackDetail: 'normal',
   override: null,      // hand-placed position, {lat, lon, ts}
   heading: null,       // degrees clockwise from true north, 0 = north
@@ -1573,6 +1678,10 @@ let dayWriteFailed = false, dayReadFailed = false;
    at that moment the records that were still sitting there really are gone.
    While this is true the app refuses to erase anything and says so in red. */
 let visitsReadFailed = false;
+/* Scout marks live in localStorage, so a refusal here is a full quota, and the marks are
+   only in memory until it clears. Declared up here because renderAlertBar reads it and
+   runs long before the scouting code. */
+let markWriteFailed = false;
 /* Set when "erase every door" got part of the way and then stopped. The danger in that
    state is not the erase — it is the backup: buildBackup reads the STORE, so a backup
    taken while half the stores are empty writes a file with nothing in it and stamps it
@@ -2162,6 +2271,29 @@ function drawMini() {
   const X = p => w/2 + (p[0]-lon)*kx*sc;
   const Y = p => h/2 - (p[1]-lat)*ky*sc;
 
+  /* Scout marks. Drawn here, inside the rotation, with everything else that lives in map
+     space — the first version sat after the g.restore() below, so with the hub turned to
+     match the way he faces, every diamond was rotated about the centre of the map and
+     landed on a different street.
+     Their own shape as well as their own colour: a diamond cannot be mistaken for a door
+     dot or the flyer dot in any light, or by anyone who cannot tell the colours apart.
+     Hollow means still to sort, filled means placed on a house. */
+  const drawMarks = () => {
+    for (const mk of state.marks) {
+      if (mk.dropped) continue;
+      const kind = MARK_KINDS[mk.kind]; if (!kind) continue;
+      const qx = X([mk.lon, mk.lat]), qy = Y([mk.lon, mk.lat]);
+      if (qx < -20 || qx > w + 20 || qy < -20 || qy > h + 20) continue;
+      const r0 = 7;
+      g.save();
+      g.translate(qx, qy); g.rotate(Math.PI / 4);
+      g.beginPath(); g.rect(-r0/1.4, -r0/1.4, r0*1.4, r0*1.4);
+      g.fillStyle = mk.key ? kind.color : 'rgba(2,6,23,.55)'; g.fill();
+      g.strokeStyle = kind.color; g.lineWidth = 2.2; g.stroke();
+      g.restore();
+    }
+  };
+
   const labelJobs = [];
   const wantLabels = state.hubData.length > 0;
   /* TWO PASSES, deliberately. Neighbouring lots share an edge, and a stroke is centred
@@ -2256,6 +2388,7 @@ function drawMini() {
     g.fillStyle = '#fff'; g.font = 'bold 8px sans-serif'; g.textAlign = 'center'; g.textBaseline = 'middle';
     g.fillText('T', tx, ty + .5);
   }
+  drawMarks();
   if (rot) g.restore();
 
   /* Figures printed on the houses. Drawn outside the rotation so the text is
@@ -3199,6 +3332,7 @@ function renderAlertBar() {
   if (visitsReadFailed) lines.push('⚠️ The phone will not hand back your door records. Do NOT delete the app — tap here.');
   if (visitWriteFailed) lines.push(`⚠️ ${pendingVisits.size} door record${pendingVisits.size===1?'':'s'} would not save. What is on screen is not on the phone — tap here.`);
   if (dayWriteFailed)   lines.push('⚠️ The phone refused to save your walking track — tap here.');
+  if (markWriteFailed)  lines.push('⚠️ Your scout marks are not being saved. They will go when the app closes — tap here.');
   if (dayReadFailed)    lines.push('⚠️ The phone cannot read your walking track back — tap here.');
   if (wipeHalfDone)     lines.push('⚠️ Erasing everything did not finish. Do NOT back up yet — tap here.');
   if (!lines.length) { el.classList.add('hide'); return; }
@@ -3555,6 +3689,26 @@ function refreshMapLayers() {
       window._meCone = el ? el.querySelector('.mecone') : null;
       paintMapHeading();
     }
+  }
+  /* Scout marks, on top of everything and never gated by the book filter — the point of
+     seeing them is to plan a round, and a filter left the wrong way hiding them would
+     look exactly like having lost them. A diamond, not a dot: it has to be tellable from
+     the flyer mark and from every status colour without relying on colour at all. */
+  /* Capped and gated, exactly like the parcel loop above. Zoomed out over a season's
+     scouting this used to build one marker per mark for every pan. */
+  let markN = 0;
+  for (const mk of state.marks) {
+    if (markN >= 400) break;
+    if (mk.dropped) continue;
+    const kind = MARK_KINDS[mk.kind]; if (!kind) continue;
+    if (!inView([mk.lat, mk.lon])) continue;
+    markN++;
+    const size = z >= 18 ? 16 : 12;
+    pl.addLayer(L.marker([mk.lat, mk.lon], { interactive:false, icon: L.divIcon({
+      className:'', iconSize:[0,0],
+      html:`<div style="width:${size}px;height:${size}px;margin:${-size/2}px 0 0 ${-size/2}px;`
+         + `transform:rotate(45deg);border:2.2px solid ${kind.color};border-radius:3px;`
+         + `background:${mk.key ? kind.color : 'rgba(2,6,23,.55)'}"></div>` }) }));
   }
 }
 const shortOwner = o => { const parts = o.split(/\s*&\s*/)[0].trim().split(/\s+/); return parts.slice(0, Math.min(2, parts.length)).join(' '); };
@@ -4017,7 +4171,7 @@ function clearGeoPreview() {
    The flag is whether losing it loses WORK. A preference coming back wrong is a
    nuisance; a named area not coming back is gone for good. */
 const BACKUP_LOCAL = [
-  ['home', true], ['appts', true], ['areas', true],
+  ['home', true], ['appts', true], ['areas', true], ['marks', true],
   ['lineNames', false], ['hubData', false], ['mapData', false],
   ['driveAdj', false], ['driveSpeeds', false], ['snapMax', false], ['trackDetail', false],
   ['quietPrompt', false], ['rentalMark', false], ['hubSpan', false], ['hubSat', false],
@@ -4026,7 +4180,7 @@ const BACKUP_LOCAL = [
 /* The two flagged `true` that are LISTS get merged on the way back in, never replaced —
    same rule as door records. Restoring Monday's file on Wednesday must not take the
    appointments he booked on Tuesday. */
-const BACKUP_MERGE = ['appts', 'areas'];
+const BACKUP_MERGE = ['appts', 'areas', 'marks'];
 /* Left out on purpose. `pin` — a lock does not belong in a plain-text file he emails to
    himself. `lastBackup`, `storageGrant`, `everSaved`, `session`, `routeRun` — they
    describe this phone at this moment rather than any of his work. And `line` and
@@ -4043,6 +4197,9 @@ async function buildBackup() {
      older than the green tick claims. The one moment a backup is most tempting is the
      one moment it does the most damage. */
   if (wipeHalfDone) throw new Error('an erase that did not finish — close the app right down and open it again first');
+  /* Same reasoning: the marks in memory were never written, so this would read the store,
+     miss them, and stamp the file as today's backup over the last good one. */
+  if (markWriteFailed) throw new Error('scout marks that would not save — free some space, then back up');
   /* If a store will not read, this must NOT quietly hand back a file with that part
      missing. A short backup file looks exactly like a good one, and restoring it
      months later would put the hole back over everything. Refuse, and name the part.
@@ -4283,6 +4440,12 @@ function arrivedHome(lat, lon, speed) {
 /** no door marked and no real movement for half an hour, and not just asked */
 function goneQuiet(lat, lon, now) {
   if (!state.session || !state.quietPrompt) return false;
+  /* Never while he is scouting. The backstop asks "still out working?" after half an hour
+     with no doors and no real movement — and a scouting drive marks no doors at all, so
+     it would fire mid-drive, from a phone in a mount, with Stop as one of its two
+     buttons. Marks push `lastDoorTs` forward as well, so it stays quiet for a while after
+     he leaves the screen too. */
+  if (scoutOpen) return false;
   if (!state.quietAnchor || haversine(lat, lon, state.quietAnchor.lat, state.quietAnchor.lon) > QUIET_MOVE)
     state.quietAnchor = { lat, lon, ts:now };
   const rooted  = now - state.quietAnchor.ts > QUIET_MS;
@@ -4310,6 +4473,7 @@ function askStillWorking() {
 
 function pushFix(c, ts) {
   state.fixes.push({ lat:c.latitude, lon:c.longitude, acc:Math.max(c.accuracy||30, 3), ts });
+  refreshScoutIfOpen();     // so a dead GPS shows up on the scout screen, not at the next tap
   const cutoff = ts - 12000;
   while (state.fixes.length > 12 || (state.fixes.length && state.fixes[0].ts < cutoff)) state.fixes.shift();
 }
@@ -4322,6 +4486,77 @@ function smoothed() {
   let wl = 0, wo = 0, w = 0;
   for (const x of use) { const k = 1 / (x.acc * x.acc); wl += x.lat * k; wo += x.lon * k; w += k; }
   return { lat: wl / w, lon: wo / w, acc: Math.min(...use.map(x => x.acc)), n: use.length };
+}
+/* ---- where the truck actually is, right now ----
+   `smoothed()` above is a weighted mean of a twelve-second buffer, so it sits roughly six
+   seconds behind. Walking, that is about eight metres and it is the RIGHT answer — the
+   averaging is what stops a door being filed against next door's lot. At thirty miles an
+   hour it is EIGHTY metres: four lots back. Worse, the error grows and shrinks with his
+   speed, so it is not an offset he could ever learn to allow for.
+   For a mark taken from a moving truck, take the newest raw fix and carry it forward by
+   however long ago it landed, along the course of the last few fixes. Bounded hard at
+   both ends: a fix older than three seconds is not projected at all — that is a phone
+   that has lost the sky, not a truck — and nothing is ever moved more than sixty metres,
+   so one wild fix cannot fling a mark down the street. The raw fix, the speed and the
+   heading are stored on the mark as well, so the sorting screen can work out where he was
+   pointing without having to trust this one number. */
+function recentBearing() {
+  const f = state.fixes;
+  if (f.length < 2) return null;
+  const a = f[0], b = f[f.length - 1];
+  if (haversine(a.lat, a.lon, b.lat, b.lon) < 5) return null;   // shuffling about, not travelling
+  const p1 = rad(a.lat), p2 = rad(b.lat), dl = rad(b.lon - a.lon);
+  const y = Math.sin(dl) * Math.cos(p2);
+  const x = Math.cos(p1) * Math.sin(p2) - Math.sin(p1) * Math.cos(p2) * Math.cos(dl);
+  return (Math.atan2(y, x) * 180 / Math.PI + 360) % 360;
+}
+const MARK_PROJECT_MAX_M = 60;      // never carry a mark further than this
+const MARK_PROJECT_MAX_AGE = 3;     // seconds — older than this and the fix is just stale
+const MARK_PROJECT_MIN_SPEED = 4;   // m/s, about 9 mph — below this the averaging is right
+/* He sees the roof, and THEN his thumb gets to the glass. Measured against a known house
+   at 25-35 mph, carrying the pin forward to where the truck is at the moment of the tap
+   put it 9 to 31 metres PAST the house — always past, never short, because that second of
+   reaction is eleven to nineteen metres of road. On the sorting screen that showed up as
+   the right house coming second or third instead of first.
+   So the pin goes where the truck was about a second ago: forward by however stale the
+   fix is, then back by this. A second is deliberately a little short of a real reaction —
+   under-correcting leaves the house AHEAD of the pin, which is the way he was looking,
+   and that reads better on the shortlist than a pin that has run past it. */
+const MARK_REACTION_S = 1.0;
+/* How old the newest fix may be before it stops meaning anything. `state.fixes` is only
+   trimmed when a NEW fix arrives, so a buffer left behind by a paused session, an ended
+   session, a tunnel or a locked screen sits there looking perfectly good for ever. At
+   30 mph, ten seconds of that is 130 metres — and the failure is silent and repeats for
+   every mark after it. */
+const FIX_STALE_MS = 8000;
+const fixAge = () => state.fixes.length ? Date.now() - state.fixes[state.fixes.length-1].ts : Infinity;
+/* Anything that stops the watch throws the buffer away, so a stale position can never be
+   mistaken for a live one. Without this, a session ending at home mid-scout left the
+   driveway in the buffer and every mark afterwards landed on his own house. */
+function dropFixes() { state.fixes = []; refreshScoutIfOpen(); }
+function liveFix() {
+  const f = state.fixes;
+  if (!f.length) return null;
+  const last = f[f.length - 1];
+  const sp = recentSpeed();
+  const brg = recentBearing();
+  const out = { lat: last.lat, lon: last.lon, acc: last.acc, fixTs: last.ts,
+                rawLat: last.lat, rawLon: last.lon,
+                speed: Math.round(sp * 10) / 10, heading: brg == null ? null : Math.round(brg),
+                projected: 0 };
+  if (sp < MARK_PROJECT_MIN_SPEED || brg == null) return out;
+  const age = (Date.now() - last.ts) / 1000;
+  if (!(age > 0) || age > MARK_PROJECT_MAX_AGE) return out;
+  /* Two corrections in opposite directions: forward for the age of the fix, back for the
+     second he took to react. At a one-second fix and a one-second reaction they very
+     nearly cancel, which is the point — the pin belongs where he was looking. */
+  const net = Math.max(-MARK_PROJECT_MAX_M, Math.min(MARK_PROJECT_MAX_M, sp * (age - MARK_REACTION_S)));
+  const th = rad(brg);
+  const cosLat = Math.cos(rad(last.lat)) || 1;
+  out.lat = last.lat + (net * Math.cos(th)) / 111320;
+  out.lon = last.lon + (net * Math.sin(th)) / (111320 * cosLat);
+  out.projected = Math.round(net);
+  return out;
 }
 /** metres per second across the recent buffer */
 function recentSpeed() {
@@ -4430,8 +4665,11 @@ function startGps() {
 }
 function setPaused(p) {
   state.paused = p;
-  if (p) { if (watchId != null) { navigator.geolocation.clearWatch(watchId); watchId = null; } flushDay(); }
-  else { state.fixes = []; startGps(); }
+  /* Emptied on the way OUT as well as the way in. It was only cleared on resume, so a
+     paused session left its last position sitting in the buffer looking perfectly live —
+     and every scout mark taken afterwards landed on it. */
+  if (p) { if (watchId != null) { navigator.geolocation.clearWatch(watchId); watchId = null; } flushDay(); dropFixes(); }
+  else { dropFixes(); startGps(); }
   renderStrip();
   flashToast(p ? 'Tracking paused' : 'Tracking on',
              p ? 'No position, no breadcrumbs. Tap the GPS chip to resume.' : '', p ? '#64748b' : '#22c55e');
@@ -4667,7 +4905,7 @@ document.querySelectorAll('.dsecHead[data-msec]').forEach(b => {
 /* ---- what version is actually on the phone ----
    Matches the service worker cache name, so "did the update land" is answerable by
    looking rather than guessing. */
-const BUILD_VERSION = 'v13';
+const BUILD_VERSION = 'v14';
 const BUILD_DATE = '29 July 2026';
 function renderVersionStamp() {
   const el = $('versionStamp'); if (!el) return;
@@ -5331,6 +5569,7 @@ $('mWipe').onclick = async () => {
   const n  = state.visitLog.length;
   const nP = (state.appts||[]).length;
   const nA = (state.areas||[]).length;
+  const nM = (state.marks||[]).filter(m => !m.dropped).length;
   if (!confirm(`Erase every door you have logged?\n\n`
     + `• ${n} door record${n===1?'':'s'}\n`
     + `• every walking track on this phone\n`
@@ -5338,7 +5577,10 @@ $('mWipe').onclick = async () => {
     + (state.home ? `• where home is set to\n` : '')
     // it calls unpark() below, and a list that leaves something out reads as complete
     + (state.vehicle ? `• where the truck is parked\n` : '')
-    + (nA ? `\nYour ${nA} named area${nA===1?'':'s'} will be kept.\n` : '')
+    /* Kept, and said so — the same rule as the named areas. A scout mark is not a door
+       he logged, so "erase every door" has no business taking one. */
+    + ((nA || nM) ? `\nKept: ${[nA ? `${nA} named area${nA===1?'':'s'}` : '',
+                                nM ? `${nM} scout mark${nM===1?'':'s'}` : ''].filter(Boolean).join(' and ')}.\n` : '')
     + `\nThis cannot be undone.`)) return;
   /* Four unguarded clears in a row, in an async handler: one rejection became an
      unhandled promise, every line below stopped, and NOTHING was said. The doors were
@@ -7090,6 +7332,18 @@ function runFind() {
    so naming a patch this afternoon immediately shows every time he has ever worked it.
    Two shapes: a circle dropped where he stands, and a box drawn on the big map. */
 const AREA_SIZES = [['small', 150, 'One street'], ['medium', 400, 'A few blocks'], ['large', 900, 'A subdivision']];
+/* ---------------- scout marks ----------------
+   Three things he can see from a moving truck. One tap each, nothing to read, nothing to
+   choose — the choosing happens later, parked, on the sorting screen. The word is "mark",
+   not "tag": Quick tags already mean something else on a door. */
+const MARK_KINDS = {
+  sign:   { label:'Yard sign', icon:'\u{1F6A9}', color:'#a855f7' },
+  tarp:   { label:'Tarp',      icon:'\u{1F535}', color:'#38bdf8' },
+  damage: { label:'Damage',    icon:'\u26A0\uFE0F', color:'#f59e0b' },
+};
+const saveMarks = () => { try { localStorage.setItem('marks', JSON.stringify(state.marks)); return true; }
+                          catch (e) { return false; } };
+const unsortedMarks = () => state.marks.filter(m => !m.key && !m.dropped);
 const saveAreas = () => localStorage.setItem('areas', JSON.stringify(state.areas));
 function areaContains(a, lat, lon) {
   if (!a || lat == null || lon == null) return false;
@@ -7311,6 +7565,578 @@ $('arDelete').onclick = () => {
   saveAreas(); arOpen = null; renderAreas(); renderStrip(); buzz(25);
   flashToast('Area deleted', 'No doors or breadcrumbs were touched', '#64748b');
 };
+
+/* ---------------- scouting from the truck ----------------
+   He drives to scout: tarps on roofs, a competitor's yard sign, visible damage. Twenty
+   five miles an hour, phone in a mount, one hand. He knocks them another day.
+   Two rules shape all of it.
+   ONE: this is not the main screen. It is a takeover with one way out, in words, because
+   a driving screen and a knocking screen have nothing in common and mixing them would
+   make both worse.
+   TWO: a mark is not a door. It has its own list, its own marker on both maps, and it
+   never touches a knock count or a door record — he drove past it, he did not work it.
+   Sorting attaches an address to a mark. It does NOT file a door: there is no status in
+   this app that means "seen from a moving truck", and inventing one would put houses he
+   has never spoken to into the same counts and the same spreadsheets as the ones he has.
+   There is no microphone here yet, on purpose. Four reviewers took the recording design
+   apart on iOS grounds — a mic opened and closed per mark mutes the earlier track with no
+   unmute, holding it open kills Bluetooth for the whole drive, and an interrupted
+   recording yields nothing at all rather than a partial. None of that can be settled from
+   here; it has to be seen on his phone. `mic-test.html`, deployed alongside this file, is
+   the five-minute test that settles it, and the TALK button waits for its result. */
+let scoutOpen = false;
+function saveMarksChecked() {
+  const ok = saveMarks();
+  markWriteFailed = !ok;
+  renderWriteAlerts();
+  return ok;
+}
+function openScout() {
+  scoutOpen = true;
+  closeSheet('menuSheet');
+  $('scoutView').classList.remove('hide');
+  renderScout();
+  buzz(12);
+}
+function exitScout() {
+  scoutOpen = false;
+  $('scoutView').classList.add('hide');
+  renderStrip(); drawMini();
+  if (window._map) refreshMapLayers();
+}
+function addMark(kind) {
+  if (!MARK_KINDS[kind]) return;
+  const f = liveFix();
+  if (!f || fixAge() > FIX_STALE_MS) {
+    /* NOT marked, and said so. Without this the buffer left behind by a paused or ended
+       session gets used for every tap of the rest of the drive, so twenty houses land on
+       the driveway where tracking stopped, the counts go up, and nothing looks wrong. */
+    flashToast('Not marked — no position',
+      !state.fixes.length ? 'The phone has not got a fix yet. Nothing was marked.'
+        : 'The last position is ' + Math.round(fixAge()/1000) + ' seconds old, so it is not where you are. '
+          + 'Nothing was marked. If tracking stopped, tap Exit and start it again.',
+      '#ef4444');
+    renderScout();
+    return;
+  }
+  const m = { id:'mk' + Date.now().toString(36) + Math.random().toString(36).slice(2,6),
+              kind, ts: Date.now(),
+              lat:f.lat, lon:f.lon, acc:f.acc,
+              /* The raw fix, the speed and the course are kept alongside the projected
+                 position so the sorting screen can work out where he was pointing without
+                 having to take the projection on trust. */
+              rawLat:f.rawLat, rawLon:f.rawLon, speed:f.speed, heading:f.heading,
+              projected:f.projected,
+              key:null, county:null, addr:null, dropped:false };
+  state.marks.push(m);
+  /* The quiet-spell backstop counts from the last DOOR, and a scouting drive has none —
+     without this it would ask him whether he is still working, from the driver's seat,
+     every half hour. */
+  state.lastDoorTs = m.ts;
+  state.quietAnchor = null;
+  buzz(30);
+  if (!saveMarksChecked()) {
+    /* Kept in memory so this drive is not lost, and said out loud, because a count that
+       goes up is the app claiming it saved something. */
+    flashToast('Marked, but NOT saved',
+      'The phone refused to write it — nearly always no room left. It is still on this screen, '
+      + 'but it will not survive closing the app. Free some space.', '#ef4444');
+  }
+  renderScout();
+}
+function renderScout() {
+  const host = $('scoutBtns');
+  if (!host) return;
+  host.innerHTML = '';
+  Object.entries(MARK_KINDS).forEach(([k, s]) => {
+    const n = state.marks.filter(m => m.kind === k && !m.dropped && !m.key).length;
+    const b = document.createElement('button');
+    b.className = 'scoutBtn';
+    b.dataset.kind = k;
+    b.style.borderColor = s.color;
+    b.setAttribute('aria-label', 'mark ' + s.label.toLowerCase());
+    b.innerHTML = `<span class="ic">${s.icon}</span><span>${esc(s.label)}</span>`
+                + `<span class="cnt">${n ? n + ' to sort' : ''}</span>`;
+    b.onclick = () => {
+      /* The flash used to be put on the button and then addMark re-rendered the whole
+         row, throwing that button away before a single frame was painted — so at thirty
+         miles an hour, with no vibration on an iPhone and the sound off by default, a tap
+         gave back nothing at all. Marked first, then the CURRENT button is flashed. */
+      addMark(k);
+      const now = [...$('scoutBtns').children].find(x => x.dataset.kind === k);
+      if (now) { now.classList.add('hit'); setTimeout(() => now.classList.remove('hit'), 320); }
+    };
+    host.appendChild(b);
+  });
+  const n = unsortedMarks().length;
+  /* No numbers dressed up as engineering. He is driving; this line is glanceable or it is
+     nothing. The old version quoted a projection distance that changed every second and
+     used the word "fix", which he has never been taught. */
+  const stale = fixAge() > FIX_STALE_MS;
+  $('scoutHint').textContent = stale
+    ? (state.fixes.length ? 'NO POSITION — nothing can be marked. Stop scouting and start tracking again.'
+                          : 'Waiting for GPS. Nothing can be marked yet.')
+    : (n ? `${n} waiting to be sorted when you stop.` : 'Sort them out from the menu when you stop.');
+  $('scoutHint').style.color = stale ? '#fca5a5' : '';
+  /* And the buttons themselves go dark, because a line of small grey text at the bottom
+     of a screen he is deliberately not reading is not a warning. */
+  [...host.children].forEach(b => { b.style.opacity = stale ? '.35' : '';
+                                    b.style.borderStyle = stale ? 'dashed' : 'solid'; });
+}
+/* Called from the GPS watcher, so the state on this screen is live rather than whatever
+   it was when he last tapped something. */
+function refreshScoutIfOpen() { if (scoutOpen) renderScout(); }
+$('mScout').onclick = openScout;
+$('scoutExit').onclick = exitScout;
+
+/* ---- sorting, parked ----
+   ONE mark on the screen at a time. The first version was a scrolling list of every mark,
+   each offering the five nearest lots — and it was measured at twenty to thirty-five
+   seconds a card, thirteen screens of scrolling, with the list jumping back to the top
+   after every tap so that a second tap in the same place filed the NEXT mark to a house
+   he had never read. Twenty-five marks came to a quarter of an hour of guessing. The
+   budget is about ten seconds a mark, or he abandons it by the second week and the
+   marks are just saved bytes.
+   The other half of the guessing was the street itself. A distance-ranked list puts odd
+   and even numbers four metres apart in the ranking, and nothing said which side he had
+   been looking at. The mark already carries the raw fix and the course, so the houses on
+   his right come first, under that heading, and the other side is one tap away. */
+async function lotsLookup(lat, lon) {
+  for (const c of countiesFor(lat, lon)) {
+    const got = await fetchTile(c, lat, lon);
+    if (got > 0) return got;
+  }
+  return 0;
+}
+function lotsNear(lat, lon, n, maxM) {
+  const near = [];
+  const lim = maxM || 120;
+  for (const p of state.parcels.values()) {
+    const pad = 0.0012;
+    if (lon < p.bbox[0]-pad || lon > p.bbox[2]+pad || lat < p.bbox[1]-pad || lat > p.bbox[3]+pad) continue;
+    const d = distToRings(lon, lat, p.rings);
+    if (d <= lim) near.push({ p, d });
+  }
+  near.sort((a, b) => a.d - b.d);
+  return near.slice(0, n || 5);
+}
+/* Which side of the truck a lot was on. Positive turn = to his right. */
+function sideOfMark(m, p) {
+  if (m.heading == null) return null;
+  const at = p.house || p.cen;
+  const b = bearingTo(m.rawLat != null ? m.rawLat : m.lat, m.rawLon != null ? m.rawLon : m.lon, at[1], at[0]);
+  const rel = (b - m.heading + 540) % 360 - 180;    // -180..180, positive is clockwise
+  if (Math.abs(rel) < 12 || Math.abs(rel) > 168) return null;   // dead ahead or dead behind
+  return rel > 0 ? 'right' : 'left';
+}
+let sortQueue = [], sortAt = 0, sortShowOther = false, sortShowBlock = false;
+const sortUndoStack = [];
+function openSort(startId) {
+  sortQueue = unsortedMarks().sort((a, b) => a.ts - b.ts);
+  sortAt = 0;
+  if (startId) { const i = sortQueue.findIndex(m => m.id === startId); if (i >= 0) sortAt = i; }
+  sortShowOther = false; sortShowBlock = false; blockPick = null;
+  $('sortView').classList.remove('hide');
+  renderSort();
+}
+function exitSort() {
+  $('sortView').classList.add('hide');
+  renderScout(); renderMarks();
+  if (window._map) refreshMapLayers();
+  drawMini();
+}
+function markWhen(ts) {
+  const d = new Date(ts);
+  return `${d.toLocaleDateString()} ${d.toLocaleTimeString([], {hour:'numeric', minute:'2-digit'})}`;
+}
+function sortNext() { sortAt++; sortShowOther = false; sortShowBlock = false; blockPick = null; renderSort(); }
+function renderSort() {
+  const host = $('sortBody');
+  if (!host) return;
+  host.innerHTML = '';
+  $('sortUndo').classList.toggle('hide', !sortUndoStack.length);
+  /* Anything sorted or dropped while this screen was open drops out of the queue, so the
+     count below is what is actually left rather than what it started with. */
+  const left = sortQueue.filter(m => !m.key && !m.dropped);
+  const m = sortQueue[sortAt];
+  if (!m || sortAt >= sortQueue.length) {
+    $('sortSub').textContent = left.length ? `${left.length} skipped — tap Done, they will be here next time.` : 'All done.';
+    host.innerHTML = left.length
+      ? '<div class="small" style="padding:12px 2px">That is the end of the list. The ones you skipped are still waiting.</div>'
+      : '<div class="small" style="padding:12px 2px">All sorted. They are in <b>Houses you scouted</b>, in the menu.</div>';
+    return;
+  }
+  if (m.key || m.dropped) return sortNext();
+  const kind = MARK_KINDS[m.kind];
+  $('sortSub').textContent = `${sortAt + 1} of ${sortQueue.length} · ${kind.label} · ${markWhen(m.ts)}`;
+
+  const head = document.createElement('div');
+  head.className = 'sortWhat';
+  head.style.fontSize = '22px';
+  head.innerHTML = `${kind.icon} ${esc(kind.label)}`;
+  host.appendChild(head);
+  const acc = document.createElement('div');
+  acc.className = 'small';
+  acc.textContent = `Marked ${markWhen(m.ts)}`
+    + (typeof m.acc === 'number' ? ` · the phone put you within about ${Math.round(m.acc)} m` : '');
+  host.appendChild(acc);
+
+  const near = lotsNear(m.lat, m.lon, 12);
+  if (!near.length) {
+    const wide = lotsNear(m.lat, m.lon, 3, 400);
+    const note = document.createElement('div');
+    note.className = 'small'; note.style.marginTop = '10px';
+    /* Two different causes used to give the same wrong message. "No addresses loaded" is
+       false when the lots ARE loaded and merely further off than the 120 m the shortlist
+       uses, and telling him to "try again with a signal" for that can never work. */
+    note.textContent = wide.length
+      ? 'Nothing within a hundred metres. The nearest houses loaded are further off:'
+      : 'No addresses loaded for this spot yet.';
+    host.appendChild(note);
+    if (wide.length) {
+      wide.forEach(({ p, d }) => host.appendChild(addrButton(m, p, d)));
+    } else {
+      const look = document.createElement('button');
+      look.className = 'sortAddr';
+      look.textContent = 'Look up the houses here';
+      look.onclick = async () => {
+        look.disabled = true; look.textContent = 'Looking…';
+        const before = state.parcels.size;
+        const got = await lotsLookup(m.lat, m.lon);
+        if (!got && state.parcels.size === before) {
+          /* Honest about which of the two it is. An already-tried tile short-circuits for
+             the rest of the session, so "try again" would be advice that cannot work. */
+          look.textContent = 'The county has nothing here — skip it or delete it';
+          look.disabled = true;
+          return;
+        }
+        renderSort();
+      };
+      host.appendChild(look);
+    }
+  } else {
+    const groups = { right: [], left: [], unknown: [] };
+    near.forEach(n => { const side = sideOfMark(m, n.p); groups[side || 'unknown'].push(n); });
+    const knowsSide = m.heading != null && (groups.right.length || groups.left.length);
+    if (knowsSide) {
+      const first = groups.right.length ? groups.right : groups.left;
+      const firstName = groups.right.length ? 'On your right as you drove' : 'On your left as you drove';
+      const other = groups.right.length ? groups.left : [];
+      const h1 = document.createElement('div'); h1.className = 'sideHead'; h1.textContent = firstName;
+      host.appendChild(h1);
+      first.slice(0, 3).forEach(({ p, d }) => host.appendChild(addrButton(m, p, d)));
+      const rest = other.concat(groups.unknown);
+      if (rest.length) {
+        if (!sortShowOther) {
+          const more = document.createElement('button');
+          more.className = 'chip'; more.style.marginTop = '10px';
+          more.textContent = 'It was the other side of the street';
+          more.onclick = () => { sortShowOther = true; renderSort(); };
+          host.appendChild(more);
+        } else {
+          const h2 = document.createElement('div'); h2.className = 'sideHead'; h2.textContent = 'The other side';
+          host.appendChild(h2);
+          rest.slice(0, 4).forEach(({ p, d }) => host.appendChild(addrButton(m, p, d)));
+        }
+      }
+    } else {
+      const h1 = document.createElement('div'); h1.className = 'sideHead';
+      h1.textContent = 'Nearest houses';
+      host.appendChild(h1);
+      near.slice(0, 5).forEach(({ p, d }) => host.appendChild(addrButton(m, p, d)));
+    }
+  }
+
+  /* The second way in. Collapsed behind one chip, because the shortlist above is right
+     most of the time and a 280-pixel map on top of it would push the fast path off the
+     screen for the sake of the exception. */
+  const blockWrap = document.createElement('div');
+  blockWrap.id = 'blockWrap';
+  if (!sortShowBlock) {
+    const open = document.createElement('button');
+    open.className = 'chip';
+    open.textContent = 'None of those — show me the block';
+    open.onclick = () => { sortShowBlock = true; blockPick = null; renderSort(); };
+    blockWrap.appendChild(open);
+  } else {
+    const lots = blockLots(m);
+    if (!lots.length) {
+      const none = document.createElement('div');
+      none.className = 'small';
+      none.textContent = 'No lot lines loaded around here, so there is nothing to draw. '
+        + 'Open the big map on this spot once with a signal and they will be here.';
+      blockWrap.appendChild(none);
+    } else {
+      const lab = document.createElement('div');
+      lab.className = 'sideHead';
+      lab.textContent = m.heading != null ? 'The block — you were driving up the screen' : 'The block';
+      blockWrap.appendChild(lab);
+      const cv = document.createElement('canvas');
+      cv.id = 'blockMap';
+      cv.setAttribute('aria-label', 'the block around this mark — tap a lot to pick it');
+      cv.onclick = e => blockTap(m, e);
+      blockWrap.appendChild(cv);
+      const use = document.createElement('button');
+      use.className = 'sortAddr hide';
+      use.id = 'blockUse';
+      blockWrap.appendChild(use);
+      const hint = document.createElement('div');
+      hint.className = 'small';
+      hint.textContent = 'Tap the house, then the button that appears.';
+      blockWrap.appendChild(hint);
+    }
+  }
+  host.appendChild(blockWrap);
+  if (sortShowBlock && blockLots(m).length) {
+    /* after it is in the document, so the canvas has a width to size itself against */
+    requestAnimationFrame(() => { drawBlock(m); renderBlockPickBtn(m); });
+  }
+
+  const foot = document.createElement('div');
+  foot.className = 'sortSkip';
+  const skip = document.createElement('button');
+  skip.className = 'chip';
+  skip.textContent = 'Skip — come back to it';
+  skip.onclick = () => { buzz(8); sortNext(); };
+  foot.appendChild(skip);
+  const drop = document.createElement('button');
+  drop.className = 'chip';
+  drop.textContent = 'Not a house — delete it';
+  drop.onclick = () => dropMark(m);
+  foot.appendChild(drop);
+  host.appendChild(foot);
+}
+/* ---- the block picker ----
+   The second way in, for the marks the shortlist gets wrong. Not a Leaflet map: tiles are
+   cache-first, so a storm neighbourhood he has never opened would be a black rectangle
+   with no signal. This is the county lot lines drawn straight onto a canvas, the same way
+   the hub map works — outlines, house numbers, his pin, and an arrow for the way he was
+   driving. Tap a lot to pick it, then a big button that says which house, because a
+   fat-fingered lot on a phone must not file a house he never read. */
+let blockPick = null;
+function blockLots(m) { return lotsNear(m.lat, m.lon, 60, 260); }
+function drawBlock(m) {
+  const cv = $('blockMap'); if (!cv) return;
+  const dpr = window.devicePixelRatio || 1;
+  const w = cv.clientWidth || 340, h = cv.clientHeight || 280;
+  if (cv.width !== Math.round(w*dpr)) { cv.width = Math.round(w*dpr); cv.height = Math.round(h*dpr); }
+  const g = cv.getContext('2d');
+  g.setTransform(dpr,0,0,dpr,0,0);
+  g.clearRect(0,0,w,h);
+  g.fillStyle = '#0f151d'; g.fillRect(0,0,w,h);
+  const span = 150;                                   // metres across — about seven lots
+  const kx = mPerDegLon(m.lat), ky = mPerDegLat, sc = w / span;
+  /* Turned so the way he was driving points UP the screen. Reading a street sideways is
+     the part he finds hardest, and the whole question here is "which one did I pass". */
+  const rot = m.heading == null ? 0 : -m.heading;
+  const ca = Math.cos(rad(rot)), sa = Math.sin(rad(rot));
+  const X = pt => { const dx = (pt[0]-m.lon)*kx*sc, dy = -(pt[1]-m.lat)*ky*sc;
+                    return w/2 + dx*ca - dy*sa; };
+  const Y = pt => { const dx = (pt[0]-m.lon)*kx*sc, dy = -(pt[1]-m.lat)*ky*sc;
+                    return h/2 + dx*sa + dy*ca; };
+  const lots = blockLots(m);
+  lots.forEach(({ p }) => {
+    g.beginPath();
+    for (const ring of p.rings) ring.forEach((pt,i) => i ? g.lineTo(X(pt), Y(pt)) : g.moveTo(X(pt), Y(pt)));
+    g.closePath();
+    const on = blockPick && blockPick.key === p.key;
+    g.fillStyle = on ? 'rgba(34,197,94,.45)' : 'rgba(148,163,184,.10)';
+    g.fill();
+    g.strokeStyle = on ? '#22c55e' : '#64748b';
+    g.lineWidth = on ? 3 : 1.4;
+    g.stroke();
+  });
+  // house numbers, on the house where the county knows where it is
+  g.font = '700 13px -apple-system, system-ui, sans-serif';
+  g.textAlign = 'center'; g.textBaseline = 'middle';
+  lots.forEach(({ p }) => {
+    const num = (p.addr || '').split(' ')[0];
+    if (!num) return;
+    const at = p.house || p.cen;
+    const x = X(at), y = Y(at);
+    if (x < 8 || x > w-8 || y < 8 || y > h-8) return;
+    g.strokeStyle = 'rgba(0,0,0,.9)'; g.lineWidth = 3; g.strokeText(num, x, y);
+    g.fillStyle = blockPick && blockPick.key === p.key ? '#bbf7d0' : '#e6edf5';
+    g.fillText(num, x, y);
+  });
+  // the way he was driving: straight up, since the whole picture is turned to it
+  if (m.heading != null) {
+    g.save(); g.translate(w/2, h/2);
+    g.strokeStyle = '#38bdf8'; g.lineWidth = 3; g.globalAlpha = .8;
+    g.beginPath(); g.moveTo(0, 26); g.lineTo(0, -30); g.stroke();
+    g.beginPath(); g.moveTo(-7, -20); g.lineTo(0, -32); g.lineTo(7, -20); g.stroke();
+    g.restore();
+  }
+  // the pin itself
+  g.save(); g.translate(w/2, h/2); g.rotate(Math.PI/4);
+  g.beginPath(); g.rect(-6, -6, 12, 12);
+  g.fillStyle = MARK_KINDS[m.kind].color; g.fill();
+  g.strokeStyle = '#fff'; g.lineWidth = 2; g.stroke();
+  g.restore();
+  cv._hit = { w, h, sc, kx, ky, ca, sa, lots, lat:m.lat, lon:m.lon };
+}
+function blockTap(m, ev) {
+  const cv = $('blockMap'); const hit = cv && cv._hit; if (!hit) return;
+  const r = cv.getBoundingClientRect();
+  const px = (ev.clientX - r.left) - hit.w/2, py = (ev.clientY - r.top) - hit.h/2;
+  /* undo the rotation, then the scale, to get back to a position on the ground */
+  const dx =  px*hit.ca + py*hit.sa, dy = -px*hit.sa + py*hit.ca;
+  const lon = m.lon + (dx / hit.sc) / hit.kx;
+  const lat = m.lat - (dy / hit.sc) / hit.ky;
+  let best = null, bestD = Infinity;
+  for (const { p } of hit.lots) {
+    const d = distToRings(lon, lat, p.rings);
+    if (d < bestD) { bestD = d; best = p; }
+  }
+  /* Inside a lot, or within a few metres of one. Further out than that and he has tapped
+     the road, which is not an answer. */
+  if (!best || bestD > 12) { blockPick = null; drawBlock(m); renderBlockPickBtn(m); return; }
+  blockPick = best;
+  buzz(8);
+  drawBlock(m); renderBlockPickBtn(m);
+}
+function renderBlockPickBtn(m) {
+  const b = $('blockUse'); if (!b) return;
+  if (!blockPick) { b.classList.add('hide'); return; }
+  b.classList.remove('hide');
+  b.textContent = `Use ${blockPick.addr || 'lot ' + blockPick.pid}`;
+  b.onclick = () => { const p = blockPick; blockPick = null; assignMark(m, p); };
+}
+
+function addrButton(m, p, d) {
+  const b = document.createElement('button');
+  b.className = 'sortAddr';
+  b.innerHTML = `${esc(p.addr || 'lot ' + p.pid)}`
+    + `<span class="m">${esc(p.owner || '')}${p.owner ? ' · ' : ''}${Math.round(d)} m away</span>`;
+  b.onclick = () => assignMark(m, p);
+  return b;
+}
+function pushMarkUndo(m) {
+  sortUndoStack.push({ m, prev: { key:m.key, county:m.county, addr:m.addr, owner:m.owner, dropped:!!m.dropped } });
+  if (sortUndoStack.length > 20) sortUndoStack.shift();
+}
+function assignMark(m, p) {
+  pushMarkUndo(m);
+  m.key = p.key; m.county = p.county; m.addr = p.addr || null; m.owner = p.owner || null;
+  if (!saveMarksChecked()) {
+    const u = sortUndoStack.pop();
+    Object.assign(m, u.prev);
+    flashToast('That did not save', 'The phone refused the write, so the mark is still waiting. Free some space.', '#ef4444');
+    return;
+  }
+  buzz(15);
+  sortNext();
+}
+function dropMark(m) {
+  /* Destructive, so it counts what it takes and asks — the same rule every other
+     destructive thing in the app follows. It used to be one unconfirmed tap ten pixels
+     under a full-width address button. */
+  const kind = MARK_KINDS[m.kind];
+  if (!confirm(`Delete this mark?\n\n${kind.label}, ${markWhen(m.ts)}.\n\n`
+    + `It comes off both maps and off the list. Nothing else is affected.`)) return;
+  pushMarkUndo(m);
+  m.dropped = true;
+  if (!saveMarksChecked()) {
+    const u = sortUndoStack.pop();
+    Object.assign(m, u.prev);
+    flashToast('That did not save', 'The phone refused the write, so the mark is still waiting. Free some space.', '#ef4444');
+    return;
+  }
+  buzz(10);
+  sortNext();
+}
+$('sortExit').onclick = exitSort;
+$('sortUndo').onclick = () => {
+  const u = sortUndoStack.pop();
+  if (!u) return;
+  const was = { key:u.m.key, county:u.m.county, addr:u.m.addr, owner:u.m.owner, dropped:!!u.m.dropped };
+  Object.assign(u.m, u.prev);
+  if (!saveMarksChecked()) {
+    Object.assign(u.m, was); sortUndoStack.push(u);
+    flashToast('That did not save', 'The phone refused the write. Free some space.', '#ef4444');
+    return;
+  }
+  const i = sortQueue.indexOf(u.m);
+  if (i >= 0) sortAt = i;
+  sortShowOther = false;
+  buzz(12);
+  flashToast('Put back', 'That mark is waiting again.', '#38bdf8');
+  renderSort();
+};
+
+/* ---- what the scouting was for ----
+   One list, with a filter — his own words, when the alternative of splitting marks
+   across the two books was put to him. A mark is still not a door: tapping one opens the
+   house so he can knock it and log it in the ordinary way, and it is that knock that
+   counts, not the drive-past. */
+let marksFilter = 'all';
+function openMarks() { closeSheet('menuSheet'); $('marksView').classList.remove('hide'); renderMarks(); }
+function exitMarks() { $('marksView').classList.add('hide'); }
+$('marksExit').onclick = exitMarks;
+$('mMarks').onclick = openMarks;
+function renderMarks() {
+  const host = $('marksBody'); if (!host) return;
+  const live = state.marks.filter(m => !m.dropped);
+  const chips = $('marksFilter');
+  chips.innerHTML = '';
+  const opts = [['all', 'Everything'], ['todo', 'Still to sort']]
+    .concat(Object.entries(MARK_KINDS).map(([k, v]) => [k, v.label]));
+  opts.forEach(([k, label]) => {
+    const n = k === 'all' ? live.length
+            : k === 'todo' ? live.filter(m => !m.key).length
+            : live.filter(m => m.kind === k).length;
+    const b = document.createElement('button');
+    b.className = 'chip' + (marksFilter === k ? ' on' : '');
+    b.textContent = `${label}${n ? ' ' + n : ''}`;
+    b.onclick = () => { marksFilter = k; renderMarks(); buzz(8); };
+    chips.appendChild(b);
+  });
+  const rows = live.filter(m => marksFilter === 'all' ? true
+                              : marksFilter === 'todo' ? !m.key
+                              : m.kind === marksFilter)
+                   .sort((a, b) => b.ts - a.ts);
+  $('marksSub').textContent = rows.length
+    ? `${rows.length} of them. Tap one to open the house.`
+    : 'Nothing here yet.';
+  host.innerHTML = '';
+  if (!rows.length) {
+    host.innerHTML = '<div class="small" style="padding:12px 2px">Nothing under that filter.</div>';
+    return;
+  }
+  rows.forEach(m => {
+    const kind = MARK_KINDS[m.kind];
+    const row = document.createElement('button');
+    row.className = 'markRow';
+    const dia = document.createElement('div');
+    dia.className = 'dia';
+    dia.style.borderColor = kind.color;
+    dia.style.background = m.key ? kind.color : 'transparent';
+    const who = document.createElement('div');
+    who.className = 'who';
+    who.innerHTML = `<div class="a">${esc(m.addr || 'Not sorted yet')}</div>`
+      + `<div class="b">${esc(kind.label)} · ${esc(markWhen(m.ts))}${m.owner ? ' · ' + esc(m.owner) : ''}</div>`;
+    row.appendChild(dia); row.appendChild(who);
+    row.onclick = () => m.key ? openScoutedHouse(m) : (exitMarks(), openSort(m.id));
+    host.appendChild(row);
+  });
+}
+/* Open the house behind a mark so he can knock it. Uses the existing record if he has
+   already worked it, exactly as tapping the lot on the big map does — a mark never makes
+   a record of its own. */
+function openScoutedHouse(m) {
+  const p = state.parcels.get(m.key);
+  const ex = visitFor(m.key, state.line) || visitFor(m.key, state.line === 'roof' ? 'appraisal' : 'roof');
+  if (!ex && !p) {
+    flashToast('That house is not loaded', 'Open the map on it once, with a signal, and it will be here.', '#f59e0b');
+    return;
+  }
+  exitMarks();
+  if (ex) return openDetail(withParcelStats(ex, p));
+  openDetail(withParcelStats({ id:'v'+Date.now()+Math.random().toString(36).slice(2,6), key:p.key, county:p.county,
+    pid:p.pid, status:'noanswer', line:state.line, ts:Date.now(), lat:p.cen[1], lon:p.cen[0], acc:0, dist:0,
+    owner:p.owner, addr:p.addr, extra:p.extra, occ:p.occ||null, mail:p.mail||'',
+    name:'', goesBy:'', nameFromOwner:false, phone:'', email:'', notes:'', tags:[], follow:'', _new:true }, p));
+}
 
 /* ---------------- the call sheet ----------------
    A self-contained page of whatever the customer list is currently showing. It shares
@@ -7791,6 +8617,13 @@ function loadSettings() {
      today light up everything already logged inside it. */
   try { const ar = JSON.parse(localStorage.getItem('areas') || '[]');
         state.areas = Array.isArray(ar) ? ar.filter(x => x && x.id && x.name) : []; } catch(e){ state.areas = []; }
+  /* Scout marks. Same shape of guard as areas: anything without an id, a kind we know or
+     a position is dropped rather than carried around half-formed, because the sorting
+     screen and both maps all read straight off this list. */
+  try { const mk = JSON.parse(localStorage.getItem('marks') || '[]');
+        state.marks = Array.isArray(mk) ? mk.filter(x => x && x.id && MARK_KINDS[x.kind]
+          && typeof x.lat === 'number' && typeof x.lon === 'number' && isFinite(x.lat) && isFinite(x.lon)) : [];
+      } catch(e){ state.marks = []; }
   try { const dj = parseFloat(localStorage.getItem('driveAdj')); if (isFinite(dj) && dj > 0) state.driveAdj = dj; } catch(e){}
   loadLineNames();
   state.quietPrompt = localStorage.getItem('quietPrompt') !== '0';

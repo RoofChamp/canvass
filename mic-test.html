@@ -1,0 +1,331 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Microphone test</title>
+<style>
+  :root{--bg:#0b1017;--card:#131c26;--card2:#1a2430;--line:#243244;--txt:#e6edf5;--dim:#94a3b8;
+        --safe-t:env(safe-area-inset-top,0px);--safe-b:env(safe-area-inset-bottom,0px)}
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+  body{margin:0;background:var(--bg);color:var(--txt);font:16px/1.5 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;
+       padding:calc(var(--safe-t) + 14px) 14px calc(var(--safe-b) + 24px)}
+  .hide{display:none !important}
+  h1{font-size:21px;margin:0 0 4px}
+  .lead{color:var(--dim);font-size:14px;margin:0 0 8px}
+  .warnbox{background:#7f1d1d;border:1px solid #ef4444;border-radius:14px;padding:12px;margin:12px 0;font-weight:700}
+  .step{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:14px;margin-bottom:14px}
+  .n{font-size:13px;font-weight:800;color:var(--dim);letter-spacing:.04em;text-transform:uppercase}
+  h2{font-size:17px;margin:4px 0 6px}
+  p{margin:0 0 10px;font-size:15px}
+  button{width:100%;min-height:58px;border-radius:14px;border:1px solid var(--line);background:var(--card2);
+         color:var(--txt);font-size:17px;font-weight:700;margin-top:8px;padding:10px 14px}
+  button.go{background:#1d4ed8;border-color:#3b82f6}
+  button.stop{background:#b91c1c;border-color:#ef4444}
+  button.yes{background:#14532d;border-color:#22c55e}
+  button.no{background:#7f1d1d;border-color:#ef4444}
+  button:disabled{opacity:.4}
+  .row{display:flex;gap:8px}
+  .row button{width:50%}
+  .out{margin-top:10px;font-size:14px;background:#0a1220;border:1px solid var(--line);border-radius:12px;padding:10px 12px;
+       white-space:pre-wrap;color:#cbd5e1;min-height:22px}
+  .good{color:#86efac}.bad{color:#fca5a5}.warn{color:#fcd34d}
+  .ask{margin-top:10px;font-size:15px;font-weight:700}
+  audio{width:100%;margin-top:10px}
+  .foot{color:var(--dim);font-size:13px;margin-top:18px}
+</style>
+</head>
+<body>
+
+<h1>Microphone test</h1>
+<p class="lead"><b>Takes about five minutes, not thirty seconds.</b> Do it sat in the truck, engine off is fine,
+with your music or a podcast already playing through the truck speakers.</p>
+<p class="lead">Nothing here is saved and nothing here touches the canvassing app. It only shows you what your
+phone actually does. Answer the yes/no questions as you go — those are the answer, not the numbers.</p>
+
+<div id="insecure" class="warnbox hide"></div>
+
+<div class="step">
+  <div class="n">Test 1</div>
+  <h2>Does it record at all?</h2>
+  <p>Tap Start, say “testing one two three”, tap Stop, then play it back.</p>
+  <button class="go" id="b1">Start recording</button>
+  <button class="stop hide" id="s1">Stop</button>
+  <div class="out" id="o1">Not run yet.</div>
+  <audio id="a1" controls class="hide"></audio>
+  <div id="q1" class="hide">
+    <div class="ask">Play it. Can you hear your own voice?</div>
+    <div class="row">
+      <button class="yes" data-q="1" data-v="yes">Yes, I hear it</button>
+      <button class="no" data-q="1" data-v="no">No, silent</button>
+    </div>
+  </div>
+</div>
+
+<div class="step">
+  <div class="n">Test 2</div>
+  <h2>Does your music survive it?</h2>
+  <p><b>Start your podcast or music on the Bluetooth first.</b> Then tap this. It opens the microphone
+  for five seconds and closes it again — exactly what a TALK button would do.</p>
+  <button class="go" id="b2">Open the mic for 5 seconds</button>
+  <div class="out" id="o2">Not run yet.</div>
+  <div id="q2" class="hide">
+    <div class="ask">1. Did the music keep playing the whole time?</div>
+    <div class="row">
+      <button class="yes" data-q="2a" data-v="kept playing">Yes</button>
+      <button class="no" data-q="2a" data-v="cut out">No, it cut out</button>
+    </div>
+    <div class="ask">2. Is it back on the TRUCK speakers now?</div>
+    <div class="row">
+      <button class="yes" data-q="2b" data-v="back on truck speakers">Yes, truck</button>
+      <button class="no" data-q="2b" data-v="STUCK on phone speaker">No, phone speaker</button>
+    </div>
+  </div>
+</div>
+
+<div class="step">
+  <div class="n">Test 3</div>
+  <h2>Does the fourth one still work?</h2>
+  <p>Opens and closes the microphone four times, recording a short clip each time. Say something
+  different each round — “one”, “two”, “three”, “four”.</p>
+  <p>Then <b>play all four back yourself</b>, using the four players that appear. On some iPhones the
+  first is fine and the later ones come back <b>silent</b>, at a normal file size, with nothing on
+  screen to say so.</p>
+  <button class="go" id="b3">Run four in a row</button>
+  <div class="out" id="o3">Not run yet.</div>
+  <div id="a3"></div>
+  <div id="q3" class="hide">
+    <div class="ask">Play all four. Can you hear your voice in every one?</div>
+    <div class="row">
+      <button class="yes" data-q="3" data-v="all four play">All four</button>
+      <button class="no" data-q="3" data-v="LATER ONES SILENT">Some silent</button>
+    </div>
+  </div>
+</div>
+
+<div class="step">
+  <div class="n">Test 4</div>
+  <h2>What happens if you get interrupted?</h2>
+  <p>This is the one that decides it.</p>
+  <p>Tap Start. Say <b>“before”</b>. Then <b>swipe up to the home screen and wait ten seconds</b>
+  (or let the screen go dark). Come back here, say <b>“after”</b>, and tap Stop.</p>
+  <button class="go" id="b4">Start recording</button>
+  <button class="stop hide" id="s4">Stop</button>
+  <div class="out" id="o4">Not run yet.</div>
+  <audio id="a4" controls class="hide"></audio>
+  <div id="q4" class="hide">
+    <div class="ask">Play it. Can you hear the word “before”?</div>
+    <div class="row">
+      <button class="yes" data-q="4" data-v="kept the words from before the interruption">Yes</button>
+      <button class="no" data-q="4" data-v="LOST everything before the interruption">No</button>
+    </div>
+  </div>
+</div>
+
+<div class="step">
+  <div class="n">Result</div>
+  <h2>Send me this</h2>
+  <p>Screenshot this box, or copy it. It decides whether the TALK button gets built and how.</p>
+  <div class="out" id="sum">Run the tests above.</div>
+</div>
+
+<p class="foot">If a test asks for permission, choose Allow. If nothing works at all, read the red box at
+the top of this page before deciding your phone cannot do it.</p>
+
+<script>
+const $ = id => document.getElementById(id);
+const answers = {}, results = {};
+function say(el, text, cls) { const e = $(el); e.textContent = text; e.className = 'out' + (cls ? ' ' + cls : ''); }
+function summarise() {
+  const lines = [];
+  lines.push(results.env || '');
+  [1,2,3,4].forEach(n => { if (results['t'+n]) lines.push(results['t'+n]); });
+  Object.keys(answers).sort().forEach(k => lines.push('   answer ' + k + ': ' + answers[k]));
+  $('sum').textContent = lines.filter(Boolean).join('\n') || 'Run the tests above.';
+}
+document.addEventListener('click', e => {
+  const b = e.target.closest('button[data-q]');
+  if (!b) return;
+  answers[b.dataset.q] = b.dataset.v;
+  [...b.parentElement.querySelectorAll('button')].forEach(x => x.style.outline = '');
+  b.style.outline = '3px solid #fff';
+  summarise();
+});
+
+/* The single most likely way this page gives a WRONG answer: opened from the Files app,
+   from AirDrop, from a mail attachment or as a downloaded file, iOS gives no page the
+   microphone at all. Every test then fails identically to a phone that genuinely cannot
+   record — and the decision this page exists to make would be made backwards. */
+const secure = window.isSecureContext && location.protocol !== 'file:'
+               && !!(navigator.mediaDevices && navigator.mediaDevices.getUserMedia);
+if (!secure) {
+  $('insecure').classList.remove('hide');
+  $('insecure').innerHTML = 'STOP — this page has to be opened from a web address starting <b>https://</b>.'
+    + '<br><br>Opened from Files, from a message, or as a downloaded file, the iPhone gives no page the '
+    + 'microphone, and every test below will fail. <b>That is not your phone failing.</b>'
+    + '<br><br>Put it on the same web address the canvassing app uses and open it from there.';
+  results.env = 'NOT A VALID RUN: opened without https, so nothing below means anything.';
+  summarise();
+} else {
+  results.env = 'Run from ' + location.origin + '.';
+  summarise();
+}
+function pickMime() {
+  const can = t => { try { return !!(window.MediaRecorder && MediaRecorder.isTypeSupported && MediaRecorder.isTypeSupported(t)); }
+                     catch (e) { return false; } };
+  for (const t of ['audio/mp4', 'audio/webm;codecs=opus', 'audio/webm']) if (can(t)) return t;
+  return '';
+}
+async function getMic() {
+  if (!secure) throw new Error('this page was not opened over https — see the red box at the top');
+  return navigator.mediaDevices.getUserMedia({ audio: true });
+}
+function stopTracks(stream) { try { stream.getTracks().forEach(t => t.stop()); } catch (e) {} }
+function rec(stream) {
+  const mime = pickMime();
+  return new MediaRecorder(stream, mime ? { mimeType: mime } : undefined);
+}
+
+/* ---- Test 1 ---- */
+let r1 = null, st1 = null, c1 = [];
+$('b1').onclick = async () => {
+  try {
+    say('o1', 'Asking for the microphone…');
+    st1 = await getMic();
+    r1 = rec(st1); c1 = [];
+    r1.ondataavailable = e => { if (e.data && e.data.size) c1.push(e.data); };
+    r1.onstop = () => {
+      stopTracks(st1);
+      const blob = new Blob(c1, { type: r1.mimeType || 'audio/mp4' });
+      const kb = Math.round(blob.size / 1024);
+      const a = $('a1'); a.src = URL.createObjectURL(blob); a.classList.remove('hide');
+      $('q1').classList.remove('hide');
+      /* Size proves nothing. A muted track is a full-size file — Test 3 exists because of
+         exactly that — so this reports the number and then ASKS. */
+      say('o1', `${kb} KB, type ${r1.mimeType || 'unknown'}. Now play it back and answer below. `
+              + `A silent recording is the same size as a good one, so the file does not tell us.`, 'warn');
+      results.t1 = `1. Recorded ${kb} KB as ${r1.mimeType || 'unknown type'}.`;
+      summarise();
+      $('b1').classList.remove('hide'); $('s1').classList.add('hide');
+    };
+    r1.start(1000);
+    say('o1', 'Recording. Say “testing one two three”, then tap Stop.', 'warn');
+    $('b1').classList.add('hide'); $('s1').classList.remove('hide');
+  } catch (e) {
+    say('o1', 'Failed: ' + e.message, 'bad');
+    results.t1 = '1. Recording FAILED: ' + e.message; summarise();
+    $('b1').classList.remove('hide'); $('s1').classList.add('hide');
+  }
+};
+$('s1').onclick = () => { try { r1.stop(); } catch (e) { say('o1', 'Stop failed: ' + e.message, 'bad'); } };
+
+/* ---- Test 2 ---- */
+$('b2').onclick = async () => {
+  const btn = $('b2'); btn.disabled = true;
+  try {
+    say('o2', 'Opening the microphone — LISTEN to your music. 5', 'warn');
+    const st = await getMic();
+    for (let i = 5; i > 0; i--) {
+      say('o2', `Microphone is OPEN — listen. ${i}`, 'warn');
+      await new Promise(r => setTimeout(r, 1000));
+    }
+    stopTracks(st);
+    say('o2', 'Microphone closed. Answer the two questions below.', 'warn');
+    $('q2').classList.remove('hide');
+    results.t2 = '2. Bluetooth: mic opened and closed for 5 s.';
+  } catch (e) {
+    say('o2', 'Failed: ' + e.message, 'bad');
+    results.t2 = '2. Bluetooth test FAILED: ' + e.message;
+  }
+  summarise();
+  btn.disabled = false;
+};
+
+/* ---- Test 3 ---- */
+$('b3').onclick = async () => {
+  const btn = $('b3'); btn.disabled = true;
+  $('a3').innerHTML = '';
+  const sizes = [];
+  try {
+    for (let i = 1; i <= 4; i++) {
+      say('o3', `Round ${i} of 4 — say “${['one','two','three','four'][i-1]}”.`, 'warn');
+      const st = await getMic();
+      const r = rec(st);
+      const chunks = [];
+      r.ondataavailable = e => { if (e.data && e.data.size) chunks.push(e.data); };
+      const done = new Promise(res => { r.onstop = res; });
+      r.start(1000);
+      await new Promise(r2 => setTimeout(r2, 2200));
+      r.stop();
+      await done;
+      stopTracks(st);
+      const blob = new Blob(chunks, { type: r.mimeType || 'audio/mp4' });
+      sizes.push(Math.round(blob.size / 1024));
+      const wrap = document.createElement('div');
+      wrap.innerHTML = `<div style="margin-top:8px;font-size:13px;color:#94a3b8">Round ${i} — ${Math.round(blob.size/1024)} KB — play it</div>`;
+      const a = document.createElement('audio'); a.controls = true; a.src = URL.createObjectURL(blob);
+      wrap.appendChild(a); $('a3').appendChild(wrap);
+      await new Promise(r2 => setTimeout(r2, 500));
+    }
+    say('o3', `Sizes: ${sizes.join(' KB, ')} KB.\nNow PLAY ALL FOUR yourself and answer below. `
+            + `The sizes can look perfectly even while the later ones are silent — that is the bug.`, 'warn');
+    $('q3').classList.remove('hide');
+    results.t3 = `3. Four in a row: ${sizes.join(' KB, ')} KB.`;
+  } catch (e) {
+    say('o3', 'Failed at round ' + (sizes.length + 1) + ': ' + e.message, 'bad');
+    results.t3 = '3. Four in a row FAILED after ' + sizes.length + ': ' + e.message;
+  }
+  summarise();
+  btn.disabled = false;
+};
+
+/* ---- Test 4 ---- */
+let r4 = null, st4 = null, c4 = [], sawHidden = false;
+document.addEventListener('visibilitychange', () => {
+  if (document.visibilityState === 'hidden' && r4 && r4.state === 'recording') sawHidden = true;
+});
+$('b4').onclick = async () => {
+  try {
+    say('o4', 'Asking for the microphone…');
+    st4 = await getMic();
+    r4 = rec(st4); c4 = []; sawHidden = false;
+    r4.ondataavailable = e => { if (e.data && e.data.size) c4.push(e.data); };
+    r4.onstop = () => {
+      stopTracks(st4);
+      const blob = new Blob(c4, { type: r4.mimeType || 'audio/mp4' });
+      const kb = Math.round(blob.size / 1024);
+      const a = $('a4'); a.src = URL.createObjectURL(blob); a.classList.remove('hide');
+      if (!sawHidden) {
+        say('o4', 'You never actually left the app, so this proves nothing. Run it again and swipe up '
+                + 'to the home screen while it is recording.', 'bad');
+        results.t4 = '4. Interruption: NOT a valid run — the app was never backgrounded.';
+      } else {
+        say('o4', `${c4.length} piece${c4.length===1?'':'s'} kept, ${kb} KB. The app WAS backgrounded. `
+                + `Play it and answer below — the question is whether the word “before” survived.`, 'warn');
+        results.t4 = `4. Interrupted: ${c4.length} pieces, ${kb} KB, app was backgrounded.`;
+        $('q4').classList.remove('hide');
+      }
+      summarise();
+      $('b4').classList.remove('hide'); $('s4').classList.add('hide');
+    };
+    /* One second at a time. Without a timeslice Safari hands over a single blob at stop,
+       and an interrupted recording gives back nothing at all rather than a partial. */
+    r4.start(1000);
+    say('o4', 'Recording. Say “before”, LEAVE THE APP for ten seconds, come back, say “after”, tap Stop.', 'warn');
+    $('b4').classList.add('hide'); $('s4').classList.remove('hide');
+  } catch (e) {
+    say('o4', 'Failed: ' + e.message, 'bad');
+    results.t4 = '4. Interruption test FAILED: ' + e.message; summarise();
+    $('b4').classList.remove('hide'); $('s4').classList.add('hide');
+  }
+};
+$('s4').onclick = () => { try { r4.stop(); } catch (e) { say('o4', 'Stop failed: ' + e.message, 'bad'); } };
+
+if (!window.MediaRecorder) {
+  say('o1', 'This browser cannot record at all — it has no MediaRecorder.', 'bad');
+  results.env = (results.env || '') + ' No MediaRecorder in this browser.';
+  summarise();
+}
+</script>
+</body>
+</html>
