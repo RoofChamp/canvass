@@ -909,13 +909,22 @@ select{min-height:44px}
           <label class="f">Keep screen awake</label>
           <div class="chips"><button class="chip" id="mWake">Screen lock off</button></div>
 
+          <label class="f">A sound when a tap lands</label>
+          <div class="small" style="margin-bottom:6px">An iPhone will not let an app like this buzz — it never could, so the buzz you may have expected was never happening. A short sound is the way to know a door was marked without looking at the screen. Worth having with the phone in a mount.<br><b>Two things to know.</b> On a recent iPhone the ring/silent switch on the side silences it, the same as it does a text — so on silent you may hear nothing at all. And it asks to play alongside your music rather than stop it. Try it in the truck with a podcast on before you rely on it.</div>
+          <div class="chips"><button class="chip" id="mSound">No sound</button></div>
+
           <label class="f">Likely rentals on the maps</label>
           <div class="small" style="margin-bottom:6px">Lots the county flags as rentals, or where the owner's post goes somewhere else, get a soft yellow wash on both maps. In some neighbourhoods that is half the street. Tap to go faint → bold → off.</div>
           <div class="chips"><button class="chip" id="mRentals">Show likely rentals</button></div>
 
-          <label class="f">When tracking stops by itself</label>
-          <div class="small" style="margin-bottom:6px">Getting home ends the session on its own, and driving stops the breadcrumb trail. Neither of those can be turned off — they only ever save battery and tidy the trail. This one asks you a question, so it can be.</div>
+          <!-- Was "When tracking stops by itself". That heading named three different
+               automatic behaviours when only one of them is actually this switch, and the
+               paragraph led with the two you cannot change. Heading is the switch now; the
+               other two are stated underneath as facts, not as options you might look for. -->
+          <label class="f">If you go quiet for half an hour</label>
+          <div class="small" style="margin-bottom:6px">No doors marked and no real movement for half an hour, and the app asks whether you are still out. <b>Carry on</b> changes nothing. <b>Stop</b> ends the session, so the GPS is not running all evening for nothing. It only ever asks — it never decides for you.</div>
           <div class="chips"><button class="chip" id="mQuiet">Ask if nothing happens for half an hour</button></div>
+          <div class="small" style="margin-top:8px;color:var(--dim)">Two other things happen on their own and cannot be switched off: getting home ends the session, and driving pauses the breadcrumb trail. Both only save battery, and neither loses anything you have logged.</div>
 
           <label class="f">Lock the app</label>
           <div class="chips">
@@ -1330,23 +1339,85 @@ function attachHouses(parcels, buildings) {
 
 /* ---------------- tiny IndexedDB wrapper ---------------- */
 const DB = (() => {
-  let db = null;
-  const open = () => new Promise((res, rej) => {
-    if (db) return res(db);
-    const r = indexedDB.open('canvass', 3);
-    r.onupgradeneeded = e => {
-      const d = e.target.result;
-      if (!d.objectStoreNames.contains('visits'))  d.createObjectStore('visits', {keyPath:'id'});
-      if (!d.objectStoreNames.contains('parcels')) d.createObjectStore('parcels', {keyPath:'key'});
-      if (!d.objectStoreNames.contains('tiles'))   d.createObjectStore('tiles', {keyPath:'key'});
-      if (!d.objectStoreNames.contains('track'))   d.createObjectStore('track', {keyPath:'id'});
-      // one record per day keeps a year of breadcrumbs readable in a single get
-      if (!d.objectStoreNames.contains('days'))    d.createObjectStore('days', {keyPath:'day'});
-    };
-    r.onsuccess = e => { db = e.target.result; res(db); };
-    r.onerror = () => rej(r.error);
-  });
-  const tx = async (store, mode) => (await open()).transaction(store, mode).objectStore(store);
+  let db = null, opening = null;
+  /* Closing it matters as much as forgetting it. A handle we drop but leave open goes on
+     holding the database, so a later version upgrade blocks against this very app's own
+     abandoned connection — and the app would sit there waiting for itself. */
+  const forget = () => {
+    const old = db;
+    db = null; opening = null;
+    if (old) { try { old.close(); } catch (e) {} }
+  };
+  const open = () => {
+    if (db) return Promise.resolve(db);
+    if (opening) return opening;
+    opening = new Promise((res, rej) => {
+      let settled = false;
+      const ok = v => { if (!settled) { settled = true; clearTimeout(guard); res(v); } };
+      const no = e => { if (!settled) { settled = true; clearTimeout(guard); rej(e); } };
+      /* A hang is worse than a failure, because a failure at least reaches a catch.
+         Without a timeout here, a database that never opens leaves every single write
+         awaiting forever INSIDE its try — so the catch never runs, the "could not save"
+         warning never appears, and a whole day of doors and walking track lives in
+         memory only until the app is closed. Fifteen seconds is far beyond any honest
+         open and far short of forever. */
+      const guard = setTimeout(() => no(new Error('the database did not open')), 15000);
+      const r = indexedDB.open('canvass', 3);
+      /* This handler must never do anything but create stores. Anything else — a read,
+         a cursor, a backfill — can throw, and a throw here aborts the upgrade, so every
+         relaunch retries and fails identically. The app would then present as a fresh
+         install sitting on top of records that are perfectly intact and unreachable. */
+      r.onupgradeneeded = e => {
+        const d = e.target.result;
+        if (!d.objectStoreNames.contains('visits'))  d.createObjectStore('visits', {keyPath:'id'});
+        if (!d.objectStoreNames.contains('parcels')) d.createObjectStore('parcels', {keyPath:'key'});
+        if (!d.objectStoreNames.contains('tiles'))   d.createObjectStore('tiles', {keyPath:'key'});
+        if (!d.objectStoreNames.contains('track'))   d.createObjectStore('track', {keyPath:'id'});
+        // one record per day keeps a year of breadcrumbs readable in a single get
+        if (!d.objectStoreNames.contains('days'))    d.createObjectStore('days', {keyPath:'day'});
+      };
+      /* Fires when another copy of the app is holding the database at an older version.
+         Neither onsuccess nor onerror follows it, so before this the promise simply
+         never settled. He can have the app on the home screen AND a tab open in Safari
+         without ever meaning to. */
+      r.onblocked = () => no(new Error('another copy of this app is open'));
+      r.onsuccess = e => {
+        const h = e.target.result;
+        /* The timeout above, and onblocked, both settle without stopping the request —
+           IndexedDB has no way to cancel one. So this can still fire minutes later, on a
+           promise nobody is holding. Installing that handle would quietly give the app a
+           working database while it was still showing the red "cannot read your records"
+           warning, which is the worst of both. Shut it and walk away. */
+        if (settled) { try { h.close(); } catch (err) {} return; }
+        db = h;
+        /* Every handler below is tied to THIS handle, not to whatever `db` happens to
+           hold when it fires. Reading the variable meant a stale connection's event
+           could close the live one — and then nothing would ever clear the reference,
+           because the close it caused arrived on a handle already forgotten. */
+        h.onversionchange = () => {              // another copy wants to upgrade: let go
+          try { h.close(); } catch (err) {}
+          if (db === h) { db = null; opening = null; }
+        };
+        /* Safari can close a connection out from under a web app. Keeping the closed
+           handle cached made every transaction from then on throw, for the rest of the
+           session, with no way back except quitting the app. */
+        h.onclose = () => { if (db === h) { db = null; opening = null; } };
+        ok(h);
+      };
+      r.onerror = () => no(r.error || new Error('the database would not open'));
+    }).catch(e => { opening = null; throw e; });
+    return opening;
+  };
+  const tx = async (store, mode) => {
+    let d = await open();
+    try { return d.transaction(store, mode).objectStore(store); }
+    catch (e) {
+      // the handle went stale between opening it and using it — drop it and try once
+      forget();
+      d = await open();
+      return d.transaction(store, mode).objectStore(store);
+    }
+  };
   const p = req => new Promise((res, rej) => { req.onsuccess = () => res(req.result); req.onerror = () => rej(req.error); });
   return {
     put:  async (s, v) => p((await tx(s,'readwrite')).put(v)),
@@ -1478,6 +1549,14 @@ function pushTrackPoint(lat, lon, ts) {
    memory, so the map, the Days panel and miles walked all look right for the rest of
    the day, and the whole day is gone at the next launch having never said a word. */
 let dayWriteFailed = false, dayReadFailed = false;
+/* Set when the phone would not hand back the door records at all. This is the most
+   dangerous state the app can be in, because it looks exactly like a brand new
+   install: nought doors, no error, and — until this flag existed — the red "back this
+   up" warning HIDING ITSELF, because it hides when the count is nought. A man looking
+   at an empty app with nothing wrong on screen deletes it and installs it again, and
+   at that moment the records that were still sitting there really are gone.
+   While this is true the app refuses to erase anything and says so in red. */
+let visitsReadFailed = false;
 async function flushDay() {
   if (dayFlushTimer) { clearTimeout(dayFlushTimer); dayFlushTimer = null; }
   clearPaceCache();
@@ -2331,7 +2410,71 @@ function flashToast(title, sub, color) {
   clearTimeout(toastTimer);
   toastTimer = setTimeout(() => t.classList.remove('show'), 4200);
 }
-function buzz(pat) { try { navigator.vibrate && navigator.vibrate(pat); } catch(e){} }
+/* `navigator.vibrate` does not exist in Safari on an iPhone, and never has. So every
+   buzz() in this app — every door marked, every save, every undo — has always done
+   absolutely nothing on the only phone it runs on. He has been glancing at the screen
+   to check a tap landed for months, without knowing it was never going to buzz.
+
+   A short tone is the only confirmation an iPhone will give a web app without being
+   looked at. OFF by default: an app he has used for months should not suddenly start
+   making noises on its own. Settings turns it on. */
+let sndOn = localStorage.getItem('sound') === '1';
+let actx = null;
+/* iOS will only start audio inside a real tap — and most buzz() calls in this app do NOT
+   come from one. Marking a door fires it after `await DB.put`, which is a continuation,
+   not the tap; the quiet-half-hour prompt and arriving home fire from the GPS callback
+   with no tap anywhere. So it is built once on the first touch of the session and kept.
+
+   `ambient` is what stops it pausing his podcast: without it iOS treats a web page
+   making a noise as the thing that is playing, and everything else stops. The price is
+   that the phone's ringer switch then silences it — which is why the setting says so
+   out loud rather than leaving him to work it out in the truck. */
+function primeSound() {
+  try {
+    if (!actx || actx.state === 'closed') {
+      const AC = window.AudioContext || window.webkitAudioContext;
+      if (!AC) return;
+      actx = new AC();
+      if (navigator.audioSession) { try { navigator.audioSession.type = 'ambient'; } catch (e) {} }
+    }
+    // 'interrupted' is an iOS state of its own — a phone call, Siri — not just 'suspended'
+    if (actx.state !== 'running') actx.resume();
+  } catch (e) { actx = null; }
+}
+document.addEventListener('pointerdown', () => { if (sndOn) primeSound(); }, { passive:true });
+
+function tone(freq, ms, vol, delay) {
+  if (!sndOn) return;
+  primeSound();
+  if (!actx || actx.state !== 'running') return;
+  try {
+    const o = actx.createOscillator(), g = actx.createGain();
+    const t = actx.currentTime + (delay || 0);
+    o.type = 'sine'; o.frequency.value = freq;
+    g.gain.setValueAtTime(0.0001, t);
+    g.gain.linearRampToValueAtTime(vol, t + 0.014);
+    g.gain.exponentialRampToValueAtTime(0.0001, t + ms / 1000);
+    o.connect(g); g.connect(actx.destination);
+    o.start(t); o.stop(t + ms / 1000 + 0.02);
+  } catch (e) {
+    /* Closed, not just dropped. A context left open counts against the handful iOS
+       allows, and building a new one each time would end with none left at all —
+       silent for the rest of the day with nothing said. */
+    try { actx.close(); } catch (err) {}
+    actx = null;
+  }
+}
+function buzz(pat) {
+  try { navigator.vibrate && navigator.vibrate(pat); } catch(e){}   // works on Android, never on iPhone
+  const n = Array.isArray(pat) ? pat.reduce((a,b) => a + b, 0) : (pat || 0);
+  /* 2.2 kHz, and not quiet. A truck cab at 35 mph sits around 70 dB, the phone is two
+     feet away in a mount, and this has to cut through that without being rude at a front
+     door. 2 kHz is where a phone speaker is loudest and where engine and road rumble
+     mask the least. Anything under about a tenth of a second is heard as quieter than it
+     is, however hard it is driven. */
+  if (n >= 30) { tone(2200, 110, 0.55); tone(1500, 190, 0.55, 0.13); }   // something big
+  else         { tone(2200, 130, 0.55); }                                // marked, saved, done
+}
 
 async function undoLast() {
   if (!state.lastVisitId) { flashToast('Nothing to undo','','#64748b'); return; }
@@ -3591,6 +3734,40 @@ function clearGeoPreview() {
   $('previewBar').classList.add('hide');
   if ($('eraseBar').classList.contains('hide')) $('findWrap').classList.remove('hide');
 }
+/* Everything that does NOT live in the database has to be named here by hand, or it
+   silently does not travel with a backup.
+
+   `areas` was missing from this list for a whole version. Naming an area worked, it
+   showed on the strip, it filtered the customer list — and every single one of them
+   died on the next restore or reinstall, with nothing said. That is the exact failure
+   this table exists to make impossible: ONE list, walked by the backup and by the
+   restore, so nothing can ever be added to only half the journey.
+
+   Stored and put back as the raw string, deliberately. Some of these are JSON and some
+   are plain values, and `loadStored()` already validates and filters every one of them
+   when it reads them. Parsing here would only add a second place to get it wrong.
+
+   The flag is whether losing it loses WORK. A preference coming back wrong is a
+   nuisance; a named area not coming back is gone for good. */
+const BACKUP_LOCAL = [
+  ['home', true], ['appts', true], ['areas', true],
+  ['lineNames', false], ['hubData', false], ['mapData', false],
+  ['driveAdj', false], ['driveSpeeds', false], ['snapMax', false], ['trackDetail', false],
+  ['quietPrompt', false], ['rentalMark', false], ['hubSpan', false], ['hubSat', false],
+  ['headUp', false], ['menuSecs', false], ['sound', false], ['wake', false],
+];
+/* The two flagged `true` that are LISTS get merged on the way back in, never replaced —
+   same rule as door records. Restoring Monday's file on Wednesday must not take the
+   appointments he booked on Tuesday. */
+const BACKUP_MERGE = ['appts', 'areas'];
+/* Left out on purpose. `pin` — a lock does not belong in a plain-text file he emails to
+   himself. `lastBackup`, `storageGrant`, `everSaved`, `session`, `routeRun` — they
+   describe this phone at this moment rather than any of his work. And `line` and
+   `vehicle`, which are the most dangerous of the lot: `line` is which book he is in
+   RIGHT NOW, so a Roofing-era backup restored during an appraisal round would quietly
+   file every door after it in the wrong book; `vehicle` is where the truck is parked
+   right now, and a stale one would send him to where he parked last Tuesday. */
+
 async function buildBackup() {
   /* If a store will not read, this must NOT quietly hand back a file with that part
      missing. A short backup file looks exactly like a good one, and restoring it
@@ -3601,12 +3778,20 @@ async function buildBackup() {
   let visits, days;
   try { visits = await DB.all('visits'); } catch (e) { throw new Error('your door records'); }
   try { days   = await DB.all('days');   } catch (e) { throw new Error('your walking track'); }
-  const data = { v:3, exported:new Date().toISOString(),
+  const local = {};
+  for (const [k] of BACKUP_LOCAL) {
+    const raw = localStorage.getItem(k);
+    if (raw !== null) local[k] = raw;
+  }
+  const data = { v:4, exported:new Date().toISOString(),
     home: state.home, appts: state.appts, driveAdj: state.driveAdj,
     // without these a restore silently reverts his renamed books, which also changes
     // what the "Work" column says in every spreadsheet he exports afterwards
     lineNames: lineNamesSaved(), hubData: state.hubData, mapData: state.mapData,
-    visits, days, vehicle: state.vehicle };
+    visits, days, vehicle: state.vehicle,
+    /* The top-level fields above are kept as they were so an older build could still
+       read this file. `local` is the one that is complete. */
+    local };
   return { name:`canvass-backup-${stamp()}.json`, text: JSON.stringify(data),
            type:'application/json' };
 }
@@ -4044,20 +4229,92 @@ function renderParkInfo() {
 }
 
 /* ---------------- wake lock ---------------- */
+/* Whether he WANTS the screen kept on, held apart from whether the phone is currently
+   granting it. iOS takes the lock back every time the page hides — a glance at Maps, a
+   phone call, the screen dimming once — and the sentinel object stays sitting in
+   state.wake, released. The old re-acquire tested `state.wake === null`, which was
+   false from that first moment onwards, so the lock came back exactly never: the
+   screen slept for the rest of the session while the button still read "Screen stays
+   on". On a long walk that is the difference between glancing at the phone and
+   unlocking it at every door. */
+/* Remembered, like every other switch in Settings. It used to be forced back on at every
+   launch, so switching it off lasted until he next opened the app. On by default, which
+   is what it has always done. */
+let wakeWanted = localStorage.getItem('wake') !== '0';
+let wakeBusy = false;
+const wakeHeld = () => !!state.wake && !state.wake.released;
+
+async function grabWake() {
+  if (!('wakeLock' in navigator)) return false;
+  /* Two of these can be in flight at once — a notification banner and the app switcher
+     both make the page visible again in quick succession. Without this guard the second
+     sentinel overwrites the first, and the first is then never released: the screen
+     stays on for the rest of the day, including after he switches it off, while the
+     button says "Screen lock off". */
+  if (wakeHeld() || wakeBusy) return wakeHeld();
+  wakeBusy = true;
+  let s = null;
+  try { s = await navigator.wakeLock.request('screen'); }
+  catch (e) { wakeBusy = false; return false; }
+  wakeBusy = false;
+  if (!wakeWanted) { try { await s.release(); } catch (e) {} return false; }  // switched off while asking
+  state.wake = s;
+  /* Tied to THIS sentinel. A release event can arrive late — the page is frozen, then
+     thawed — by which point a newer lock may be the live one, and nulling that would
+     leave the chip lying and the next grab stacking a third lock on top. */
+  s.addEventListener('release', () => {
+    if (state.wake === s) { state.wake = null; renderWakeChip(); }
+  });
+  return true;
+}
+
+function renderWakeChip() {
+  const b = $('mWake'); if (!b) return;
+  b.classList.toggle('on', wakeWanted);
+  b.textContent = !wakeWanted ? 'Screen lock off'
+                : wakeHeld()  ? 'Screen stays on'
+                :               'On — comes back when you look at the app';
+}
+
+/* Only ever called by a real tap on the switch. Starting the app calls grabWake()
+   directly instead: this one talks back when it fails, and a phone that refuses the lock
+   would otherwise throw an orange message over the top of whatever Start was saying,
+   every single morning, about something he did not ask for at that moment. */
 async function toggleWake() {
-  try {
-    if (state.wake) { await state.wake.release(); state.wake = null; }
-    else if ('wakeLock' in navigator) { state.wake = await navigator.wakeLock.request('screen'); }
-    else { flashToast('Not supported','This browser has no screen-wake control','#64748b'); }
-  } catch(e) { state.wake = null; }
-  $('mWake').classList.toggle('on', !!state.wake);
-  $('mWake').textContent = state.wake ? 'Screen stays on' : 'Screen lock off';
+  if (wakeWanted) {
+    wakeWanted = false;
+    localStorage.setItem('wake', '0');
+    if (state.wake) { try { await state.wake.release(); } catch (e) {} }
+    state.wake = null;
+    renderWakeChip();
+    return;
+  }
+  /* Failing quietly was the other half of this. A phone that refuses the lock used to
+     land in the same catch as a normal switch-off, so the button just said "Screen lock
+     off" and he would think he had missed the tap. No version number quoted — I got it
+     wrong once already, and "this phone will not" is the part he can act on. */
+  if (!('wakeLock' in navigator)) {
+    flashToast('This phone will not do it',
+      'It will not let an app like this hold the screen awake. Set Auto-Lock longer in iPhone Settings → Display & Brightness instead.',
+      '#64748b');
+    return;
+  }
+  wakeWanted = true;
+  const got = await grabWake();
+  if (!got) {
+    wakeWanted = false; renderWakeChip();
+    flashToast('The phone would not keep the screen on',
+      'It refuses this when the battery is low or Low Power Mode is on. Set Auto-Lock longer in iPhone Settings → Display & Brightness instead.',
+      '#f59e0b');
+    return;
+  }
+  localStorage.setItem('wake', '1');
+  renderWakeChip();
 }
 document.addEventListener('visibilitychange', async () => {
-  if (document.visibilityState === 'visible' && state.wake === null && $('mWake').classList.contains('on')) {
-    try { state.wake = await navigator.wakeLock.request('screen'); } catch(e){}
-  }
-  if (document.visibilityState === 'visible') { drawMini(); }
+  if (document.visibilityState !== 'visible') return;
+  if (wakeWanted) { await grabWake(); renderWakeChip(); }
+  drawMini();
 });
 
 /* ---------------- menu ---------------- */
@@ -4119,8 +4376,8 @@ document.querySelectorAll('.dsecHead[data-msec]').forEach(b => {
 /* ---- what version is actually on the phone ----
    Matches the service worker cache name, so "did the update land" is answerable by
    looking rather than guessing. */
-const BUILD_VERSION = 'v11';
-const BUILD_DATE = '28 July 2026';
+const BUILD_VERSION = 'v12';
+const BUILD_DATE = '29 July 2026';
 function renderVersionStamp() {
   const el = $('versionStamp'); if (!el) return;
   el.className = 'small';
@@ -4150,7 +4407,7 @@ $('mLineReset').onclick = () => {
 function renderQuietChip() {
   const b = $('mQuiet'); if (!b) return;
   b.classList.toggle('on', !!state.quietPrompt);
-  b.textContent = state.quietPrompt ? 'On — it will ask' : 'Off — it will never ask';
+  b.textContent = state.quietPrompt ? 'On — it will ask' : 'Off — it never asks';
 }
 $('mQuiet').onclick = () => {
   state.quietPrompt = !state.quietPrompt;
@@ -4500,6 +4757,7 @@ $('menuBtn').onclick = () => {
     renderStats(); renderSnapChips(); renderDetailChips(); renderDiag(); renderParkInfo();
     renderBackupNag(); renderPinInfo(); renderHomeInfo(); renderPaceInfo(); renderDriveChips();
     renderHubDataChips(); renderStorageNote(); renderVersionStamp(); renderQuietChip(); renderRentalChip();
+    renderSoundChip(); renderWakeChip();
     renderLineNames(); restoreMenuSections();
   } catch (e) {
     console.error('menu render', e);
@@ -4570,33 +4828,208 @@ $('mBackupShare').onclick = backupShare;
 $('xShare').onclick = () => deliver(xOpts.format === 'csv' ? buildCsv(xOpts) : buildGeo(xOpts),
   xOpts.format === 'csv' ? 'Drive or Sheets will open it as a spreadsheet' : 'Google My Maps will draw it');
 $('mWake').onclick = toggleWake;
+function renderSoundChip() {
+  const b = $('mSound'); if (!b) return;
+  b.classList.toggle('on', sndOn);
+  b.textContent = sndOn ? 'On — a short beep' : 'No sound';
+}
+$('mSound').onclick = () => {
+  sndOn = !sndOn;
+  localStorage.setItem('sound', sndOn ? '1' : '0');
+  renderSoundChip();
+  if (!sndOn) return;
+  /* So he hears straight away what he has just switched on. The audio engine is built on
+     this very tap, and starting it is not instant — playing the beep in the same breath
+     produced silence, which reads exactly like a switch that does not work. */
+  primeSound();
+  if (actx && actx.state !== 'running' && actx.resume) {
+    Promise.resolve(actx.resume()).then(() => buzz(10)).catch(() => {});
+  } else {
+    buzz(10);
+  }
+};
 $('mTest').onclick = testConnections;
 $('mRestore').onclick = () => $('restoreFile').click();
 $('restoreFile').onchange = async e => {
   const f = e.target.files[0]; if (!f) return;
   try {
-    const d = JSON.parse(await f.text());
-    for (const v of (d.visits||[])) await DB.put('visits', v);
-    for (const day of (d.days||[])) await DB.put('days', day);
-    for (const t of (d.track||[])) await DB.put('track', t);   // v1 backups
-    // a v3 backup carries home explicitly, so an absent one means absent, not unchanged
-    if (d.v >= 3) { if (d.home) localStorage.setItem('home', JSON.stringify(d.home));
-                    else localStorage.removeItem('home'); }
-    if (Array.isArray(d.appts)) localStorage.setItem('appts', JSON.stringify(d.appts));
-    if (d.driveAdj) localStorage.setItem('driveAdj', String(d.driveAdj));
-    if (d.vehicle) localStorage.setItem('vehicle', JSON.stringify(d.vehicle));
-    // what his books are called travels with the data, or a restore renames them back
-    if (d.lineNames && typeof d.lineNames === 'object')
-      localStorage.setItem('lineNames', JSON.stringify(d.lineNames));
-    if (Array.isArray(d.hubData)) localStorage.setItem('hubData', JSON.stringify(d.hubData));
-    if (Array.isArray(d.mapData)) localStorage.setItem('mapData', JSON.stringify(d.mapData));
+    let d;
+    /* Reading the file and writing to the phone are two different failures and they
+       need two different messages. This whole block used to sit under one catch that
+       said "Could not read that file", so a phone that had run out of room blamed the
+       backup — and he would have gone looking for a better copy of a file that was
+       perfectly good. */
+    try { d = JSON.parse(await f.text()); }
+    catch (err) { return flashToast('Could not read that file',
+      'It is not a CanvassEaze backup, or it did not download in one piece.', '#ef4444'); }
+
+    /* Get the last few minutes of walking onto the disk BEFORE anything else, and stop
+       the six-second timer, or it fires in the middle of the merging below and writes
+       the in-memory version of today straight back over what was just merged in. */
+    await flushDay();
+    /* And then mark every day in memory as not-read, which is the truth from here on:
+       the disk is about to have points in it that memory does not know about. GPS keeps
+       running through a restore, so a breadcrumb can land at any moment and re-arm the
+       six-second write — and that write would put the in-memory version of today
+       straight back over everything just merged in. This flag is exactly what flushDay
+       already looks at to decide to re-read and merge rather than replace, so it is the
+       proven path rather than a new one. */
+    for (const day of state.days.values()) day.readFailed = true;
+
+    let wrote = 0, kept = 0, refused = 0;
+    /* A restore only ever ADDS a door. It never replaces one that is already here.
+       Records are edited in place long after they are made — notes, follow-up dates, an
+       appointment booked against them — so putting an older copy over the top silently
+       rolled every one of those edits back to whenever the backup was taken. If the
+       phone still has the door, the phone's copy is the newer one by definition. */
+    for (const v of (d.visits||[])) {
+      if (!v || !v.id) { refused++; continue; }
+      try {
+        const cur = await DB.get('visits', v.id);
+        if (cur) { kept++; continue; }
+        await DB.put('visits', v); wrote++;
+      } catch (e) { refused++; }
+    }
+
+    /* Days are MERGED, never replaced. Restoring at five o'clock from a backup taken at
+       lunchtime used to put the lunchtime version of today straight over the top, and
+       the afternoon's walking track was gone — from a button he pressed to be safe.
+       Same rule as mergeStoredDay: keep every point either side has, match on the
+       timestamp, and never drop a day the file simply does not mention. */
+    for (const day of (d.days||[])) {
+      if (!day || !day.day || !Array.isArray(day.pts)) { refused++; continue; }
+      let have = null, readOk = true;
+      try { have = await DB.get('days', day.day); } catch (e) { readOk = false; }
+      if (!readOk) { refused++; continue; }        // cannot read it, so do not write over it
+      /* Both sides filtered, not just the stored one. A single null or a point with no
+         timestamp inside the FILE used to reach the sort, where comparing `a.ts` threw —
+         and the sort sits outside the try, so it jumped straight to the outer catch.
+         Every remaining day, and the whole of `local` after it, was skipped: the named
+         areas this round exists to protect would never have been written, and every
+         retry would have failed at exactly the same point. */
+      const fresh = day.pts.filter(p => p && typeof p.ts === 'number' && isFinite(p.ts));
+      const had = (have && have.pts) || [];
+      const seen = new Set(fresh.map(p => p.ts));
+      const merged = had.filter(p => p && typeof p.ts === 'number' && !seen.has(p.ts))
+                        .concat(fresh)
+                        .sort((a,b) => a.ts - b.ts);
+      try { await DB.put('days', { day: day.day, pts: merged }); }
+      catch (e) { refused++; }
+    }
+    for (const t of (d.track||[])) { try { await DB.put('track', t); } catch (e) { refused++; } }   // v1 backups
+
+    /* v4 and up carry the complete set in `local`. Written back as the raw strings they
+       were — loadStored() validates and filters every one of them on the way in, so
+       parsing here would only be a second place to get it wrong. */
+    /* Array.isArray as well as typeof, because `typeof [] === 'object'` — an array here
+       would have passed as a v4 file, found nothing under any key, cleared his home pin
+       and skipped the older-file branch below entirely, all under a green tick.
+       Each write is guarded on its own: localStorage has its own small limit and throws
+       when it is full, and one throw partway down this list used to abandon everything
+       after it — areas are third, so they were among the first to be skipped. */
+    /* Appointments and named areas are MERGED by id, never replaced. Everything else on
+       the list is a single setting where the file's version simply wins.
+       Replacing these two was the same mistake as blind-writing the door records, left
+       in place for the two things on the phone he types by hand: back up on Monday, book
+       three jobs on Tuesday, restore Monday's file on Wednesday to be safe, and those
+       three jobs are gone — under a green tick that counts the file's appointments and
+       reads like it worked. */
+    const mergeById = (k, raw) => {
+      let mine = [], theirs = [];
+      try { mine = JSON.parse(localStorage.getItem(k) || '[]'); } catch (e) { mine = []; }
+      try { theirs = JSON.parse(raw); } catch (e) { return null; }
+      if (!Array.isArray(mine)) mine = [];
+      if (!Array.isArray(theirs)) return null;
+      const have = new Set(mine.map(x => x && x.id).filter(Boolean));
+      const added = theirs.filter(x => x && x.id && !have.has(x.id));
+      return { text: JSON.stringify(mine.concat(added)), added: added.length };
+    };
+    if (d.local && typeof d.local === 'object' && !Array.isArray(d.local)) {
+      for (const [k] of BACKUP_LOCAL) {
+        const raw = Object.prototype.hasOwnProperty.call(d.local, k) ? d.local[k] : undefined;
+        try {
+          if (typeof raw !== 'string') {
+            if (k === 'home') localStorage.removeItem('home');      // absent means absent
+            continue;
+          }
+          if (BACKUP_MERGE.includes(k)) {
+            const m = mergeById(k, raw);
+            if (m) localStorage.setItem(k, m.text); else refused++;
+          } else {
+            localStorage.setItem(k, raw);
+          }
+        } catch (e) { refused++; }
+      }
+    } else {
+      /* Older files. These carry the same things at the top level, minus the ones that
+         did not travel at all — areas among them, which is why they were being lost. */
+      const set = (k, val) => { try { localStorage.setItem(k, val); } catch (e) { refused++; } };
+      const drop = k => { try { localStorage.removeItem(k); } catch (e) {} };
+      if (d.v >= 3) { if (d.home) set('home', JSON.stringify(d.home)); else drop('home'); }
+      if (Array.isArray(d.appts)) {
+        const m = mergeById('appts', JSON.stringify(d.appts));      // merged here too
+        if (m) set('appts', m.text); else refused++;
+      }
+      if (d.driveAdj) set('driveAdj', String(d.driveAdj));
+      /* `vehicle` deliberately NOT restored. Old files carry it, but it is where the
+         truck is parked right now — a stale one sends him to last Tuesday's kerb. */
+      // what his books are called travels with the data, or a restore renames them back
+      if (d.lineNames && typeof d.lineNames === 'object')
+        set('lineNames', JSON.stringify(d.lineNames));
+      if (Array.isArray(d.hubData)) set('hubData', JSON.stringify(d.hubData));
+      if (Array.isArray(d.mapData)) set('mapData', JSON.stringify(d.mapData));
+    }
+
     state.days.clear(); allDaysLoaded = false;
-    await loadStored(); loadLineNames(); renderMode(); renderStats();
-    flashToast('Restored', `${(d.visits||[]).length} records`, '#22c55e');
-  } catch(err) { flashToast('Could not read that file','','#ef4444'); }
+    await loadStored();
+    /* loadStored puts its own red warning up when the database will not read. Saying
+       "Restored" over the top of it would replace the one message that matters with a
+       green tick — and the counts below would be nonsense anyway, because every read
+       above failed too. */
+    if (visitsReadFailed) { try { e.target.value = ''; } catch (err) {} return; }
+    renderStats(); renderAreas(); renderSoundChip(); renderWakeChip();
+
+    const said = `${wrote} door record${wrote===1?'':'s'} put back`
+      + (kept ? `, ${kept} already here and left alone` : '')
+      + `. Days were added to, not written over.`;
+    if (refused) {
+      flashToast('Only part of that came back',
+        said + ` ${refused} thing${refused===1?'':'s'} the phone refused to save — nearly always no room left. `
+        + `Nothing already on the phone was removed. Free some space and restore again.`,
+        '#ef4444');
+    } else {
+      const nA = (state.areas||[]).length;
+      flashToast('Restored',
+        said + (nA ? ` ${nA} named area${nA===1?'':'s'}.` : ''), '#22c55e');
+    }
+    // or picking the same file again after a failure fires no event at all
+    try { e.target.value = ''; } catch (err) {}
+  } catch(err) { flashToast('That restore did not finish',
+    'Nothing already on the phone was removed. Close the app right down, open it again, and try once more.', '#ef4444'); }
 };
 $('mWipe').onclick = async () => {
-  if (!confirm('Erase every door you have logged? This cannot be undone.')) return;
+  /* Refuse outright while the records will not read. The count in the question below
+     would be nought, so it would ask him to erase nothing and then erase everything. */
+  if (visitsReadFailed) {
+    flashToast('Not erasing anything',
+      'The phone will not hand back your door records, so there is no way to say what this would destroy. Close the app right down and open it again.',
+      '#ef4444');
+    return;
+  }
+  /* Everything it is about to take, counted and named. Listing SOME of it and staying
+     quiet about the rest is worse than the vague wording this replaced: it reads like a
+     complete list. It also deletes the appointments and the home pin, which are the two
+     things on here he has typed by hand. */
+  const n  = state.visitLog.length;
+  const nP = (state.appts||[]).length;
+  const nA = (state.areas||[]).length;
+  if (!confirm(`Erase every door you have logged?\n\n`
+    + `• ${n} door record${n===1?'':'s'}\n`
+    + `• every walking track on this phone\n`
+    + (nP ? `• ${nP} booked appointment${nP===1?'':'s'}\n` : '')
+    + (state.home ? `• where home is set to\n` : '')
+    + (nA ? `\nYour ${nA} named area${nA===1?'':'s'} will be kept.\n` : '')
+    + `\nThis cannot be undone.`)) return;
   await DB.clear('visits'); await DB.clear('track'); await DB.clear('tiles'); await DB.clear('days');
   state.visitLog = []; state.visits.clear(); state.track = []; state.days.clear(); state.lastVisitId = null;
   state.home = null; state.appts = []; state.driveAdj = 1;
@@ -5169,7 +5602,10 @@ const hasFutureAppt = v => { const a = apptForVisit(v); return !!a && a.at >= Da
    travelPlan() and the road cache had no other caller. */
 
 /* ---------------- the customer list ---------------- */
-let crmFilter = 'due';
+/* Opens on Everyone, not Follow-ups. Opening a customer list and being shown a filtered
+   slice of it reads as "I have three customers" — the follow-ups are one tap away either
+   way, and the red dot on the menu already says when something is due. */
+let crmFilter = 'all';
 let crmQuery = '';
 /* null means "work it out": the Follow-ups view is inherently a time queue, and
    anywhere else nearest is what you actually want standing on a street. Tapping
@@ -6874,6 +7310,17 @@ const backupAgeDays = () => {
 function renderBackupNag() {
   const el = $('backupNag'); if (!el) return;
   const n = state.visitLog.length;
+  /* Before this, an empty app hid the warning — which meant the one moment he most
+     needed to be told something was wrong was the one moment the app said nothing. */
+  if (visitsReadFailed) {
+    el.classList.remove('hide');
+    el.className = 'nagBad';
+    el.innerHTML = `⚠️ <b>The phone will not hand back your door records.</b>`
+      + `<br>They are almost certainly still here — the app cannot get at them. `
+      + `<b>Do not delete the app.</b> Close it right down and open it again. `
+      + `Nothing will be erased or saved over while this says so.`;
+    return;
+  }
   if (!n) { el.classList.add('hide'); return; }
   const days = backupAgeDays();
   const overdue = days === null || days >= 7;
@@ -6925,7 +7372,26 @@ function lockIfNeeded() {
 
 /* ---------------- boot ---------------- */
 async function loadStored() {
-  const vs = (await DB.all('visits').catch(()=>[])) || [];
+  /* FIRST, and before anything can go wrong below. Areas, appointments and the home pin
+     live in localStorage, not the database, so a database that will not open has no
+     bearing on them — but if they were still empty when he next named an area, that one
+     area would be saved over the lot. */
+  loadSettings();
+  /* A read that FAILED is not a phone with no doors on it. This used to be
+     `.catch(()=>[])`, which turned "the database would not open" into "you have never
+     knocked a door", silently, over records that were still there. Same trap the
+     walking track had, through a different door. */
+  let vs;
+  try { vs = await DB.all('visits'); visitsReadFailed = false; }
+  catch (e) {
+    visitsReadFailed = true;
+    flashToast('Cannot read your door records',
+      'Your records are almost certainly still on this phone — the app just cannot get at them right now. '
+      + 'Do NOT delete the app. Close it right down, open it again, and take a full backup.', '#ef4444');
+    renderBackupNag(); renderMode(); renderStrip(); renderTruck();
+    return;                      // leave the door records exactly as they were
+  }
+  vs = vs || [];
   vs.sort((a,b)=>a.ts-b.ts);
   vs.forEach(v => { if (!v.line) v.line = 'roof'; });   // records made before modes existed
   state.visitLog = vs;
@@ -6959,8 +7425,25 @@ async function loadStored() {
   const d = await loadDay(state.today);
   state.track = d.pts;
 
-  try { const v = localStorage.getItem('vehicle'); if (v) state.vehicle = JSON.parse(v); } catch(e){}
-  try { const h = localStorage.getItem('home'); if (h) state.home = JSON.parse(h); } catch(e){}
+  renderMode(); renderStrip(); renderStats(); renderTruck();
+}
+
+/* Everything that lives in localStorage rather than the database. Pulled out of the
+   middle of loadStored() and moved to the FRONT of it, which is where it always
+   belonged — none of this has anything to do with IndexedDB.
+
+   It mattered the moment loadStored() learned to give up early on a failed read: areas,
+   appointments and the home pin were loaded AFTER that point, so they would have been
+   left sitting empty while the real ones were still in storage. The first saveAreas()
+   after that — naming one area — would have written that single area over every one he
+   had. The red warning promises "nothing will be saved over while this says so"; this
+   ordering is what makes that sentence true. */
+function loadSettings() {
+  /* The `else` halves matter. Without them, clearing a key left the old value sitting in
+     memory — so "absent means absent" was true on the disk and false in the app, and the
+     next save wrote it straight back. */
+  try { const v = localStorage.getItem('vehicle'); state.vehicle = v ? JSON.parse(v) : null; } catch(e){ state.vehicle = null; }
+  try { const h = localStorage.getItem('home');    state.home    = h ? JSON.parse(h) : null; } catch(e){ state.home = null; }
   try { const a = JSON.parse(localStorage.getItem('appts') || '[]');
         state.appts = Array.isArray(a)
           ? a.filter(x => x && typeof x.at === 'number' && typeof x.id === 'string' && x.id) : []; } catch(e){ state.appts = []; }
@@ -6974,6 +7457,7 @@ async function loadStored() {
   try { const dj = parseFloat(localStorage.getItem('driveAdj')); if (isFinite(dj) && dj > 0) state.driveAdj = dj; } catch(e){}
   loadLineNames();
   state.quietPrompt = localStorage.getItem('quietPrompt') !== '0';
+  sndOn = localStorage.getItem('sound') === '1';     // a restore can change this under us
   try { const ds = JSON.parse(localStorage.getItem('driveSpeeds') || '[]');
         if (Array.isArray(ds)) state.driveSpeeds = ds.filter(n => typeof n === 'number' && n > 4 && n <= 40).slice(-DRIVE_SAMPLE_MAX); } catch(e){}
   try { const md = JSON.parse(localStorage.getItem('mapData') || 'null');
@@ -6981,7 +7465,6 @@ async function loadStored() {
   try { const hd = JSON.parse(localStorage.getItem('hubData') || '[]');
         state.hubData = Array.isArray(hd) ? hd.filter(k => HUB_FIELDS.some(f => f[0] === k)) : []; } catch(e){ state.hubData = []; }
   state.line = localStorage.getItem('line') === 'appraisal' ? 'appraisal' : 'roof';
-  renderMode(); renderStrip(); renderStats(); renderTruck();
 }
 
 function renderMode() {
@@ -7003,7 +7486,8 @@ $('startBtn').onclick = async () => {
   state.paused = false;
   if (!state.session) startSession();
   startGps();
-  toggleWake();
+  primeSound();                       // an AudioContext will only start inside a real tap
+  if (wakeWanted) grabWake().then(renderWakeChip);
   guardStorage();
   askCompass();
   drawMini();
