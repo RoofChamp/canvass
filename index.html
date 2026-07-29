@@ -30,7 +30,7 @@ input,textarea,select{font:inherit;color:var(--txt);background:var(--card2);bord
 .hide{display:none !important}
 
 /* ---------- app shell ---------- */
-#app{display:flex;flex-direction:column;height:100%;padding-top:var(--safe-t)}
+#app{display:flex;flex-direction:column;height:100%;padding-top:var(--safe-t);overflow-y:auto;overscroll-behavior-y:contain}
 
 /* ---------- top status strip ---------- */
 #strip{display:flex;align-items:center;gap:8px;padding:6px 10px;font-size:12px;color:var(--dim);flex:0 0 auto}
@@ -113,7 +113,13 @@ input,textarea,select{font:inherit;color:var(--txt);background:var(--card2);bord
    map — hanging off the sides, they were what capped this. Real widths: SE 251,
    iPhone 14/15/16 261, 16 Pro 263, Pro Max 278. The ceiling only binds on a Pro Max. */
 :root{ --hub: clamp(195px, 67vw, 278px); }
-#gridWrap{flex:1 1 auto;position:relative;padding:0 10px;min-height:0;display:flex}
+/* LOCKED, and deliberately. The hub is a fixed size (--hub) and this used to be elastic,
+   so anything added above the grid took its space out of the BUTTONS while the map stayed
+   exactly as big — and the map ate the labels off all four of them. The floor here is the
+   hub plus the room the words need in the outer corners, so the two can never overlap
+   again whatever else the screen grows. */
+#gridWrap{flex:1 1 auto;position:relative;padding:0 10px;display:flex;
+  min-height:calc(var(--hub) + 96px)}
 #grid{flex:1;display:grid;grid-template-columns:1fr 1fr;grid-template-rows:1fr 1fr;gap:10px;min-height:0}
 .act{border-radius:20px;display:flex;flex-direction:column;gap:3px;font-weight:800;letter-spacing:-.3px;color:#fff;box-shadow:inset 0 -4px 0 rgba(0,0,0,.22);transition:transform .06s ease,filter .06s ease;padding:14px}
 .act:active{transform:scale(.97);filter:brightness(1.18)}
@@ -345,9 +351,9 @@ select{min-height:44px}
    Three buttons share the screen equally, so each one is roughly a third of the glass. */
 #scoutView,#sortView{position:fixed;inset:0;z-index:80;background:var(--bg);display:flex;flex-direction:column;
   padding-top:var(--safe-t);padding-bottom:var(--safe-b)}
-#scoutTop,#sortTop{display:flex;align-items:flex-start;justify-content:space-between;gap:10px;padding:10px 12px 6px}
-#scoutTitle,#sortTitle{font-size:17px;font-weight:800}
-#scoutExit,#sortExit{background:var(--card);border:1px solid var(--line);color:var(--txt);border-radius:12px;
+#scoutTop,.screenTop{display:flex;align-items:flex-start;justify-content:space-between;gap:10px;padding:10px 12px 6px}
+#scoutTitle,#sortTitle,.screenTitle{font-size:17px;font-weight:800}
+#scoutExit,#sortExit,#marksExit,#dlExit{background:var(--card);border:1px solid var(--line);color:var(--txt);border-radius:12px;
   padding:12px 18px;font-size:15px;font-weight:700;min-height:48px}
 #scoutBtns{flex:1;min-height:0;display:flex;flex-direction:column;gap:10px;padding:4px 12px}
 .scoutBtn{flex:1;display:flex;align-items:center;justify-content:flex-start;gap:14px;
@@ -362,7 +368,25 @@ select{min-height:44px}
 #marksView{position:fixed;inset:0;z-index:80;background:var(--bg);display:flex;flex-direction:column;
   padding-top:var(--safe-t);padding-bottom:var(--safe-b)}
 #scoutFoot{padding:8px 12px 12px;display:flex;flex-direction:column;gap:6px}
-#sortBody,#marksBody{flex:1;min-height:0;overflow:auto;padding:0 12px 16px}
+#sortBody,#marksBody,#dlBody{flex:1;min-height:0;overflow:auto;padding:0 12px 16px}
+#daysLogView{position:fixed;inset:0;z-index:80;background:var(--bg);display:flex;flex-direction:column;
+  padding-top:var(--safe-t);padding-bottom:var(--safe-b)}
+.dlRow{display:block;width:100%;text-align:left;background:var(--card);border:1px solid var(--line);
+  color:var(--txt);border-radius:14px;padding:12px;margin-bottom:8px;min-height:56px}
+.dlRow .d{font-size:16px;font-weight:800}
+.dlRow .s{font-size:13px;color:var(--dim);margin-top:2px}
+.dlTiles{display:flex;gap:8px;margin:10px 0}
+.dlTile{flex:1;background:var(--card);border:1px solid var(--line);border-radius:14px;padding:10px;text-align:center}
+.dlTile b{display:block;font-size:22px;font-weight:800}
+.dlTile span{font-size:11px;color:var(--dim);text-transform:uppercase;letter-spacing:.04em}
+.dlDoor{display:flex;gap:10px;align-items:flex-start;background:var(--card);border:1px solid var(--line);
+  border-radius:12px;padding:10px;margin-bottom:6px}
+.dlDoor i{width:10px;height:10px;border-radius:50%;flex:0 0 auto;margin-top:5px}
+.dlDoor .w{flex:1;min-width:0}
+.dlDoor .t{font-size:12px;color:var(--dim)}
+.dlDoor .a{font-size:15px;font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.dlDoor .n{font-size:12px;color:var(--dim);margin-top:2px}
+.dlFlag{color:#fcd34d;font-size:12px;font-weight:700;margin-top:3px}
 #sortFoot{padding:6px 12px 12px}
 .markRow{display:flex;align-items:center;gap:10px;width:100%;text-align:left;background:var(--card);
   border:1px solid var(--line);color:var(--txt);border-radius:14px;padding:12px;margin-bottom:8px;min-height:56px}
@@ -460,8 +484,12 @@ select{min-height:44px}
 .nagBad{font-size:12.5px;line-height:1.5;color:#fecaca;background:rgba(239,68,68,.14);border:1px solid rgba(239,68,68,.6);border-radius:12px;padding:10px 12px;margin-bottom:10px;font-weight:600}
 /* Full width, on the main screen, under the strip. Deliberately loud and deliberately
    not dismissable: it goes when the thing it is about is fixed, and not before. */
-#alertBar{display:block;width:calc(100% - 20px);margin:0 10px 6px;text-align:left;font-size:13px;line-height:1.45;
-  color:#fff;background:#b91c1c;border:1px solid #ef4444;border-radius:12px;padding:10px 12px;font-weight:700;flex:0 0 auto}
+/* ONE line, and it has to stay one line. The first version put four lines of prose here
+   and the whole main screen paid for it. The detail belongs in the menu, which is where
+   this taps through to and where there is already room for it. */
+#alertBar{display:block;width:calc(100% - 20px);margin:0 10px 6px;text-align:left;font-size:13.5px;line-height:1.3;
+  color:#fff;background:#b91c1c;border:1px solid #ef4444;border-radius:12px;padding:9px 12px;font-weight:800;
+  flex:0 0 auto;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-height:38px}
 #lockScreen{position:fixed;inset:0;z-index:300;background:var(--bg);display:flex;align-items:center;justify-content:center;padding:24px}
 #lockBox{display:flex;flex-direction:column;align-items:center;gap:14px;width:100%;max-width:300px}
 #lockTitle{font-size:18px;font-weight:800}
@@ -565,7 +593,7 @@ select{min-height:44px}
 
 <!-- Parked. One card per mark, the nearest addresses as big buttons, one tap each. -->
 <div id="sortView" class="hide">
-  <div id="sortTop">
+  <div class="screenTop">
     <div>
       <div id="sortTitle">Which house was it?</div>
       <div class="small" id="sortSub"></div>
@@ -582,7 +610,7 @@ select{min-height:44px}
      tap, and an afternoon's driving and a quarter of an hour's sorting deliver nothing.
      One list with a filter, which is what he asked for. -->
 <div id="marksView" class="hide">
-  <div id="sortTop">
+  <div class="screenTop">
     <div>
       <div id="sortTitle">Houses you scouted</div>
       <div class="small" id="marksSub"></div>
@@ -591,6 +619,19 @@ select{min-height:44px}
   </div>
   <div class="chips" id="marksFilter" style="padding:0 12px 8px"></div>
   <div id="marksBody"></div>
+</div>
+
+<!-- What he did, day by day. Everything on it was already being recorded; nothing joined
+     it up, so the app could answer "who do I go back to" and not "what did I do Tuesday". -->
+<div id="daysLogView" class="hide">
+  <div class="screenTop">
+    <div>
+      <div class="screenTitle" id="dlTitle">Your days</div>
+      <div class="small" id="dlSub"></div>
+    </div>
+    <button id="dlExit">Done</button>
+  </div>
+  <div id="dlBody"></div>
 </div>
 
 <div id="mapView" class="hide">
@@ -620,6 +661,8 @@ select{min-height:44px}
     <div style="margin-top:4px;border-top:1px solid var(--line);padding-top:4px">
       <span style="display:inline-block;width:11px;height:11px;border-radius:2px;margin-right:6px;vertical-align:-1px;background:rgba(234,179,8,.30);border:1px solid rgba(234,179,8,.5)"></span>Likely a rental</div>
     <div><span style="display:inline-block;width:11px;height:11px;border-radius:50%;margin-right:6px;vertical-align:-1px;background:#a855f7;border:2px solid #f5f3ff"></span>Appraisal flyer left — worth a roofing knock</div>
+    <div style="margin-top:4px;border-top:1px solid var(--line);padding-top:4px">
+      <span style="display:inline-block;width:16px;height:3px;border-radius:2px;margin-right:5px;vertical-align:2px;background:#94a3b8;opacity:.6"></span>Driven, not walked</div>
     <div style="margin-top:4px;border-top:1px solid var(--line);padding-top:4px;font-weight:700">Scouted from the truck — seen, not knocked</div>
     <div><span style="display:inline-block;width:10px;height:10px;margin-right:8px;vertical-align:-1px;transform:rotate(45deg);border:2px solid #a855f7;border-radius:2px"></span>Yard sign</div>
     <div><span style="display:inline-block;width:10px;height:10px;margin-right:8px;vertical-align:-1px;transform:rotate(45deg);border:2px solid #38bdf8;border-radius:2px"></span>Tarp</div>
@@ -968,6 +1011,7 @@ select{min-height:44px}
           <!-- was "■ End session / session log", which read like a stop button, so the
                stats screen behind it went unfound. Ending is a button inside. -->
           <button class="ghost" id="mSession">📊 How today's going — doors, miles, hours</button>
+          <button class="ghost" id="mDaysLog">📅 Your days — every day you were out, door by door</button>
           <label class="f">The truck</label>
           <div class="chips">
             <button class="chip" id="mPark">🚚 Park here</button>
@@ -1537,6 +1581,9 @@ const DB = (() => {
     get:  async (s, k) => p((await tx(s,'readonly')).get(k)),
     del:  async (s, k) => p((await tx(s,'readwrite')).delete(k)),
     all:  async s      => p((await tx(s,'readonly')).getAll()),
+    /* Keys ONLY. `all` deserialises every point of every day — a year is well over a
+       million of them — and the day list needs nothing but the dates. */
+    keys: async s      => p((await tx(s,'readonly')).getAllKeys()),
     clear:async s      => p((await tx(s,'readwrite')).clear()),
   };
 })();
@@ -1619,12 +1666,57 @@ window.state = state;   // exposed for the diagnostics panel and automated tests
    dead-straight road across the city, and counted as distance it turns half a mile
    walked into ten. Both the map and the session log work in segments instead, and a
    jump is never drawn and never counted. */
+/* 120 m alone was the right test when only walking was recorded: a hop that big could
+   only be the phone losing the sky. Driving is recorded now, and at fifty miles an hour
+   four seconds IS a hundred and forty metres — so the distance test on its own chopped
+   every fast stretch into one-point fragments, which draw as nothing and contribute
+   NOTHING to the miles.
+   Simply raising the number would have been the lazy fix: a phone that drops out for a
+   minute would then draw a confident straight line across a block it never covered. So a
+   long hop breaks the line only when it is also IMPOSSIBLY fast. A hundred and forty
+   metres in four seconds is a road. Five hundred metres in three is a glitch. */
 const TRACK_GAP_M  = 120;
 const TRACK_GAP_MS = 120000;
+const TRACK_JUMP_MS = 45;          // m/s, about 100 mph — nothing he does is this fast
 /* Points recorded before the book was stamped on them have no `ln`. There is no way
    to work out which book those were, so they read as roofing — which is what almost
    all of them are. */
 const lnOf = p => p.ln || 'roof';
+/* Above this, that leg was driven. Derived from the two points either end rather than
+   stamped on the point when it was written — which means his whole existing history
+   colours correctly too, and nothing was added to the record format to get it. */
+const LEG_DRIVE_MS = 2.8;                 // m/s, about 6 mph
+function legSpeed(a, b) {
+  const dt = (b.ts - a.ts) / 1000;
+  if (!(dt > 0)) return 0;
+  return haversine(a.lat, a.lon, b.lat, b.lon) / dt;
+}
+const legDriven = (a, b) => legSpeed(a, b) > LEG_DRIVE_MS;
+/* A run of legs at the same pace, so the map draws one line per stretch rather than one
+   per breadcrumb. Each run carries whether it was driven and which book it was in. */
+/* Walked and driven, counted apart. Now that driving is recorded, a single total would
+   quietly turn "miles walked" into "miles travelled" — on a screen he reads, and on a
+   report someone pays off. */
+function splitMetres(pts, from) {
+  let walked = 0, driven = 0;
+  for (const seg of trackSegments(from ? pts.filter(p => p.ts >= from) : pts)) {
+    for (let i = 1; i < seg.length; i++) {
+      const m = haversine(seg[i-1].lat, seg[i-1].lon, seg[i].lat, seg[i].lon);
+      if (legDriven(seg[i-1], seg[i])) driven += m; else walked += m;
+    }
+  }
+  return { walked, driven };
+}
+function paceRuns(seg) {
+  const runs = [];
+  for (let i = 1; i < seg.length; i++) {
+    const driven = legDriven(seg[i-1], seg[i]);
+    const last = runs[runs.length - 1];
+    if (last && last.driven === driven) last.pts.push(seg[i]);
+    else runs.push({ driven, pts: [seg[i-1], seg[i]] });
+  }
+  return runs;
+}
 const segBook = seg => lnOf(seg[seg.length - 1]);
 function trackSegments(pts) {
   const segs = [];
@@ -1632,7 +1724,9 @@ function trackSegments(pts) {
   for (let i = 0; i < pts.length; i++) {
     if (i) {
       const a = pts[i-1], b = pts[i];
-      const jumped = haversine(a.lat, a.lon, b.lat, b.lon) > TRACK_GAP_M || (b.ts - a.ts) > TRACK_GAP_MS;
+      const hop = haversine(a.lat, a.lon, b.lat, b.lon);
+      const jumped = (b.ts - a.ts) > TRACK_GAP_MS
+                  || (hop > TRACK_GAP_M && legSpeed(a, b) > TRACK_JUMP_MS);
       const switched = lnOf(a) !== lnOf(b);
       if (jumped || switched) {
         if (cur.length > 1) segs.push(cur);
@@ -1796,8 +1890,8 @@ async function loadDay(k) {
   try { return await p; } finally { dayLoads.delete(k); }
 }
 async function listDayKeys() {
-  const all = await DB.all('days').catch(()=>[]);
-  const keys = new Set(all.map(d => d.day));
+  const stored = await DB.keys('days').catch(()=>[]);
+  const keys = new Set(stored);
   state.days.forEach((_, k) => keys.add(k));
   return [...keys].sort().reverse();
 }
@@ -3328,16 +3422,23 @@ async function flushVisits() {
 function renderWriteAlerts() { renderAlertBar(); renderBackupNag(); }
 function renderAlertBar() {
   const el = $('alertBar'); if (!el) return;
-  const lines = [];
-  if (visitsReadFailed) lines.push('⚠️ The phone will not hand back your door records. Do NOT delete the app — tap here.');
-  if (visitWriteFailed) lines.push(`⚠️ ${pendingVisits.size} door record${pendingVisits.size===1?'':'s'} would not save. What is on screen is not on the phone — tap here.`);
-  if (dayWriteFailed)   lines.push('⚠️ The phone refused to save your walking track — tap here.');
-  if (markWriteFailed)  lines.push('⚠️ Your scout marks are not being saved. They will go when the app closes — tap here.');
-  if (dayReadFailed)    lines.push('⚠️ The phone cannot read your walking track back — tap here.');
-  if (wipeHalfDone)     lines.push('⚠️ Erasing everything did not finish. Do NOT back up yet — tap here.');
-  if (!lines.length) { el.classList.add('hide'); return; }
+  /* Ordered worst first, because only the first one is shown. Each is a short headline —
+     the full explanation of every one of them is in the backup nag inside the menu, which
+     is exactly where this taps through to. */
+  const problems = [];
+  if (visitsReadFailed) problems.push('Your door records will not read — do NOT delete the app');
+  if (wipeHalfDone)     problems.push('Erasing everything did not finish — do NOT back up yet');
+  if (visitWriteFailed) problems.push(`${pendingVisits.size} door record${pendingVisits.size===1?'':'s'} would not save`);
+  if (dayReadFailed)    problems.push('Your walking track will not read back');
+  if (dayWriteFailed)   problems.push('Your walking track will not save');
+  if (markWriteFailed)  problems.push('Your scout marks are not being saved');
+  if (!problems.length) { el.classList.add('hide'); return; }
   el.classList.remove('hide');
-  el.innerHTML = lines.join('<br>');
+  /* One line, always. More than one problem and it says how many rather than growing —
+     a warning that pushes the buttons about is a warning that broke the screen. */
+  el.textContent = problems.length === 1
+    ? `⚠️ ${problems[0]} — tap here`
+    : `⚠️ ${problems.length} problems, worst first: ${problems[0]} — tap here`;
 }
 /* Something typed in the note box and never tapped Add is still what he meant to
    write down. Save keeps it instead of quietly dropping it, which matters more now
@@ -3656,12 +3757,19 @@ function refreshMapLayers() {
          walk belongs to is answered by ticking days on and off in the Days panel;
          which book it was is not answerable any other way. */
       for (const seg of trackSegments(d.pts)) {
-        rl.addLayer(L.polyline(seg.map(t => [t.lat, t.lon]), {
-          color: (LINES[segBook(seg)] || LINES.roof).color,
-          weight: d.day === state.today ? 5 : 3.5,
-          opacity: d.day === state.today ? .95 : .6, lineCap:'round',
-          dashArray: d.day === state.today ? null : '1 7',
-        }));
+        /* Walking keeps the book's colour, because which book he was in is not answerable
+           any other way and he reads it constantly. Driving is drawn in one flat grey,
+           thinner — so a street that was driven rather than walked is obvious at a glance
+           without taking the book information away from the walking. */
+        const bookColor = (LINES[segBook(seg)] || LINES.roof).color;
+        for (const run of paceRuns(seg)) {
+          rl.addLayer(L.polyline(run.pts.map(t => [t.lat, t.lon]), {
+            color: run.driven ? '#94a3b8' : bookColor,
+            weight: run.driven ? 2.5 : (d.day === state.today ? 5 : 3.5),
+            opacity: run.driven ? .55 : (d.day === state.today ? .95 : .6), lineCap:'round',
+            dashArray: run.driven ? '2 6' : (d.day === state.today ? null : '1 7'),
+          }));
+        }
       }
     }
   }
@@ -4623,13 +4731,20 @@ function startGps() {
     const stoppedDriving = updateDriving(speed, now).stopped;
 
     const fine = state.trackDetail === 'fine';
-    const minMove = fine ? 1.5 : 3;
-    const minGap  = fine ? 2000 : 3000;
+    /* Driving is recorded now. It used to be dropped on the floor to keep the map clean —
+       and that turned out to be the hole in the whole accountability idea: a man crawling
+       a street thumbing "no answer" out of the window left TWO breadcrumbs, where he
+       parked and where he stopped, and there was no way to tell that from a walk. A drive
+       that is on the map is a drive anyone can see.
+       Spaced by distance rather than time, so a drive costs about the same number of
+       points per mile as a walk instead of flooding the day. */
+    const minMove = state.driving ? 25 : (fine ? 1.5 : 3);
+    const minGap  = state.driving ? 4000 : (fine ? 2000 : 3000);
     const startedMoving = wasStill && !state.still;
     const justStopped   = !wasStill && state.still;
     const last = state.track[state.track.length-1];
     const moved = last ? haversine(last.lat, last.lon, state.pos.lat, state.pos.lon) : Infinity;
-    const allowed = !state.driving && (fine || !state.still || startedMoving || justStopped);
+    const allowed = state.driving || fine || !state.still || startedMoving || justStopped;
     // stoppedDriving always marks a point, so the walk from the truck starts where
     // you parked rather than back where you last stood still
     if (allowed && (!last || startedMoving || justStopped || stoppedDriving
@@ -4905,7 +5020,7 @@ document.querySelectorAll('.dsecHead[data-msec]').forEach(b => {
 /* ---- what version is actually on the phone ----
    Matches the service worker cache name, so "did the update land" is answerable by
    looking rather than guessing. */
-const BUILD_VERSION = 'v14';
+const BUILD_VERSION = 'v15';
 const BUILD_DATE = '29 July 2026';
 function renderVersionStamp() {
   const el = $('versionStamp'); if (!el) return;
@@ -7374,6 +7489,8 @@ function areaHistory(a) {
     for (const seg of trackSegments(d.pts)) {
       for (let i = 1; i < seg.length; i++) {
         if (!areaContains(a, seg[i].lat, seg[i].lon)) continue;
+        // driving through a patch is not working it, and this number says "walked"
+        if (legDriven(seg[i-1], seg[i])) continue;
         const rec = byDay.get(dayKey(seg[i].ts));
         if (rec) rec.metres += haversine(seg[i-1].lat, seg[i-1].lon, seg[i].lat, seg[i].lon);
       }
@@ -8365,6 +8482,426 @@ function renderRoute() {
     : '🗺 Open the whole run in Google Maps';
 }
 
+/* ---------------- what he did, day by day ----------------
+   Everything on this screen was already being recorded and nothing joined it up: the door
+   records carry a timestamp and a position, the walking track is stored per day, and the
+   miles and hours were worked out for TODAY only and thrown away at midnight. So the app
+   could answer "who do I go back to" and could not answer "what did I do on Tuesday".
+   That second question is the one with money attached, because it is the one a man hands
+   to whoever is paying him.
+   NOTHING here is a new field on a door record. The checks below are all worked out from
+   what is already stored — which is the only way they can apply to every door he has ever
+   knocked rather than to the ones knocked after today. */
+
+/** How fast he was moving when a door was marked, from the breadcrumbs either side of it.
+    Null when the track has nothing near that moment, and null is NOT the same as slow —
+    the screen says "no track" rather than guessing. */
+function speedAtTs(pts, ts) {
+  if (!pts || pts.length < 2) return null;
+  let pair = null, bestGap = Infinity;
+  for (let i = 1; i < pts.length; i++) {
+    const a = pts[i-1], b = pts[i];
+    if (ts >= a.ts && ts <= b.ts) { pair = [a, b]; bestGap = 0; break; }
+    const gap = Math.min(Math.abs(ts - a.ts), Math.abs(ts - b.ts));
+    if (gap < bestGap) { bestGap = gap; pair = [a, b]; }
+  }
+  if (!pair) return null;
+  const dt = (pair[1].ts - pair[0].ts) / 1000;
+  if (!(dt > 0)) return null;
+  /* THE fix, and the whole check turns on it.
+     Breadcrumbs stop while the app decides he is driving, so a drive leaves two points:
+     where he parked, and where he stopped. A door marked anywhere in between sits INSIDE
+     that pair, and the first version treated "inside the pair" as a perfect match and
+     skipped the freshness test entirely. It then divided the straight line between the
+     two parks by forty minutes and reported half a mile an hour — so a man crawling a
+     street thumbing "no answer" out of the window came out as walking, sixty times over,
+     with nothing shaded and the day marked clean. It certified the exact thing it was
+     written to catch.
+     A pair straddling a long silence says nothing about the moment in the middle of it,
+     and the honest answer is "no track here", not a number. Which is also the far more
+     useful answer: forty doors in a row with no track under them is precisely the shape
+     an employer needs to see. */
+  if (dt * 1000 > SPEED_PAIR_MAX_MS || bestGap > SPEED_NEAR_MAX_MS) return null;
+  const sp = haversine(pair[0].lat, pair[0].lon, pair[1].lat, pair[1].lon) / dt;
+  /* One optimistically-accurate GPS fix among loose ones becomes the position outright,
+     and two of those a few seconds apart compute at motorway speed. A number that cannot
+     be true must not be printed as an accusation on a document he hands to his employer. */
+  if (!isFinite(sp) || sp > SPEED_ABSURD_MS) return null;
+  return sp;
+}
+/* Above a walking pace by a clear margin. A man at a door is not doing five miles an hour. */
+const DOOR_MOVING_MS = 2.5;
+/* The two breadcrumbs either side of a door have to be close enough in time to describe
+   that moment. Ninety seconds each way, and no more than two minutes apart from each
+   other — beyond that they describe a gap, not a movement. */
+const SPEED_NEAR_MAX_MS = 90000;
+const SPEED_PAIR_MAX_MS = 120000;
+/* 25 m/s is 56 mph. Above that the fix is wrong, not the man. */
+const SPEED_ABSURD_MS = 25;
+/* Far enough from the lot that he was not standing at it. Deliberately a fixed number and
+   not `state.snapMax`: that is a live setting, and a report has to mean the same thing in
+   a month as it does today. */
+const DOOR_FAR_M = 40;
+/* A record made by tapping a lot on the big map, by searching an address, or from a scout
+   mark carries `dist:0, acc:0` and the LOT's position, because the phone was never at the
+   door to measure anything. Printing that nought as "0 m from the lot" turned a thing that
+   was never measured into the best possible reading. `acc` is the tell: a real mark always
+   carries a GPS accuracy, and these carry none. */
+const measuredAtDoor = v => typeof v.acc === 'number' && v.acc > 0;
+
+function doorsOnDay(key) {
+  return state.visitLog.filter(v => dayKeyOf(v) === key).sort((a, b) => a.ts - b.ts);
+}
+async function dayFacts(key) {
+  let d = state.days.get(key);
+  /* `readFailed` means the phone would not hand that day back — NOT that he walked
+     nowhere. loadDay exists to have another go and merge what comes back, and the first
+     version skipped it whenever the day was already in memory, so a refused read was
+     reported to him as "tracking was off or paused". */
+  if (!d || d.readFailed) { try { d = await loadDay(key) || d; } catch (e) { /* keep what we have */ } }
+  const readFailed = !!(d && d.readFailed);
+  const pts = (d && !d.readFailed && d.pts) || [];
+  const segs = trackSegments(pts);
+  const split = splitMetres(pts);
+  const metres = split.walked;              // "miles walked" means walked
+  const drivenMetres = split.driven;
+  const doors = doorsOnDay(key);
+  const stamps = pts.map(p => p.ts).concat(doors.map(v => v.ts));
+  const first = stamps.length ? Math.min(...stamps) : null;
+  const last  = stamps.length ? Math.max(...stamps) : null;
+  const books = [...new Set(segs.map(segBook).concat(doors.map(v => v.line || 'roof')))];
+  const byStatus = {};
+  doors.forEach(v => { byStatus[v.status] = (byStatus[v.status] || 0) + 1; });
+  /* The checks, per door. Stated as facts with numbers, not as verdicts — the screen
+     shows what was recorded and lets whoever is reading it decide. */
+  const checked = doors.map(v => {
+    const sp = speedAtTs(pts, v.ts);
+    const measured = measuredAtDoor(v);
+    return { v,
+      measured,
+      metresFromLot: measured && typeof v.dist === 'number' ? Math.round(v.dist) : null,
+      speed: sp,
+      far: measured && typeof v.dist === 'number' && v.dist > DOOR_FAR_M,
+      moving: sp != null && sp > DOOR_MOVING_MS,
+      noTrack: sp == null };
+  });
+  /* Two stray breadcrumbs are not a walking track. The first fix after the start gate is
+     written unconditionally, so opening the app in the drive and then losing GPS for the
+     day used to count as "has a track" — which printed 0.0 miles as a measurement and
+     suppressed the note saying nothing had been recorded. */
+  const usableTrack = pts.length > 2 && (metres + drivenMetres) > 50;
+  return { key, doors: checked, count: doors.length, metres, drivenMetres, first, last,
+           mins: (first != null && last != null) ? Math.round((last - first) / 60000) : 0,
+           books, byStatus, pts, hasTrack: usableTrack, readFailed,
+           notMeasured: checked.filter(c => !c.measured).length,
+           noTrackCount: checked.filter(c => c.noTrack).length,
+           flagged: checked.filter(c => c.far || c.moving).length };
+}
+const dlMiles = m => (m / 1609.34).toFixed(1);
+function hoursMins(mins) {
+  if (!mins) return '—';
+  const h = Math.floor(mins / 60), m = mins % 60;
+  return h ? `${h}h ${m}m` : `${m}m`;
+}
+/* The long form, for a screen and a report that are read one day at a time. `dayLabel`
+   above is the short form the Days panel uses in a list of rows, and both are kept
+   because they are answering different questions. */
+function dayLabelLong(key) {
+  if (key === todayKey()) return 'Today';
+  return new Date(key + 'T12:00:00').toLocaleDateString(undefined, { weekday:'long', day:'numeric', month:'long', year:'numeric' });
+}
+const dlClock = ts => new Date(ts).toLocaleTimeString([], { hour:'numeric', minute:'2-digit' });
+
+/* Every day he knocked a door OR walked, not just the days with a track — tracking can be
+   off, or paused, and a day of doors with no breadcrumbs is still a day he was out. */
+async function allDayKeys() {
+  const keys = new Set(await listDayKeys());
+  for (const v of state.visitLog) { const k = dayKeyOf(v); if (k) keys.add(k); }
+  return [...keys].sort().reverse();
+}
+/* A restored file can carry a record with no usable timestamp, and `dayKey(undefined)`
+   cheerfully returns "NaN-NaN-NaN" — a day headed "Invalid Date" that could be handed in. */
+const dayKeyOf = v => (typeof v.ts === 'number' && isFinite(v.ts)) ? dayKey(v.ts) : null;
+/* One pass over the records for the whole list, instead of filtering all of them once per
+   day. With a year of work that was three million date conversions before the screen drew. */
+function doorCountsByDay() {
+  const m = new Map();
+  for (const v of state.visitLog) { const k = dayKeyOf(v); if (k) m.set(k, (m.get(k) || 0) + 1); }
+  return m;
+}
+/* `state.today` is only refreshed inside the GPS watch, which does not run while tracking
+   is paused — so the app left open overnight labels yesterday "Today". */
+const todayKey = () => dayKey(Date.now());
+let dlOpenKey = null;
+async function openDaysLog() {
+  closeSheet('menuSheet');
+  dlOpenKey = null;
+  $('daysLogView').classList.remove('hide');
+  await renderDaysLog();
+}
+function exitDaysLog() {
+  if (dlOpenKey) { dlOpenKey = null; renderDaysLog(); return; }   // back out of a day first
+  $('daysLogView').classList.add('hide');
+}
+$('mDaysLog').onclick = openDaysLog;
+$('dlExit').onclick = exitDaysLog;
+
+async function renderDaysLog() {
+  const host = $('dlBody'); if (!host) return;
+  if (dlOpenKey) return renderOneDay(dlOpenKey);
+  $('dlTitle').textContent = 'Your days';
+  $('dlExit').textContent = 'Done';
+  /* The list stays CHEAP on purpose. The first version worked out the full facts for every
+     day up front, which meant reading every breadcrumb of every day back off the disk into
+     memory — a year of that is over a million points and a multi-second freeze on the
+     phone — and, worse, loadDay marks every day it touches as shown, so merely opening
+     this screen switched a year of walking tracks on over the map.
+     So: dates and door counts here, which need one pass over the records and no track at
+     all. The miles, the hours and the checks are worked out when he opens a day. */
+  if (visitsReadFailed) {
+    $('dlSub').textContent = '';
+    host.innerHTML = '<div class="nagBad">The phone will not hand back your door records, '
+      + 'so this cannot say what you did on any day. It would show every day as nought doors, '
+      + 'which is not true. Close the app right down and open it again.</div>';
+    return;
+  }
+  host.innerHTML = '<div class="small" style="padding:12px 2px">Working it out…</div>';
+  const keys = await allDayKeys();
+  if (!keys.length) {
+    $('dlSub').textContent = '';
+    host.innerHTML = '<div class="small" style="padding:12px 2px">Nothing recorded yet. '
+      + 'Knock a door or walk a street and this fills up on its own.</div>';
+    return;
+  }
+  const counts = doorCountsByDay();
+  const totalDoors = state.visitLog.length;
+  $('dlSub').textContent = `${keys.length} day${keys.length===1?'':'s'} · `
+    + `${totalDoors} door${totalDoors===1?'':'s'} in total. Tap a day for the miles and the detail.`;
+  host.innerHTML = '';
+  keys.forEach(k => {
+    const n = counts.get(k) || 0;
+    const b = document.createElement('button');
+    b.className = 'dlRow';
+    b.innerHTML = `<div class="d">${esc(dayLabelLong(k))}</div>`
+      + `<div class="s">${n ? esc(n + ' door' + (n===1?'':'s')) : 'no doors — walking track only'}</div>`;
+    b.onclick = () => { dlOpenKey = k; renderDaysLog(); };
+    host.appendChild(b);
+  });
+}
+
+async function renderOneDay(key) {
+  const host = $('dlBody');
+  const f = await dayFacts(key);
+  $('dlTitle').textContent = dayLabelLong(key);
+  $('dlExit').textContent = 'Back';
+  /* "Out from" claimed more than it knew. The first breadcrumb is written the moment he
+     opens the app, which is usually his own drive, and the span then swallows the travel
+     between neighbourhoods and his lunch. It is the first and last thing recorded, and it
+     is now called that. */
+  $('dlSub').textContent = (f.first != null)
+    ? `First thing recorded ${dlClock(f.first)}, last ${dlClock(f.last)}`
+    : 'Nothing recorded on this day';
+  host.innerHTML = '';
+
+  const tiles = document.createElement('div');
+  tiles.className = 'dlTiles';
+  const tile = (n, label) => `<div class="dlTile"><b>${esc(String(n))}</b><span>${esc(label)}</span></div>`;
+  tiles.innerHTML = tile(f.count, 'doors')
+    + tile(f.hasTrack ? dlMiles(f.metres) : '—', 'miles walked')
+    + tile(f.hasTrack ? dlMiles(f.drivenMetres) : '—', 'miles driven')
+    + tile(hoursMins(f.mins), 'first to last');
+  host.appendChild(tiles);
+
+  if (!f.hasTrack && f.count) {
+    const note = document.createElement('div');
+    note.className = 'nagBad';
+    note.style.marginBottom = '8px';
+    /* Said plainly rather than shown as a zero. A zero would read as "walked nowhere",
+       which is a different claim from "nothing was recorded" — and naming the wrong cause
+       is its own lie, so a refused read says so instead of blaming the settings. */
+    note.textContent = f.readFailed
+      ? 'The phone would not hand back this day\u2019s walking track, so the miles and the checks '
+        + 'below could not be worked out. This is not a day with no walking on it — it is a day '
+        + 'that will not read. Close the app right down and open it again.'
+      : 'No usable walking track for this day, so the miles and the checks below could not be '
+        + 'worked out. Tracking was off, paused, or the phone had no position.';
+    host.appendChild(note);
+  }
+  if (f.notMeasured) {
+    const nm = document.createElement('div');
+    nm.className = 'small';
+    nm.style.marginBottom = '8px';
+    nm.textContent = `${f.notMeasured} of these were filed by tapping the map or searching an `
+      + `address rather than by standing at the door, so there is no position to check them against.`;
+    host.appendChild(nm);
+  }
+
+  const order = Object.keys(STATUS);
+  const counts = order.filter(k => f.byStatus[k]).map(k => `${(STATUS[k]||{}).label || k}: ${f.byStatus[k]}`);
+  if (counts.length) {
+    const sum = document.createElement('div');
+    sum.className = 'small';
+    sum.style.marginBottom = '10px';
+    sum.textContent = counts.join(' · ');
+    host.appendChild(sum);
+  }
+
+  if (f.doors.length) {
+    const h = document.createElement('div');
+    h.className = 'sideHead';
+    h.textContent = 'Every door, in order';
+    host.appendChild(h);
+  }
+  f.doors.forEach(c => {
+    const v = c.v, st = STATUS[v.status] || { label: v.status, color: '#94a3b8' };
+    const row = document.createElement('div');
+    row.className = 'dlDoor';
+    const dot = document.createElement('i'); dot.style.background = st.color;
+    const w = document.createElement('div'); w.className = 'w';
+    const book = LINES[v.line || 'roof'] || LINES.roof;
+    let flag = '';
+    if (c.moving && c.far) flag = `Marked from ${c.metresFromLot} m away, moving at ${Math.round(c.speed * 2.237)} mph`;
+    else if (c.moving)     flag = `Marked while moving at ${Math.round(c.speed * 2.237)} mph`;
+    else if (c.far)        flag = `Marked from ${c.metresFromLot} m away`;
+    /* The distance goes on EVERY door, not only the flagged ones. It was the report's
+       headline claim and it was not actually printed anywhere unless something was wrong. */
+    const where = !c.measured ? 'filed from the map, not measured at the door'
+                : c.metresFromLot != null ? `${c.metresFromLot} m from the lot` : '';
+    w.innerHTML = `<div class="t">${esc(dlClock(v.ts))} · ${esc(st.label)} · ${esc(book.short || book.label)}</div>`
+      + `<div class="a">${esc(v.addr || 'lot ' + (v.pid || ''))}</div>`
+      + (v.owner ? `<div class="n">${esc(v.owner)}</div>` : '')
+      + (where ? `<div class="n">${esc(where)}</div>` : '')
+      + (c.noTrack && c.measured ? `<div class="n">No walking track at this moment</div>` : '')
+      + (flag ? `<div class="dlFlag">⚠️ ${esc(flag)}</div>` : '');
+    row.appendChild(dot); row.appendChild(w);
+    host.appendChild(row);
+  });
+
+  const acts = document.createElement('div');
+  acts.className = 'sortSkip';
+  acts.style.marginTop = '12px';
+  if (f.hasTrack) {
+    const onMap = document.createElement('button');
+    onMap.className = 'chip';
+    onMap.textContent = 'Show this day on the map';
+    onMap.onclick = () => {
+      state.days.forEach((d, k) => { d.shown = (k === key); });
+      dlOpenKey = null;
+      $('daysLogView').classList.add('hide');
+      openMap(); buzz(10);
+      /* The same thing the Days panel says when it does this, because it is the same
+         thing happening and he should not have to guess where his other tracks went. */
+      flashToast('Showing that day only', 'The Days panel on the map puts the rest back', '#38bdf8');
+    };
+    acts.appendChild(onMap);
+  }
+  if (f.count || f.hasTrack) {
+    const turn = document.createElement('button');
+    turn.className = 'chip';
+    turn.textContent = 'Turn this day in';
+    turn.onclick = () => shareDayReport(key);
+    acts.appendChild(turn);
+  }
+  host.appendChild(acts);
+}
+
+/* ---- the thing a canvasser hands in ----
+   Self-contained, the same way the call sheet is: it shares off the phone and prints to
+   PDF through the ordinary Share -> Print route, and it needs no network to open.
+   An honest note goes ON the report about what it can and cannot show, because a report
+   that is trusted further than it deserves is worse than no report at all. */
+async function dayReportHtml(key) {
+  const f = await dayFacts(key);
+  const row = c => {
+    const v = c.v, st = STATUS[v.status] || { label: v.status };
+    const book = LINES[v.line || 'roof'] || LINES.roof;
+    const where = !c.measured ? 'filed from the map — not measured at the door'
+                : c.metresFromLot != null ? `${c.metresFromLot} m` : '';
+    const notes = [];
+    if (c.moving) notes.push(`moving at ${Math.round(c.speed * 2.237)} mph`);
+    if (c.noTrack && c.measured) notes.push('no walking track at this moment');
+    if (!c.measured) notes.push('not measured at the door');
+    return `<tr${(c.far||c.moving||!c.measured) ? ' class="flag"' : ''}>`
+      + `<td>${esc(dlClock(v.ts))}</td><td>${esc(v.addr || '')}</td>`
+      + `<td>${esc(v.owner || '')}</td><td>${esc(st.label)}</td>`
+      + `<td>${esc(book.short || book.label)}</td>`
+      + `<td>${esc(where)}</td><td>${esc(notes.join('; '))}</td></tr>`;
+  };
+  /* Both books, counted separately. One total silently mixed roofing and appraisal, and
+     an employer paying for one of them would have been handed the other in the number. */
+  const byBook = {};
+  f.doors.forEach(c => { const l = c.v.line || 'roof'; byBook[l] = (byBook[l] || 0) + 1; });
+  const bookLine = Object.keys(byBook).map(l => `${(LINES[l] || LINES.roof).label}: ${byBook[l]}`).join(' &middot; ');
+  const counts = Object.keys(STATUS).filter(k => f.byStatus[k])
+    .map(k => `${(STATUS[k]||{}).label || k}: ${f.byStatus[k]}`).join(' &middot; ');
+  return `<!doctype html><html><head><meta charset="utf-8">`
+   + `<meta name="viewport" content="width=device-width,initial-scale=1">`
+   + `<title>${esc(dayLabelLong(key))} — door log</title><style>`
+   + `body{font:14px/1.5 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;margin:0;padding:18px;color:#111}`
+   + `h1{font-size:20px;margin:0 0 2px}h2{font-size:15px;margin:18px 0 6px}`
+   + `.sub{color:#555;margin:0 0 14px}`
+   + `.tiles{display:flex;gap:10px;margin:0 0 14px}`
+   + `.tile{flex:1;border:1px solid #ccc;border-radius:10px;padding:10px;text-align:center}`
+   + `.tile b{display:block;font-size:22px}.tile span{font-size:11px;color:#555;text-transform:uppercase}`
+   + `table{border-collapse:collapse;width:100%;font-size:13px}`
+   + `th,td{border-bottom:1px solid #ddd;padding:6px 4px;text-align:left;vertical-align:top}`
+   + `th{background:#f3f4f6}tr.flag td{background:#fff7ed}`
+   + `.note{margin-top:18px;font-size:12px;color:#444;border-top:1px solid #ddd;padding-top:10px}`
+   + `@media print{.tile{border-color:#999}}`
+   + `</style></head><body>`
+   + `<h1>${esc(dayLabelLong(key))}</h1>`
+   + `<p class="sub">${f.first != null ? 'Out from ' + esc(dlClock(f.first)) + ' to ' + esc(dlClock(f.last)) : 'Nothing recorded'}`
+   + ` &middot; ${esc(new Date(key + 'T12:00:00').toLocaleDateString())}</p>`
+   + `<div class="tiles"><div class="tile"><b>${f.count}</b><span>doors</span></div>`
+   + `<div class="tile"><b>${f.hasTrack ? dlMiles(f.metres) : '—'}</b><span>miles walked</span></div>`
+   + `<div class="tile"><b>${f.hasTrack ? dlMiles(f.drivenMetres) : '—'}</b><span>miles driven</span></div>`
+   + `<div class="tile"><b>${esc(hoursMins(f.mins))}</b><span>first to last</span></div></div>`
+   + (counts ? `<p class="sub">${counts}</p>` : '')
+   + (bookLine ? `<p class="sub">${bookLine}</p>` : '')
+   + (f.doors.length ? `<h2>Every door, in order</h2><table><tr><th>Time</th><th>Address</th><th>Owner</th><th>Marked</th><th>Book</th><th>From the lot</th><th>Worth a look</th></tr>`
+        + f.doors.map(row).join('') + `</table>` : `<p>No doors marked on this day.</p>`)
+   + `<div class="note"><b>What this shows.</b> Every door carries the time it was marked. `
+   + `Where the phone was standing at the door, it also carries how far that was from the `
+   + `lot. The miles are added up from the walking track that was recorded.<br><br>`
+   + `<b>What it does NOT show, and this matters.</b> It cannot tell whether anyone `
+   + `answered, or whether the door was actually knocked — only where the phone was and `
+   + `when. A door filed by tapping the map or searching an address was never measured `
+   + `against a position at all, and those are shaded and labelled. `
+   + `Where there is no walking track under a door, the report says so rather than guessing `
+   + `— and a run of doors with no track under them is worth more attention than any single `
+   + `shaded row. `
+   + (f.hasTrack ? '' : 'No usable walking track was recorded for this whole day, so none of the movement checks could be made. ')
+   + (f.readFailed ? 'The walking track for this day would not read back off the phone, which is not the same as there being none. ' : '')
+   + `Walking and driving are counted apart: a leg covered faster than about six miles an `
+   + `hour is counted as driven, and driven ground is drawn grey and dotted on the map. `
+   + `The miles come from raw GPS, which undercounts when the signal is poor and can `
+   + `overcount when the phone is sitting still.<br><br>`
+   + `<b>This file can be edited.</b> It is an ordinary web page produced on the phone, with `
+   + `nothing in it to prove it was not changed afterwards. Treat it as a record kept in good `
+   + `faith, not as proof. What is hard to fake is the whole of it agreeing with itself — the `
+   + `times, the addresses, the distances and the miles all telling the same story.</div>`
+   + `</body></html>`;
+}
+async function shareDayReport(key) {
+  /* Refused outright, for the same reason buildBackup refuses: `state.visitLog` is empty
+     when the read failed, so this would produce a complete-looking document stating he
+     knocked nothing on a day he knocked ninety doors — and hand it to whoever pays him. */
+  if (visitsReadFailed) {
+    return flashToast('Not making that report',
+      'The phone will not hand back your door records, so it would say you knocked nothing. '
+      + 'Close the app right down and open it again.', '#ef4444');
+  }
+  let text;
+  try { text = await dayReportHtml(key); }
+  catch (e) { return flashToast('Could not build that', 'Something in that day would not read back. Try again in a moment.', '#ef4444'); }
+  const payload = { name: `door-log-${key}.html`, text, type: 'text/html' };
+  const r = await shareOut(payload);
+  if (r === 'cancelled') return flashToast('Nothing was sent', 'You closed the share sheet.', '#64748b');
+  if (r === 'shared') return flashToast('Sent', 'Open it and use Share → Print → Save as PDF if you want it on paper.', '#22c55e');
+  download(payload.name, payload.text, payload.type);
+  flashToast('Downloaded instead', 'This phone would not open the share sheet.', '#38bdf8');
+}
+
 /* ---------------- sessions ---------------- */
 function startSession() {
   state.session = { id:'s'+Date.now(), start:Date.now(), line:state.line };
@@ -8387,14 +8924,14 @@ function sessionStats() {
   const from = state.session ? state.session.start : 0;
   const since = workingSince();
   const rows = state.visitLog.filter(v => v.ts >= from);
-  let metres = 0;
-  for (const d of state.days.values())
-    for (const seg of trackSegments(d.pts))
-      for (let i = 1; i < seg.length; i++)
-        if (seg[i].ts >= from) metres += haversine(seg[i-1].lat, seg[i-1].lon, seg[i].lat, seg[i].lon);
+  let metres = 0, drivenM = 0;
+  for (const d of state.days.values()) {
+    const sp = splitMetres(d.pts, from);
+    metres += sp.walked; drivenM += sp.driven;
+  }
   // distance still counts from the session, because walking to the first door is
   // real walking. Only the clock moves.
-  return { rows, metres, since, mins: since ? Math.round((Date.now() - since)/60000) : 0 };
+  return { rows, metres, drivenM, since, mins: since ? Math.round((Date.now() - since)/60000) : 0 };
 }
 function openSession() {
   const s = sessionStats();
@@ -8408,6 +8945,7 @@ function openSession() {
     <div class="stat"><b style="color:${STATUS.noanswer.color}">${by('noanswer')}</b>no answer</div>
     <div class="stat"><b style="color:${STATUS.dnr.color}">${by('dnr')}</b>do not return</div>
     <div class="stat"><b>${(s.metres/1609).toFixed(2)}</b>miles walked</div>
+    <div class="stat"><b>${(s.drivenM/1609).toFixed(2)}</b>miles driven</div>
     <div class="stat"><b>${s.mins}</b>minutes out</div>`;
   // the tiles that used to fill the top of the menu live here now, which is where
   // anyone would look to ask how the day went
