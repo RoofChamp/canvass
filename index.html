@@ -82,6 +82,26 @@ input,textarea,select{font:inherit;color:var(--txt);background:var(--card2);bord
 #modePill{font-weight:900;letter-spacing:.6px;font-size:11px;padding:5px 11px;border-width:1px;border-style:solid}
 #modePill.roof{background:#08313f;border-color:#0ea5e9;color:#7dd3fc}
 #modePill.appraisal{background:#2e1065;border-color:#a855f7;color:#e9d5ff}
+/* Scout is a whole mode, not a menu item, so it sits beside the other mode pill instead
+   of eight items down a shut menu. The ::after stretches the TAP area past the box so it
+   is hittable without the strip growing a third row, which would come straight off the
+   map and the four big buttons. Horizontal reach is only 4px: every other pill in this
+   row sits 8px away, and a tap that lands on the edge of ROOFING must never switch him
+   into Scout — ROOFING decides which book a door is filed under.
+   OUTLINED, not filled, and carrying a chevron. Every filled chip in this strip is a
+   STATE — you are paused, you are at the truck, you are on foot. A filled Scout chip that
+   is on all day would read as "you are scouting" when he is stood on a porch. */
+/* The pill IS the target — no invisible overlay. The first version stretched a ::after
+   10px above and below to reach 44px, which is 10px into a 6px row-gap: the moment the
+   strip wrapped, Scout took 4px off the facing edge of whichever control landed in the
+   next row, and if Scout itself wrapped, a tap on the bottom of ROOFING opened Scout.
+   ROOFING decides which book a door is filed under, so that could never stand.
+   44px of real height costs nothing on a single row — #stripEnd's buttons already set the
+   row to 44px — and on a wrapped strip it costs about 16px, which is the price of the
+   entry point being hittable from a moving truck. */
+#scoutPill{font-weight:800;font-size:11.5px;padding:5px 12px;min-height:44px;
+  background:var(--card);border-color:#f59e0b;color:#fcd34d}
+#scoutPill .go{color:#b45309;font-weight:900;margin-left:1px}
 #truckPill{background:#3b0d24;border-color:#f472b6;color:#fbcfe8;font-weight:800}
 #gpsPill.paused{background:#2a1608;border-color:#f59e0b;color:#fcd34d}
 #fixPill{background:#0b2f2a;border-color:#2dd4bf;color:#99f6e4;font-weight:800}
@@ -225,8 +245,8 @@ label.f{display:block;margin:12px 0 5px;font-size:12px;font-weight:800;color:var
 .crmActs{display:flex;flex-direction:column;gap:5px;flex:0 0 auto}
 .crmActs button{background:var(--card2);border:1px solid var(--line);border-radius:9px;padding:6px 9px;font-size:12px;font-weight:700}
 .crmRow .a .assumed{font-weight:600;color:var(--dim)}
-#crmSearchWrap{position:relative;margin-top:12px}
-#crmSearchWrap input{padding-right:40px}
+.crmSearchWrap{position:relative;margin-top:12px}
+.crmSearchWrap input{padding-right:40px}
 #crmSearchClear{position:absolute;right:6px;top:50%;transform:translateY(-50%);background:none;border:0;
   color:var(--dim);font-size:15px;font-weight:800;padding:6px 8px;line-height:1}
 /* ---------- getting back ---------- */
@@ -353,9 +373,19 @@ select{min-height:44px}
   padding-top:var(--safe-t);padding-bottom:var(--safe-b)}
 #scoutTop,.screenTop{display:flex;align-items:flex-start;justify-content:space-between;gap:10px;padding:10px 12px 6px}
 #scoutTitle,#sortTitle,.screenTitle{font-size:17px;font-weight:800}
-#scoutExit,#sortExit,#marksExit,#dlExit{background:var(--card);border:1px solid var(--line);color:var(--txt);border-radius:12px;
+#scoutExit,#sortExit,#marksExit,#dlExit,#scoutMarks{background:var(--card);border:1px solid var(--line);color:var(--txt);border-radius:12px;
   padding:12px 18px;font-size:15px;font-weight:700;min-height:48px}
-#scoutBtns{flex:1;min-height:0;display:flex;flex-direction:column;gap:10px;padding:4px 12px}
+/* 14px, not the 8px used for chips: these two do different things and one of them
+   is the way out. */
+#scoutTopBtns{display:flex;align-items:center;gap:14px;flex:0 0 auto}
+#scoutMarks{padding:12px 12px;white-space:nowrap}
+#scoutExit{padding:12px 12px;white-space:nowrap}
+#scoutMarks .cnt{color:var(--dim);font-weight:800;margin-left:5px}
+/* padding-top, not 4px: it holds the top mark button away from the two header buttons.
+   The old sort button sat 22px under Damage and a tap aimed at Damage still caught it,
+   so a controls row beside these needs a real gap and a line, not a couple of pixels. */
+#scoutBtns{flex:1;min-height:0;display:flex;flex-direction:column;gap:10px;padding:28px 12px 4px}
+#scoutTop{border-bottom:1px solid var(--line)}
 .scoutBtn{flex:1;display:flex;align-items:center;justify-content:flex-start;gap:14px;
   border-radius:18px;border:2px solid var(--line);background:var(--card);color:var(--txt);
   font-size:26px;font-weight:800;padding:0 22px;text-align:left}
@@ -381,6 +411,9 @@ select{min-height:44px}
 .dlTile span{font-size:11px;color:var(--dim);text-transform:uppercase;letter-spacing:.04em}
 .dlDoor{display:flex;gap:10px;align-items:flex-start;background:var(--card);border:1px solid var(--line);
   border-radius:12px;padding:10px;margin-bottom:6px}
+/* A row that opens something has to look like it does, or it stays unfound. */
+.dlDoor.tap::after{content:'\203A';align-self:center;margin-left:4px;color:var(--dim);font-size:22px;font-weight:800;line-height:1}
+.dlDoor.tap:active{background:var(--card2)}
 .dlDoor i{width:10px;height:10px;border-radius:50%;flex:0 0 auto;margin-top:5px}
 .dlDoor .w{flex:1;min-width:0}
 .dlDoor .t{font-size:12px;color:var(--dim)}
@@ -517,6 +550,11 @@ select{min-height:44px}
          figure he glances at all day was not tappable and the screen behind it was
          buried under a menu item that read like it would end his session -->
     <span id="stripEnd">
+      <!-- Scout sits with the things he TAPS, not with the things he reads. Measured: this
+           row is already 44px because of the two buttons beside it, so a 44px Scout pill
+           here costs nothing at all. Beside ROOFING it cost 16px off the map and the four
+           big buttons, every single time, because that row is only 28px tall. -->
+      <button class="pill" id="scoutPill">🔭 Scout<span class="go">›</span></button>
       <button id="doneBtn" aria-label="how today is going"><b id="menuCount">0</b> today</button>
       <button id="menuBtn">☰<span id="menuDot" class="hide"></span></button>
     </span>
@@ -576,14 +614,19 @@ select{min-height:44px}
 <div id="scoutView" class="hide">
   <div id="scoutTop">
     <div>
-      <div id="scoutTitle">Scouting from the truck</div>
-      <div id="scoutSub" class="small">Tap what you see. Sort it out when you stop.</div>
+      <div id="scoutTitle">Scout</div>
+      <div id="scoutSub" class="small">Tap what you see.</div>
     </div>
-    <!-- The only control up here, away from the three big ones. Sorting used to be a
+    <!-- The ONLY controls are up here, away from the three big ones. Sorting used to be a
          full-width button twenty-two pixels under Damage: one low tap opened the sorting
          screen, and the next tap — aimed at Damage, at thirty miles an hour — landed on
-         an address button and filed a house he never saw. -->
-    <button id="scoutExit">Stop scouting</button>
+         an address button and filed a house he never saw. That is why the way to the
+         scouted list is here beside Stop and NOT in the footer, where it would sit under
+         the bottom mark button and rebuild exactly that bug. -->
+    <div id="scoutTopBtns">
+      <button id="scoutMarks">🔎 Scouted</button>
+      <button id="scoutExit">‹ Back</button>
+    </div>
   </div>
   <div id="scoutBtns"></div>
   <div id="scoutFoot">
@@ -612,7 +655,10 @@ select{min-height:44px}
 <div id="marksView" class="hide">
   <div class="screenTop">
     <div>
-      <div id="sortTitle">Houses you scouted</div>
+      <!-- was a SECOND element with id="sortTitle" — a duplicate id in the document.
+           Nothing reads it today, so it was inert, but the next thing to set the sort
+           screen's heading would have silently written to whichever came first. -->
+      <div id="marksTitle" class="screenTitle">Scouted houses</div>
       <div class="small" id="marksSub"></div>
     </div>
     <button id="marksExit">Done</button>
@@ -626,7 +672,7 @@ select{min-height:44px}
 <div id="daysLogView" class="hide">
   <div class="screenTop">
     <div>
-      <div class="screenTitle" id="dlTitle">Your days</div>
+      <div class="screenTitle" id="dlTitle">History</div>
       <div class="small" id="dlSub"></div>
     </div>
     <button id="dlExit">Done</button>
@@ -805,7 +851,7 @@ select{min-height:44px}
     <div class="sheetHead"><h2>Customers</h2><button class="x" data-close="crmSheet">Close</button></div>
     <div class="sheetScroll">
       <div class="statsbox" id="crmHead"></div>
-      <div id="crmSearchWrap">
+      <div class="crmSearchWrap">
         <input id="crmSearch" placeholder="Search name, address, owner, phone, notes" autocomplete="off" autocapitalize="off">
         <button class="x hide" id="crmSearchClear">✕</button>
       </div>
@@ -897,7 +943,7 @@ select{min-height:44px}
 
 <div id="routeSheet" class="sheet hide">
   <div class="sheetBody">
-    <div class="sheetHead"><h2>Go back to</h2><button class="x" data-close="routeSheet">Close</button></div>
+    <div class="sheetHead"><h2>Doors to try again</h2><button class="x" data-close="routeSheet">Close</button></div>
     <div class="sheetScroll">
       <div class="statsbox" id="rtHead"></div>
       <label class="f">Doors from</label>
@@ -913,11 +959,11 @@ select{min-height:44px}
 
 <div id="areaSheet" class="sheet hide">
   <div class="sheetBody">
-    <div class="sheetHead"><h2 id="arTitle">Where I've been</h2><button class="x" data-close="areaSheet">Close</button></div>
+    <div class="sheetHead"><h2 id="arTitle">By area</h2><button class="x" data-close="areaSheet">Close</button></div>
     <div class="sheetScroll">
       <!-- list of named areas -->
       <div id="arList">
-        <div id="crmSearchWrap"><input id="arSearch" placeholder="Search an area or an address" autocomplete="off" autocapitalize="off">
+        <div class="crmSearchWrap"><input id="arSearch" placeholder="Search an area or an address" autocomplete="off" autocapitalize="off">
           <button class="x hide" id="arSearchClear">✕</button></div>
         <div class="small" id="arCount" style="margin-top:10px"></div>
         <div id="arRows" style="margin-top:8px"></div>
@@ -1003,21 +1049,26 @@ select{min-height:44px}
       <div class="dsec"><button class="dsecHead" data-msec="work"><i>▾</i>Out working</button>
         <div class="dsecBody" id="msecWork">
           <button class="ghost" id="mCrm">👥 Customers and follow-ups</button>
-          <button class="ghost" id="mAreas">📍 Where I've been — areas and old rounds</button>
-          <button class="ghost" id="mRoute">🔁 Go back to (no answers)</button>
-          <button class="ghost" id="mScout">🚚 Scout from the truck — mark what you drive past</button>
-          <button class="ghost" id="mMarks">🔎 Houses you scouted — sort them and knock them</button>
+          <button class="ghost" id="mAreas">📍 By area — the patches you named, round by round</button>
+          <button class="ghost" id="mRoute">🔁 Doors to try again</button>
+          <button class="ghost" id="mScout">🔭 Scout</button>
+          <button class="ghost" id="mMarks">🔎 Scouted houses</button>
           <button class="ghost" id="mAppt">📋 Schedule and appointments</button>
-          <!-- was "■ End session / session log", which read like a stop button, so the
-               stats screen behind it went unfound. Ending is a button inside. -->
-          <button class="ghost" id="mSession">📊 How today's going — doors, miles, hours</button>
-          <button class="ghost" id="mDaysLog">📅 Your days — every day you were out, door by door</button>
           <label class="f">The truck</label>
           <div class="chips">
             <button class="chip" id="mPark">🚚 Park here</button>
             <button class="chip" id="mUnpark">Clear truck pin</button>
           </div>
           <div class="small" id="parkInfo" style="margin-top:6px"></div>
+        </div></div>
+
+      <!-- These two are read sitting down, not on a porch, so they left "Out working".
+           was "■ End session / session log", which read like a stop button, so the
+           stats screen behind it went unfound. Ending is a button inside. -->
+      <div class="dsec"><button class="dsecHead" data-msec="review"><i>▾</i>How you're doing</button>
+        <div class="dsecBody" id="msecReview">
+          <button class="ghost" id="mSession">📊 How today's going — doors, miles, hours</button>
+          <button class="ghost" id="mDaysLog">📅 History — every day you were out, door by door</button>
         </div></div>
 
       <div class="dsec"><button class="dsecHead" data-msec="day"><i>▾</i>End of day</button>
@@ -1079,9 +1130,17 @@ select{min-height:44px}
                paragraph led with the two you cannot change. Heading is the switch now; the
                other two are stated underneath as facts, not as options you might look for. -->
           <label class="f">If you go quiet for half an hour</label>
-          <div class="small" style="margin-bottom:6px">No doors marked and no real movement for half an hour, and the app asks whether you are still out. <b>Carry on</b> changes nothing. <b>Stop</b> ends the session, so the GPS is not running all evening for nothing. It only ever asks — it never decides for you.</div>
-          <div class="chips"><button class="chip" id="mQuiet">Ask if nothing happens for half an hour</button></div>
-          <div class="small" style="margin-top:8px;color:var(--dim)">Two other things happen on their own and cannot be switched off: getting home ends the session, and driving pauses the breadcrumb trail. Both only save battery, and neither loses anything you have logged.</div>
+          <!-- It used to ASK, on a fifteen-second message. Which asked nobody: the check runs
+               off the GPS with the phone in a pocket, so it timed out unanswered and the GPS
+               ran all evening anyway. It closes the session itself now, and the question
+               waits on the screen until he is looking at it. -->
+          <div class="small" style="margin-bottom:6px">No doors marked and no real movement for half an hour, and the app <b>closes the session and stops the GPS on its own</b> — so it is not running all evening for nothing. Nothing is lost: every door and every step is already saved. It then asks whether to carry that session on, start a fresh one, or end the day — straight away if the app is in front of you, otherwise the next time you pick the phone up. It will keep asking until you answer. If the session started on an earlier day it does not offer to carry it on, it just tells you when it closed. Either way <b>the day writes down both times</b>, so a short day always says why.</div>
+          <div class="chips"><button class="chip" id="mQuiet">Close the session if nothing happens for half an hour</button></div>
+          <!-- "driving pauses the breadcrumb trail" was left over from before driving was
+               recorded. It does not pause it: minMove goes to 25 m and minGap to 4 s and the
+               points keep coming, which is exactly how the driven miles are counted. Saying
+               it pauses would have had him doubting a number that is right. -->
+          <div class="small" style="margin-top:8px;color:var(--dim)">Two other things happen on their own and cannot be switched off: getting home ends the session, and while you are driving the breadcrumbs are spaced further apart. Both only save battery. Neither loses anything you have logged — the driving still shows on the map and still counts towards the miles driven.</div>
 
           <label class="f">Lock the app</label>
           <div class="chips">
@@ -1656,7 +1715,7 @@ const state = {
   lastDoorTs: 0,       // when a door was last marked
   quietAnchor: null,   // where you were when you last actually moved
   quietAskedAt: 0,
-  quietPrompt: true,   // ask after a long quiet spell
+  quietPrompt: true,   // close the session after a long quiet spell
 };
 window.state = state;   // exposed for the diagnostics panel and automated tests
 
@@ -2277,8 +2336,16 @@ function renderHouse() {
   const tag = $('alreadyTag');
   if (v) {
     tag.classList.remove('hide');
-    tag.textContent = `Already: ${STATUS[v.status].label} · ${timeAgo(v.ts)}`
-      + (other ? ` · ${LINES[other.line].label} too` : '');
+    /* Was "Already: No answer · just now" — which never said WHICH book it went in under,
+       so standing at a house he could not tell whether he had tagged it as a roof or an
+       appraisal. It only named a book when the OTHER one also had a record, which is the
+       rarer case. Every tagged house now leads with its book, in the same shape the
+       other-book line below already uses, so the two read as one thing.
+       LINES[...].label, never the word "Roofing" — the two names are his to change in
+       Settings and the stored keys never move, so a rename follows every old record. */
+    const mine = LINES[v.line] || LINES.roof;
+    tag.textContent = `${mine.label}: ${STATUS[v.status].label} · ${timeAgo(v.ts)}`
+      + (other ? ` · ${(LINES[other.line] || LINES.roof).label} too` : '');
     tag.style.background = STATUS[v.status].color + '33';
     tag.style.color = STATUS[v.status].color;
   } else if (other) {
@@ -2619,6 +2686,27 @@ const histText = v => histOf(v).map(h => {
 
 let toastTimer = null;
 async function mark(status) {
+  /* Nothing was stopping a door from being filed with the GPS off. setPaused throws the
+     fix buffer away but leaves state.pos and the pinned candidate exactly as they were,
+     and the house card goes on showing that address — so every door tapped afterwards
+     landed on whichever house he happened to be beside when tracking stopped, complete
+     with its owner and a confident distance, and the day report called it measured at the
+     door. Scout has refused on a stale fix since v14; doors never did. It only became
+     likely with the quiet half hour closing the session on its own, silently, from the
+     watcher — before that he had to have tapped Stop himself.
+     PAUSED only, deliberately NOT fix age. Scout refuses on a fix older than eight seconds
+     and is right to, because scouting means driving and the fixes never stop coming.
+     Standing at a door is the opposite: watchPosition fires on CHANGE, so a man stood still
+     on a porch can easily go half a minute with no new fix, and an age test here would
+     refuse the very doors he is knocking. Paused is the state that matters, because
+     setPaused throws the buffer away and leaves the pinned house frozen. */
+  if (state.paused) {
+    flashToast('Not filed — tracking is off',
+      'The phone cannot tell which house this is, and the address on screen is wherever you '
+      + 'were when tracking stopped. Tap the GPS chip to start it again.', '#ef4444');
+    buzz([30, 60, 30]);
+    return;
+  }
   const c = current();
   if (!c) { flashToast('No lot found here', 'Move a few steps and try again — or open the map', '#64748b'); return; }
   const p = c.p;
@@ -2645,6 +2733,8 @@ async function mark(status) {
   state.visits.set(vKey(v.key, v.line), v);
   state.visitLog.push(v);
   state.lastVisitId = v.id;
+  undoable.push(v.id);          // filed just now, so this one IS his to take back
+  redoable = null;              // a new door supersedes anything waiting to go back
   /* The toast below keeps its Undo and Wrong house buttons whether this landed or not —
      taking them away would be a second thing going wrong at once. The refusal is told
      instead by the standing red line in the backup nag, which saveVisit raises and which
@@ -2665,7 +2755,10 @@ async function mark(status) {
    tracking" for the rest of the day. */
 function restoreToastButtons() {
   const swap = $('toastSwap'), undo = $('toastUndo');
-  if (swap.dataset.mode !== 'ask') return;
+  /* Any borrowed mode, not just 'ask'. The undone toast borrows them too now, and the
+     original test read `!== 'ask'`, which would have left "Put it back" sitting where
+     Undo lives for the rest of the day. */
+  if (!swap.dataset.mode) return;
   swap.innerHTML = 'Wrong<br>house'; undo.textContent = 'Undo';
   swap.onclick = reassignLast; undo.onclick = undoLast;
   delete swap.dataset.mode;
@@ -2675,10 +2768,83 @@ function flashToast(title, sub, color) {
   $('toastTitle').textContent = title;
   $('toastSub').textContent = sub;
   $('toastBar').style.background = color;
-  const t = $('toast'); t.classList.add('show');
+  showToastNow();
   clearTimeout(toastTimer);
-  toastTimer = setTimeout(() => t.classList.remove('show'), 4200);
+  toastTimer = setTimeout(() => $('toast').classList.remove('show'), 4200);
 }
+/* The ONE place the strip is put on screen. A swipe that was abandoned part-way leaves an
+   inline transform behind, and anything adding .show without clearing it drew the next
+   message at the stranded offset with no animation. Every caller goes through this. */
+function showToastNow() {
+  const t = $('toast');
+  t.style.transform = '';
+  t.style.transition = '';
+  t.classList.add('show');
+}
+
+/* ---- swiping the strip out of the way ----
+   It sits over the top of the house card. Four seconds is the right length of time for
+   the message, but he asked to be able to push it away when it is standing between him
+   and the address he is trying to read, rather than waiting it out.
+   Up only, because that is the way it came in and the way it leaves on its own, and it
+   is the one direction that cannot be confused with the map. It follows the finger, and
+   below 40px it springs back — so a scroll or a stray brush does not take a message away
+   before he has read it, and neither does a tap that misses the buttons. */
+(function toastSwipe() {
+  const t = $('toast'); if (!t) return;
+  const DISMISS_PX = 40;
+  let y0 = null, dy = 0, live = false;
+  const finish = () => {
+    t.style.transition = '';
+    if (live && dy <= -DISMISS_PX) {
+      t.classList.remove('show');
+      t.style.transform = '';
+      restoreToastButtons();
+      clearTimeout(toastTimer);
+      buzz(8);
+    } else {
+      t.style.transform = '';         // .show puts it back where it belongs
+    }
+    y0 = null; dy = 0; live = false;
+  };
+  t.addEventListener('touchstart', e => {
+    /* Never steal the gesture from the two buttons — one of them deletes a door. */
+    if (e.target.closest('.tbtn')) return;
+    if (!t.classList.contains('show') || e.touches.length !== 1) return;
+    y0 = e.touches[0].clientY; dy = 0; live = true;
+    t.style.transition = 'none';
+  }, { passive: true });
+  t.addEventListener('touchmove', e => {
+    if (!live || y0 === null) return;
+    dy = Math.min(0, e.touches[0].clientY - y0);      // upward only
+    t.style.transform = `translateY(${dy}px)`;
+  }, { passive: true });
+  t.addEventListener('touchend', finish);
+  t.addEventListener('touchcancel', finish);
+  /* Same thing with a mouse or a pen, so the behaviour can be exercised on a laptop.
+     The pointer is CAPTURED, and cancel and lost-capture both finish: a mouse gets no
+     implicit capture, so releasing the button off the edge of the strip left `live` true
+     with a stale start point and a stranded transform — after which bare mouse movement
+     over the strip dragged it about with no button held, and 40px up threw a message away
+     that had not been read. */
+  const stop = e => { if (e.pointerType !== 'touch') finish(); };
+  t.addEventListener('pointerdown', e => {
+    if (e.pointerType === 'touch') return;            // touchstart already has it
+    if (e.target.closest('.tbtn')) return;
+    if (!t.classList.contains('show')) return;
+    y0 = e.clientY; dy = 0; live = true;
+    t.style.transition = 'none';
+    try { t.setPointerCapture(e.pointerId); } catch (err) {}
+  });
+  t.addEventListener('pointermove', e => {
+    if (!live || y0 === null || e.pointerType === 'touch') return;
+    dy = Math.min(0, e.clientY - y0);
+    t.style.transform = `translateY(${dy}px)`;
+  });
+  t.addEventListener('pointerup', stop);
+  t.addEventListener('pointercancel', stop);
+  t.addEventListener('lostpointercapture', stop);
+})();
 /* `navigator.vibrate` does not exist in Safari on an iPhone, and never has. So every
    buzz() in this app — every door marked, every save, every undo — has always done
    absolutely nothing on the only phone it runs on. He has been glancing at the screen
@@ -2745,20 +2911,104 @@ function buzz(pat) {
   else         { tone(2200, 130, 0.55); }                                // marked, saved, done
 }
 
+/* ---- what Undo is allowed to touch ----
+   Doors filed since the app was opened, oldest first. Undo pops off the end of THIS and
+   nowhere else.
+
+   The bug it fixes, reported 29 Jul: holding down Undo kept deleting, and it ate into
+   old days. Two lines caused it. `state.lastVisitId` is seeded from the tail of the
+   WHOLE log on load (see loadVisits), and it was re-seeded from that same tail after
+   every undo — so Undo was not "undo what I just did", it was "delete the newest door
+   in the file", over and over. Open the app cold in the morning, tap Undo four times,
+   and four doors came off yesterday, out of the day log and out of the next backup with
+   them. Nothing warned him and nothing could put them back.
+
+   Deliberately in memory only, and deliberately never seeded from history: a door that
+   was filed before the app was opened is not something he can have mis-tapped just now,
+   so it is not his to undo by reflex. Reload and there is nothing to undo, which is the
+   safe answer, not a missing feature. */
+let undoable = [];
+const canUndo = id => undoable.includes(id);
+const forgetUndoable = ids => { const drop = new Set(ids); undoable = undoable.filter(x => !drop.has(x)); };
+
+/* ---- and back the other way ----
+   The whole record of the door he just took back, so an undo is no longer the end of it.
+   It lives on the toast rather than as a third button on the main screen, because it is
+   only ever wanted in the four seconds after an undo, and the bottom row is two big
+   targets he hits without looking. Filing any new door throws it away: putting a door
+   back after that would drop it behind whatever he has done since, and the honest answer
+   to "can I still have it?" is no. */
+let redoable = null;
+
 async function undoLast() {
-  if (!state.lastVisitId) { flashToast('Nothing to undo','','#64748b'); return; }
-  const v = state.visitLog.find(x => x.id === state.lastVisitId);
-  if (!v) return;
+  /* Skip past anything already gone — a house wiped from its detail screen, or a record
+     removed some other way — rather than bailing out and looking broken. */
+  while (undoable.length && !state.visitLog.some(x => x.id === undoable[undoable.length-1])) undoable.pop();
+  const id = undoable[undoable.length-1];
+  if (!id) {
+    flashToast('Nothing to undo',
+      'Undo only takes back doors you have filed since you opened the app.', '#64748b');
+    return;
+  }
+  const v = state.visitLog.find(x => x.id === id);
+  undoable.pop();
   state.visitLog = state.visitLog.filter(x => x.id !== v.id);
   await DB.del('visits', v.id).catch(()=>{});
+  /* Out of the retry set too. A door that would not save sits in pendingVisits and gets
+     written again on the next flush — undoing it without this put it straight back. */
+  if (pendingVisits.has(v.id)) {
+    pendingVisits.delete(v.id);
+    visitWriteFailed = pendingVisits.size > 0;
+    /* renderWriteAlerts, not renderBackupNag. The alert bar on the MAIN screen prints a
+       live count off pendingVisits, and repainting only the menu line left it saying
+       "1 door record would not save" with nothing pending — the one warning he has to be
+       able to trust, contradicting the menu it tells him to open. */
+    renderWriteAlerts();
+  }
   const slot = vKey(v.key, v.line);
   const prev = state.visitLog.filter(x => vKey(x.key, x.line) === slot).sort((a,b)=>b.ts-a.ts)[0];
   if (prev) state.visits.set(slot, prev); else state.visits.delete(slot);
-  const rest = state.visitLog[state.visitLog.length-1];
-  state.lastVisitId = rest ? rest.id : null;
+  state.lastVisitId = undoable.length ? undoable[undoable.length-1] : null;
+  redoable = v;
   $('toast').classList.remove('show');
-  buzz(20); flashToast('Undone', v.addr || '', '#64748b');
-  renderStrip(); renderHouse(); if (window._map) refreshMapLayers();
+  buzz(20);
+  const left = undoable.length;
+  flashToast('Undone', (v.addr || '') + (left ? '' : ' · nothing else to undo'), '#64748b');
+  offerPutBack();
+  renderStrip(); renderHouse(); renderStats(); if (window._map) refreshMapLayers();
+}
+
+/* Undo is destructive and he taps it at arm's length in the cold. One tap the wrong way
+   used to be final. */
+function offerPutBack() {
+  const swap = $('toastSwap'), undo = $('toastUndo');
+  swap.dataset.mode = 'undone';
+  swap.innerHTML = 'Put it<br>back'; undo.textContent = 'OK';
+  swap.onclick = () => { $('toast').classList.remove('show'); restoreToastButtons(); redoLast(); };
+  undo.onclick = () => { $('toast').classList.remove('show'); restoreToastButtons(); };
+}
+
+async function redoLast() {
+  const v = redoable;
+  if (!v) { flashToast('Nothing to put back', '', '#64748b'); return; }
+  redoable = null;
+  /* Guard against the same door already being back — a double tap, or a restore that ran
+     in between. Putting it in twice would give him two records of one knock. */
+  if (!state.visitLog.some(x => x.id === v.id)) {
+    state.visitLog.push(v);
+    state.visitLog.sort((a, b) => a.ts - b.ts);
+    await saveVisit(v);
+  }
+  /* The slot holds the NEWEST record for this house in this book, which may not be the
+     one going back if he has knocked it again since. */
+  const slot = vKey(v.key, v.line);
+  const newest = state.visitLog.filter(x => vKey(x.key, x.line) === slot).sort((a,b)=>b.ts-a.ts)[0];
+  if (newest) state.visits.set(slot, newest);
+  undoable.push(v.id);
+  state.lastVisitId = v.id;
+  buzz(15);
+  flashToast('Put back', v.addr || '', (STATUS[v.status] || {}).color || '#22c55e');
+  renderStrip(); renderHouse(); renderStats(); if (window._map) refreshMapLayers();
 }
 
 /* ---------------- house picker ---------------- */
@@ -2786,7 +3036,10 @@ function cycleHouse() {
 }
 /** re-point the most recent mark at the next-nearest house */
 async function reassignLast() {
-  if (!state.lastVisitId || state.candidates.length < 2) { cycleHouse(); return; }
+  /* Same rule as Undo: only a door filed since the app opened can be re-pointed by
+     reflex. Cold-loading the app and tapping Wrong house used to move yesterday's last
+     door onto a neighbour, carrying its owner and its valuation with it. */
+  if (!state.lastVisitId || !canUndo(state.lastVisitId) || state.candidates.length < 2) { cycleHouse(); return; }
   const v = state.visitLog.find(x => x.id === state.lastVisitId);
   if (!v) return;
   let i = state.candidates.findIndex(c => c.p.key === v.key);
@@ -2937,6 +3190,13 @@ document.querySelectorAll('.dsecHead[data-sec]').forEach(b => {
 });
 
 function openDetail(visit, focusName) {
+  /* Opening a house is a new action, so it retires the put-back offer. Without this the
+     toast sits ABOVE the sheet (z-index 90 against 81) still offering "Put it back": undo
+     a door, tap Details — which builds a fresh record for the same house, because the old
+     one has just gone — then tap Put it back, then Save, and one knock becomes two
+     records, two rows in History and a count of 2. mark() clears redoable for exactly
+     this reason; this was the way round it. */
+  if (redoable) { redoable = null; restoreToastButtons(); $('toast').classList.remove('show'); }
   let v = visit;
   if (!v) {
     const c = current();
@@ -3388,7 +3648,20 @@ async function persistEditing(opts) {
   if (!editing) return false;
   const file = !!(opts && opts.file);
   if (editing._new && !file) return true;   // nothing on disk to update yet, nothing lost
-  if (editing._new) { delete editing._new; state.visitLog.push(editing); state.lastVisitId = editing.id; }
+  if (editing._new) { delete editing._new; state.visitLog.push(editing); state.lastVisitId = editing.id;
+                      undoable.push(editing.id); redoable = null; }
+  /* The record has to still BE in the log. It assumed that, and there are now ways for it
+     not to be: History leaves its list standing behind the house sheet, so a house wiped
+     from in there left every one of its rows still on screen and still tappable, and
+     saving from a stale row wrote the record back to disk while it stayed absent from the
+     log. Memory and disk then disagreed for the rest of the day — off the count, off the
+     day report, out of the export, but IN the backup and back again on the next launch.
+     One record out of a set he had confirmed "cannot be undone", returning on its own. */
+  else if (!state.visitLog.some(x => x.id === editing.id)) {
+    flashToast('That house is gone', 'It was deleted while this was open, so nothing was written. '
+      + 'Close this and open the house again if you want it back.', '#ef4444');
+    return false;
+  }
   state.visits.set(vKey(editing.key, editing.line), editing);
   return saveVisit(editing);
 }
@@ -3520,13 +3793,23 @@ async function wipeHouse() {
     state.appts = state.appts.filter(a => !booked.includes(a));
     saveAppts();
   }
+  forgetUndoable(mine.map(v => v.id));   // or Undo offers to take back a house already gone
   if (mine.some(v => v.id === state.lastVisitId)) {
-    const r = state.visitLog[state.visitLog.length-1];
-    state.lastVisitId = r ? r.id : null;
+    state.lastVisitId = undoable.length ? undoable[undoable.length-1] : null;
   }
   editing = null; closeSheet('detailSheet'); buzz([30,50,30]);
   flashToast('House wiped', `${mine.length} record${mine.length===1?'':'s'} removed`, '#ef4444');
   renderStrip(); renderHouse(); renderStats(); if (window._map) refreshMapLayers();
+  repaintHistoryIfOpen();
+}
+/* History is the one list that stays open behind the house sheet, on purpose — closing a
+   house should put him back on the same day in the same place. The cost is that anything
+   which removes a record has to repaint it, or it goes on showing rows for doors that no
+   longer exist and every one of them is still tappable. */
+function repaintHistoryIfOpen() {
+  const view = $('daysLogView');
+  if (!view || view.classList.contains('hide')) return;
+  renderDaysLog();
 }
 /** keep the door marks, throw away everything typed */
 async function clearDetailContent() {
@@ -4283,13 +4566,26 @@ const BACKUP_LOCAL = [
   ['driveAdj', false], ['driveSpeeds', false], ['snapMax', false], ['trackDetail', false],
   ['quietPrompt', false], ['rentalMark', false], ['hubSpan', false], ['hubSat', false],
   ['headUp', false], ['menuSecs', false], ['sound', false], ['wake', false],
+  /* Why this one travels: it is the ONLY record of why a working day reads short, and the
+     day report he hands to whoever is paying for the hours reads it. Losing it on a phone
+     swap would leave short days with nothing to explain them. Flagged false because it is
+     an explanation OF his work rather than the work itself — no door, step, appointment or
+     area is in here, and a refused write costs a sentence, not a record. */
+  ['quietCloses', false],
 ];
 /* The two flagged `true` that are LISTS get merged on the way back in, never replaced —
    same rule as door records. Restoring Monday's file on Wednesday must not take the
    appointments he booked on Tuesday. */
 const BACKUP_MERGE = ['appts', 'areas', 'marks'];
+/* Not a list of objects with ids, so mergeById cannot touch it — it is keyed by day, with
+   a list of closes inside each. Merged day-wise and then by close time, which is exactly
+   the shape the `days` store already uses, rather than a fourth idea about merging. */
+const BACKUP_MERGE_BYDAY = ['quietCloses'];
 /* Left out on purpose. `pin` — a lock does not belong in a plain-text file he emails to
-   himself. `lastBackup`, `storageGrant`, `everSaved`, `session`, `routeRun` — they
+   himself. `lastBackup`, `storageGrant`, `everSaved`, `session`, `routeRun`,
+   `quietClose` — the last of those is an unanswered question about THIS phone right now,
+   and carrying it to another handset would ask him to resume a session that is not there;
+   the day-wise `quietCloses` record of what happened does travel — they
    describe this phone at this moment rather than any of his work. And `line` and
    `vehicle`, which are the most dangerous of the lot: `line` is which book he is in
    RIGHT NOW, so a Roofing-era backup restored during an appraisal round would quietly
@@ -4547,11 +4843,11 @@ function arrivedHome(lat, lon, speed) {
 /** no door marked and no real movement for half an hour, and not just asked */
 function goneQuiet(lat, lon, now) {
   if (!state.session || !state.quietPrompt) return false;
-  /* Never while he is scouting. The backstop asks "still out working?" after half an hour
-     with no doors and no real movement — and a scouting drive marks no doors at all, so
-     it would fire mid-drive, from a phone in a mount, with Stop as one of its two
-     buttons. Marks push `lastDoorTs` forward as well, so it stays quiet for a while after
-     he leaves the screen too. */
+  /* Never while he is scouting. The backstop trips after half an hour with no doors and no
+     real movement — and a scouting drive marks no doors at all, so it would close his
+     session mid-drive, from a phone in a mount, while he was plainly working. Marks push
+     `lastDoorTs` forward as well, so it stays quiet for a while after he leaves the screen
+     too. */
   if (scoutOpen) return false;
   if (!state.quietAnchor || haversine(lat, lon, state.quietAnchor.lat, state.quietAnchor.lon) > QUIET_MOVE)
     state.quietAnchor = { lat, lon, ts:now };
@@ -4560,22 +4856,184 @@ function goneQuiet(lat, lon, now) {
   if (rooted && noDoors && now - (state.quietAskedAt || 0) > QUIET_MS) { state.quietAskedAt = now; return true; }
   return false;
 }
-/* A question he can ignore, not a dialog that steals the screen. Do nothing and it
-   fades, tracking carries on, and it asks again after another quiet half hour. */
-function askStillWorking() {
-  const swap = $('toastSwap'), undo = $('toastUndo');
-  $('toastTitle').textContent = 'Still out working?';
-  $('toastSub').textContent = 'No doors and no real movement for half an hour.';
-  $('toastBar').style.background = '#f59e0b';
-  swap.dataset.mode = 'ask';
-  swap.innerHTML = 'Yes,<br>carry on'; undo.textContent = 'Stop';
-  swap.onclick = () => { $('toast').classList.remove('show'); state.quietAnchor = null;
-                         state.lastDoorTs = Date.now(); restoreToastButtons(); buzz(10); };
-  undo.onclick = () => { $('toast').classList.remove('show'); restoreToastButtons(); endSession(); };
-  $('toast').classList.add('show');
+/* ---- the quiet half hour ----
+   It used to ASK, on a fifteen-second toast: "still out working?", Yes or Stop. His words,
+   29 Jul: "i'd need to open the app or have it open to see the notification to end the
+   session.. in the situation i miss turning it off it wouldn't be at the front of my
+   screen." Which is right — the GPS watcher fires with the phone in a pocket, so the one
+   question that saves his battery was asked of nobody, timed out, and tracking ran all
+   evening. So it does not ask any more. It closes the session itself, stops the GPS, and
+   the question waits on the screen until he comes back to answer it. */
+
+/* What he had left behind: one pending offer at a time, plus a per-day record of the
+   closes themselves so the day report can show BOTH times rather than quietly folding
+   half an hour of nothing into his hours. localStorage, so no record format moves. */
+const QCLOSE_KEEP_DAYS = 200;
+function quietCloseLog() {
+  try {
+    const o = JSON.parse(localStorage.getItem('quietCloses') || '{}');
+    return (o && typeof o === 'object' && !Array.isArray(o)) ? o : {};
+  } catch (e) { return {}; }
+}
+function noteQuietClose(day, lastTs, closedTs) {
+  try {
+    const all = quietCloseLog();
+    (all[day] = all[day] || []).push({ lastTs, closedTs });
+    /* Trimmed, or it grows for ever in a store with a small hard limit and eventually
+       throws — and the throw would land on the day his session closed itself. */
+    const keys = Object.keys(all).sort();
+    while (keys.length > QCLOSE_KEEP_DAYS) delete all[keys.shift()];
+    localStorage.setItem('quietCloses', JSON.stringify(all));
+  } catch (e) {}    // a full store must never stop the session from closing
+}
+const quietClosesOn = day => (quietCloseLog()[day] || [])
+  .filter(r => r && typeof r.lastTs === 'number' && typeof r.closedTs === 'number');
+
+function pendingQuietClose() {
+  try {
+    const o = JSON.parse(localStorage.getItem('quietClose') || 'null');
+    return (o && typeof o === 'object' && typeof o.closedTs === 'number' && o.day) ? o : null;
+  } catch (e) { return null; }
+}
+const clearPendingQuietClose = () => { try { localStorage.removeItem('quietClose'); } catch (e) {} };
+
+/* Fires from the GPS watcher, with the phone very likely in a pocket. Nothing here may
+   depend on being seen. */
+async function closeQuietSession() {
+  const ses = state.session;
+  if (!ses) return;
+  const closedTs = Date.now();
+  /* The LAST REAL THING, not the moment the half hour ran out. Otherwise every day that
+     closes itself reads half an hour longer than he worked, and it would be his own app
+     inflating the hours he is paid on.
+     Breadcrumbs, NOT quietAnchor.ts. The anchor is only re-planted when a fix lands more
+     than QUIET_MOVE away, so it is "when he last moved 150 metres", which is wrong in both
+     directions: forty minutes walking a big property inside that radius would have been
+     thrown away, and one loose indoor fix two hundred metres off would have moved the
+     last-activity time forty minutes later than anything he actually did. The track is the
+     honest record of movement, so ask it. */
+  const pts = (state.days.get(dayKey(closedTs)) || {}).pts || state.track || [];
+  const lastPt = pts.length ? pts[pts.length-1].ts : 0;
+  const lastTs = Math.max(state.lastDoorTs || 0, lastPt || 0, ses.start || 0);
+  /* Filed under the day the WORK was on, and resume is judged by the day the SESSION
+     started — not by the day it closed. A session that ran to 23:40 trips its half hour at
+     00:15, so keying either of those off the close time put the note on a day with no work
+     on it and offered, at seven the next morning, to carry on a session that started the
+     previous morning: workingSince would then read twenty-two hours and one session's
+     walking would swallow two days of it. */
+  const workDay = dayKey(lastTs);
+  noteQuietClose(workDay, lastTs, closedTs);
+  try {
+    localStorage.setItem('quietClose', JSON.stringify({
+      sesId: ses.id, start: ses.start, line: ses.line, lastTs, closedTs,
+      day: workDay, sesDay: dayKey(ses.start) }));
+  } catch (e) {}
+  await endSession(true);          // flushes the day, stops the GPS, clears the session
+  /* After endSession, because setPaused puts up its own "Tracking paused" line and the
+     honest headline is that the session went, not that tracking did. */
+  flashToast('Session closed itself',
+    `Half an hour with no doors and no movement. Last thing recorded ${dlClock(lastTs)}. Tracking is off.`,
+    '#f59e0b');
   buzz([15, 60, 15]);
-  clearTimeout(toastTimer);
-  toastTimer = setTimeout(() => { $('toast').classList.remove('show'); restoreToastButtons(); }, 15000);
+  renderStrip(); renderStats(); renderHouse();
+  /* And ASK, here, now. On an iPhone a backgrounded web app gets no position callbacks at
+     all, so the half hour can only ever be NOTICED on a fix that arrives once the app is
+     already in front of him — which means the visibilitychange route almost never sees a
+     pending offer, because none has been written yet when it runs. Without this line the
+     commonest case by far is the one he complained about: a message that fades, and no
+     question. Deferred so it does not open a sheet inside the tap that is still running. */
+  setTimeout(offerQuietResume, 600);
+}
+
+/* Asked when he next has the app in front of him, and only then. A sheet rather than a
+   toast: it is a question, and a question that fades is the thing he just told me does
+   not work. */
+let quietAskOpen = false;
+async function offerQuietResume() {
+  if (quietAskOpen) return;
+  const q = pendingQuietClose();
+  if (!q) return;
+  if (!state.started || !$('gate').classList.contains('hide')) return;   // never behind the gate
+  if (document.visibilityState !== 'visible') return;
+  /* There is ONE #askSheet in the document and askChoice writes straight into it. Opening
+     over another question wipes its buttons, so its promise never settles and its backdrop
+     listener stays attached for the rest of the run — a delete confirmation would silently
+     turn into a question about his session. Wait and ask next time round instead. */
+  if (!$('askSheet').classList.contains('hide')) return;
+
+  const closed = dlClock(q.closedTs), last = dlClock(q.lastTs);
+  const quietMins = Math.max(0, Math.round((q.closedTs - q.lastTs) / 60000));
+  /* A session is already running — he restarted from the gate, from Keep canvassing, or
+     from the GPS chip before this got asked. There is nothing to resume, and offering it
+     would swap the live session for an older one. */
+  if (state.session) {
+    clearPendingQuietClose();
+    flashToast('Earlier session closed itself',
+      `It stopped at ${closed} after ${quietMins} quiet minutes. You are on a new one now; `
+      + 'everything before it is saved and in History.', '#64748b');
+    return;
+  }
+  /* Judged on the day the SESSION STARTED, not the day it closed. A session that ran to
+     23:40 trips its half hour at 00:15, and gating on the close date would offer, at seven
+     the next morning, to carry on a session that began the previous morning — after which
+     workingSince reads twenty-two hours and one session's walking swallows two days. */
+  const sesDay = q.sesDay || q.day;
+  if (sesDay !== dayKey(Date.now())) {
+    clearPendingQuietClose();
+    flashToast('That session closed itself',
+      `${dayLabelLong(sesDay)} — last thing recorded ${last}, closed ${closed}. `
+      + 'Nothing was lost; it is all in History. Starting you fresh.', '#64748b');
+    return;
+  }
+  quietAskOpen = true;
+  let pick = null;
+  try {
+    pick = await askChoice('Your session closed itself',
+      `<p>${quietMins} minutes went by with no doors and no real movement, so it stopped tracking to save the battery.</p>`
+      + `<p class="small">Last thing recorded <b>${esc(last)}</b>. Closed <b>${esc(closed)}</b>. `
+      + `Every door and every step before that is saved.</p>`,
+      [{ key:'carry', label:'Carry on that session',
+         sub:'Doors before and after stay one session, so today reads as one number.' },
+       { key:'fresh', label:'Start a fresh session',
+         sub:'Two sessions with a gap between them, which is what actually happened.' },
+       { key:'end',   label:'End the day',
+         sub:'Leave it closed and tracking off.' }]);
+  } finally { quietAskOpen = false; }
+
+  /* Backing out is NOT an answer, so the offer stays and it is asked again next time. It
+     used to be lumped in with End the day, which meant a tap that landed on the dimmed
+     area behind the sheet silently ended his day and threw the question away. */
+  if (pick === null) {
+    flashToast('Still waiting on you', 'Tracking is off until you answer. It will ask again.', '#f59e0b');
+    return;
+  }
+  clearPendingQuietClose();          // answered; the day report keeps the record either way
+  if (pick === 'carry') {
+    state.session = { id:q.sesId, start:q.start, line:q.line || state.line };
+    try { localStorage.setItem('session', JSON.stringify(state.session)); } catch (e) {}
+    /* Everything startSession clears, except the three that identify the session. A stale
+       driveOverride is the one that costs him work: forced 🚗 spaces breadcrumbs at 25 m
+       instead of 5, so the afternoon's walking cuts corners and the miles read short. */
+    state.lastDoorTs = Date.now(); state.quietAnchor = null; state.quietAskedAt = 0;
+    state.leftHome = false; state.homeHits = 0;
+    state.driving = false; state.driveHits = 0; state.calmHits = 0;
+    state.moveTrail = []; state.driveOverride = null;
+    setPaused(false);
+    flashToast('Carrying on', `That session started ${dlClock(q.start)}.`, '#22c55e');
+  } else if (pick === 'fresh') {
+    startSession();
+    setPaused(false);
+    flashToast('Fresh session', 'Today starts again from now.', '#22c55e');
+  } else {
+    /* 'end'. Tracking is ALREADY off — closeQuietSession stopped it — but say it only after
+       making sure, because this branch is also reached when a session got restarted in
+       between and the old message claimed tracking was off while the watch was running. */
+    if (!state.paused) setPaused(true);
+    state.session = null;
+    try { localStorage.removeItem('session'); } catch (e) {}
+    flashToast('Day ended', 'Tracking is off. Tap the GPS chip to start again.', '#64748b');
+  }
+  renderStrip(); renderStats(); renderHouse();
 }
 
 function pushFix(c, ts) {
@@ -4764,7 +5222,7 @@ function startGps() {
 
     /* The backstop. Both conditions matter: without the movement test it would
        interrupt him every time he drove between neighbourhoods. */
-    if (goneQuiet(state.pos.lat, state.pos.lon, now)) askStillWorking();
+    if (goneQuiet(state.pos.lat, state.pos.lon, now)) closeQuietSession();
 
     await ensureParcels(state.pos.lat, state.pos.lon);
     recompute(); drawMini();
@@ -4958,6 +5416,8 @@ document.addEventListener('visibilitychange', async () => {
   if (document.visibilityState !== 'visible') return;
   if (wakeWanted) { await grabWake(); renderWakeChip(); }
   drawMini();
+  /* The whole point: the question waits until the app is actually in front of him. */
+  offerQuietResume();
 });
 
 /* ---------------- menu ---------------- */
@@ -4980,10 +5440,10 @@ function renderStats() {
   document.querySelectorAll('#gate .statsbox').forEach(el => el.innerHTML = html);
 }
 
-/* ---- the menu's three tiers ----
+/* ---- the menu's four tiers ----
    Unlike the details panel, the menu remembers what was left open: what he reaches
    for varies by the day, and the menu's job is to be findable rather than fast. */
-const MENU_SECTIONS = { work:true, day:true, settings:false };
+const MENU_SECTIONS = { work:true, review:true, day:true, settings:false };
 const msecBody = k => $('msec' + k[0].toUpperCase() + k.slice(1));
 /* Valid JSON that is not an object — 5, true, "abc" — would sail past a bare
    try/catch and then throw on `in`, which bricked the whole menu. The menu is the
@@ -5019,7 +5479,7 @@ document.querySelectorAll('.dsecHead[data-msec]').forEach(b => {
 /* ---- what version is actually on the phone ----
    Matches the service worker cache name, so "did the update land" is answerable by
    looking rather than guessing. */
-const BUILD_VERSION = 'v16';
+const BUILD_VERSION = 'v17';
 const BUILD_DATE = '29 July 2026';
 function renderVersionStamp() {
   const el = $('versionStamp'); if (!el) return;
@@ -5050,7 +5510,7 @@ $('mLineReset').onclick = () => {
 function renderQuietChip() {
   const b = $('mQuiet'); if (!b) return;
   b.classList.toggle('on', !!state.quietPrompt);
-  b.textContent = state.quietPrompt ? 'On — it will ask' : 'Off — it never asks';
+  b.textContent = state.quietPrompt ? 'On — it closes itself' : 'Off — it runs until you stop it';
 }
 $('mQuiet').onclick = () => {
   state.quietPrompt = !state.quietPrompt;
@@ -5329,7 +5789,18 @@ $('detailBtn').onclick = () => openDetail(null);
 $('swapBtn').onclick = openCandidates;
 $('house').addEventListener('dblclick', openCandidates);
 $('modePill').onclick = toggleMode;
-$('gpsPill').onclick = () => setPaused(!state.paused);
+/* Turning tracking back on with no session left the app in a state where BOTH backstops
+   were dead — goneQuiet and arrivedHome each return early on `!state.session` — so the GPS
+   would then run all night, which is the exact thing the quiet half hour exists to stop.
+   And it is the state the app itself tells him to reach: "tap the GPS chip to start again". */
+$('gpsPill').onclick = () => {
+  const turningOn = state.paused;
+  setPaused(!state.paused);
+  if (turningOn && !state.session) {
+    startSession();
+    renderStrip(); renderStats();
+  }
+};
 $('drivePill').onclick = cycleDriveOverride;
 const setHubSpan = v => { state.hubSpan = Math.max(60, Math.min(600, v)); localStorage.setItem('hubSpan', state.hubSpan); drawMini(); };
 $('hubIn').onclick  = e => { e.stopPropagation(); setHubSpan(Math.round(state.hubSpan / 1.6)); buzz(8); };
@@ -5585,6 +6056,27 @@ $('restoreFile').onchange = async e => {
        three jobs on Tuesday, restore Monday's file on Wednesday to be safe, and those
        three jobs are gone — under a green tick that counts the file's appointments and
        reads like it worked. */
+    /* Union of days, and inside a day a union of close times. Never replaces: restoring
+       Monday's file must not delete the record of Tuesday closing itself. */
+    const mergeByDay = (k, raw) => {
+      let mine = {}, theirs = null;
+      try { const o = JSON.parse(localStorage.getItem(k) || '{}');
+            if (o && typeof o === 'object' && !Array.isArray(o)) mine = o; } catch (e) { mine = {}; }
+      try { theirs = JSON.parse(raw); } catch (e) { return null; }
+      if (!theirs || typeof theirs !== 'object' || Array.isArray(theirs)) return null;
+      const out = {};
+      const ok = r => r && typeof r.lastTs === 'number' && typeof r.closedTs === 'number';
+      for (const day of new Set([...Object.keys(mine), ...Object.keys(theirs)])) {
+        const a = Array.isArray(mine[day]) ? mine[day].filter(ok) : [];
+        const b = Array.isArray(theirs[day]) ? theirs[day].filter(ok) : [];
+        const seen = new Set(a.map(r => r.closedTs));
+        const rows = a.concat(b.filter(r => !seen.has(r.closedTs))).sort((x, y) => x.closedTs - y.closedTs);
+        if (rows.length) out[day] = rows;
+      }
+      const keys = Object.keys(out).sort();
+      while (keys.length > QCLOSE_KEEP_DAYS) delete out[keys.shift()];
+      return JSON.stringify(out);
+    };
     const mergeById = (k, raw) => {
       let mine = [], theirs = [];
       try { mine = JSON.parse(localStorage.getItem(k) || '[]'); } catch (e) { mine = []; }
@@ -5606,6 +6098,9 @@ $('restoreFile').onchange = async e => {
           if (BACKUP_MERGE.includes(k)) {
             const m = mergeById(k, raw);
             if (m) localStorage.setItem(k, m.text); else refused++;
+          } else if (BACKUP_MERGE_BYDAY.includes(k)) {
+            const m = mergeByDay(k, raw);
+            if (m) localStorage.setItem(k, m); else refused++;
           } else {
             localStorage.setItem(k, raw);
           }
@@ -5729,6 +6224,12 @@ $('mWipe').onclick = async () => {
     return;
   }
   state.visitLog = []; state.visits.clear(); state.track = []; state.days.clear(); state.lastVisitId = null;
+  undoable = []; redoable = null;
+  /* Or the day report goes on explaining short days that no longer exist, the close log
+     travels into the next backup, and the next time he brings the app forward it offers to
+     carry on a session whose every record was just deleted. */
+  try { localStorage.removeItem('quietCloses'); } catch (e) {}
+  clearPendingQuietClose();
   state.home = null; state.appts = []; state.driveAdj = 1;
   saveHome(); saveAppts(); localStorage.removeItem('driveAdj'); clearPaceCache();
   unpark();
@@ -5953,6 +6454,30 @@ function focusMapOn(lat, lon, zoom) {
   const m = window._map; if (!m) return;
   if (mapOpts.follow) { mapOpts.follow = false; syncMapBtns(); }
   m.setView([lat, lon], zoom == null ? m.getZoom() : zoom, { animate:true });
+}
+/* "Show this day on the map" put the day's track on and then left the map wherever it
+   happened to be — usually on his own position, which on a day he worked across town is
+   nowhere near the round he asked to look at. So it FITS: every breadcrumb and every door
+   of that day inside the frame, centred, zoomed out just far enough to hold the lot.
+   Follow has to go off first or openMap's own 60ms settle pulls it straight back to where
+   he is standing. maxZoom so a single-street day does not slam to 22 and lose its context;
+   padding so the top and bottom of the round are not under the map's own furniture. */
+async function fitMapToDay(key) {
+  const m = window._map; if (!m || !window.L) return false;
+  if (mapOpts.follow) { mapOpts.follow = false; syncMapBtns(); }
+  let pts = [];
+  try { const d = await loadDay(key); pts = (d && d.pts) || []; } catch (e) { pts = []; }
+  const ll = pts.filter(p => p && isFinite(p.lat) && isFinite(p.lon)).map(p => [p.lat, p.lon]);
+  /* Doors as well as breadcrumbs. A day can have doors and no usable track — tracking off,
+     paused, or filed from the map — and fitting to the track alone would leave exactly that
+     day pointing at nothing. */
+  for (const v of state.visitLog)
+    if (dayKey(v.ts) === key && isFinite(v.lat) && isFinite(v.lon)) ll.push([v.lat, v.lon]);
+  if (!ll.length) return false;
+  if (ll.length === 1) { m.setView(ll[0], 18, { animate:true }); return true; }
+  try { m.fitBounds(L.latLngBounds(ll).pad(0.12), { maxZoom:18, animate:true }); }
+  catch (e) { m.setView(ll[0], 17, { animate:true }); }
+  return true;
 }
 
 let moveMeMode = false;
@@ -7539,7 +8064,7 @@ function renderAreas() {
   $('arList').classList.toggle('hide', !!arOpen);
   $('arOne').classList.toggle('hide', !arOpen);
   if (arOpen) return renderAreaOne();
-  $('arTitle').textContent = "Where I've been";
+  $('arTitle').textContent = "By area";
   const q = arQuery.trim().toUpperCase();
   /* Searching an ADDRESS finds the areas that contain it — that is how he asked the
      question: "search a canvas spot and find the old records of when i was there". */
@@ -7637,8 +8162,17 @@ function openAreaDay(a, r) {
     for (const k of await listDayKeys()) { const d = await loadDay(k); d.shown = (k === r.day); }
     closeSheet('listSheet'); closeSheet('areaSheet');
     await openMap();
-    const c = a.kind === 'box' ? [(a.s + a.n)/2, (a.w + a.e)/2] : [a.lat, a.lon];
-    focusMapOn(c[0], c[1], 17);
+    await new Promise(r => setTimeout(r, 90));          // past openMap's own settle
+    /* A named patch has real corners, so hold the whole patch instead of guessing at zoom
+       17 — a big area used to open with its far end off the screen. */
+    if (a.kind === 'box' && window.L && window._map) {
+      if (mapOpts.follow) { mapOpts.follow = false; syncMapBtns(); }
+      try { window._map.fitBounds(L.latLngBounds([[a.s, a.w], [a.n, a.e]]).pad(0.12),
+                                  { maxZoom:18, animate:true }); }
+      catch (e) { focusMapOn((a.s + a.n)/2, (a.w + a.e)/2, 17); }
+    } else {
+      focusMapOn(a.lat, a.lon, 17);
+    }
     refreshMapLayers();
     flashToast(`${a.name} — ${dayLabel(r.day)}`, 'Only that day\'s walking is showing. Days panel puts the rest back.', '#0ea5e9');
   };
@@ -7737,7 +8271,7 @@ function addMark(kind) {
     flashToast('Not marked — no position',
       !state.fixes.length ? 'The phone has not got a fix yet. Nothing was marked.'
         : 'The last position is ' + Math.round(fixAge()/1000) + ' seconds old, so it is not where you are. '
-          + 'Nothing was marked. If tracking stopped, tap Exit and start it again.',
+          + 'Nothing was marked. If tracking stopped, tap Back and start it again.',
       '#ef4444');
     renderScout();
     return;
@@ -7797,10 +8331,13 @@ function renderScout() {
      used the word "fix", which he has never been taught. */
   const stale = fixAge() > FIX_STALE_MS;
   $('scoutHint').textContent = stale
-    ? (state.fixes.length ? 'NO POSITION — nothing can be marked. Stop scouting and start tracking again.'
+    ? (state.fixes.length ? 'NO POSITION — nothing can be marked. Tap Back and start tracking again.'
                           : 'Waiting for GPS. Nothing can be marked yet.')
-    : (n ? `${n} waiting to be sorted when you stop.` : 'Sort them out from the menu when you stop.');
+    : (n ? `${n} waiting to be sorted when you stop.` : 'Tap Scouted when you stop.');
   $('scoutHint').style.color = stale ? '#fca5a5' : '';
+  /* The count rides on the button so an unsorted pile is visible without opening it. */
+  const mb = $('scoutMarks');
+  if (mb) mb.innerHTML = '🔎 Scouted' + (n ? `<span class="cnt">${n}</span>` : '');
   /* And the buttons themselves go dark, because a line of small grey text at the bottom
      of a screen he is deliberately not reading is not a warning. */
   [...host.children].forEach(b => { b.style.opacity = stale ? '.35' : '';
@@ -7810,6 +8347,7 @@ function renderScout() {
    it was when he last tapped something. */
 function refreshScoutIfOpen() { if (scoutOpen) renderScout(); }
 $('mScout').onclick = openScout;
+$('scoutPill').onclick = openScout;
 $('scoutExit').onclick = exitScout;
 
 /* ---- sorting, parked ----
@@ -7886,7 +8424,7 @@ function renderSort() {
     $('sortSub').textContent = left.length ? `${left.length} skipped — tap Done, they will be here next time.` : 'All done.';
     host.innerHTML = left.length
       ? '<div class="small" style="padding:12px 2px">That is the end of the list. The ones you skipped are still waiting.</div>'
-      : '<div class="small" style="padding:12px 2px">All sorted. They are in <b>Houses you scouted</b>, in the menu.</div>';
+      : '<div class="small" style="padding:12px 2px">All sorted. They are in <b>Scouted houses</b> — in the menu, or on the Scouted button while you are scouting.</div>';
     return;
   }
   if (m.key || m.dropped) return sortNext();
@@ -8195,8 +8733,23 @@ $('sortUndo').onclick = () => {
 let marksFilter = 'all';
 function openMarks() { closeSheet('menuSheet'); $('marksView').classList.remove('hide'); renderMarks(); }
 function exitMarks() { $('marksView').classList.add('hide'); }
+/* Reading a house and sorting a mark are PARKED jobs. Reached from inside Scout they
+   would leave the scout screen sitting under the detail sheet, so closing the house put
+   him back on three big mark buttons where his thumb expects the four door buttons —
+   one reflex tap on "No Answer" would file a Damage mark at wherever the truck is. Said
+   out loud rather than done quietly, because a mode that ends itself in silence is its
+   own bug. */
+function leaveScoutToSort() {
+  if (!scoutOpen) return;
+  exitScout();
+  flashToast('Back on the main screen', 'Sorting is a parked job. Tap Scout at the top to carry on scouting.', '#f59e0b');
+}
 $('marksExit').onclick = exitMarks;
 $('mMarks').onclick = openMarks;
+/* From inside Scout. marksView sits after scoutView in the document at the same
+   z-index, so it covers the scout screen, and Done drops him back onto it still
+   scouting rather than quietly ending the mode. */
+$('scoutMarks').onclick = openMarks;
 function renderMarks() {
   const host = $('marksBody'); if (!host) return;
   const live = state.marks.filter(m => !m.dropped);
@@ -8239,7 +8792,15 @@ function renderMarks() {
     who.innerHTML = `<div class="a">${esc(m.addr || 'Not sorted yet')}</div>`
       + `<div class="b">${esc(kind.label)} · ${esc(markWhen(m.ts))}${m.owner ? ' · ' + esc(m.owner) : ''}</div>`;
     row.appendChild(dia); row.appendChild(who);
-    row.onclick = () => m.key ? openScoutedHouse(m) : (exitMarks(), openSort(m.id));
+    /* leaveScoutToSort AFTER the branch has committed, and only if it did. Called first,
+       its "you are back on the main screen" notice was overwritten in the same tick by
+       openScoutedHouse's own refusal toast — so a mark whose lot had never loaded ended
+       Scout silently, left the list up with no cue, and put three mark buttons' worth of
+       muscle memory over the four door buttons. */
+    row.onclick = () => {
+      if (m.key) { if (openScoutedHouse(m)) leaveScoutToSort(); return; }
+      exitMarks(); openSort(m.id); leaveScoutToSort();
+    };
     host.appendChild(row);
   });
 }
@@ -8251,14 +8812,15 @@ function openScoutedHouse(m) {
   const ex = visitFor(m.key, state.line) || visitFor(m.key, state.line === 'roof' ? 'appraisal' : 'roof');
   if (!ex && !p) {
     flashToast('That house is not loaded', 'Open the map on it once, with a signal, and it will be here.', '#f59e0b');
-    return;
+    return false;                 // so the caller does not leave Scout over a refusal
   }
   exitMarks();
-  if (ex) return openDetail(withParcelStats(ex, p));
+  if (ex) { openDetail(withParcelStats(ex, p)); return true; }
   openDetail(withParcelStats({ id:'v'+Date.now()+Math.random().toString(36).slice(2,6), key:p.key, county:p.county,
     pid:p.pid, status:'noanswer', line:state.line, ts:Date.now(), lat:p.cen[1], lon:p.cen[0], acc:0, dist:0,
     owner:p.owner, addr:p.addr, extra:p.extra, occ:p.occ||null, mail:p.mail||'',
     name:'', goesBy:'', nameFromOwner:false, phone:'', email:'', notes:'', tags:[], follow:'', _new:true }, p));
+  return true;
 }
 
 /* ---------------- the call sheet ----------------
@@ -8655,7 +9217,7 @@ $('dlExit').onclick = exitDaysLog;
 async function renderDaysLog() {
   const host = $('dlBody'); if (!host) return;
   if (dlOpenKey) return renderOneDay(dlOpenKey);
-  $('dlTitle').textContent = 'Your days';
+  $('dlTitle').textContent = 'History';
   $('dlExit').textContent = 'Done';
   /* The list stays CHEAP on purpose. The first version worked out the full facts for every
      day up front, which meant reading every breadcrumb of every day back off the disk into
@@ -8717,6 +9279,22 @@ async function renderOneDay(key) {
     + tile(f.hasTrack ? dlMiles(f.drivenMetres) : '—', 'miles driven')
     + tile(hoursMins(f.mins), 'first to last');
   host.appendChild(tiles);
+
+  /* Both times, which is what he asked for. Stated as two facts and nothing more. The
+     first version added "and that is where the hours above stop", which is not true: "first
+     to last" spans the WHOLE day, so if he carried the session on afterwards the tile runs
+     past the close and the sentence contradicted the tile it sat under. Say what happened
+     and let the tile say what it measures. */
+  quietClosesOn(key).forEach(r => {
+    const mins = Math.max(0, Math.round((r.closedTs - r.lastTs) / 60000));
+    const line = document.createElement('div');
+    line.className = 'small';
+    line.style.marginBottom = '8px';
+    line.textContent = `Tracking closed itself at ${dlClock(r.closedTs)}: ${mins} minutes `
+      + `with no doors and no movement. The last thing recorded before that was `
+      + `${dlClock(r.lastTs)}. "First to last" above spans the whole day, quiet stretch included.`;
+    host.appendChild(line);
+  });
 
   if (!f.hasTrack && f.count) {
     const note = document.createElement('div');
@@ -8780,6 +9358,14 @@ async function renderOneDay(key) {
       + (c.noTrack && c.measured ? `<div class="n">No walking track at this moment</div>` : '')
       + (flag ? `<div class="dlFlag">⚠️ ${esc(flag)}</div>` : '');
     row.appendChild(dot); row.appendChild(w);
+    /* The list was read-only, so finding a house in History meant reading its address,
+       backing all the way out and hunting for it again. Tapping a row opens that door's
+       own record, the same way the scouted list does. History stays open underneath, so
+       closing the house drops him back on the same day in the same place. */
+    row.classList.add('tap');
+    row.setAttribute('role', 'button');
+    row.setAttribute('aria-label', 'open ' + (v.addr || 'this door'));
+    row.onclick = () => { buzz(10); openDetail(withParcelStats(v, state.parcels.get(v.key))); };
     host.appendChild(row);
   });
 
@@ -8790,14 +9376,22 @@ async function renderOneDay(key) {
     const onMap = document.createElement('button');
     onMap.className = 'chip';
     onMap.textContent = 'Show this day on the map';
-    onMap.onclick = () => {
+    onMap.onclick = async () => {
       state.days.forEach((d, k) => { d.shown = (k === key); });
       dlOpenKey = null;
       $('daysLogView').classList.add('hide');
-      openMap(); buzz(10);
+      await openMap(); buzz(10);
+      /* After the 60ms settle inside openMap, or invalidateSize resizes the map under the
+         fit and the bounds end up wrong — and its follow branch would re-centre on him. */
+      await new Promise(r => setTimeout(r, 90));
+      const fitted = await fitMapToDay(key);
+      refreshMapLayers();
       /* The same thing the Days panel says when it does this, because it is the same
          thing happening and he should not have to guess where his other tracks went. */
-      flashToast('Showing that day only', 'The Days panel on the map puts the rest back', '#38bdf8');
+      flashToast(fitted ? `On the map — ${dayLabel(key)}` : 'Showing that day only',
+        fitted ? 'That day only, the whole round in frame. The Days panel puts the rest back.'
+               : 'Nothing on that day has a position to aim at. The Days panel puts the rest back.',
+        '#38bdf8');
     };
     acts.appendChild(onMap);
   }
@@ -8864,6 +9458,16 @@ async function dayReportHtml(key) {
    + `<div class="tile"><b>${esc(hoursMins(f.mins))}</b><span>first to last</span></div></div>`
    + (counts ? `<p class="sub">${counts}</p>` : '')
    + (bookLine ? `<p class="sub">${bookLine}</p>` : '')
+   /* On the report as well as on the screen. This is the file he hands to someone who is
+      paying for the hours, so a day that closed itself has to say so IN the document —
+      otherwise the short day looks like a short day and nothing explains it. */
+   + quietClosesOn(key).map(r => {
+        const mins = Math.max(0, Math.round((r.closedTs - r.lastTs) / 60000));
+        return `<p class="sub">Tracking closed itself at ${esc(dlClock(r.closedTs))}: `
+          + `${mins} minutes with no doors and no movement. The last thing recorded before `
+          + `that was ${esc(dlClock(r.lastTs))}. "First to last" above spans the whole day, `
+          + `quiet stretch included.</p>`;
+      }).join('')
    + (f.doors.length ? `<h2>Every door, in order</h2><table><tr><th>Time</th><th>Address</th><th>Owner</th><th>Marked</th><th>Book</th><th>From the lot</th><th>Worth a look</th></tr>`
         + f.doors.map(row).join('') + `</table>` : `<p>No doors marked on this day.</p>`)
    + `<div class="note"><b>What this shows.</b> Every door carries the time it was marked. `
@@ -9025,7 +9629,11 @@ function renderBackupNag() {
       + `Nothing will be erased or saved over while this says so.`;
     return;
   }
-  if (!n) { el.classList.add('hide'); return; }
+  /* An empty log used to hide the warning outright — so a refused write with nothing
+     left in the log (every record wiped from a house detail while one was still queued)
+     took the "the phone refused to save a door record" line off the screen with it. The
+     failure flags outrank the count. */
+  if (!n && !visitWriteFailed && !dayWriteFailed && !dayReadFailed) { el.classList.add('hide'); return; }
   const days = backupAgeDays();
   const overdue = days === null || days >= 7;
   const when = days === null ? 'Never backed up'
@@ -9209,7 +9817,7 @@ function loadSettings() {
 const BACKUP_SWITCHES = ['snapMax','hubSpan','trackDetail','hubSat','headUp','rentalMark','wake'];
 /* Not held in memory at all — read straight from storage at the moment they are used, so
    a restore takes effect without anything having to reload them. */
-const BACKUP_ONDEMAND = ['menuSecs'];
+const BACKUP_ONDEMAND = ['menuSecs', 'quietCloses'];
 function loadSwitches() {
   /* Corrected values are written straight back. Substituting a default in memory and
      leaving the bad one on disk means every backup from then on carries the bad one to
@@ -9281,6 +9889,11 @@ $('startBtn').onclick = async () => {
   guardStorage();
   askCompass();
   drawMini();
+  /* After the gate is down, never behind it: the gate is opaque at z-index 200 and a sheet
+     opens at 81, so asking any earlier asks nobody. Deferred rather than called here,
+     because a sheet opened inside this very tap puts its dimmed backdrop under the second
+     half of a double-tap on Start — and a backdrop tap answers the question. */
+  setTimeout(offerQuietResume, 700);
 };
 window.addEventListener('resize', drawMini);
 (async () => {
