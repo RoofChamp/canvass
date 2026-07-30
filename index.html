@@ -143,7 +143,11 @@ input,textarea,select{font:inherit;color:var(--txt);background:var(--card2);bord
 #grid{flex:1;display:grid;grid-template-columns:1fr 1fr;grid-template-rows:1fr 1fr;gap:10px;min-height:0}
 .act{border-radius:20px;display:flex;flex-direction:column;gap:3px;font-weight:800;letter-spacing:-.3px;color:#fff;box-shadow:inset 0 -4px 0 rgba(0,0,0,.22);transition:transform .06s ease,filter .06s ease;padding:14px}
 .act:active{transform:scale(.97);filter:brightness(1.18)}
-.act .big{font-size:clamp(17px,4.9vw,24px);line-height:1.03}
+/* Grown from clamp(17px,4.9vw,24px) now the grey sub-line under it is gone. Measured,
+   not guessed, on 320 / 375 / 390 / 393 / 430: at 5.9vw all four labels still sit
+   clear of the hub circle on every width and none of them takes a third line. 6.4vw
+   was tried and pushes "Left Material" onto three lines at 320 and 375. */
+.act .big{font-size:clamp(19px,5.9vw,28px);line-height:1.03}
 .act .sub{font-size:10.5px;font-weight:600;opacity:.82;letter-spacing:.3px;text-transform:uppercase;line-height:1.15}
 .act .ico{font-size:22px;line-height:1}
 /* content sits in each button's OUTER corner so the hub never covers a word */
@@ -424,6 +428,12 @@ select{min-height:44px}
 .markRow{display:flex;align-items:center;gap:10px;width:100%;text-align:left;background:var(--card);
   border:1px solid var(--line);color:var(--txt);border-radius:14px;padding:12px;margin-bottom:8px;min-height:56px}
 .markRow .dia{width:14px;height:14px;flex:0 0 auto;transform:rotate(45deg);border-radius:3px;border:2px solid}
+/* Same 44px target and the same look as the schedule's tick, on purpose. */
+.markRow .tick{width:44px;height:44px;border-radius:10px;border:1.5px solid var(--line);background:var(--card2);
+  display:flex;align-items:center;justify-content:center;font-size:18px;font-weight:800;color:transparent;flex:0 0 auto}
+.markRow .tick.on{background:#2563eb;border-color:#2563eb;color:#fff}
+.markRow .open{flex:1;min-width:0;display:flex;align-items:center;gap:10px;background:none;border:0;
+  color:var(--txt);text-align:left;padding:0;min-height:44px}
 .markRow .who{flex:1;min-width:0}
 .markRow .a{font-size:15px;font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .markRow .b{font-size:12px;color:var(--dim)}
@@ -583,10 +593,15 @@ select{min-height:44px}
 
   <div id="gridWrap">
     <div id="grid">
-      <button class="act" id="b-talked"  data-s="talked">   <span class="ico">🗣️</span><span class="big">Talked</span><span class="sub">spoke to someone</span></button>
-      <button class="act" id="b-material" data-s="material"><span class="ico">📄</span><span class="big">Left Material</span><span class="sub">door hanger / card</span></button>
-      <button class="act" id="b-noanswer" data-s="noanswer"><span class="ico">🚪</span><span class="big">No Answer</span><span class="sub">nobody home</span></button>
-      <button class="act" id="b-dnr"      data-s="dnr">     <span class="ico">⛔</span><span class="big">Don't Come Back</span><span class="sub">do not return</span></button>
+      <!-- The four grey sub-lines came out at his word: "just the function without
+           instructions". He has knocked thousands of doors on these buttons and does
+           not need No Answer explained to him as "nobody home". The .sub rule below
+           is kept — the class is gone from here, not from the stylesheet, because
+           these four are the only place it was ever used and it costs nothing. -->
+      <button class="act" id="b-talked"  data-s="talked">   <span class="ico">🗣️</span><span class="big">Talked</span></button>
+      <button class="act" id="b-material" data-s="material"><span class="ico">📄</span><span class="big">Left Material</span></button>
+      <button class="act" id="b-noanswer" data-s="noanswer"><span class="ico">🚪</span><span class="big">No Answer</span></button>
+      <button class="act" id="b-dnr"      data-s="dnr">     <span class="ico">⛔</span><span class="big">Don't Come Back</span></button>
     </div>
     <div id="hub"><canvas id="mini"></canvas><div id="hubLabel">HOLD = PARK</div></div>
     <button class="hubBtn" id="hubOut" aria-label="zoom out">−</button>
@@ -664,7 +679,21 @@ select{min-height:44px}
     <button id="marksExit">Done</button>
   </div>
   <div class="chips" id="marksFilter" style="padding:0 12px 8px"></div>
+  <!-- His ask: tick several and delete them in one go. Same three controls, same
+       wording and the same "say what it will destroy before it does it" rule as the
+       schedule screen, so the two lists do not hold two different ideas about how
+       selecting things works. -->
+  <div class="chips" id="marksSelBar" style="padding:0 12px 8px">
+    <button class="chip" id="mkSelAll">Select all</button>
+    <button class="chip" id="mkSelNone">Clear selection</button>
+  </div>
   <div id="marksBody"></div>
+  <!-- Under the list, and only once something is ticked. Kept well clear of "Clear
+       selection": one button that unticks and one that destroys, side by side, is the
+       accident the schedule screen was already built to avoid. -->
+  <div id="mkDangerWrap" class="hide" style="padding:0 12px 12px;border-top:1px solid var(--line)">
+    <button class="ghost danger" id="mkDelSel" style="margin-top:10px">🗑 Delete the ticked ones…</button>
+  </div>
 </div>
 
 <!-- What he did, day by day. Everything on it was already being recorded; nothing joined
@@ -706,7 +735,7 @@ select{min-height:44px}
     <div><span style="border:1.5px dashed #e9d5ff;display:inline-block;width:11px;height:11px;border-radius:3px;margin-right:6px;vertical-align:-1px"></span>Appraisal</div>
     <div style="margin-top:4px;border-top:1px solid var(--line);padding-top:4px">
       <span style="display:inline-block;width:11px;height:11px;border-radius:2px;margin-right:6px;vertical-align:-1px;background:rgba(234,179,8,.30);border:1px solid rgba(234,179,8,.5)"></span>Likely a rental</div>
-    <div><span style="display:inline-block;width:11px;height:11px;border-radius:50%;margin-right:6px;vertical-align:-1px;background:#a855f7;border:2px solid #f5f3ff"></span>Appraisal flyer left — worth a roofing knock</div>
+    <div><span style="display:inline-block;width:13px;height:11px;margin-right:5px;vertical-align:-1px;border:1px solid #a855f7;background:repeating-linear-gradient(45deg,#a855f7 0 3px,transparent 3px 7px)"></span>Appraisal flyer left — worth a roofing knock</div>
     <div style="margin-top:4px;border-top:1px solid var(--line);padding-top:4px">
       <span style="display:inline-block;width:16px;height:3px;border-radius:2px;margin-right:5px;vertical-align:2px;background:#94a3b8;opacity:.6"></span>Driven, not walked</div>
     <div style="margin-top:4px;border-top:1px solid var(--line);padding-top:4px;font-weight:700">Scouted from the truck — seen, not knocked</div>
@@ -726,7 +755,9 @@ select{min-height:44px}
   </div>
   <div id="mapBottom">
     <button class="mbtn" id="mapFilter">👁 All work</button>
-    <button class="mbtn" id="mapShow">🏷 Show</button>
+    <!-- Was "🏷 Show", which in a row of eight told him nothing about what it showed.
+         Same six choices are now in the menu as well, under the mini map's. -->
+    <button class="mbtn" id="mapShow">🏷 House info</button>
     <button class="mbtn" id="mapKey">🔑 Key</button>
     <button class="mbtn" id="mapRoute">〰 Tracks</button>
     <button class="mbtn" id="mapDays">📅 Days</button>
@@ -934,6 +965,12 @@ select{min-height:44px}
         <input id="apAt" type="datetime-local">
         <label class="f">How long</label>
         <div class="chips" id="apMins"></div>
+        <!-- His ask. Rides along in the full backup for nothing, because appointments
+             are already saved whole and merged on restore — and it is put into the
+             calendar entry too, or it would be a note he could only read in the one
+             place he is least likely to be looking when he pulls up outside. -->
+        <label class="f">Notes</label>
+        <textarea id="apNote" rows="3" placeholder="Gate code, dog in the yard, meet round the back"></textarea>
         <button class="primary" id="apSave" style="margin-top:12px">Save appointment</button>
         <button class="ghost" id="apCancel">Cancel</button>
       </div>
@@ -1073,6 +1110,13 @@ select{min-height:44px}
 
       <div class="dsec"><button class="dsecHead" data-msec="day"><i>▾</i>End of day</button>
         <div class="dsecBody" id="msecDay">
+          <!-- The tier is called End of day and could not end the day. The only button
+               that stops the session and the GPS was at the foot of the stats screen,
+               two taps away under a heading that says How you're doing. It is still
+               there — this is a second way in, at the top of the tier he opens when he
+               is finished, above the backup he should take next. -->
+          <button class="ghost" id="mEndDay" style="margin-top:0">■ End the day — stop tracking</button>
+          <div class="small" id="endDayNote" style="margin:5px 0 16px"></div>
           <button class="primary" id="mBackupShare" style="margin-top:0">📤 Full backup — send it somewhere safe</button>
           <button class="ghost" id="mBackup">💾 Full backup — just download it</button>
           <div class="small" style="margin-top:5px">Every door, note, tag, stage, follow-up, appointment and walking track, in one file. This is the only thing that can rebuild the app if the phone is lost or the icon is deleted. Get it off the phone.</div>
@@ -1100,6 +1144,16 @@ select{min-height:44px}
           <label class="f">Show on the mini map</label>
           <div class="chips" id="mHubData"></div>
           <div class="small" style="margin-top:6px">Printed on the house itself. The circle is small, so keep it to one or two at a time. Shorthand: b94 built 1994, s19 sold 2019, 1840sf floor area.</div>
+
+          <!-- The big map has had the same six choices all along, behind a button called
+               "Show" in a row of eight along the bottom, and he never found them — he
+               asked for the big map to have the same options as the little one. They are
+               here now, under the mini map's, because this is where he already comes to
+               set them. Still the map's OWN setting, not a copy of the circle's: a full
+               screen carries three lines where the circle carries two. -->
+          <label class="f">Show on the big map</label>
+          <div class="chips" id="mMapData"></div>
+          <div class="small" style="margin-top:6px">The same choices for the full map. It has room for three lines instead of two — but they only print when you are zoomed well in, or there is no space on the lot for the words.</div>
 
           <label class="f" for="mDetail">Track detail</label>
           <select id="mDetail"></select>
@@ -2411,6 +2465,30 @@ function drawSatellite(g, w, h, lat, lon, span) {
     g.drawImage(img, sx, sy, pxPerTile + 1, pxPerTile + 1);
   }
 }
+/* The little map's half of the purple hash. A CanvasPattern belongs to the context that
+   made it, so it is cached per context rather than in one global — the mini map has one
+   canvas today, and a cache that quietly assumes that is the kind of thing that breaks
+   the day a second one appears. Two diagonals per tile so the stripe carries across the
+   tile seam instead of breaking up into dashes. */
+const flyerHatchCache = new WeakMap();
+function flyerHatch(g) {
+  if (flyerHatchCache.has(g)) return flyerHatchCache.get(g);
+  let pat = null;
+  try {
+    const c = document.createElement('canvas');
+    c.width = c.height = 9;
+    const q = c.getContext('2d');
+    q.strokeStyle = '#a855f7';
+    q.lineWidth = 2.6;
+    q.beginPath();
+    q.moveTo(-2.5, 6.5); q.lineTo(6.5, -2.5);
+    q.moveTo(2.5, 11.5); q.lineTo(11.5, 2.5);
+    q.stroke();
+    pat = g.createPattern(c, 'repeat');
+  } catch (e) { pat = null; }
+  flyerHatchCache.set(g, pat);
+  return pat;
+}
 function drawMini() {
   const cv = $('mini'); if (!cv) return;
   const dpr = window.devicePixelRatio || 1;
@@ -2510,11 +2588,19 @@ function drawMini() {
        by which book he is logging, because the point is to spot it while knocking the
        other one. */
     if (flyerLeft(p.key)) {
-      const at = p.house || p.cen;
+      /* Was a 4.5px violet dot at `p.house || p.cen` — the very point the house number
+         and the value are printed at, so the figures sat on top of it. Purple hash
+         across the lot instead, matching the big map. Drawn BEFORE the labels, which
+         are painted from labelJobs after this loop, so a number still reads over it. */
       g.save();
-      g.beginPath(); g.arc(X(at), Y(at), 4.5, 0, Math.PI*2);
-      g.fillStyle = '#a855f7'; g.fill();
-      g.lineWidth = 1.6; g.strokeStyle = '#f5f3ff'; g.stroke();
+      g.beginPath();
+      for (const ring of p.rings) {
+        ring.forEach((pt, i) => i ? g.lineTo(X(pt), Y(pt)) : g.moveTo(X(pt), Y(pt)));
+        g.closePath();
+      }
+      g.globalAlpha = .85;
+      g.fillStyle = flyerHatch(g) || 'rgba(168,85,247,.3)';
+      g.fill();
       g.restore();
     }
   }
@@ -3261,7 +3347,16 @@ function openDetail(visit, focusName) {
   Object.entries(STATUS).forEach(([k,s]) => {
     const b = document.createElement('button');
     b.className = 'chip' + (v.status===k ? ' on' : ''); b.textContent = s.label;
-    if (v.status===k) { b.style.background = s.color+'2e'; b.style.borderColor = s.color; b.style.color = s.color; }
+    /* Coloured whether or not it is the one that is set, so this row reads the same as
+       the four buttons on the main screen — green talked, blue material, amber no
+       answer, red don't come back. His ask. The one that IS set goes solid, white on
+       colour: once every chip in a row carries a colour, the colour has stopped being
+       what says "this is the one" and something else has to. */
+    if (v.status === k) {
+      b.style.background = s.color; b.style.borderColor = s.color; b.style.color = '#fff';
+    } else {
+      b.style.background = s.color + '1f'; b.style.borderColor = s.color + '8c'; b.style.color = s.color;
+    }
     b.onclick = () => { pullDetail(); editing.status = k; openDetail(editing); };
     sw.appendChild(b);
   });
@@ -3836,6 +3931,45 @@ async function clearDetailContent() {
 let sheetZ = 80;
 function openSheet(id){ const el = $(id); el.style.zIndex = ++sheetZ; el.classList.remove('hide'); }
 function closeSheet(id){ $(id).classList.add('hide'); }
+
+/* ---------------- getting back to the menu ----------------
+   His words: "when i open a selection from the menu and then close it.. i go back to
+   the main screen.. it should go back to menu."
+
+   Two different jobs, because there are two different layers. Anything that opens as a
+   SHEET — Schedule, Doors to try again, By area — simply opens on top of the menu and
+   the menu is still sitting there when it closes, at the scroll position he left it at.
+   That is how the session screen and the customer list have always behaved; the other
+   three were closing the menu for no reason anyone recorded.
+
+   The full-screen views cannot do that. scoutView, marksView and daysLogView are all at
+   z-index 80, and an open sheet is always ABOVE 80 — leaving the menu open would draw it
+   straight over the view. So for those the menu is closed on the way in and put back on
+   the way out, scroll position and all.
+
+   `menuReturn` is deliberately reset by every way IN rather than trusted to be cleaned
+   up by every way out. There are more ways out of these screens than there are in — a
+   scout mark opens a house, History opens a day, both leave by the side door — and a
+   stale return would reopen the menu over something he reached from the strip. */
+let menuReturn = null;              // scrollTop to come back to, or null for "don't"
+const menuScroller = () => $('menuSheet').querySelector('.sheetScroll');
+function leaveMenuForView() {
+  const open = !$('menuSheet').classList.contains('hide');
+  const sc = menuScroller();
+  menuReturn = open ? (sc ? sc.scrollTop : 0) : null;
+  closeSheet('menuSheet');
+}
+function backToMenuIfCameFromIt() {
+  if (menuReturn === null) return false;
+  const top = menuReturn;
+  menuReturn = null;
+  /* The menu button rather than openSheet, so every readout in it is redrawn — he may
+     have just ended the day, sorted ten marks or deleted a batch of them. */
+  $('menuBtn').click();
+  const sc = menuScroller();
+  if (sc) sc.scrollTop = top;
+  return true;
+}
 /** A confirm that can have more than two answers, in words, on big buttons.
     opts: [{ key, label, sub, danger }] — resolves with the key, or null if backed out. */
 function askChoice(title, body, opts) {
@@ -3895,6 +4029,16 @@ function loadLeaflet() {
   });
 }
 async function openMap() {
+  /* The map is z-index 70 and the menu, as a sheet, is always above 80 — so with the
+     menu now allowed to stay open under a sheet, every route to the map has to shut it
+     or he gets the menu printed over the map. Doing it HERE covers all seven ways in
+     (the truck pill, a long press on the hub, picking an area for a route, a day out of
+     the area list, a day out of History, the map file preview, the map button itself)
+     rather than seven separate closeSheet calls waiting for one to be forgotten.
+     The pending menu return is dropped as well: the map is a destination, not a
+     detour, and backing out of it belongs on the main screen. */
+  menuReturn = null;
+  closeSheet('menuSheet');
   $('mapView').classList.remove('hide');
   try { await loadLeaflet(); } catch(e) {
     $('mapView').classList.add('hide');
@@ -3940,11 +4084,48 @@ function flyerLeft(parcelKey) {
   return !!v && v.status === 'material';
 }
 
+/* ---- the purple hash that says "an appraisal flyer already went through this door" ----
+   One <pattern> in the vector renderer's own <svg>. It has to live in THAT svg: a def in
+   a different svg document is not addressable by url(#id) from this one. Re-checked on
+   every pass rather than set up once, so it heals itself if Leaflet ever rebuilds the
+   container under us. */
+const FLYER_HATCH_ID = 'flyerHatch';
+let hatchReady = false;
+function ensureFlyerHatch() {
+  const m = window._map; if (!m) return false;
+  const pane = m.getPane && m.getPane('overlayPane');
+  const svg = pane && pane.querySelector('svg');
+  if (!svg) return false;
+  if (svg.querySelector('#' + FLYER_HATCH_ID)) return true;
+  try {
+    const NS = 'http://www.w3.org/2000/svg';
+    let defs = svg.querySelector('defs');
+    if (!defs) { defs = document.createElementNS(NS, 'defs'); svg.insertBefore(defs, svg.firstChild); }
+    const pat = document.createElementNS(NS, 'pattern');
+    pat.setAttribute('id', FLYER_HATCH_ID);
+    pat.setAttribute('patternUnits', 'userSpaceOnUse');
+    pat.setAttribute('width', '9'); pat.setAttribute('height', '9');
+    pat.setAttribute('patternTransform', 'rotate(45)');
+    const bar = document.createElementNS(NS, 'rect');
+    bar.setAttribute('x', '0'); bar.setAttribute('y', '0');
+    bar.setAttribute('width', '3.4'); bar.setAttribute('height', '9');
+    bar.setAttribute('fill', '#a855f7');
+    pat.appendChild(bar);
+    defs.appendChild(pat);
+    return true;
+  } catch (e) { return false; }
+}
 function refreshMapLayers() {
   const m = window._map; if (!m) return;
   const pl = window._parcelLayer, ll = window._labelLayer;
   pl.clearLayers(); ll.clearLayers();
   const b = m.getBounds(), z = m.getZoom();
+  /* Once for the whole pass, and OUTSIDE the zoom branch on purpose. Set inside it, a
+     pass at low zoom would leave the flag stale and the self-heal at the foot of this
+     function would reschedule itself for ever. Referencing a pattern id that is not in
+     the document paints NOTHING, so when it is not ready the flyer lots take a plain
+     violet wash for one pass rather than vanishing. */
+  hatchReady = ensureFlyerHatch();
   const inView = ll2 => ll2[0] >= b.getSouth() && ll2[0] <= b.getNorth() && ll2[1] >= b.getWest() && ll2[1] <= b.getEast();
 
   /* Below zoom 16 the lot lines are not loaded (and would be illegible anyway),
@@ -4013,10 +4194,20 @@ function refreshMapLayers() {
          already had a flyer through the door. Violet reads against every status colour
          and against the yellow-and-black rental ring. */
       if (flyerLeft(p.key)) {
-        const at = p.house || p.cen;
-        pl.addLayer(L.circleMarker([at[1], at[0]], {
-          radius: z >= 18 ? 6 : 4.5, weight: 2, color: '#f5f3ff',
-          fillColor: '#a855f7', fillOpacity: 1, interactive: false }));
+        /* Was a violet dot of 4.5px, drawn at `p.house || p.cen` — which is the exact
+           point the house number and the value are printed at. Not near the label: ON
+           it. He said it was small and hard to see and that the figures were sitting
+           over it, and he was right on both counts.
+           Purple hash across the whole lot instead, his call. Diagonal stripes rather
+           than a wash, so it cannot be mistaken for the yellow rental wash even where a
+           lot carries both, and across the LOT rather than on the house because the
+           county has no building footprint for a large share of properties — a
+           house-centred mark lands in the middle of the back garden. The stripes are
+           semi-transparent, so a number printed over them still reads. */
+        pl.addLayer(L.polygon(latlngs, {
+          stroke: true, color: '#a855f7', weight: 1.5, opacity: .9, interactive: false,
+          fillColor: hatchReady ? `url(#${FLYER_HATCH_ID})` : '#a855f7',
+          fillOpacity: hatchReady ? .8 : .26 }));
       }
       if (z >= MAP_LABEL_ZOOM) {
         const lines = labelLines(p, state.mapData, 3);
@@ -4100,6 +4291,12 @@ function refreshMapLayers() {
          + `transform:rotate(45deg);border:2.2px solid ${kind.color};border-radius:3px;`
          + `background:${mk.key ? kind.color : 'rgba(2,6,23,.55)'}"></div>` }) }));
   }
+  /* If the hash pattern could not be installed on the way in — no renderer <svg> yet,
+     which is the case on the very first paint — the flyer lots just drew as a plain
+     wash. The svg exists now that layers have been added, so put the pattern in and
+     paint once more. Guarded on ensureFlyerHatch succeeding, so this can run at most
+     one extra pass and can never spin. */
+  if (!hatchReady && ensureFlyerHatch()) setTimeout(refreshMapLayers, 0);
 }
 const shortOwner = o => { const parts = o.split(/\s*&\s*/)[0].trim().split(/\s+/); return parts.slice(0, Math.min(2, parts.length)).join(' '); };
 function syncMapBtns() {
@@ -5479,7 +5676,7 @@ document.querySelectorAll('.dsecHead[data-msec]').forEach(b => {
 /* ---- what version is actually on the phone ----
    Matches the service worker cache name, so "did the update land" is answerable by
    looking rather than guessing. */
-const BUILD_VERSION = 'v17';
+const BUILD_VERSION = 'v18';
 const BUILD_DATE = '29 July 2026';
 function renderVersionStamp() {
   const el = $('versionStamp'); if (!el) return;
@@ -5601,22 +5798,33 @@ const hubLabelLines = p => labelLines(p, state.hubData, 2);
 /* Same choices as the hub, its own setting, and reachable from the map itself.
    A phone screen and a full map are not the same amount of room. */
 function renderMapDataChips() {
-  const el = $('mapData'); if (!el) return;
-  el.innerHTML = '';
-  const save = () => { localStorage.setItem('mapData', JSON.stringify(state.mapData)); renderMapDataChips(); refreshMapLayers(); };
-  HUB_FIELDS.forEach(([k, label]) => {
-    const b = document.createElement('button');
-    b.className = 'chip' + (state.mapData.includes(k) ? ' on' : ''); b.textContent = label;
-    b.onclick = () => {
-      state.mapData = state.mapData.includes(k) ? state.mapData.filter(x => x !== k) : [...state.mapData, k];
-      save();
-    };
-    el.appendChild(b);
+  /* refreshMapLayers already returns on no map, but saying so here matters: this row is
+     now also drawn in the MENU, where it can be tapped with the big map never opened. */
+  const save = () => {
+    localStorage.setItem('mapData', JSON.stringify(state.mapData));
+    renderMapDataChips();
+    refreshMapLayers();
+  };
+  /* Two homes for the same row now: the panel on the map itself, and the menu, right
+     under the mini map's — because that is where he already comes to set these and it
+     is where he looked. Both are redrawn on every change, so they cannot disagree. */
+  ['mapData', 'mMapData'].forEach(id => {
+    const el = $(id); if (!el) return;
+    el.innerHTML = '';
+    HUB_FIELDS.forEach(([k, label]) => {
+      const b = document.createElement('button');
+      b.className = 'chip' + (state.mapData.includes(k) ? ' on' : ''); b.textContent = label;
+      b.onclick = () => {
+        state.mapData = state.mapData.includes(k) ? state.mapData.filter(x => x !== k) : [...state.mapData, k];
+        save();
+      };
+      el.appendChild(b);
+    });
+    const off = document.createElement('button');
+    off.className = 'chip' + (state.mapData.length ? '' : ' on'); off.textContent = 'Nothing';
+    off.onclick = () => { state.mapData = []; save(); };
+    el.appendChild(off);
   });
-  const off = document.createElement('button');
-  off.className = 'chip' + (state.mapData.length ? '' : ' on'); off.textContent = 'Nothing';
-  off.onclick = () => { state.mapData = []; save(); };
-  el.appendChild(off);
   renderMapDataNote();
 }
 /* Labels are unreadable much further out than this, so they are not drawn — but
@@ -5878,7 +6086,9 @@ $('menuBtn').onclick = () => {
   try {
     renderStats(); renderSnapChips(); renderDetailChips(); renderDiag(); renderParkInfo();
     renderBackupNag(); renderPinInfo(); renderHomeInfo(); renderPaceInfo(); renderDriveChips();
-    renderHubDataChips(); renderStorageNote(); renderVersionStamp(); renderQuietChip(); renderRentalChip();
+    renderHubDataChips(); renderMapDataChips();
+    renderStorageNote(); renderVersionStamp(); renderQuietChip(); renderRentalChip();
+    renderEndDay();
     renderSoundChip(); renderWakeChip();
     renderLineNames(); restoreMenuSections();
   } catch (e) {
@@ -5893,7 +6103,7 @@ $('crmShare').onclick = sharePhoneList;
    would lose the caret on every keystroke. */
 $('crmSearch').oninput = e => { crmQuery = e.target.value; renderCrm(); };
 $('crmSearchClear').onclick = () => { crmQuery = ''; $('crmSearch').value = ''; renderCrm(); $('crmSearch').focus(); };
-$('mAppt').onclick = () => { closeSheet('menuSheet'); openAppts(); };
+$('mAppt').onclick = openAppts;   // menu stays open underneath, so Close comes back to it
 $('mSetHome').onclick = () => { setHomeHere(); renderHomeInfo(); };
 $('mClearHome').onclick = () => {
   state.home = null; localStorage.removeItem('home'); renderHomeInfo();
@@ -5907,7 +6117,36 @@ $('dFollow').onchange = () => { pullDetail(); if (editing) openDetail(editing); 
 $('mSession').onclick = openSession;
 $('doneBtn').onclick = () => { openSession(); buzz(10); };
 $('sesKeep').onclick = () => { if (!state.session) { startSession(); setPaused(false); } closeSheet('sessionSheet'); };
-$('sesEnd').onclick = endSession;
+/* Was `= endSession`, so the click event itself arrived as the `quiet` argument and was
+   truthy — every tap on this button took the silent path: no "Session ended" toast, and
+   the menu left open behind it. He got no word back that tracking had stopped. */
+$('sesEnd').onclick = () => endSession();
+
+/* The way out from the tier that is actually called End of day. It ends the session
+   QUIETLY — endSession's own toast closes the menu, and the whole point of ending the
+   day from here is that the backup is the next thing under his thumb. */
+function renderEndDay() {
+  const on = !!state.session;
+  const n = on ? state.visitLog.filter(v => v.ts >= state.session.start).length : 0;
+  $('endDayNote').textContent = on
+    ? `Tracking is on — ${n} door${n === 1 ? '' : 's'} this session. Stopping saves the battery. Your records stay.`
+    : 'Tracking is already off.';
+}
+$('mEndDay').onclick = async () => {
+  if (!state.session) {
+    flashToast('Tracking is already off', 'Nothing is running. Your records are safe.', '#64748b');
+    return;
+  }
+  const n = state.visitLog.filter(v => v.ts >= state.session.start).length;
+  const k = await askChoice('End the day?',
+    `The GPS stops and the session closes. Your ${n} door${n === 1 ? '' : 's'} from this session stay — nothing is deleted.`,
+    [{ key:'end', label:'End the day', sub:'Tracking stops' },
+     { key:'no',  label:'Not yet' }]);
+  if (k !== 'end') return;
+  await endSession(true);
+  renderEndDay();
+  flashToast('Day ended', 'Tracking stopped and the GPS is off. Take a full backup below.', '#64748b');
+};
 $('sesExport').onclick = () => { xOpts.range = 'today'; openExport(); closeSheet('sessionSheet'); };
 function renderPinInfo() {
   $('pinInfo').textContent = localStorage.getItem('pin')
@@ -6305,7 +6544,7 @@ $('mapNameArea').onclick = () => { if (areaPickBox) endAreaPick(false); else sta
 /* One bar, two jobs: erasing track and picking an area to go back to. */
 $('eraseCancel').onclick = () => { if (routePickBox) endRoutePick(false); else if (areaPickBox) endAreaPick(false); else cancelErase(); };
 $('eraseGo').onclick = () => { if (routePickBox) endRoutePick(true); else if (areaPickBox) endAreaPick(true); else commitErase(); };
-$('mRoute').onclick = () => { closeSheet('menuSheet'); openRoute(); };
+$('mRoute').onclick = openRoute;  // ditto
 $('xView').onclick = openListView;
 $('xShowMe').onclick = () => showGeoPreview(xOpts);
 $('previewDone').onclick = () => { clearGeoPreview(); buzz(10); };
@@ -6780,7 +7019,7 @@ const toLocalInput = ts => new Date(ts - new Date(ts).getTimezoneOffset() * 6000
 function scheduleItems() {
   const out = state.appts.map(a => ({
     kind:'appt', id:a.id, at:a.at, label:a.label || 'Appointment',
-    addr:a.addr || '', lat:a.lat, lon:a.lon, ref:a,
+    addr:a.addr || '', lat:a.lat, lon:a.lon, note:a.note || '', ref:a,
   }));
   for (const v of dueList()) {
     out.push({ kind:'follow', id:v.id, at:v.followAt, label:displayName(v),
@@ -6798,6 +7037,8 @@ function scheduleToIcs(it) {
     summary: it.label || 'Appointment',
     location: it.addr || (v && v.addr) || '',
     description: [it.addr || (v && v.addr) || '',
+      /* First after the address, because a gate code is no use below the boilerplate. */
+      (it.ref && it.ref.note) ? it.ref.note : '',
       v && v.owner ? `Owner: ${v.owner}` : '',
       v && v.phone ? `Phone: ${v.phone}` : '',
       v ? `${LINES[v.line||'roof'].label} appointment` : ''].filter(Boolean).join('\n'),
@@ -7315,6 +7556,7 @@ function renderAppts() {
     body.innerHTML = `
       <div class="a">${esc(it.label)}${it.assumed ? ' <span class="assumed">(from the deed)</span>' : ''}</div>
       <div class="o">${esc(new Date(it.at).toLocaleString([], {weekday:'short', month:'short', day:'numeric', hour:'numeric', minute:'2-digit'}))}${it.addr ? ' \u00b7 ' + esc(it.addr) : ''}</div>
+      ${it.note ? `<div class="o" style="color:var(--txt);opacity:.9;white-space:pre-wrap">${esc(it.note)}</div>` : ''}
       <div class="m">
         <span class="dchip" style="color:${it.kind==='appt'?'#7dd3fc':'#a855f7'};border-color:${it.kind==='appt'?'#7dd3fc66':'#a855f766'}">${it.kind==='appt'?'Appt.':'Follow-up'}</span>
         <span class="${late?'lateTxt':'dimTxt'}">${esc(whenText(it.at))}</span>
@@ -7493,6 +7735,7 @@ function runApFind() {
 $('apptNew').onclick = () => {
   apptDraft = { id:'a' + Date.now() + Math.random().toString(36).slice(2,6), lat:null, lon:null, addr:'', src:null, mins:APPT_MINS_DEFAULT };
   $('apLabel').value = '';
+  $('apNote').value = '';
   $('apFind').value = ''; $('apFindClear').classList.add('hide');
   // opens showing the address he is standing at, so the commonest case is one tap
   renderApFind(apFindHere(), '');
@@ -7531,6 +7774,12 @@ $('apSave').onclick = () => {
     id:d.id, label:($('apLabel').value || '').trim() || 'Appointment',
     addr:(d.addr || '').trim(), lat:d.lat, lon:d.lon, at,
     mins: cleanMins(d.mins) || APPT_MINS_DEFAULT,
+    /* Capped so one pasted paragraph cannot bloat every backup from here on. Trimmed
+       to '' rather than dropped, so the field is always the same shape. Carriage
+       returns are stripped because icsEsc escapes \n but not \r, and a bare \r inside
+       a DESCRIPTION line ends that line early — the calendar entry would lose
+       everything after the first line break in his note. */
+    note: ($('apNote').value || '').replace(/\r\n?/g, '\n').trim().slice(0, 600),
     key:d.key || null, line:d.line || null,
   }];
   saveAppts();
@@ -7651,7 +7900,19 @@ function orderByProximity(items, fromLat, fromLon) {
 const TWO_OPT_MAX = 120;
 const ROUTE_MAX = 400;
 let routeBox = null;          // {s,n,w,e} when an area has been picked on the map
-let routeWhen = 'today';
+/* This was 'today', hard-coded, and reset to 'today' on every single launch. The one
+   moment he opens this screen is first thing in the morning to plan where to go, and
+   at that moment "today" holds nothing — so the screen answered "No unanswered doors
+   in this book for that stretch of time" with a week of no-answers sitting right
+   behind it. It opens on the last seven days now, and remembers whatever he picks. */
+const ROUTE_WHENS = ['today', 'week', 'all'];
+let routeWhen = (() => {
+  try {
+    const saved = localStorage.getItem('routeWhen');
+    if (ROUTE_WHENS.includes(saved)) return saved;
+  } catch (e) {}
+  return 'week';
+})();
 function routeRunStart() {
   try {
     const r = JSON.parse(localStorage.getItem('routeRun') || 'null');
@@ -8194,7 +8455,7 @@ async function nameAreaHere() {
   saveAreas(); renderAreas(); renderStrip(); buzz(20);
   flashToast('Area named', `${name} — every round you have ever done inside it is on the list now`, '#22c55e');
 }
-$('mAreas').onclick = () => { closeSheet('menuSheet'); openAreas(); };
+$('mAreas').onclick = openAreas;  // ditto
 $('areaPill').onclick = () => {
   const here = state.pos ? areasAt(state.pos.lat, state.pos.lon) : [];
   openAreas();
@@ -8250,7 +8511,7 @@ function saveMarksChecked() {
 }
 function openScout() {
   scoutOpen = true;
-  closeSheet('menuSheet');
+  leaveMenuForView();
   $('scoutView').classList.remove('hide');
   renderScout();
   buzz(12);
@@ -8348,7 +8609,9 @@ function renderScout() {
 function refreshScoutIfOpen() { if (scoutOpen) renderScout(); }
 $('mScout').onclick = openScout;
 $('scoutPill').onclick = openScout;
-$('scoutExit').onclick = exitScout;
+/* Same reason as marksExit: exitScout is also how leaveScoutToSort gets him off the
+   scout screen on the way into sorting, and that path must not reopen the menu. */
+$('scoutExit').onclick = () => { exitScout(); backToMenuIfCameFromIt(); };
 
 /* ---- sorting, parked ----
    ONE mark on the screen at a time. The first version was a scrolling list of every mark,
@@ -8410,7 +8673,25 @@ function markWhen(ts) {
   const d = new Date(ts);
   return `${d.toLocaleDateString()} ${d.toLocaleTimeString([], {hour:'numeric', minute:'2-digit'})}`;
 }
-function sortNext() { sortAt++; sortShowOther = false; sortShowBlock = false; blockPick = null; renderSort(); }
+/* Was `sortAt++`, and that is the whole of the bug he reported as "it doesn't progress
+   to the next one". The queue is built OLDEST first. The Scouted houses list he taps
+   from is sorted NEWEST first. So tapping the top row starts him on the last item in
+   the queue, one tap of an address ran him off the end, and he got "that is the end of
+   the list" — on a screen that was at the same time counting the other nine still
+   waiting. It walks on to the next mark that actually needs sorting now, wrapping once
+   through the queue, and reaches the end screen only when nothing is left. */
+function sortNext() {
+  sortShowOther = false; sortShowBlock = false; blockPick = null;
+  const n = sortQueue.length;
+  let found = -1;
+  for (let step = 1; step <= n; step++) {
+    const i = (sortAt + step) % n;
+    const m = sortQueue[i];
+    if (m && !m.key && !m.dropped) { found = i; break; }
+  }
+  sortAt = found >= 0 ? found : n;      // n is past the end, which is the all-done screen
+  renderSort();
+}
 function renderSort() {
   const host = $('sortBody');
   if (!host) return;
@@ -8429,7 +8710,10 @@ function renderSort() {
   }
   if (m.key || m.dropped) return sortNext();
   const kind = MARK_KINDS[m.kind];
-  $('sortSub').textContent = `${sortAt + 1} of ${sortQueue.length} · ${kind.label} · ${markWhen(m.ts)}`;
+  /* "N left" as well as the position, because the queue wraps now — without it, going
+     from "10 of 10" round to "1 of 10" reads like it started the pile again. */
+  $('sortSub').textContent = `${sortAt + 1} of ${sortQueue.length} · ${left.length} left`
+    + ` · ${kind.label} · ${markWhen(m.ts)}`;
 
   const head = document.createElement('div');
   head.className = 'sortWhat';
@@ -8731,7 +9015,19 @@ $('sortUndo').onclick = () => {
    house so he can knock it and log it in the ordinary way, and it is that knock that
    counts, not the drive-past. */
 let marksFilter = 'all';
-function openMarks() { closeSheet('menuSheet'); $('marksView').classList.remove('hide'); renderMarks(); }
+/* In memory only, never saved. A tick is a thing he is doing right now, not a record —
+   it must not survive a restart and turn up pre-selected under a delete button. */
+let marksSel = new Set();
+/* ONE definition of what is on screen, shared by the list and by Select all. Two copies
+   of this filter would eventually disagree, and the one that disagreed would be the one
+   deciding what gets deleted. */
+function visibleMarks() {
+  return state.marks
+    .filter(m => !m.dropped)
+    .filter(m => marksFilter === 'all' ? true : marksFilter === 'todo' ? !m.key : m.kind === marksFilter)
+    .sort((a, b) => b.ts - a.ts);
+}
+function openMarks() { leaveMenuForView(); $('marksView').classList.remove('hide'); renderMarks(); }
 function exitMarks() { $('marksView').classList.add('hide'); }
 /* Reading a house and sorting a mark are PARKED jobs. Reached from inside Scout they
    would leave the scout screen sitting under the detail sheet, so closing the house put
@@ -8744,7 +9040,10 @@ function leaveScoutToSort() {
   exitScout();
   flashToast('Back on the main screen', 'Sorting is a parked job. Tap Scout at the top to carry on scouting.', '#f59e0b');
 }
-$('marksExit').onclick = exitMarks;
+/* Not `= exitMarks`: exitMarks is also called on the way DEEPER — opening the house
+   behind a mark, or dropping into sorting — and those must not throw the menu back up
+   over what he just opened. Only the Done button comes back here. */
+$('marksExit').onclick = () => { exitMarks(); backToMenuIfCameFromIt(); };
 $('mMarks').onclick = openMarks;
 /* From inside Scout. marksView sits after scoutView in the document at the same
    z-index, so it covers the scout screen, and Done drops him back onto it still
@@ -8767,12 +9066,16 @@ function renderMarks() {
     b.onclick = () => { marksFilter = k; renderMarks(); buzz(8); };
     chips.appendChild(b);
   });
-  const rows = live.filter(m => marksFilter === 'all' ? true
-                              : marksFilter === 'todo' ? !m.key
-                              : m.kind === marksFilter)
-                   .sort((a, b) => b.ts - a.ts);
+  const rows = visibleMarks();
+  /* A mark deleted, sorted or filtered away must not stay ticked in the background and
+     turn up in the next delete. Same guard the schedule list keeps. */
+  const liveIds = new Set(live.map(m => m.id));
+  [...marksSel].forEach(id => { if (!liveIds.has(id)) marksSel.delete(id); });
+  $('marksSelBar').classList.toggle('hide', !live.length);
+  syncMarksDanger();
+
   $('marksSub').textContent = rows.length
-    ? `${rows.length} of them. Tap one to open the house.`
+    ? `${rows.length} of them. Tap one to open the house, or tick several to delete them.`
     : 'Nothing here yet.';
   host.innerHTML = '';
   if (!rows.length) {
@@ -8781,8 +9084,29 @@ function renderMarks() {
   }
   rows.forEach(m => {
     const kind = MARK_KINDS[m.kind];
-    const row = document.createElement('button');
+    /* The row was a <button>. It is a <div> now with the tappable part as a button
+       INSIDE it, because a button cannot legally contain another button and the tick
+       has to be its own 44px target — ticking a mark and opening the house behind it
+       are two different jobs and must not share a hit area. */
+    const row = document.createElement('div');
     row.className = 'markRow';
+
+    const tick = document.createElement('button');
+    tick.className = 'tick' + (marksSel.has(m.id) ? ' on' : '');
+    tick.textContent = '✓';
+    tick.setAttribute('aria-label', 'Tick this mark');
+    tick.onclick = e => {
+      e.stopPropagation();
+      if (marksSel.has(m.id)) marksSel.delete(m.id); else marksSel.add(m.id);
+      /* Toggled in place rather than redrawn: a full render bounces a long list back to
+         the top halfway through picking things out of it. */
+      tick.classList.toggle('on', marksSel.has(m.id));
+      syncMarksDanger(); buzz(8);
+    };
+    row.appendChild(tick);
+
+    const open = document.createElement('button');
+    open.className = 'open';
     const dia = document.createElement('div');
     dia.className = 'dia';
     dia.style.borderColor = kind.color;
@@ -8791,18 +9115,66 @@ function renderMarks() {
     who.className = 'who';
     who.innerHTML = `<div class="a">${esc(m.addr || 'Not sorted yet')}</div>`
       + `<div class="b">${esc(kind.label)} · ${esc(markWhen(m.ts))}${m.owner ? ' · ' + esc(m.owner) : ''}</div>`;
-    row.appendChild(dia); row.appendChild(who);
+    open.appendChild(dia); open.appendChild(who);
     /* leaveScoutToSort AFTER the branch has committed, and only if it did. Called first,
        its "you are back on the main screen" notice was overwritten in the same tick by
        openScoutedHouse's own refusal toast — so a mark whose lot had never loaded ended
        Scout silently, left the list up with no cue, and put three mark buttons' worth of
        muscle memory over the four door buttons. */
-    row.onclick = () => {
+    open.onclick = () => {
       if (m.key) { if (openScoutedHouse(m)) leaveScoutToSort(); return; }
       exitMarks(); openSort(m.id); leaveScoutToSort();
     };
+    row.appendChild(open);
     host.appendChild(row);
   });
+}
+/* Named on the button, not just counted in the confirm — he should be able to see how
+   many he is about to destroy before he taps the thing that destroys them. */
+function syncMarksDanger() {
+  const n = marksSel.size;
+  const wrap = $('mkDangerWrap'); if (!wrap) return;
+  wrap.classList.toggle('hide', !n);
+  $('mkDelSel').textContent = n ? `🗑 Delete the ${n} ticked…` : '🗑 Delete the ticked ones…';
+}
+$('mkSelAll').onclick = () => {
+  /* Only what is on screen. Select all while filtered to Tarps must not quietly tick
+     every yard sign as well, now that there is a button that deletes them. */
+  visibleMarks().forEach(m => marksSel.add(m.id));
+  renderMarks();
+};
+$('mkSelNone').onclick = () => { marksSel.clear(); renderMarks(); };
+$('mkDelSel').onclick = deleteSelectedMarks;
+function deleteSelectedMarks() {
+  const chosen = state.marks.filter(m => !m.dropped && marksSel.has(m.id));
+  if (!chosen.length) { flashToast('Nothing ticked', 'Tick the ones you want gone first', '#64748b'); return; }
+  /* Named, not just counted: a number on its own cannot be checked against what he
+     thinks he ticked. Eight is enough to recognise the set. */
+  const named = chosen.slice(0, 8)
+    .map(m => `  · ${(MARK_KINDS[m.kind] || {label:'Mark'}).label} — ${m.addr || 'not sorted yet'}`).join('\n')
+    + (chosen.length > 8 ? `\n  · and ${chosen.length - 8} more` : '');
+  const sorted = chosen.filter(m => m.key).length;
+  if (!confirm(`Delete ${chosen.length} scout mark${chosen.length === 1 ? '' : 's'}?\n\n${named}\n\n`
+    + `They come off both maps and off this list.\n`
+    + (sorted ? `${sorted} of them ${sorted === 1 ? 'has' : 'have'} been put on a house. The house is NOT touched — `
+              + `no door, note, tag or follow-up is affected, only the scout mark.\n` : '')
+    + `\nThis cannot be undone.`)) return;
+  /* Every one restored on a refused write, or half a batch would vanish from the screen
+     while still sitting on the disk, and come back on the next launch. */
+  const was = chosen.map(m => ({ m, dropped: !!m.dropped }));
+  chosen.forEach(m => { m.dropped = true; });
+  if (!saveMarksChecked()) {
+    was.forEach(w => { w.m.dropped = w.dropped; });
+    flashToast('That did not save', 'The phone refused the write, so nothing was deleted. Free some space and try again.', '#ef4444');
+    renderMarks();
+    return;
+  }
+  marksSel.clear();
+  buzz(20);
+  flashToast(`${chosen.length} mark${chosen.length === 1 ? '' : 's'} deleted`, '', '#64748b');
+  renderMarks(); renderScout();
+  if (window._map) refreshMapLayers();
+  drawMini();
 }
 /* Open the house behind a mark so he can knock it. Uses the existing record if he has
    already worked it, exactly as tapping the lot on the big map does — a mark never makes
@@ -8964,7 +9336,11 @@ function renderRoute() {
   [['today','Today'],['week','Last 7 days'],['all','Everything']].forEach(([k, label]) => {
     const b = document.createElement('button');
     b.className = 'chip' + (routeWhen === k ? ' on' : ''); b.textContent = label;
-    b.onclick = () => { routeWhen = k; renderRoute(); };
+    b.onclick = () => {
+      routeWhen = k;
+      try { localStorage.setItem('routeWhen', k); } catch (e) {}
+      renderRoute();
+    };
     when.appendChild(b);
   });
   const ar = $('rtArea'); ar.innerHTML = '';
@@ -8991,7 +9367,8 @@ function renderRoute() {
   if (!flat.length) {
     host.innerHTML = `<p style="color:var(--dim);padding:10px 2px">${
       r.done.length ? 'Every door on this run has been knocked. Nice.'
-                    : 'No unanswered doors in this book for that stretch of time.'}</p>`;
+                    : 'No unanswered doors in this book for that stretch of time.'
+                      + (routeWhen === 'all' ? '' : ' Widen "Doors from" above.')}</p>`;
     $('rtMaps').classList.add('hide');
   } else {
     $('rtMaps').classList.remove('hide');
@@ -9202,17 +9579,20 @@ function doorCountsByDay() {
 const todayKey = () => dayKey(Date.now());
 let dlOpenKey = null;
 async function openDaysLog() {
-  closeSheet('menuSheet');
+  leaveMenuForView();
   dlOpenKey = null;
   $('daysLogView').classList.remove('hide');
   await renderDaysLog();
 }
 function exitDaysLog() {
-  if (dlOpenKey) { dlOpenKey = null; renderDaysLog(); return; }   // back out of a day first
+  if (dlOpenKey) { dlOpenKey = null; renderDaysLog(); return false; }   // back out of a day first
   $('daysLogView').classList.add('hide');
+  return true;                                   // the view itself actually closed
 }
 $('mDaysLog').onclick = openDaysLog;
-$('dlExit').onclick = exitDaysLog;
+/* Only when the VIEW closed. The first tap on Done backs out of a single day and leaves
+   History standing, and reopening the menu on top of it would be its own bug. */
+$('dlExit').onclick = () => { if (exitDaysLog()) backToMenuIfCameFromIt(); };
 
 async function renderDaysLog() {
   const host = $('dlBody'); if (!host) return;
@@ -9531,23 +9911,51 @@ function workingSince() {
   return first ? first.ts : null;
 }
 function sessionStats() {
-  const from = state.session ? state.session.start : 0;
-  const since = workingSince();
-  const rows = state.visitLog.filter(v => v.ts >= from);
-  let metres = 0, drivenM = 0;
-  for (const d of state.days.values()) {
-    const sp = splitMetres(d.pts, from);
-    metres += sp.walked; drivenM += sp.driven;
+  if (state.session) {
+    const from = state.session.start;
+    const since = workingSince();
+    const rows = state.visitLog.filter(v => v.ts >= from);
+    let metres = 0, drivenM = 0;
+    for (const d of state.days.values()) {
+      const sp = splitMetres(d.pts, from);
+      metres += sp.walked; drivenM += sp.driven;
+    }
+    // distance still counts from the session, because walking to the first door is
+    // real walking. Only the clock moves.
+    return { live: true, rows, metres, drivenM, since, last: null,
+             mins: since ? Math.round((Date.now() - since)/60000) : 0 };
   }
-  // distance still counts from the session, because walking to the first door is
-  // real walking. Only the clock moves.
-  return { rows, metres, drivenM, since, mins: since ? Math.round((Date.now() - since)/60000) : 0 };
+  /* No session running — which is how it stands every morning before he taps Start and
+     all evening after he finishes, and it is also the state this screen is in when he
+     opens it to ask how the day went. `from` used to be 0 here. 0 is the beginning of
+     time, so a button that says "How today's going" answered with every door he has
+     ever knocked and every mile he has ever walked, in tiles the size of the screen,
+     with only a small heading to say otherwise. It counts TODAY now. */
+  const key = todayKey();
+  const rows = doorsOnDay(key);
+  const d = state.days.get(key);
+  const pts = (d && !d.readFailed && d.pts) || [];
+  const sp = splitMetres(pts);
+  /* No spread over the whole array: a day of breadcrumbs runs to thousands of points
+     and Math.min(...arr) blows the stack on a big enough one. */
+  let since = null, last = null;
+  const see = t => {
+    if (typeof t !== 'number' || !isFinite(t)) return;
+    if (since === null || t < since) since = t;
+    if (last  === null || t > last)  last  = t;
+  };
+  pts.forEach(p => see(p.ts));
+  rows.forEach(v => see(v.ts));
+  return { live: false, rows, metres: sp.walked, drivenM: sp.driven, since, last,
+           /* First thing recorded today to the last, NOT to now. He stopped at four;
+              a clock still running at seven would report three hours he did not work. */
+           mins: (since !== null && last !== null) ? Math.round((last - since)/60000) : 0 };
 }
 function openSession() {
   const s = sessionStats();
   const by = k => s.rows.filter(v => v.status === k).length;
   const byLine = l => s.rows.filter(v => (v.line||'roof') === l).length;
-  $('sesTitle').textContent = state.session ? 'This session' : 'No session running';
+  $('sesTitle').textContent = state.session ? 'This session' : 'Today so far';
   $('sesStats').innerHTML = `
     <div class="stat"><b>${s.rows.length}</b>doors</div>
     <div class="stat"><b style="color:${STATUS.talked.color}">${by('talked')}</b>talked</div>
@@ -9566,7 +9974,11 @@ function openSession() {
         ? `Working since ${clock(s.since)}, counted from your first door — not from when the app was opened (${clock(state.session.start)}). `
         : `Nothing marked yet. The clock starts at your first door, not now. `)
       + `${LINES.roof.label} ${byLine('roof')}, ${LINES.appraisal.label} ${byLine('appraisal')} this session. Ending a session stops tracking and saves the battery. Your records stay.`
-    : 'Tracking is stopped. Tap Keep canvassing to start a new session.')
+    : (s.since !== null
+        ? `Today so far, ${clock(s.since)} to ${clock(s.last)} — the minutes span first to last, quiet stretches included. `
+          + `${LINES.roof.label} ${byLine('roof')}, ${LINES.appraisal.label} ${byLine('appraisal')} today. `
+        : 'Nothing recorded today yet. ')
+      + 'Tracking is stopped. Tap Keep canvassing to start a session.')
     + ` All time: ${allTime('roof')} ${LINES.roof.label.toLowerCase()}, ${allTime('appraisal')} ${LINES.appraisal.label.toLowerCase()}.`;
   openSheet('sessionSheet');
 }
