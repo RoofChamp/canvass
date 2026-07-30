@@ -1139,12 +1139,10 @@ select{min-height:44px}
           <button class="ghost" id="mScout">🔭 Scout</button>
           <button class="ghost" id="mMarks">🔎 Scouted houses</button>
           <button class="ghost" id="mAppt">📋 Schedule and appointments</button>
-          <label class="f">The truck</label>
-          <div class="chips">
-            <button class="chip" id="mPark">🚚 Park here</button>
-            <button class="chip" id="mUnpark">Clear truck pin</button>
-          </div>
-          <div class="small" id="parkInfo" style="margin-top:6px"></div>
+          <!-- The truck block moved to Settings at his word. It was four rows and a
+               readout sitting between the last thing he taps out here and "How you're
+               doing", which is where History lives — and he does not need it: he drops
+               the pin by holding the little map, which is one gesture and no menu. -->
         </div></div>
 
       <!-- These two are read sitting down, not on a porch, so they left "Out working".
@@ -1182,6 +1180,21 @@ select{min-height:44px}
             <button class="chip" id="mClearHome">Clear home</button>
           </div>
           <div class="small" id="homeInfo" style="margin-top:6px"></div>
+
+          <!-- Moved down here out of "Out working", at his word: the pin gets dropped by
+               holding the little map, which is one gesture and no menu at all, so four
+               rows of it sitting between the last thing he taps out working and the tier
+               that holds History was cost with no benefit. Next to Home, because the two
+               are the same kind of thing — a place he tells the app about.
+               `parkInfo` is a READOUT, not an explanation, so it stays on screen rather
+               than folding behind a "?". Whether the truck is pinned and where is a fact
+               about right now. -->
+          <label class="f">The truck</label>
+          <div class="chips">
+            <button class="chip" id="mPark">🚚 Park here</button>
+            <button class="chip" id="mUnpark">Clear truck pin</button>
+          </div>
+          <div class="small" id="parkInfo" style="margin-top:6px"></div>
 
           <label class="f">What your two books are called</label>
           <div class="small why" style="margin-bottom:6px">The names on the mode pill. Renaming one changes nothing about what is already saved against it.</div>
@@ -2255,6 +2268,59 @@ async function fetchTile(c, lat, lon, silent) {
 }
 function addParcel(p) { if (!state.parcels.has(p.key)) state.parcels.set(p.key, p); }
 
+/* ---- the doubled houses, and why this is a DISPLAY fix and nothing more ----
+   He photographed every house number on the map drawn twice, a few pixels apart. The
+   cause is real and it is in the loading: `fetchTile` answers 0 both for "this county
+   has nothing here" and for "already loaded here", so panning back over known ground
+   falls through to the statewide layer and a second copy of every lot lands on top.
+
+   That was fixed here, twice, and BOTH attempts were pulled after review found they
+   destroyed data — the first binned a cached statewide tile and took every lot on the
+   far side of a county line with it; the second matched houses by a bounding box, and
+   one diagonal road-strip parcel on a county line has a box round it the size of a
+   block, which silenced twenty houses the county has no record of at all.
+
+   So this does not delete anything, does not change how or when lots load, and does not
+   change what a tap on a lot opens. It declines to print the SECOND label, and that is
+   the whole of it. The county record keeps its label because it is the one carrying the
+   owner's name. Everything else stays exactly as it is until the loading can be done
+   properly, which is a job for a clear head and its own round. */
+function realParcelsInView(inView) {
+  const out = [];
+  for (const p of state.parcels.values()) {
+    if (p.fallback || !p.rings || !p.bbox) continue;
+    if (inView && !inView(p)) continue;
+    out.push(p);
+  }
+  return out;
+}
+/* pointInRings, NOT a bounding box. That distinction is the entire lesson of the second
+   attempt: a box round an L-shaped or diagonal lot covers a great deal of ground that
+   the lot itself does not. */
+function shadowedByReal(p, reals) {
+  if (!p || !p.fallback || !p.cen || !p.rings) return false;
+  const x = p.cen[0], y = p.cen[1];
+  /* THE POINT HAS TO BE INSIDE ITS OWN LOT FIRST, and this line is the whole safety of
+     the thing. `ringsCentroid` is a vertex average, not an area centroid — on an
+     L-shaped corner lot, a flag lot with a driveway leg, a U, or a split parcel it lands
+     OUTSIDE the lot it belongs to, and measured on this app's own maths that is four of
+     seven everyday shapes. Land it in the lot next door and a statewide record that is
+     the ONLY record for that house loses its number on both maps: the lot draws with
+     nothing on it. That is precisely the failure that got the last attempt pulled.
+     Lots do not overlap. So if this point is inside its OWN lot and also inside a real
+     one, the two are the same piece of ground and one of the labels is a duplicate. If
+     it is not inside its own lot we simply do not know, and the answer to not knowing is
+     to leave his label alone — he sees the doubling he already had, and nothing is
+     silenced that should not be. */
+  if (!pointInRings(x, y, p.rings)) return false;
+  for (const r of reals) {
+    const b = r.bbox;
+    if (x < b[0] || x > b[2] || y < b[1] || y > b[3]) continue;   // cheap reject first
+    if (pointInRings(x, y, r.rings)) return true;
+  }
+  return false;
+}
+
 let lastTileCenter = null;
 async function ensureParcels(lat, lon) {
   if (lastTileCenter && haversine(lat, lon, lastTileCenter[0], lastTileCenter[1]) < 60) return;
@@ -2597,6 +2663,9 @@ function drawMini() {
     if (Math.abs(p.cen[1]-lat)*ky > span || Math.abs(p.cen[0]-lon)*kx > span) continue;
     near.push({ p, v: visitFor(p.key) || visitFor(p.key, state.line === 'roof' ? 'appraisal' : 'roof') });
   }
+  /* The lots a label can be the SECOND one on. Taken off `near`, so it costs nothing —
+     see the note above shadowedByReal for why this is a display fix and not a delete. */
+  const nearReals = near.filter(x => !x.p.fallback && x.p.rings && x.p.bbox).map(x => x.p);
   const trace = p => {
     g.beginPath();
     for (const ring of p.rings) {
@@ -2627,9 +2696,16 @@ function drawMini() {
     g.strokeStyle = v ? STATUS[v.status].color : (state.hubSat ? 'rgba(255,255,255,.55)' : '#3a4a5e');
     g.lineWidth = v ? 3 : .8;
     g.stroke();
+    /* The second label on a house that has ended up with two records is simply not
+       printed. His screenshot was every number on the map drawn twice, a few pixels
+       apart — the offset is the gap between the middle of the lot and the middle of the
+       house. Nothing is deleted and the lot still draws and still taps exactly as it
+       did; there is just one number on it now. */
     if (wantLabels) {
       const bw = Math.abs(p.bbox[2] - p.bbox[0]) * kx * sc;
-      if (bw >= 16) {
+      /* The cheap gate FIRST. Zoomed out to 600 m the shadow test was running 1786 times
+         to decide about labels that were never going to be drawn at all. */
+      if (bw >= 16 && !shadowedByReal(p, nearReals)) {
         const lines = hubLabelLines(p);
         if (lines.length) {
           const at = p.house || p.cen;
@@ -4138,7 +4214,21 @@ async function openMap() {
 async function loadForView() {
   const m = window._map; if (!m || m.getZoom() < 16) return;
   const c = m.getCenter();
-  // try each candidate in turn, so panning outside the mapped counties still draws
+  /* WHERE THE DOUBLED HOUSES COME FROM, left standing on purpose, and NOT fixed here.
+     `fetchTile` returns 0 both for "this county has nothing here" AND for "this county
+     has already loaded here this session", and this loop reads both as nothing here. So
+     the first pan over a spot loads the county and stops, correctly — and every pan BACK
+     over the same ground falls through to the statewide layer and loads a second copy of
+     every lot, under a different reference number, so nothing recognises the two as one
+     house. Both are cached, so they return on every launch.
+     Two goes at fixing it here were written and then pulled, because review found each
+     one destroyed data — see the note above `shadowedByReal`. The guard needed is not a
+     line in this loop: `fetchTile` has to stop answering three different questions with
+     the same 0, and callers that are racing it have to wait for the answer rather than
+     guess. That is a proper piece of work and it is NOT being done at one in the morning
+     on the code that decides which house a door is filed against.
+     What ships instead is display-only: the second label is not printed. The duplicate
+     records are still there and everything else behaves exactly as it did. */
   for (const cand of countiesFor(c.lat, c.lng)) {
     const n = await fetchTile(cand, c.lat, c.lng, true);
     if (n) { refreshMapLayers(); break; }
@@ -4220,6 +4310,12 @@ function refreshMapLayers() {
     }
   } else {
     let shown = 0;
+    /* Built once for the pass, and only for what is on screen: the lots a label can be
+       the SECOND one on. See the note above shadowedByReal — this is a display fix, and
+       deliberately nothing more. */
+    const inBox = q => !(q.bbox[2] < b.getWest() || q.bbox[0] > b.getEast()
+                      || q.bbox[3] < b.getSouth() || q.bbox[1] > b.getNorth());
+    const viewReals = realParcelsInView(inBox);
     for (const p of state.parcels.values()) {
       if (p.bbox[2] < b.getWest() || p.bbox[0] > b.getEast() || p.bbox[3] < b.getSouth() || p.bbox[1] > b.getNorth()) continue;
       if (shown++ > 1400) break;
@@ -4278,7 +4374,10 @@ function refreshMapLayers() {
           fillColor: hatchReady ? `url(#${FLYER_HATCH_ID})` : '#a855f7',
           fillOpacity: hatchReady ? .8 : .26 }));
       }
-      if (z >= MAP_LABEL_ZOOM) {
+      /* Not the second label on a house that has ended up with two records. His
+         screenshot was every number drawn twice, a few pixels apart — that offset is the
+         gap between the middle of the lot and the middle of the house. */
+      if (z >= MAP_LABEL_ZOOM && !shadowedByReal(p, viewReals)) {
         const lines = labelLines(p, state.mapData, 3);
         if (lines.length) {
           const at = p.house || p.cen;   // on the house when we know where it is
@@ -5745,7 +5844,7 @@ document.querySelectorAll('.dsecHead[data-msec]').forEach(b => {
 /* ---- what version is actually on the phone ----
    Matches the service worker cache name, so "did the update land" is answerable by
    looking rather than guessing. */
-const BUILD_VERSION = 'v18';
+const BUILD_VERSION = 'v19';
 const BUILD_DATE = '29 July 2026';
 function renderVersionStamp() {
   const el = $('versionStamp'); if (!el) return;
