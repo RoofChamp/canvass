@@ -143,11 +143,21 @@ input,textarea,select{font:inherit;color:var(--txt);background:var(--card2);bord
 #grid{flex:1;display:grid;grid-template-columns:1fr 1fr;grid-template-rows:1fr 1fr;gap:10px;min-height:0}
 .act{border-radius:20px;display:flex;flex-direction:column;gap:3px;font-weight:800;letter-spacing:-.3px;color:#fff;box-shadow:inset 0 -4px 0 rgba(0,0,0,.22);transition:transform .06s ease,filter .06s ease;padding:14px}
 .act:active{transform:scale(.97);filter:brightness(1.18)}
-/* Grown from clamp(17px,4.9vw,24px) now the grey sub-line under it is gone. Measured,
-   not guessed, on 320 / 375 / 390 / 393 / 430: at 5.9vw all four labels still sit
-   clear of the hub circle on every width and none of them takes a third line. 6.4vw
-   was tried and pushes "Left Material" onto three lines at 320 and 375. */
-.act .big{font-size:clamp(19px,5.9vw,28px);line-height:1.03}
+/* Grown from clamp(17px,4.9vw,24px) now the grey sub-line under it is gone.
+   The vh cap is the whole point and I got this wrong first time round. I measured five
+   WIDTHS and every one of them at 844px tall, so I never saw the screens where it goes
+   wrong: on a short phone the grid is short but the hub circle is sized off the WIDTH,
+   so the words and the little +/− buttons are squeezed together. At a flat 5.9vw a
+   375x667 reads "No Answe⊖" — the zoom button is opaque and paints over the letters.
+   Measured across nine width-and-height combinations against three rules at once: clear
+   of the hub circle, clear of all four hub buttons, and never a third line. `2.6vh` is
+   the value that is BETTER than v17 on every single screen and worse on none —
+   375x667 goes from 5px of overlap to none, and the tall phones get 21-24px instead of
+   18-21px. 2.75vh was tried and gives a 14px collision at 320x640.
+   NOTE, and not fixed here because it predates all of this: 320x568, 320x640 and
+   360x640 still collide, by the same amount v17 already did. That is the hub circle
+   being width-sized on a short screen, not the type size. */
+.act .big{font-size:clamp(17px,min(5.9vw,2.6vh),28px);line-height:1.03}
 .act .sub{font-size:10.5px;font-weight:600;opacity:.82;letter-spacing:.3px;text-transform:uppercase;line-height:1.15}
 .act .ico{font-size:22px;line-height:1}
 /* content sits in each button's OUTER corner so the hub never covers a word */
@@ -211,8 +221,42 @@ input,textarea,select{font:inherit;color:var(--txt);background:var(--card2);bord
 .sheetHead{display:flex;align-items:center;gap:10px;padding:14px 16px 8px;flex:0 0 auto}
 .sheetHead h2{margin:0;font-size:19px;font-weight:800;flex:1;letter-spacing:-.3px}
 .sheetScroll{overflow-y:auto;-webkit-overflow-scrolling:touch;padding:0 16px 16px}
+/* Save has to be reachable without going looking for it. Adding the notes box pushed it
+   43px off the bottom of a 390x844 — and it was already off the bottom of a 375 and a
+   320 long before that, which nobody had noticed. Sticking the two buttons to the foot
+   of the form fixes every screen size at once, instead of shaving pixels off a field he
+   asked for. Opaque, or the list scrolls through them. */
+#apSaveBar{position:sticky;bottom:-16px;background:var(--bg);z-index:3;
+  margin-top:14px;padding:10px 0 6px;border-top:1px solid var(--line)}
+#apSaveBar button{margin-top:0}
+#apSaveBar #apCancel{margin-top:8px}
 .x{font-size:15px;font-weight:800;color:var(--dim);background:var(--card2);border:1px solid var(--line);border-radius:12px;padding:8px 12px}
 label.f{display:block;margin:12px 0 5px;font-size:12px;font-weight:800;color:var(--dim);letter-spacing:.4px;text-transform:uppercase}
+/* ---- the "?" that stands in for a paragraph, and the paragraph it stands in for ----
+   A label that has picked up a "?" goes inline so the two sit on one line. The button is
+   a SIBLING of the label and never inside it: three of these labels carry a `for=`, and
+   a button inside one of those hands its click straight on to the select it points at. */
+label.f.hasq{display:inline-block;margin:12px 0 5px;vertical-align:middle}
+/* 26px is right for the look and hopeless for a thumb, so this is a REAL 44px button
+   with the little circle drawn inside it.
+   Two earlier goes at this grew an invisible ::after outwards from a 26px button
+   instead, and both of them stole taps from a neighbouring control — the first from the
+   select below (a tap on the top of "Track detail" opened a paragraph of prose), and
+   the second, meant to fix the first, from the chip above it, by seven pixels. Anything
+   that borrows room from its neighbours will take somebody's tap eventually. A button
+   that is its own 44px cannot: the browser makes room for it in the line instead. */
+.qm{margin-left:4px;width:44px;height:44px;border:0;background:none;padding:0;
+  display:inline-flex;align-items:center;justify-content:center;
+  vertical-align:middle;flex:0 0 auto}
+.qm i{display:block;width:26px;height:26px;border-radius:50%;border:1px solid var(--line);
+  background:var(--card2);color:var(--dim);font-size:14px;font-weight:800;font-style:normal;
+  line-height:24px;text-align:center}
+.qm.on i{background:#1e3a5f;border-color:#3b82f6;color:#dbeafe}
+/* Standing on its own under a pair of buttons rather than beside a label, it has to say
+   what it is: a bare ? floating in a column of buttons explains nothing. */
+.qm.lone{width:auto;height:auto;margin:6px 0 2px;display:inline-block}
+.qm.lone i{width:auto;height:auto;border-radius:999px;padding:9px 13px;line-height:1;
+  display:inline-block;min-height:44px;box-sizing:border-box}
 .row{display:flex;gap:8px}
 .chip{background:var(--card2);border:1px solid var(--line);border-radius:999px;padding:9px 13px;font-size:13px;font-weight:700;color:var(--dim)}
 .chip.on{background:#1e3a5f;border-color:#3b82f6;color:#dbeafe}
@@ -969,10 +1013,14 @@ select{min-height:44px}
              are already saved whole and merged on restore — and it is put into the
              calendar entry too, or it would be a note he could only read in the one
              place he is least likely to be looking when he pulls up outside. -->
+        <!-- Two rows, not three. At three, "Save appointment" was pushed 64px off the
+             bottom of a 390x844 screen and he would have had to go looking for it. -->
         <label class="f">Notes</label>
-        <textarea id="apNote" rows="3" placeholder="Gate code, dog in the yard, meet round the back"></textarea>
-        <button class="primary" id="apSave" style="margin-top:12px">Save appointment</button>
-        <button class="ghost" id="apCancel">Cancel</button>
+        <textarea id="apNote" rows="2" placeholder="Gate code, dog in the yard, meet round the back"></textarea>
+        <div id="apSaveBar">
+          <button class="primary" id="apSave">Save appointment</button>
+          <button class="ghost" id="apCancel">Cancel</button>
+        </div>
       </div>
     </div>
   </div>
@@ -1119,11 +1167,11 @@ select{min-height:44px}
           <div class="small" id="endDayNote" style="margin:5px 0 16px"></div>
           <button class="primary" id="mBackupShare" style="margin-top:0">📤 Full backup — send it somewhere safe</button>
           <button class="ghost" id="mBackup">💾 Full backup — just download it</button>
-          <div class="small" style="margin-top:5px">Every door, note, tag, stage, follow-up, appointment and walking track, in one file. This is the only thing that can rebuild the app if the phone is lost or the icon is deleted. Get it off the phone.</div>
+          <div class="small why" style="margin-top:5px">Every door, note, tag, stage, follow-up, appointment and walking track, in one file. This is the only thing that can rebuild the app if the phone is lost or the icon is deleted. Get it off the phone.</div>
           <button class="ghost" id="mRestore" style="margin-top:12px">⤴︎ Restore from a full backup</button>
           <input type="file" id="restoreFile" accept=".json,application/json" class="hide">
           <button class="ghost" id="mExport" style="margin-top:16px">⬇︎ Export…</button>
-          <div class="small" style="margin-top:5px">A spreadsheet or a map file, for working at a laptop. Useful, but <b>this is not a backup</b> — it leaves things out and nothing can restore from it.</div>
+          <div class="small why" style="margin-top:5px">A spreadsheet or a map file, for working at a laptop. Useful, but <b>this is not a backup</b> — it leaves things out and nothing can restore from it.</div>
         </div></div>
 
       <div class="dsec"><button class="dsecHead" data-msec="settings"><i>▸</i>Settings</button>
@@ -1136,14 +1184,14 @@ select{min-height:44px}
           <div class="small" id="homeInfo" style="margin-top:6px"></div>
 
           <label class="f">What your two books are called</label>
-          <div class="small" style="margin-bottom:6px">The names on the mode pill. Renaming one changes nothing about what is already saved against it.</div>
+          <div class="small why" style="margin-bottom:6px">The names on the mode pill. Renaming one changes nothing about what is already saved against it.</div>
           <input id="mLineRoof" maxlength="18" placeholder="Roofing" autocomplete="off">
           <input id="mLineAppraisal" maxlength="18" placeholder="Appraisal" autocomplete="off" style="margin-top:8px">
           <button class="chip" id="mLineReset" style="margin-top:8px">Put both names back</button>
 
           <label class="f">Show on the mini map</label>
           <div class="chips" id="mHubData"></div>
-          <div class="small" style="margin-top:6px">Printed on the house itself. The circle is small, so keep it to one or two at a time. Shorthand: b94 built 1994, s19 sold 2019, 1840sf floor area.</div>
+          <div class="small why" style="margin-top:6px">Printed on the house itself. The circle is small, so keep it to one or two at a time. Shorthand: b94 built 1994, s19 sold 2019, 1840sf floor area.</div>
 
           <!-- The big map has had the same six choices all along, behind a button called
                "Show" in a row of eight along the bottom, and he never found them — he
@@ -1153,30 +1201,30 @@ select{min-height:44px}
                screen carries three lines where the circle carries two. -->
           <label class="f">Show on the big map</label>
           <div class="chips" id="mMapData"></div>
-          <div class="small" style="margin-top:6px">The same choices for the full map. It has room for three lines instead of two — but they only print when you are zoomed well in, or there is no space on the lot for the words.</div>
+          <div class="small why" style="margin-top:6px">The same choices for the full map. It has room for three lines instead of two — but they only print when you are zoomed well in, or there is no space on the lot for the words.</div>
 
           <label class="f" for="mDetail">Track detail</label>
           <select id="mDetail"></select>
-          <div class="small" style="margin-top:6px">Normal skips points while you stand still, so doors do not collect a knot of dots. Fine records everything, which is what you want for short distances or testing.</div>
+          <div class="small why" style="margin-top:6px">Normal skips points while you stand still, so doors do not collect a knot of dots. Fine records everything, which is what you want for short distances or testing.</div>
 
           <label class="f" for="mSnap">Snap distance</label>
           <select id="mSnap"></select>
-          <div class="small" style="margin-top:6px">How far a lot can be and still count as the house you just left.</div>
+          <div class="small why" style="margin-top:6px">How far a lot can be and still count as the house you just left.</div>
 
           <label class="f" for="mDriveSpeed">Travel estimates</label>
           <div class="small" id="paceInfo" style="margin-bottom:6px"></div>
           <select id="mDriveSpeed"></select>
-          <div class="small" style="margin-top:6px">Nudge this if the times read consistently long or short.</div>
+          <div class="small why" style="margin-top:6px">Nudge this if the times read consistently long or short.</div>
 
           <label class="f">Keep screen awake</label>
           <div class="chips"><button class="chip" id="mWake">Screen lock off</button></div>
 
           <label class="f">A sound when a tap lands</label>
-          <div class="small" style="margin-bottom:6px">An iPhone will not let an app like this buzz — it never could, so the buzz you may have expected was never happening. A short sound is the way to know a door was marked without looking at the screen. Worth having with the phone in a mount.<br><b>Two things to know.</b> On a recent iPhone the ring/silent switch on the side silences it, the same as it does a text — so on silent you may hear nothing at all. And it asks to play alongside your music rather than stop it. Try it in the truck with a podcast on before you rely on it.</div>
+          <div class="small why" style="margin-bottom:6px">An iPhone will not let an app like this buzz — it never could, so the buzz you may have expected was never happening. A short sound is the way to know a door was marked without looking at the screen. Worth having with the phone in a mount.<br><b>Two things to know.</b> On a recent iPhone the ring/silent switch on the side silences it, the same as it does a text — so on silent you may hear nothing at all. And it asks to play alongside your music rather than stop it. Try it in the truck with a podcast on before you rely on it.</div>
           <div class="chips"><button class="chip" id="mSound">No sound</button></div>
 
           <label class="f">Likely rentals on the maps</label>
-          <div class="small" style="margin-bottom:6px">Lots the county flags as rentals, or where the owner's post goes somewhere else, get a soft yellow wash on both maps. In some neighbourhoods that is half the street. Tap to go faint → bold → off.</div>
+          <div class="small why" style="margin-bottom:6px">Lots the county flags as rentals, or where the owner's post goes somewhere else, get a soft yellow wash on both maps. In some neighbourhoods that is half the street. Tap to go faint → bold → off.</div>
           <div class="chips"><button class="chip" id="mRentals">Show likely rentals</button></div>
 
           <!-- Was "When tracking stops by itself". That heading named three different
@@ -1188,13 +1236,18 @@ select{min-height:44px}
                off the GPS with the phone in a pocket, so it timed out unanswered and the GPS
                ran all evening anyway. It closes the session itself now, and the question
                waits on the screen until he is looking at it. -->
-          <div class="small" style="margin-bottom:6px">No doors marked and no real movement for half an hour, and the app <b>closes the session and stops the GPS on its own</b> — so it is not running all evening for nothing. Nothing is lost: every door and every step is already saved. It then asks whether to carry that session on, start a fresh one, or end the day — straight away if the app is in front of you, otherwise the next time you pick the phone up. It will keep asking until you answer. If the session started on an earlier day it does not offer to carry it on, it just tells you when it closed. Either way <b>the day writes down both times</b>, so a short day always says why.</div>
+          <div class="small why" style="margin-bottom:6px">No doors marked and no real movement for half an hour, and the app <b>closes the session and stops the GPS on its own</b> — so it is not running all evening for nothing. Nothing is lost: every door and every step is already saved. It then asks whether to carry that session on, start a fresh one, or end the day — straight away if the app is in front of you, otherwise the next time you pick the phone up. It will keep asking until you answer. If the session started on an earlier day it does not offer to carry it on, it just tells you when it closed. Either way <b>the day writes down both times</b>, so a short day always says why.</div>
           <div class="chips"><button class="chip" id="mQuiet">Close the session if nothing happens for half an hour</button></div>
           <!-- "driving pauses the breadcrumb trail" was left over from before driving was
                recorded. It does not pause it: minMove goes to 25 m and minGap to 4 s and the
                points keep coming, which is exactly how the driven miles are counted. Saying
                it pauses would have had him doubting a number that is right. -->
-          <div class="small" style="margin-top:8px;color:var(--dim)">Two other things happen on their own and cannot be switched off: getting home ends the session, and while you are driving the breadcrumbs are spaced further apart. Both only save battery. Neither loses anything you have logged — the driving still shows on the map and still counts towards the miles driven.</div>
+          <!-- Given a heading of its own now that the prose folds behind a "?". Without
+               one it was the only explanation in Settings with no label above it, so its
+               button had to stand alone in the middle of the section saying "? What this
+               does" — about what, exactly. -->
+          <label class="f">Two things you cannot switch off</label>
+          <div class="small why" style="margin-top:8px;color:var(--dim)">Two other things happen on their own and cannot be switched off: getting home ends the session, and while you are driving the breadcrumbs are spaced further apart. Both only save battery. Neither loses anything you have logged — the driving still shows on the map and still counts towards the miles driven.</div>
 
           <label class="f">Lock the app</label>
           <div class="chips">
@@ -1204,7 +1257,7 @@ select{min-height:44px}
           <div class="small" id="pinInfo" style="margin-top:6px"></div>
 
           <label class="f">Where the owner names come from</label>
-          <p class="small" style="margin-top:0">County auditor records for Franklin, Delaware, Union, Madison, Licking, Fairfield and Pickaway. Owner name is the tax record — it may lag a recent sale.</p>
+          <p class="small why" style="margin-top:0">County auditor records for Franklin, Delaware, Union, Madison, Licking, Fairfield and Pickaway. Owner name is the tax record — it may lag a recent sale.</p>
           <button class="ghost" id="mTest">📡 Check county data connections</button>
           <div class="small" id="diag" style="margin-top:10px"></div>
           <div class="small" id="conn" style="margin-top:8px"></div>
@@ -3953,14 +4006,30 @@ function closeSheet(id){ $(id).classList.add('hide'); }
    stale return would reopen the menu over something he reached from the strip. */
 let menuReturn = null;              // scrollTop to come back to, or null for "don't"
 const menuScroller = () => $('menuSheet').querySelector('.sheetScroll');
+const FULL_VIEWS = ['scoutView', 'marksView', 'daysLogView', 'sortView'];
+const anyViewOpen = () => FULL_VIEWS.some(id => { const el = $(id); return el && !el.classList.contains('hide'); });
 function leaveMenuForView() {
-  const open = !$('menuSheet').classList.contains('hide');
-  const sc = menuScroller();
-  menuReturn = open ? (sc ? sc.scrollTop : 0) : null;
-  closeSheet('menuSheet');
+  if (!$('menuSheet').classList.contains('hide')) {
+    const sc = menuScroller();
+    menuReturn = sc ? sc.scrollTop : 0;
+    closeSheet('menuSheet');
+    return;
+  }
+  /* The menu is already shut, and that means one of two completely different things.
+     Either he came off the strip or the main screen, in which case there is nothing to
+     go back to and a return left over from earlier has to be cleared — or he is going
+     DEEPER from a view that did come from the menu (Scout → Scouted houses), that view
+     is still standing behind this one, and the return belongs to it. Clearing it in the
+     second case is what made Scout → Scouted houses → Done → Back land on the main
+     screen: the one thing he asked for, working everywhere except through that door. */
+  if (!anyViewOpen()) menuReturn = null;
 }
 function backToMenuIfCameFromIt() {
   if (menuReturn === null) return false;
+  /* Not while another full-screen view is still up. Scouted houses opened from inside
+     Scout closes back onto Scout, and throwing the menu over it would be its own bug.
+     The return waits for whichever screen he actually walked in from. */
+  if (anyViewOpen()) return false;
   const top = menuReturn;
   menuReturn = null;
   /* The menu button rather than openSheet, so every readout in it is redrawn — he may
@@ -6081,9 +6150,67 @@ $('toastSwap').onclick = reassignLast;
    opens FIRST and every render runs behind a guard. Nothing in here is worth being
    unable to take a backup over. */
 $('alertBar').onclick = () => $('menuBtn').click();
+/* ---------------- the "?" explainers ----------------
+   His ask, and it is the biggest single thing wrong with that menu: 21 blocks of prose,
+   two of them a solid paragraph each, between him and the setting he came in to change.
+   Every explanation folds behind a "?" now and the menu is about half as long.
+
+   Done as ONE pass over anything marked `.why` rather than 13 hand-written toggles. A
+   hand-written one gets added later without its button, or with a duplicate id, and then
+   the menu is a wall of words again with a bug in it.
+
+   What is deliberately NOT a `.why`, and stays on screen: the live readouts. What home
+   is set to, his measured walking pace, whether a PIN is on, how much room is left on
+   the phone, the county connection, whether tracking is running, and the backup nag.
+   Those are facts about right now rather than instructions — hiding "your phone is
+   nearly full" behind a tap is how a man loses a day's doors without being told. */
+function wireExplainers() {
+  document.querySelectorAll('.why').forEach(el => {
+    if (el.dataset.qm) return;                 // idempotent: the menu is re-rendered a lot
+    el.dataset.qm = '1';
+    el.classList.add('hide');
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'qm';
+    /* The circle is the <i>, so the button itself can be a plain 44px box. See the .qm
+       rules — the two versions that drew the circle AS the button both had to reach
+       outside themselves for a thumb-sized target, and both took a neighbour's taps. */
+    btn.innerHTML = '<i>?</i>';
+    btn.setAttribute('aria-expanded', 'false');
+    btn.onclick = () => {
+      const open = !el.classList.toggle('hide');
+      btn.classList.toggle('on', open);
+      btn.setAttribute('aria-expanded', open ? 'true' : 'false');
+      buzz(6);
+    };
+    /* The label this explanation belongs to, if it has one. Walking back stops at the
+       previous explanation so a "?" can never attach itself to the label of the setting
+       above — which would put it on the wrong setting and read as an answer to the
+       wrong question. */
+    let lab = null;
+    for (let n = el.previousElementSibling; n; n = n.previousElementSibling) {
+      if (n.classList && n.classList.contains('why')) break;
+      if (n.matches && n.matches('label.f')) { lab = n; break; }
+    }
+    if (lab) {
+      btn.setAttribute('aria-label', 'What "' + lab.textContent.trim() + '" does');
+      lab.classList.add('hasq');
+      lab.insertAdjacentElement('afterend', btn);
+    } else {
+      /* No label above it — the backup and export blocks sit straight under their
+         buttons. A bare circle would be a mystery there, so it says what it is. */
+      btn.className = 'qm lone';
+      btn.innerHTML = '<i>? What this does</i>';
+      btn.setAttribute('aria-label', 'What this does');
+      el.parentElement.insertBefore(btn, el);
+    }
+  });
+}
+wireExplainers();
 $('menuBtn').onclick = () => {
   openSheet('menuSheet');
   try {
+    wireExplainers();      // anything added to the menu since, and cheap: it self-skips
     renderStats(); renderSnapChips(); renderDetailChips(); renderDiag(); renderParkInfo();
     renderBackupNag(); renderPinInfo(); renderHomeInfo(); renderPaceInfo(); renderDriveChips();
     renderHubDataChips(); renderMapDataChips();
@@ -8654,10 +8781,17 @@ function sideOfMark(m, p) {
   return rel > 0 ? 'right' : 'left';
 }
 let sortQueue = [], sortAt = 0, sortShowOther = false, sortShowBlock = false;
-const sortUndoStack = [];
+/* Skipped during THIS visit to the sort screen, in memory only. Needed the moment the
+   queue was made to wrap: skipping changes nothing about a mark, so without a record of
+   what he has already passed over, "Skip" hands him the same pile round and round and
+   the end screen can never be reached. Cleared on every openSort — a mark he skipped on
+   Tuesday is one he should be offered again on Wednesday. */
+let sortSkipped = new Set();
+let sortUndoStack = [];
 function openSort(startId) {
   sortQueue = unsortedMarks().sort((a, b) => a.ts - b.ts);
   sortAt = 0;
+  sortSkipped = new Set();      // a fresh pass: what he passed over last time comes round again
   if (startId) { const i = sortQueue.findIndex(m => m.id === startId); if (i >= 0) sortAt = i; }
   sortShowOther = false; sortShowBlock = false; blockPick = null;
   $('sortView').classList.remove('hide');
@@ -8687,7 +8821,12 @@ function sortNext() {
   for (let step = 1; step <= n; step++) {
     const i = (sortAt + step) % n;
     const m = sortQueue[i];
-    if (m && !m.key && !m.dropped) { found = i; break; }
+    /* `sortSkipped` is what stops the wrap becoming a carousel. Skipping does not set
+       `key` or `dropped`, so on the eligibility test alone a skipped mark stays eligible
+       for ever: with two left, Skip · Skip · Skip goes round and round, and with one
+       left the button does nothing at all because the only candidate is the mark already
+       on screen. Both were real and both were introduced by the wrap. */
+    if (m && !m.key && !m.dropped && !sortSkipped.has(m.id)) { found = i; break; }
   }
   sortAt = found >= 0 ? found : n;      // n is past the end, which is the all-done screen
   renderSort();
@@ -8842,7 +8981,7 @@ function renderSort() {
   const skip = document.createElement('button');
   skip.className = 'chip';
   skip.textContent = 'Skip — come back to it';
-  skip.onclick = () => { buzz(8); sortNext(); };
+  skip.onclick = () => { buzz(8); sortSkipped.add(m.id); sortNext(); };
   foot.appendChild(skip);
   const drop = document.createElement('button');
   drop.className = 'chip';
@@ -8990,7 +9129,10 @@ function dropMark(m) {
   buzz(10);
   sortNext();
 }
-$('sortExit').onclick = exitSort;
+/* Sorting is reached from the menu by way of Scouted houses, so Done at the end of it
+   belongs back in the menu too — but only once nothing else is standing, which the
+   guard inside backToMenuIfCameFromIt takes care of. */
+$('sortExit').onclick = () => { exitSort(); backToMenuIfCameFromIt(); };
 $('sortUndo').onclick = () => {
   const u = sortUndoStack.pop();
   if (!u) return;
@@ -9027,7 +9169,11 @@ function visibleMarks() {
     .filter(m => marksFilter === 'all' ? true : marksFilter === 'todo' ? !m.key : m.kind === marksFilter)
     .sort((a, b) => b.ts - a.ts);
 }
-function openMarks() { leaveMenuForView(); $('marksView').classList.remove('hide'); renderMarks(); }
+/* The selection is cleared on the way IN, the same as the schedule screen does. Without
+   it, ticking forty marks and then thinking better of it left them ticked with the red
+   delete bar armed at the foot of the screen the next time he opened the list — one tap
+   and one confirm from destroying a set he had already walked away from. */
+function openMarks() { marksSel.clear(); leaveMenuForView(); $('marksView').classList.remove('hide'); renderMarks(); }
 function exitMarks() { $('marksView').classList.add('hide'); }
 /* Reading a house and sorting a mark are PARKED jobs. Reached from inside Scout they
    would leave the scout screen sitting under the detail sheet, so closing the house put
@@ -9067,10 +9213,15 @@ function renderMarks() {
     chips.appendChild(b);
   });
   const rows = visibleMarks();
-  /* A mark deleted, sorted or filtered away must not stay ticked in the background and
-     turn up in the next delete. Same guard the schedule list keeps. */
-  const liveIds = new Set(live.map(m => m.id));
-  [...marksSel].forEach(id => { if (!liveIds.has(id)) marksSel.delete(id); });
+  /* Pruned to what is ON SCREEN, not merely to what still exists. Select all is scoped
+     to the filter, but changing the filter afterwards reopened the same hole from the
+     other side: tick both yard signs, switch to Tarps, and the delete button still said
+     "delete the 2 ticked" with no tick anywhere in sight — and deleted the two signs he
+     could not see while sparing the tarp he could. What he can see is what he can
+     delete. This also covers marks that have gone away entirely, since anything not
+     live is not visible either. */
+  const visibleIds = new Set(rows.map(m => m.id));
+  [...marksSel].forEach(id => { if (!visibleIds.has(id)) marksSel.delete(id); });
   $('marksSelBar').classList.toggle('hide', !live.length);
   syncMarksDanger();
 
@@ -9146,7 +9297,11 @@ $('mkSelAll').onclick = () => {
 $('mkSelNone').onclick = () => { marksSel.clear(); renderMarks(); };
 $('mkDelSel').onclick = deleteSelectedMarks;
 function deleteSelectedMarks() {
-  const chosen = state.marks.filter(m => !m.dropped && marksSel.has(m.id));
+  /* Belt and braces with the prune in renderMarks: this can only ever take marks that
+     are on screen under the filter he is looking at. A destructive button must not be
+     able to reach something he cannot see, whatever order the renders happened in. */
+  const visible = new Set(visibleMarks().map(m => m.id));
+  const chosen = state.marks.filter(m => !m.dropped && marksSel.has(m.id) && visible.has(m.id));
   if (!chosen.length) { flashToast('Nothing ticked', 'Tick the ones you want gone first', '#64748b'); return; }
   /* Named, not just counted: a number on its own cannot be checked against what he
      thinks he ticked. Eight is enough to recognise the set. */
@@ -9169,6 +9324,14 @@ function deleteSelectedMarks() {
     renderMarks();
     return;
   }
+  /* Anything the sort screen's undo stack still holds about these marks goes with them.
+     That stack survives leaving and re-entering sorting, it holds the LIVE objects, and
+     its handler does Object.assign(u.m, u.prev) — which writes `dropped:false` straight
+     back and saves it. Without this, a mark deleted here could be brought back to life
+     by an Undo tap on a later visit to the sort screen, after a confirm box that said in
+     as many words that it could not be undone. */
+  const gone = new Set(chosen.map(m => m.id));
+  sortUndoStack = sortUndoStack.filter(u => !gone.has(u.m.id));
   marksSel.clear();
   buzz(20);
   flashToast(`${chosen.length} mark${chosen.length === 1 ? '' : 's'} deleted`, '', '#64748b');
