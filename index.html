@@ -351,13 +351,27 @@ label.f.hasq{display:inline-block;margin:12px 0 5px;vertical-align:middle}
 .rtStop.done .t b{text-decoration:line-through}
 /* ---------- property summary above the entry fields ---------- */
 #dProp{border:1px solid var(--line);border-radius:14px;background:var(--card);padding:11px 12px;margin:8px 0 4px}
-#dProp .pg{display:grid;grid-template-columns:1fr 1fr;gap:8px}
-#dProp .pc{background:var(--card2);border:1px solid var(--line);border-radius:11px;padding:7px 9px}
-#dProp .pc b{display:block;font-size:15px;font-weight:800;color:var(--txt);line-height:1.25}
-#dProp .pc span{font-size:10.5px;color:var(--dim);font-weight:700;letter-spacing:.3px;text-transform:uppercase}
-#dProp .pc em{display:block;font-style:normal;font-size:11px;color:var(--dim);font-weight:700;margin-top:1px}
-#dProp .pmeta{font-size:11.5px;color:var(--dim);font-weight:700;margin-top:9px;line-height:1.45}
-#dProp .pnote{font-size:11px;color:#5b6b7f;margin-top:7px;line-height:1.45}
+#dProp .pg,#dRoof .pg{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+#dProp .pc,#dRoof .pc{background:var(--card2);border:1px solid var(--line);border-radius:11px;padding:7px 9px}
+#dProp .pc b,#dRoof .pc b{display:block;font-size:15px;font-weight:800;color:var(--txt);line-height:1.25}
+#dProp .pc span,#dRoof .pc span{font-size:10.5px;color:var(--dim);font-weight:700;letter-spacing:.3px;text-transform:uppercase}
+#dProp .pc em,#dRoof .pc em{display:block;font-style:normal;font-size:11px;color:var(--dim);font-weight:700;margin-top:1px}
+#dProp .pmeta,#dRoof .pmeta{font-size:11.5px;color:var(--dim);font-weight:700;margin-top:9px;line-height:1.45}
+#dProp .pnote,#dRoof .pnote{font-size:11px;color:#5b6b7f;margin-top:7px;line-height:1.45}
+/* The roof block sits inside the same section as the auditor facts rather than earning a
+   section of its own — the anti-bloat rule from the round-twelve plan. The rule above it
+   is what says the numbers below came from somewhere else entirely. */
+#dRoof{border:1px solid var(--line);border-radius:14px;background:var(--card);padding:11px 12px;margin:8px 0 4px}
+#dRoof .rhead{font-size:10.5px;color:var(--dim);font-weight:700;letter-spacing:.3px;text-transform:uppercase;margin-bottom:8px}
+#dRoof .rband{font-size:12px;color:#93a6bb;font-weight:700;margin-top:8px}
+/* MEDIUM imagery is a quarter of his doors and two whole counties, so this is a normal
+   state and not an error — amber, not red, and it never withholds the number. */
+#dRoof .rwarn{font-size:11.5px;color:#fbbf24;font-weight:700;margin-top:8px;line-height:1.45}
+#dRoof .rfail{font-size:13px;color:#fca5a5;font-weight:700;line-height:1.45}
+#dRoof .rover{display:flex;align-items:center;gap:9px;margin-top:11px;flex-wrap:wrap}
+#dRoof .rover input{width:78px;min-height:44px;background:var(--card2);border:1px solid var(--line);
+  border-radius:10px;color:var(--txt);font-size:15px;font-weight:800;text-align:center;padding:0 8px}
+#dRoof .rover .lab{font-size:11.5px;color:var(--dim);font-weight:700;flex:1;min-width:120px;line-height:1.4}
 #dLog{display:flex;flex-direction:column;gap:7px}
 .logRow{display:flex;gap:9px;align-items:flex-start;background:var(--card);border:1px solid var(--line);border-radius:12px;padding:9px 11px}
 .logRow i{width:9px;height:9px;border-radius:3px;flex:0 0 auto;margin-top:5px}
@@ -885,7 +899,7 @@ select{min-height:44px}
       <div class="dsec"><button class="dsecHead" data-sec="who"><i>▸</i>Who lives here</button>
         <div class="dsecBody hide" id="dsecWho"></div></div>
       <div class="dsec"><button class="dsecHead" data-sec="prop"><i>▸</i>What the auditor holds</button>
-        <div class="dsecBody hide" id="dsecProp"><div id="dProp" class="hide"></div></div></div>
+        <div class="dsecBody hide" id="dsecProp"><div id="dProp" class="hide"></div><div id="dRoof" class="hide"></div></div></div>
       <div class="dsec"><button class="dsecHead" data-sec="log"><i>▸</i>Everything logged here<span class="cnt" id="dLogCount"></span></button>
         <div class="dsecBody hide" id="dsecLog"><div id="dLog"></div></div></div>
       <div class="dsec"><button class="dsecHead" data-sec="danger"><i>▸</i>Clear or delete this house</button>
@@ -1274,6 +1288,13 @@ select{min-height:44px}
           <button class="ghost" id="mTest">📡 Check county data connections</button>
           <div class="small" id="diag" style="margin-top:10px"></div>
           <div class="small" id="conn" style="margin-top:8px"></div>
+
+          <!-- One row, not a block. Without a key nothing about the app changes: no button,
+               no prompt, no nag. That is the whole degradation strategy. -->
+          <label class="f">Measure roofs from the air</label>
+          <div class="small why" style="margin-bottom:6px">Paste a Google Solar key here and a <b>Measure the roof</b> button appears on every house you open. It measures the roof off aerial photography — size and slope — in about a second.<br><b>What it costs you:</b> nothing at your volume. The first 10,000 lookups a month are free and twenty a day is about 440. Google still needs a card on the account before the free allowance works, so set a daily cap of 200 in the console first and a runaway can never cost more than pocket change.<br><b>Two things to know.</b> Around Columbus the photography is 10&nbsp;cm and the numbers have been checked against your own takeoffs to about 4%. Outside the metro — Marysville, London, Newark, Lancaster, Circleville and everywhere rural — it drops to 25&nbsp;cm photography, which has never been checked against a real takeoff. The panel tells you which one you got, every time.<br><b>The key stays on this phone</b> and is deliberately left out of your backup file, the same as your PIN — a live key does not belong in something you email to yourself. If you reinstall the app, paste it again.</div>
+          <input id="mSolarKey" type="text" inputmode="text" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="Paste key, or leave blank">
+          <div class="small" id="solarKeyNote" style="margin-top:6px"></div>
 
           <label class="f">Storage on this phone</label>
           <div id="storageNote" class="small"></div>
@@ -2940,7 +2961,16 @@ async function mark(status) {
   // carry contact details forward, but only from the same book of business
   const prev = state.visits.get(vKey(p.key, state.line));
   if (prev) { v.name=prev.name; v.goesBy=prev.goesBy||''; v.nameFromOwner=!!prev.nameFromOwner;
-              v.phone=prev.phone; v.email=prev.email; v.notes=prev.notes; v.tags=prev.tags||[]; v.follow=prev.follow||''; v.prevId=prev.id; }
+              v.phone=prev.phone; v.email=prev.email; v.notes=prev.notes; v.tags=prev.tags||[]; v.follow=prev.follow||''; v.prevId=prev.id;
+              /* The roof is a property of the BUILDING, so it carries forward like the
+                 auditor figures do. Without this: measure on Tuesday's No answer, come
+                 back Thursday and tap Talked, and the new record has no roof — gone from
+                 the panel, gone from a "last 7 days" export, and re-measuring costs
+                 another lookup and overwrites the pitch he corrected by hand. */
+              /* Copied, not shared. Nothing mutates a stored roof today, but two records
+                 pointing at one object is a trap for whoever touches this next. */
+              if (prev.roof) v.roof = { ...prev.roof };
+              if (prev.roofRise != null) v.roofRise = prev.roofRise; }
   // every status this door has ever had, in order. A "talked" that later turns
   // into "don't come back" is the story, and the last status alone loses it.
   v.log = [...logOf(prev), { id:newId(), ts:v.ts, kind:'status', status, text:'' }];
@@ -3272,6 +3302,15 @@ async function reassignLast() {
   v.occ = target.occ || null; v.mail = target.mail || '';
   v.val = target.val || null; v.sqft = target.sqft || null;
   v.saleTs = target.saleTs || null; v.salePrice = target.salePrice || null;
+  /* The roof is NOT deleted here, and that took two passes to get right. It is measured
+     from `v.lat/v.lon` — where he was standing — not from the lot the app snapped to, and
+     the 25 m guard already proved the building matched that spot. So when the snap was
+     wrong and this button fixes it, the measurement was right all along. Deleting it
+     would throw away a correct number and his hand-typed pitch, and Wrong house is a
+     CYCLE button: every other field is re-read from `target` on each tap, so cycling back
+     restores them, while the roof could never come back. What it does instead is admit
+     that the lot moved underneath the measurement, and say so on the panel. */
+  if (v.roof) v.roof = { ...v.roof, lotChanged: true };
   v.dist = Math.round(state.candidates[i].d);
   state.visits.set(vKey(v.key, v.line), v);
   state.candIndex = i; pinHouse(target.key);
@@ -3344,6 +3383,13 @@ function layoutDetail(status) {
     L.primary.forEach(id => $('dPrimary').appendChild($(id)));
     L.who.forEach(id => $('dsecWho').appendChild($(id)));
     DETAIL_SECTIONS.forEach(k => setDSection(k, L.open.includes(k)));
+    /* The roof block lives inside the prop section rather than earning a section of its
+       own — the anti-bloat rule. But a Talked door opens with prop SHUT, so the one
+       button he turned this feature on for would sit behind a chevron, which breaks the
+       standing rule that a stranger could use this. So with a key set, that section
+       opens itself. With no key nothing changes anywhere, which keeps the degradation
+       rule exact: no button, no prompt, no nag, and no extra scrolling either. */
+    if (solarKey()) setDSection('prop', true);
     dLayoutKey = key;
     dJustLaidOut = true;
   }
@@ -3472,6 +3518,7 @@ function openDetail(visit, focusName) {
   $('dName').value = v.name||''; $('dGoesBy').value = v.goesBy||'';
   $('dNameNote').textContent = nameIsFromDeed(v) ? 'This came off the county deed, not from the door.' : '';
   renderPropPanel(withParcelStats(v, state.parcels.get(v.key)));
+  renderRoofPanel(v);
   renderApptLink(v);
   $('dPhone').value = v.phone||'';
   $('dEmail').value = v.email||'';
@@ -4773,8 +4820,27 @@ function visitsFor(o) {
 function buildCsv(o) {
   const rows = visitsFor(o);
   if (!rows.length) { flashToast('Nothing matches those options','','#64748b'); return null; }
-  const head = ['Date','Time','Work','Status','Address','Owner','Status history','Market value','Floor area sq ft','Last sale date','Last sale price','Likely rental','Owner mailing address','County','Parcel ID','Contact name','Name from deed','Goes by','Area','Phone','Email','Tags','Stage','Follow up','Notes','Year built','Latitude','Longitude','GPS accuracy m','Distance to lot m'];
+  /* The roof columns go on the END, after the existing thirty. Anything he has already
+     built on top of this file — a filter, a formula, a saved import — is keyed to column
+     position, so a new column inserted in the middle silently shifts every one after it. */
+  const head = ['Date','Time','Work','Status','Address','Owner','Status history','Market value','Floor area sq ft','Last sale date','Last sale price','Likely rental','Owner mailing address','County','Parcel ID','Contact name','Name from deed','Goes by','Area','Phone','Email','Tags','Stage','Follow up','Notes','Year built','Latitude','Longitude','GPS accuracy m','Distance to lot m',
+    'Roof sq ft','Roof squares','Roof pitch','Roof planes','Roof pitch set by hand','Roof photo date','Roof imagery','Roof measured on'];
   const yr = v => yearBuilt(v) || '';
+  /* Exported as plain numbers, and the imagery tier travels beside them in its own
+     column. A 25 cm figure and a 10 cm figure are not the same claim, and a spreadsheet
+     that shows only the number has thrown away the part that says how much to trust it. */
+  const roofCols = v => {
+    const r = v.roof;
+    if (!r || !(r.m2 > 0)) return ['','','','','','','',''];
+    const rise = v.roofRise != null ? v.roofRise : null;
+    const ft2 = roofArea(r, rise) * M2_TO_FT2;
+    const photo = r.imgY ? [r.imgY, String(r.imgM || 1).padStart(2,'0'), String(r.imgD || 1).padStart(2,'0')].join('-') : '';
+    return [Math.round(ft2), (ft2/100).toFixed(1),
+            fmtRise(rise != null ? rise : riseFromDeg(r.meanDeg)), r.planes || '',
+            rise != null ? 'yes' : '', photo,
+            r.quality === 'HIGH' ? '10 cm' : r.quality === 'MEDIUM' ? '25 cm' : '',
+            r.at ? new Date(r.at).toLocaleDateString() : ''];
+  };
   const lines = [head.map(q).join(',')];
   rows.forEach(v => {
     const d = new Date(v.ts);
@@ -4787,7 +4853,8 @@ function buildCsv(o) {
       nameIsFromDeed(v) ? 'yes' : '', v.goesBy || '', areaOf(v), v.phone, v.email,
       (v.tags||[]).join('; '), (DISPO[v.dispo||'new']||{}).label,
       v.followAt ? new Date(v.followAt).toLocaleString() : '', noteText(v), yr(v),
-      v.lat.toFixed(6), v.lon.toFixed(6), Math.round(v.acc||0), v.dist].map(q).join(','));
+      v.lat.toFixed(6), v.lon.toFixed(6), Math.round(v.acc||0), v.dist,
+      ...roofCols(v)].map(q).join(','));
   });
   /* The leading ﻿ is a byte-order mark. Without it Excel and Google Sheets read
      the file as the local codepage, and any apostrophe or accent in a name arrives
@@ -5847,7 +5914,7 @@ document.querySelectorAll('.dsecHead[data-msec]').forEach(b => {
 /* ---- what version is actually on the phone ----
    Matches the service worker cache name, so "did the update land" is answerable by
    looking rather than guessing. */
-const BUILD_VERSION = 'v20';
+const BUILD_VERSION = 'v21';
 const BUILD_DATE = '30 July 2026';
 function renderVersionStamp() {
   const el = $('versionStamp'); if (!el) return;
@@ -5899,6 +5966,45 @@ $('mRentals').onclick = () => {
   localStorage.setItem('rentalMark', state.rentalMark);
   renderRentalChip(); buzz(10);
   drawMini(); if (window._map) refreshMapLayers();
+};
+/* The key is never echoed back in full. It is on screen in a truck, and it is the one
+   value in this app that costs money if somebody else gets it. */
+const maskKey = k => k.length <= 8 ? '••••' : k.slice(0, 4) + '••••••••' + k.slice(-4);
+function renderSolarKey() {
+  const el = $('mSolarKey'); if (!el) return;
+  const k = solarKey();
+  /* Masked in the box, not just in the note underneath it — it is on screen in a truck
+     and it is the one value here that costs money if somebody else reads it. NOT cleared
+     on focus: a field that empties itself when touched turns a stray tap and a blur into
+     a deleted key, and the change handler below would have saved that deletion. He
+     selects all and pastes over it, or selects all and deletes to turn it off. */
+  el.value = k ? maskKey(k) : '';
+  const note = $('solarKeyNote');
+  if (note) {
+    note.className = k ? 'nagOk small' : 'small';
+    note.textContent = k
+      ? `Key held on this phone (${maskKey(k)}). Measure the roof now shows on every house you open.`
+      : 'No key, so nothing changes anywhere in the app — there is no button and no prompt.';
+  }
+}
+$('mSolarKey').onchange = () => {
+  const el = $('mSolarKey');
+  const k = el.value.trim();
+  const held = solarKey();
+  // the mask came back unchanged, so he did not touch it — saving would store the dots
+  if (held && k === maskKey(held)) return;
+  /* Any bullet at all means he EDITED the mask rather than replacing it — a thumb
+     catching the field and adding one character. Storing that gives a key that is
+     refused at every door under a green "Roof measure is on", and a Settings screen
+     showing a perfectly plausible mask. Only the Cloud console gets him out of it. */
+  if (k.includes('•')) { renderSolarKey(); flashToast('Key left as it was', 'Select all and paste to replace it', '#64748b'); return; }
+  /* Deliberately NOT added to BACKUP_LOCAL. A live key does not belong in a plain-text
+     file he emails to himself, which is the same reason `pin` is left out. Losing it on a
+     reinstall costs a minute at the console; leaking it costs money. */
+  if (k) localStorage.setItem('solarKey', k); else localStorage.removeItem('solarKey');
+  renderSolarKey();
+  flashToast(k ? 'Roof measure is on' : 'Roof measure is off',
+             k ? 'Open any house and look under What the auditor holds' : '', k ? '#22c55e' : '#64748b');
 };
 function renderStorageNote() {
   const el = $('storageNote'); if (!el) return;
@@ -6103,6 +6209,423 @@ function withParcelStats(rec, p) {
   if ((!rec.extra || !Object.keys(rec.extra).length) && p.extra) rec.extra = p.extra;
   return rec;
 }
+/* ==================== roof measure, from the air ==========================
+   One request to Google's Solar API returns the roof's area and the pitch of every
+   plane, measured off aerial photography. It is a ballpark for sizing an estimate —
+   never a takeoff, never a quote.
+
+   WHY `requiredQuality=MEDIUM` IS NOT OPTIONAL. Google's reference says: "Not
+   specifying this is equivalent to restricting to HIGH quality only." HIGH is the
+   built-up Columbus metro and nothing else. Counted against the statewide parcel
+   layer on 2026-07-30: of the 443,937 single-family houses in his seven counties,
+   339,082 are inside HIGH — 76.4%. Franklin is 97.5% and Delaware 73.7%, but Licking
+   and Union are 23%, Fairfield 31%, and **Madison and Pickaway are zero**. Leave this
+   parameter off and roof measure returns "no building found" at 105,000 doors and in
+   two entire counties, which reads exactly like "Google has no data here" and is
+   wrong — MEDIUM covers 100% of all seven.
+
+   WHAT THAT COSTS IN CONFIDENCE. HIGH is 10 cm height data, MEDIUM is 25 cm. All five
+   houses ever validated against his own takeoffs (Powell, Dublin, Hilliard, east
+   Franklin, Scharer) sit inside HIGH, so the ~4% agreement figure is a HIGH-tier
+   result. MEDIUM has never been checked against a real takeoff. So the tier is shown
+   every single time, and it is stored and exported — the number travels with how much
+   to trust it, or it is worse than useless.
+
+   THE TRAP THAT COST A FIELD TEST. `wholeRoofStats.areaMeters2` is ALREADY
+   tilt-corrected — Google's words: "the roof area (accounting for tilt), not the
+   ground footprint area". Applying a pitch correction on top double-counts: about
+   +12% on a 6/12 and +41% on a 12/12. The error scales with pitch, which is exactly
+   what "fine on some houses, wildly wrong on others" looks like. `groundAreaMeters2`
+   is the separate footprint field and is the ONLY one the override may scale. */
+const SOLAR_URL = 'https://solar.googleapis.com/v1/buildingInsights:findClosest';
+const M2_TO_FT2 = 10.7639104;
+/* `findClosest` returns the NEAREST building, which on a tight lot is the neighbour's.
+   During the field test a caching fault produced matches 2.7 to 26 KILOMETRES away and
+   every one of them rendered as a confident number. 25 m is the plan's figure; the
+   roof tester's 60 m would wave a neighbour's house straight through. */
+const ROOF_MATCH_MAX = 25;
+/* The widest signed error across the five validated houses: +7.1%, +4.5%, +0.1%,
+   −5.3%, −7.5%. Mean −0.2% — it scatters, it does not drift, so there is no bias to
+   correct and no global fudge factor anywhere in this file. */
+const ROOF_BAND = 0.07;
+
+const solarKey = () => (localStorage.getItem('solarKey') || '').trim();
+const squaresOf = m2 => m2 * M2_TO_FT2 / 100;
+/* He reads and speaks pitch as rise over twelve. Degrees are not legible to him, so
+   they never reach the screen — not here, not anywhere. */
+/* Clamped at 36/12 — the same ceiling the typed override uses. Without it a single
+   sliver segment (a dormer cheek, a parapet, a tree edge read as a facet) at 89° put
+   "steepest face 687.5/12" on the panel, and at exactly 90° tan blows up and printed an
+   eighteen-digit number. No roof is steeper than 36/12. */
+const riseFromDeg = deg => Math.min(36, Math.round(12 * Math.tan(rad(Math.min(88, Math.max(0, deg)))) * 2) / 2);
+const degFromRise = rise => Math.atan(rise / 12) * 180 / Math.PI;
+const fmtRise = r => (Number.isInteger(r) ? String(r) : r.toFixed(1)) + '/12';
+/* Accepts 8/12, 8:12, 8, 8.5 — whatever he actually types with one thumb, in either of
+   the two notations the trade uses. Zero is allowed: a dead-flat porch really is 0/12
+   and roofArea handles it exactly (cos 0 = 1). */
+function parseRise(s) {
+  const t = String(s == null ? '' : s).trim();
+  if (!t) return null;
+  const m = t.match(/^(\d+(?:\.\d+)?)\s*(?:[\/:]\s*12)?$/);
+  if (!m) return NaN;
+  const r = parseFloat(m[1]);
+  return (isFinite(r) && r >= 0 && r <= 36) ? r : NaN;
+}
+function roofPhotoWords(r) {
+  if (!r || !r.imgY) return '';
+  const d = new Date(r.imgY, (r.imgM || 1) - 1, r.imgD || 1);
+  return isNaN(+d) ? '' : d.toLocaleDateString([], { month:'long', year:'numeric' });
+}
+
+/** Pull the numbers out of a response, tolerating both shapes the API has used. */
+function readRoof(j) {
+  const sp = (j && j.solarPotential) || j || {};
+  const whole = sp.wholeRoofStats || {};
+  const segsRaw = Array.isArray(sp.roofSegmentStats) ? sp.roofSegmentStats : [];
+  const segs = segsRaw.map(s => ({
+    deg: Number((s && s.pitchDegrees) || 0),
+    m2:  Number((s && s.stats && s.stats.areaMeters2) != null ? s.stats.areaMeters2 : (s && s.areaMeters2) || 0),
+  })).filter(s => s.m2 > 0 || s.deg > 0);
+  const m2 = Number(whole.areaMeters2 || 0);
+  let ground = Number(whole.groundAreaMeters2 || 0);
+  const groundReported = ground > 0;
+  const wsum = segs.reduce((a, s) => a + s.m2, 0);
+  /* Area-weighted, not the steepest. The steepest face of a cut-up roof says nothing
+     about the whole, and it is the average that the sloped-to-ground ratio is built on. */
+  const meanDeg = wsum > 0 ? segs.reduce((a, s) => a + s.deg * s.m2, 0) / wsum : 0;
+  const maxDeg = segs.reduce((a, s) => Math.max(a, s.deg), 0);
+  /* Some responses carry no footprint. Derive it rather than disabling the override.
+     PER PLANE, because cos is concave — Σ(Aᵢ·cos dᵢ) ≤ (ΣAᵢ)·cos(mean d), and one mean
+     pitch overstated the footprint by 8.2% on a 12/12-plus-flat-garage house. But
+     SCALED back onto m2 rather than used raw, because raw broke the invariant that keeps
+     the override honest: typing the pitch the panel is already showing must not change
+     the answer. Google's segment areas can fall short of the whole-roof figure (the
+     sanity guard tolerates 25% of that), and a raw sum moved the number by exactly that
+     drift — measured at 200 m² whole roof against 170 m² of segments, all faces 30°,
+     typing the 7/12 the app itself displayed took 21.5 squares to 18.3. */
+  if (!groundReported && wsum > 0 && m2 > 0) {
+    const shape = segs.reduce((a, s) => a + s.m2 * Math.cos(rad(s.deg)), 0);
+    ground = m2 * (shape / wsum);
+  } else if (!groundReported && m2 > 0) ground = m2 * Math.cos(rad(meanDeg));
+  const d = j && j.imageryDate;
+  return {
+    m2, ground, planes: segs.length, meanDeg, maxDeg,
+    quality: String((j && j.imageryQuality) || '').toUpperCase(),
+    imgY: d && d.year ? Number(d.year) : null,
+    imgM: d && d.month ? Number(d.month) : null,
+    imgD: d && d.day ? Number(d.day) : null,
+    lat: j && j.center ? Number(j.center.latitude) : null,
+    lon: j && j.center ? Number(j.center.longitude) : null,
+    at: Date.now(),
+    _segSum: wsum,
+    _groundReported: groundReported,
+  };
+}
+
+/* The response can be internally inconsistent without being an error, and a number
+   built on it would look exactly as confident as a good one. Wide on purpose: this is
+   here to catch nonsense, not to second-guess a real roof. The most accurate house
+   ever tested was also the most complex one, so complexity is never treated as doubt. */
+function roofSanity(r) {
+  if (!(r.m2 > 0)) return 'the measurement came back empty';
+  if (!r.planes) return 'the photo found no roof planes here';
+  if (r._segSum > 0 && Math.abs(r._segSum - r.m2) / r.m2 > 0.25)
+    return 'the roof planes do not add up to the whole roof';
+  /* Only when Google actually SENT a footprint. When it is derived from the segments,
+     ratio = m2 / Σ(segᵢ·cos segᵢ) is arithmetically forced to sit right on top of the
+     value it is being compared against — a review proved the deviation is exactly zero —
+     so both checks below would pass by construction and the guard would quietly switch
+     itself off in precisely the case where the response is most degraded. Better to run
+     no check than a check that cannot fail. */
+  if (r._groundReported && r.ground > 0) {
+    const ratio = r.m2 / r.ground;
+    if (ratio < 0.95) return 'the roof measures smaller than the ground beneath it';
+    const expect = 1 / Math.cos(rad(r.meanDeg));
+    if (expect > 0 && Math.abs(ratio - expect) / expect > 0.35)
+      return 'the slope and the size of this roof disagree';
+  }
+  return '';
+}
+
+/** Sloped area he should use, honouring his own pitch if he has set one. */
+function roofArea(r, rise) {
+  if (rise == null || !(r.ground > 0)) return r.m2;
+  return r.ground / Math.cos(rad(degFromRise(rise)));
+}
+
+/* The ids being measured right now. A bare boolean greyed the button out on EVERY
+   house while one request was in flight, and a request that never settled latched it
+   that way for the rest of the session with nothing on screen to say why. A Set keeps
+   the busy state on the house it belongs to and lets two run side by side. */
+const roofBusy = new Set();
+const ROOF_TIMEOUT_MS = 20000;
+/* Keyed to the record it belongs to. A global would follow him to the next house: measure
+   one that cannot be found, walk on, open the neighbour, and the neighbour would open
+   already claiming it could not be found. */
+let roofErr = null;
+const ROOF_FAIL = {
+  nosignal:  "Couldn't reach the measuring service. Try again when you have signal.",
+  nobuilding:"Couldn't find this building from the air.",
+  badkey:    'The roof-measure key was refused. Check it in Settings.',
+  /* Deliberately does NOT say "check your key", because in every one of these cases the
+     key is fine and re-pasting it would waste his morning. The daily cap is listed first
+     because this app is what told him to set one. */
+  blocked:   'Google would not let that through. The usual reasons: the daily cap has been '
+           + 'reached, roof measuring is not switched on for that project, the key has a '
+           + 'website restriction on it, or there is no card on the account. The key itself '
+           + 'is probably fine.',
+  quality:   "The aerial photo here isn't detailed enough to measure.",
+  failed:    "The measuring service didn't answer properly. Try again.",
+};
+const roofFail = (v, k, m) => { roofErr = { id: v && v.id, k, m }; };
+
+/* Is this record still the one on screen? Everything below is async, and `#dRoof` is a
+   single shared element — so without this a slow answer for the house he just left
+   repaints the panel of the house he is standing at now, under the new house's title,
+   and rebinds the pitch box to the OLD record. Two independent reviews found that
+   before it shipped: he corrects the pitch on what he believes is 402 Elm and it is
+   written to 400 Elm and saved. */
+const roofOnScreen = v => !!(v && editing && editing.id === v.id
+                             && !$('detailSheet').classList.contains('hide'));
+/* saveVisit is a bare DB.put. persistEditing guards it with exactly this check because
+   a stale reference held across an await can re-create a door he deleted — one record
+   out of a set he confirmed "cannot be undone", back on the next launch. A measurement
+   in flight while he wipes the house is that same stale reference. */
+async function roofSave(v) {
+  if (!v || v._new) return;
+  if (!state.visitLog.some(x => x.id === v.id)) return;
+  await saveVisit(v);
+}
+
+async function measureRoof(v) {
+  const key = solarKey();
+  if (!key || !v) return;
+  /* Per RECORD, not global. A single global flag made the button on every OTHER house
+     silently dead while one request was in flight — it looked live, it did nothing, no
+     toast, no error. Nothing is shared between two measurements: roofErr is keyed by id
+     and each closure holds its own record, so they can run side by side. */
+  if (roofBusy.has(v.id)) return;
+  const key0 = v.key;
+  roofBusy.add(v.id); renderRoofPanel(v);
+  try {
+    const u = SOLAR_URL
+      + '?location.latitude=' + encodeURIComponent(v.lat)
+      + '&location.longitude=' + encodeURIComponent(v.lon)
+      + '&requiredQuality=MEDIUM'
+      + '&key=' + encodeURIComponent(key);
+    let res;
+    /* `cache:'no-store'` as well as the service worker's own scope guard. v20 stopped the
+       worker touching anything that is not this app's own file, which is what makes a
+       per-house lookup safe at all — before that the catch-all matched with
+       {ignoreSearch:true} and every house after the first got the first house's roof. */
+    /* A request that never settles used to latch the busy flag for the life of the page.
+       Twenty seconds, then it is a no-signal failure he can retry. */
+    const ac = new AbortController();
+    const bail = setTimeout(() => ac.abort(), ROOF_TIMEOUT_MS);
+    /* NOT cleared here. `fetch` resolves as soon as the HEADERS arrive, so disarming the
+       abort at this point leaves the body read — `res.json()` below — with no timeout at
+       all. A stalled transfer after a 200 header is an ordinary LTE handoff on a rural
+       road, and it would have latched the busy state for the life of the page: exactly
+       the failure this timeout was added to kill, moved two hundred milliseconds later. */
+    try { res = await fetch(u, { cache:'no-store', signal: ac.signal }); }
+    catch (e) { clearTimeout(bail); throw new Error('nosignal'); }
+    if (res.status === 404) throw new Error('nobuilding');
+    /* 400 and 401 really are the key. 403 is usually NOT: on Google Cloud it is
+       overwhelmingly the Solar API not switched on for the project, a browser-referrer
+       restriction on the key, billing not attached, or — the one this app talks him
+       into — the 200-a-day cap it tells him to set doing its job. Sending him to check
+       a key that was fine all along would cost him a morning. 429 is the same story. */
+    if (res.status === 400 || res.status === 401) throw new Error('badkey');
+    if (res.status === 403 || res.status === 429) throw new Error('blocked');
+    if (!res.ok) throw new Error('failed');
+    let j;
+    // the abort is still armed across this read, which is the whole point; an abort
+    // part-way through the body surfaces here rather than as a hung promise
+    try { j = await res.json(); } catch (e) { throw new Error('nosignal'); }
+    finally { clearTimeout(bail); }
+    if (j && j.error) {
+      const st = j.error.status;
+      throw new Error(st === 'NOT_FOUND' ? 'nobuilding'
+        : (st === 'PERMISSION_DENIED' || st === 'RESOURCE_EXHAUSTED') ? 'blocked'
+        : 'badkey');
+    }
+
+    const r = readRoof(j);
+    /* FAILS CLOSED. A response with no usable centre used to skip this guard entirely
+       and render as a confident number — which is exactly the failure the guard exists
+       for: during the field test a caching fault produced matches 2.7 to 26 KILOMETRES
+       away, every one of them shown without a murmur. `Number.isFinite` and not
+       `!= null`, because Number(undefined) is NaN, NaN > 25 is false, and the old test
+       waved it through and then printed "NaN m from the door". */
+    if (!Number.isFinite(r.lat) || !Number.isFinite(r.lon)) { roofFail(v, 'nobuilding'); return; }
+    const off = haversine(v.lat, v.lon, r.lat, r.lon);
+    /* Non-finite goes to nobuilding, NOT to 'far'. Sharing the message printed "about
+       0 m from this door, so it is almost certainly not this house", which contradicts
+       itself in the one place the app is supposed to be plainest. */
+    if (!Number.isFinite(off)) { roofFail(v, 'nobuilding'); return; }
+    if (off > ROOF_MATCH_MAX) { roofFail(v, 'far', Math.round(off)); return; }
+    r.off = Math.round(off);
+    /* requiredQuality=MEDIUM means BASE can never come back, so this is a backstop
+       against a tier that does not exist yet rather than a live branch. */
+    if (r.quality !== 'HIGH' && r.quality !== 'MEDIUM') { roofFail(v, 'quality'); return; }
+    const bad = roofSanity(r);
+    if (bad) { roofFail(v, 'sanity', bad); return; }
+
+    /* The lot moved under us. "Wrong house" re-points the record while a request is in
+       flight, and attaching this answer to a lot the record no longer claims is the same
+       reads-as-fact failure that guard exists to stop. Throw the answer away. */
+    if (v.key !== key0) { roofFail(v, 'nobuilding'); return; }
+    delete r._segSum;
+    delete r._groundReported;
+    roofErr = null;
+    v.roof = r;
+    if (v.roofRise === undefined) v.roofRise = null;
+    /* A record he has not saved yet holds it in memory and it goes down with Save, the
+       same as a note. Persisting one here would create a door he never marked — and
+       roofSave also refuses a record that has been deleted while this was in flight. */
+    await roofSave(v);
+  } catch (e) {
+    roofFail(v, (e && e.message) || 'failed');
+  } finally {
+    roofBusy.delete(v.id);
+    /* Only if he is still looking at this house. Otherwise the answer for the door he
+       walked away from would repaint the door he is standing at. */
+    if (roofOnScreen(v)) renderRoofPanel(v);
+  }
+}
+
+function renderRoofPanel(v) {
+  const el = $('dRoof'); if (!el) return;
+  /* No key, no feature. Not a nag, not a disabled button — it is not there at all. */
+  if (!v || !solarKey() || v.lat == null || v.lon == null) {
+    el.classList.add('hide'); el.innerHTML = ''; return;
+  }
+  el.classList.remove('hide');
+  const r = v.roof;
+  const busy = roofBusy.has(v.id);
+  const btn = `<button class="ghost" id="dRoofGo"${busy ? ' disabled' : ''} style="margin-top:${r ? 10 : 0}px">`
+    + (busy ? 'Measuring…' : r ? 'Measure again' : '📐 Measure the roof') + '</button>';
+
+  let body = '';
+  const failed = roofErr && roofErr.id === v.id;
+  if (failed) {
+    const msg = roofErr.k === 'far'
+      ? `The nearest building the photo can find is about ${esc(String(roofErr.m))} m from this door, so it is almost certainly not this house.`
+      : roofErr.k === 'sanity'
+      ? `This one does not add up — ${esc(roofErr.m)}. Better to say nothing than to say it wrong.`
+      : (ROOF_FAIL[roofErr.k] || ROOF_FAIL.failed);
+    body = `<div class="rfail">${esc(msg)}</div>`;
+    /* An earlier good measurement is kept and still shown — but it is NOT left looking
+       like the answer to the attempt that just failed. "Better to say nothing than to
+       say it wrong" printed directly above a confident square count is saying it wrong.
+       So it is attributed to the earlier reading, by date, and the advisory line that
+       tells him what to quote is dropped. */
+    if (r) body += `<div class="rband">Below is the earlier measurement${r.at ? ' taken ' + esc(new Date(r.at).toLocaleDateString()) : ''}, not this attempt.</div>`;
+  }
+
+  if (r) {
+    const rise = v.roofRise != null ? v.roofRise : null;
+    const m2 = roofArea(r, rise);
+    const ft2 = m2 * M2_TO_FT2;
+    const sq = ft2 / 100;
+    const lo = sq * (1 - ROOF_BAND), hi = sq * (1 + ROOF_BAND);
+    const meanRise = riseFromDeg(r.meanDeg), maxRise = riseFromDeg(r.maxDeg);
+    const shownRise = rise != null ? rise : meanRise;
+    /* A house whose faces run 12/12 over the living space and flat over the garage is an
+       ordinary Columbus ranch-with-addition, and its AVERAGE is about 5/12. Standing in
+       the driveway looking at the 12/12, the obvious thing to type is 12 — and because
+       the override re-slopes the WHOLE footprint at one pitch, that moves the answer
+       about +21% the wrong way. Typing the 5/12 the app itself displayed moves it −7.5%.
+       Neither is a maths bug; both are a labelling failure, and it is the single most
+       likely way this feature makes an estimate worse instead of better. */
+    const mixed = (maxRise - meanRise) >= 2;
+    const photo = roofPhotoWords(r);
+    body += `<div class="pg">`
+      + `<div class="pc"><span>Roof area</span><b>${esc(Math.round(ft2).toLocaleString())}</b><em>square feet</em></div>`
+      + `<div class="pc"><span>Squares</span><b>${esc(sq.toFixed(1))}</b><em>likely ${esc(lo.toFixed(0))} – ${esc(hi.toFixed(0))}</em></div>`
+      + `<div class="pc"><span>Average pitch${rise != null ? ' (yours)' : ''}</span><b>${esc(fmtRise(shownRise))}</b>`
+        + `<em>${rise != null ? 'you set this' : 'steepest face ' + esc(fmtRise(maxRise))}</em></div>`
+      + `<div class="pc"><span>Planes</span><b>${esc(String(r.planes))}</b><em>${r.off != null ? esc(String(r.off)) + ' m from the door' : 'roof faces'}</em></div>`
+      + `</div>`;
+    /* The range is the only uncertainty signal on screen, and it is deliberately the
+       only one. A confidence badge driven by pitch and plane count was designed and
+       then refused: the most complex roof tested (23 planes, 40°) was also the most
+       accurate at +0.1%, while the simplest was second-worst at +7.1%. A badge built on
+       complexity would tell him to distrust his best result. */
+    if (!failed) body += `<div class="rband">Give it as roughly ${esc(lo.toFixed(0))} to ${esc(hi.toFixed(0))} squares. `
+      + `The point figure is what you multiply; the range is what stops it pretending to be a measurement.`
+      /* The ±7% band was measured on five HIGH-tier houses with no override on any of
+         them. Printing the identical band over a MEDIUM reading, or over a figure he has
+         re-pitched by hand, claims evidence that does not exist for it. */
+      + ((r.quality === 'MEDIUM' || rise != null)
+          ? ` That range came off five houses on the finer photography with no pitch typed in, so treat it as the best guide there is here rather than a measured band.` : '')
+      + `</div>`;
+
+    if (r.quality === 'MEDIUM') {
+      body += `<div class="rwarn">Measured from 25&nbsp;cm photography — the coarser of Google's two. `
+        + `That is normal outside the Columbus metro and it is not an error. `
+        + `Every roof ever checked against your own takeoffs was on the finer 10&nbsp;cm, so treat this one as a rougher ballpark until you have squared one off yourself.</div>`;
+    }
+
+    /* His judgement beats the photo, one house at a time. It is NOT a calibration
+       factor — five houses show a mean signed error of −0.2%, so there is nothing to
+       calibrate. It is here because Google reads pitch LOW on steep roofs: Scharer came
+       back 9/12 against a real 11/12, and entering 11/12 moved it from 53.9 to 58.4
+       squares against a real 58.29. */
+    /* Only while the panel is showing Google's average. With his own pitch in the box,
+       "the figure above is the average across the whole roof" sits directly under a cell
+       reading "Average pitch (yours) — you set this", and the panel contradicts itself
+       about the one number the feature exists to produce. */
+    if (mixed && rise == null) {
+      body += `<div class="rwarn">This roof is not one slope. Its faces run from about `
+        + `${esc(fmtRise(meanRise))} on average up to ${esc(fmtRise(maxRise))} at the steepest, `
+        + `and the figure above is the average across the whole roof. `
+        + `<b>If you type a pitch it replaces that average</b>, so type what the roof averages — `
+        + `typing the steepest face here will overstate the size.</div>`;
+    }
+    body += `<div class="rover"><input id="dRoofRise" type="text" inputmode="decimal" `
+      + `placeholder="${esc(fmtRise(meanRise))}" value="${esc(rise != null ? fmtRise(rise) : '')}">`
+      + `<span class="lab">Roof steeper or flatter than that <b>on average</b>? Type it and the size redoes itself off the footprint. Empty uses the photo.</span></div>`;
+
+    const meta = [photo ? 'photo taken ' + photo : '',
+                  r.quality === 'HIGH' ? '10 cm photography' : '25 cm photography'].filter(Boolean).join(' · ');
+    if (meta) body += `<div class="pmeta">${esc(meta)}</div>`;
+    /* Said plainly because it is the single most tempting thing to misread here, and
+       the permits research already found there is no roof age anywhere in any of this. */
+    body += `<div class="pnote">That is when the picture was taken, not when the roof was put on — nothing here knows that. `
+      + `Tree cover over a roof reads as roof, so a wooded lot measures big.</div>`;
+    /* The lot was corrected after this was measured. The number is probably still right —
+       it was taken from where he stood, not from the lot — but "probably" is exactly the
+       thing this panel is not allowed to leave unsaid. */
+    if (r.lotChanged) body += `<div class="rwarn">This was measured before you corrected which house this is. `
+      + `It was taken from where you were standing, so it is very likely still the right roof — but measure again if you want to be sure.</div>`;
+    /* Every other thing on this sheet that writes to an unfiled record says so. Without
+       it he measures from Details on a house he has not knocked, taps a status on the
+       main screen instead of Save, and the lookup is spent with nothing kept. */
+    if (v._new) body += `<div class="rwarn">Tap Save to keep this measurement — this house is not filed yet.</div>`;
+  }
+
+  el.innerHTML = `<div class="rhead">Roof, measured from the air</div>` + body + btn;
+
+  const go = $('dRoofGo');
+  if (go) go.onclick = () => { roofErr = null; measureRoof(v); };
+  const ri = $('dRoofRise');
+  if (ri) ri.onchange = () => {
+    /* Both handlers close over the record this panel was drawn for. If that is no longer
+       the house on screen, the panel has been repainted underneath them and writing here
+       would put his correction on the wrong door. */
+    if (!roofOnScreen(v)) return;
+    const p = parseRise(ri.value);
+    if (Number.isNaN(p)) {
+      flashToast('Type it like 8/12', 'Rise over twelve — or leave it empty', '#f59e0b');
+      ri.value = v.roofRise != null ? fmtRise(v.roofRise) : ''; return;
+    }
+    v.roofRise = p;
+    roofSave(v);
+    renderRoofPanel(v);
+  };
+}
+
 function renderPropPanel(v) {
   const el = $('dProp'); if (!el) return;
   const built = yearBuilt(v);
@@ -6317,7 +6840,7 @@ $('menuBtn').onclick = () => {
     renderBackupNag(); renderPinInfo(); renderHomeInfo(); renderPaceInfo(); renderDriveChips();
     renderHubDataChips(); renderMapDataChips();
     renderStorageNote(); renderVersionStamp(); renderQuietChip(); renderRentalChip();
-    renderEndDay();
+    renderSolarKey(); renderEndDay();
     renderSoundChip(); renderWakeChip();
     renderLineNames(); restoreMenuSections();
   } catch (e) {
