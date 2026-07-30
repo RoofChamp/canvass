@@ -2967,10 +2967,14 @@ async function mark(status) {
                  back Thursday and tap Talked, and the new record has no roof — gone from
                  the panel, gone from a "last 7 days" export, and re-measuring costs
                  another lookup and overwrites the pitch he corrected by hand. */
-              /* Copied, not shared. Nothing mutates a stored roof today, but two records
-                 pointing at one object is a trap for whoever touches this next. */
-              if (prev.roof) v.roof = { ...prev.roof };
-              if (prev.roofRise != null) v.roofRise = prev.roofRise; }
+              /* Copied, not shared — and `segs` sliced, because a shallow spread leaves
+                 the one field that IS a mutable container pointing at the same array. */
+              if (prev.roof) v.roof = { ...prev.roof, segs: prev.roof.segs && prev.roof.segs.slice() };
+              if (prev.roofRise != null) v.roofRise = prev.roofRise;
+              /* The SECOND pitch travels too. Without this line the same house measured
+                 21.5 squares on Tuesday and 26.0 on Thursday — a 20.7% jump from one
+                 missing field — with the panel still reading "you set this". */
+              if (prev.roofRise2 != null) v.roofRise2 = prev.roofRise2; }
   // every status this door has ever had, in order. A "talked" that later turns
   // into "don't come back" is the story, and the last status alone loses it.
   v.log = [...logOf(prev), { id:newId(), ts:v.ts, kind:'status', status, text:'' }];
@@ -3302,15 +3306,24 @@ async function reassignLast() {
   v.occ = target.occ || null; v.mail = target.mail || '';
   v.val = target.val || null; v.sqft = target.sqft || null;
   v.saleTs = target.saleTs || null; v.salePrice = target.salePrice || null;
-  /* The roof is NOT deleted here, and that took two passes to get right. It is measured
-     from `v.lat/v.lon` — where he was standing — not from the lot the app snapped to, and
-     the 25 m guard already proved the building matched that spot. So when the snap was
-     wrong and this button fixes it, the measurement was right all along. Deleting it
-     would throw away a correct number and his hand-typed pitch, and Wrong house is a
-     CYCLE button: every other field is re-read from `target` on each tap, so cycling back
-     restores them, while the roof could never come back. What it does instead is admit
-     that the lot moved underneath the measurement, and say so on the panel. */
-  if (v.roof) v.roof = { ...v.roof, lotChanged: true };
+  /* THIS TURNS ON WHERE THE MEASUREMENT WAS TAKEN FROM, and it has now been wrong twice.
+     Round two said keep it, reasoning that a roof measured from `v.lat/v.lon` — where he
+     was STANDING — is not invalidated by correcting the lot. That was true when it was
+     written, and a later change in the same round destroyed the premise: the query point
+     is now the house on the SNAPPED lot, validated against that same lot's outline. So a
+     roof taken `from:'house'` or `from:'lot'` is deterministically the OLD lot's
+     building, and keeping it files 402's roof against 400 under a panel line reading
+     "very likely still the right roof" — reads-as-fact, with a reassurance bolted on.
+     A roof taken from his GPS or from a pin he placed IS still tied to where he was
+     rather than to the lot, so that one is kept and flagged. */
+  if (v.roof) {
+    if (v.roof.from === 'house' || v.roof.from === 'lot') {
+      delete v.roof; delete v.roofRise; delete v.roofRise2;
+    } else {
+      // segs is a mutable array: copy it, or both records share one
+      v.roof = { ...v.roof, segs: v.roof.segs && v.roof.segs.slice(), lotChanged: true };
+    }
+  }
   v.dist = Math.round(state.candidates[i].d);
   state.visits.set(vKey(v.key, v.line), v);
   state.candIndex = i; pinHouse(target.key);
@@ -4824,22 +4837,34 @@ function buildCsv(o) {
      built on top of this file — a filter, a formula, a saved import — is keyed to column
      position, so a new column inserted in the middle silently shifts every one after it. */
   const head = ['Date','Time','Work','Status','Address','Owner','Status history','Market value','Floor area sq ft','Last sale date','Last sale price','Likely rental','Owner mailing address','County','Parcel ID','Contact name','Name from deed','Goes by','Area','Phone','Email','Tags','Stage','Follow up','Notes','Year built','Latitude','Longitude','GPS accuracy m','Distance to lot m',
-    'Roof sq ft','Roof squares','Roof pitch','Roof planes','Roof pitch set by hand','Roof photo date','Roof imagery','Roof measured on'];
+    'Roof sq ft','Roof squares','Roof pitch','Roof planes','Roof pitch set by hand','Roof photo date','Roof imagery','Roof measured on',
+    'Roof second pitch','Roof split'];
   const yr = v => yearBuilt(v) || '';
   /* Exported as plain numbers, and the imagery tier travels beside them in its own
      column. A 25 cm figure and a 10 cm figure are not the same claim, and a spreadsheet
      that shows only the number has thrown away the part that says how much to trust it. */
   const roofCols = v => {
     const r = v.roof;
-    if (!r || !(r.m2 > 0)) return ['','','','','','','',''];
+    if (!r || !(r.m2 > 0)) return ['','','','','','','','','',''];
     const rise = v.roofRise != null ? v.roofRise : null;
-    const ft2 = roofArea(r, rise) * M2_TO_FT2;
+    const rise2 = (rise != null && v.roofRise2 != null) ? v.roofRise2 : null;
+    const split = roofSplit(r, rise, rise2);
+    const ft2 = split.total * M2_TO_FT2;
     const photo = r.imgY ? [r.imgY, String(r.imgM || 1).padStart(2,'0'), String(r.imgD || 1).padStart(2,'0')].join('-') : '';
     return [Math.round(ft2), (ft2/100).toFixed(1),
             fmtRise(rise != null ? rise : riseFromDeg(r.meanDeg)), r.planes || '',
             rise != null ? 'yes' : '', photo,
             r.quality === 'HIGH' ? '10 cm' : r.quality === 'MEDIUM' ? '25 cm' : '',
-            r.at ? new Date(r.at).toLocaleDateString() : ''];
+            r.at ? new Date(r.at).toLocaleDateString() : '',
+            /* Only if it was actually APPLIED. A record with no per-face data cannot be
+               split, and exporting the second pitch there would state a correction that
+               never happened, in a file his own compliance research expects to be
+               subpoenaed one day. */
+            (rise2 != null && !split.flat) ? fmtRise(rise2) : '',
+            /* Spelled out rather than left implicit: whoever reads this file later can
+               see how the two pitches divided the roof without re-deriving it. */
+            split.parts.length > 1
+              ? split.parts.map(p => `${(p.m2 * M2_TO_FT2 / 100).toFixed(1)} sq at ${fmtRise(p.rise)}`).join(' + ') : ''];
   };
   const lines = [head.map(q).join(',')];
   rows.forEach(v => {
@@ -5914,7 +5939,7 @@ document.querySelectorAll('.dsecHead[data-msec]').forEach(b => {
 /* ---- what version is actually on the phone ----
    Matches the service worker cache name, so "did the update land" is answerable by
    looking rather than guessing. */
-const BUILD_VERSION = 'v21';
+const BUILD_VERSION = 'v22';
 const BUILD_DATE = '30 July 2026';
 function renderVersionStamp() {
   const el = $('versionStamp'); if (!el) return;
@@ -6241,9 +6266,25 @@ const SOLAR_URL = 'https://solar.googleapis.com/v1/buildingInsights:findClosest'
 const M2_TO_FT2 = 10.7639104;
 /* `findClosest` returns the NEAREST building, which on a tight lot is the neighbour's.
    During the field test a caching fault produced matches 2.7 to 26 KILOMETRES away and
-   every one of them rendered as a confident number. 25 m is the plan's figure; the
-   roof tester's 60 m would wave a neighbour's house straight through. */
-const ROOF_MATCH_MAX = 25;
+   every one of them rendered as a confident number.
+
+   THE RADIUS WAS THE WRONG QUESTION, and a real door proved it: 3662 Perennial Ln came
+   back "about 49 m from this door, so it is almost certainly not this house." A flat
+   25 m cannot tell a neighbour's house from the correct house measured from the
+   pavement on a deep lot — the distance is to the CENTRE of the building, so a big
+   house set well back is 40 m away while you stand at its own front door.
+
+   The app already knows the real answer. It holds the county lot outlines and it
+   already has a point-in-polygon test. So: is Google's building INSIDE the lot this
+   record is filed against? That is the actual question, and it needs no radius at all.
+   The radius survives only as a fallback for lots with no outline, and as slack for
+   parcel lines that are drawn a few metres off. */
+const ROOF_LOT_SLACK = 25;   // this far OUTSIDE the lot line: parcel data is off, not the building
+const ROOF_MATCH_MAX = 60;   // no outline at all — his own roof tester's figure
+/* Inside the outline is a strong answer but not an unlimited one. A three-acre lot holds
+   the pole barn as well as the house, and a flattened multipolygon holds ground that is
+   nowhere near either. */
+const ROOF_INSIDE_MAX = 90;
 /* The widest signed error across the five validated houses: +7.1%, +4.5%, +0.1%,
    −5.3%, −7.5%. Mean −0.2% — it scatters, it does not drift, so there is no bias to
    correct and no global fudge factor anywhere in this file. */
@@ -6317,6 +6358,12 @@ function readRoof(j) {
     lat: j && j.center ? Number(j.center.latitude) : null,
     lon: j && j.center ? Number(j.center.longitude) : null,
     at: Date.now(),
+    /* Every plane's own slope and area, kept. v21 reduced these to a mean and a max and
+       threw the rest away — which made the two-pitch correction impossible, because
+       putting each face with the pitch it is nearest needs the faces. Rounded hard: one
+       decimal on the angle and two on the area is far finer than anything downstream,
+       and it keeps a 30-plane roof to about half a kilobyte in every backup. */
+    segs: segs.map(s => [Math.round(s.deg * 10) / 10, Math.round(s.m2 * 100) / 100]),
     _segSum: wsum,
     _groundReported: groundReported,
   };
@@ -6347,11 +6394,118 @@ function roofSanity(r) {
   return '';
 }
 
-/** Sloped area he should use, honouring his own pitch if he has set one. */
-function roofArea(r, rise) {
-  if (rise == null || !(r.ground > 0)) return r.m2;
-  return r.ground / Math.cos(rad(degFromRise(rise)));
+/* WHERE TO MEASURE FROM — and his GPS position is the worst of the four answers, which
+   two real doors proved on the day this shipped.
+
+   His words: "it should pull right off the address that I'm trying to pull from rather
+   than necessarily my immediate GPS location." He is right. Standing position is where
+   HE was, not where the HOUSE is. It moves every time he visits — so his own home,
+   measured fine once, was refused on the second visit from a different spot on the
+   drive — and on a deep lot it sits 40 m from the building he means.
+
+   The app already knows where the house is. `attachHouses` picks the biggest
+   non-outbuilding inside each lot out of the USA Structures layer and hangs it on the
+   parcel as `p.house`, and the whole app already draws labels at `p.house || p.cen`.
+   That point is inside the lot by construction, it is the same point every visit, and it
+   is the actual building rather than a spot on the pavement.
+
+   His GPS stays on the record untouched either way — it is evidence, and the export
+   carries it as Latitude/Longitude with its accuracy. This only decides what gets asked. */
+function roofPoint(v) {
+  if (v && Number.isFinite(v.pinLat) && Number.isFinite(v.pinLon))
+    return { lat: v.pinLat, lon: v.pinLon, src: 'pin' };
+  const p = v && state.parcels.get(v.key);
+  if (p && !p.fallback) {
+    if (Array.isArray(p.house)) return { lat: p.house[1], lon: p.house[0], src: 'house' };
+    if (Array.isArray(p.cen))   return { lat: p.cen[1],   lon: p.cen[0],   src: 'lot' };
+  }
+  return { lat: v && v.lat, lon: v && v.lon, src: 'gps' };
 }
+const ROOF_FROM = { pin:'from your pin', house:'from the house on this lot',
+                    lot:'from the middle of this lot', gps:'from where you stood' };
+
+/** Is the building Google found the one this record is filed against? */
+function roofMatch(v, r, origin) {
+  /* The origin is passed in, not recomputed. A parcel tile landing mid-flight — ordinary
+     when he marks a door in fresh ground and opens Details straight away — otherwise
+     meant the URL was built from one point and the guard judged against another. */
+  const from = origin || roofPoint(v);
+  const off = haversine(from.lat, from.lon, r.lat, r.lon);
+  const p = state.parcels.get(v.key);
+  /* Fallback parcels are used too. An earlier version of this line read `!p.fallback`
+     on the belief that the statewide layer carries no outlines — it does: `fetchTile`
+     runs the same path for every county, `shadowedByReal` already depends on those very
+     rings, and `attachHouses` computes `p.house` for them. Excluding them turned the
+     good check off in Madison and Pickaway, which are the two counties with the biggest
+     lots, the most outbuildings and zero HIGH imagery, while telling him on screen that
+     there was no outline to check against. */
+  const rings = p && Array.isArray(p.rings) && p.rings.length ? p.rings : null;
+  if (rings) {
+    /* Distance to the LOT LINE, not to the query point. The slack is meant to forgive
+       parcel lines drawn a few metres off Google's building centres; measuring it from
+       the query point instead made it depend on the size of the lot — tight lots let a
+       neighbour in at 18 m, deep lots refused the owner's own house 3 m outside a
+       misdrawn line. `distToRings` returns 0 inside and metres-to-nearest-edge outside,
+       and it was already in the file. */
+    const outByM = distToRings(r.lon, r.lat, rings);
+    /* Inside the outline, but not at any distance. `esriToRings` flattens a MultiPolygon,
+       so a split parcel's far piece is just another ring — a building 3 km away inside
+       one would otherwise sail through, which is the exact class of answer the field
+       test's 2.7-to-26 km mismatches belonged to. And on a three-acre lot the pole barn
+       is inside the outline as surely as the house is. */
+    if (outByM === 0) return (off <= ROOF_INSIDE_MAX)
+      ? { ok:true, off, how:'lot' } : { ok:false, off, how:'far' };
+    if (outByM <= ROOF_LOT_SLACK && off <= ROOF_MATCH_MAX) return { ok:true, off, how:'near' };
+    return { ok:false, off, how:'lot' };
+  }
+  /* No outline in hand — the parcel cache is filled from tiles around where he is, so a
+     record reviewed from the truck at lunch may have none. Distance is all there is. */
+  return { ok: off <= ROOF_MATCH_MAX, off, how:'dist' };
+}
+
+/** Sloped area he should use, honouring his own pitch if he has set one. */
+/* HIS IDEA, and it is the right one. Most roofs have two pitches — a predominant one and
+   a secondary one over a garage, an addition or a porch. He types the two he can see, and
+   the app puts each of Google's faces with whichever of the two it is NEAREST. It never
+   asks him what percentage of the roof is which, because Google already reported the area
+   of every face: the split is in the data, not in his head.
+
+   Each face is taken back to its own footprint at the slope Google read (m2 × cos), then
+   re-sloped at the pitch he assigned it. Scaled by m2/Σsegments throughout, which is what
+   keeps the invariant that matters: type back the pitches Google already reported and the
+   answer does not move. */
+function roofSplit(r, rise, rise2) {
+  if (!r) return { total: 0, parts: [] };
+  if (rise == null) return { total: r.m2, parts: [] };
+  let list = Array.isArray(r.segs) && r.segs.length ? r.segs : null;
+  /* Faces with a slope but no area cannot be split, and scaling them gives every term a
+     numerator of zero — the panel read "Roof area 0 square feet · likely 0 – 0" the
+     moment a pitch was typed. Fall through to the whole-roof path instead. */
+  if (list && !list.some(s => s[1] > 0)) list = null;
+  if (!list) {
+    /* A record measured by v21, before the faces were kept — or a response whose faces
+       carry no areas. One pitch over the whole footprint is all that can honestly be
+       done with it, so a SECOND pitch cannot be applied and must not be claimed. */
+    const t = r.ground > 0 ? r.ground / Math.cos(rad(degFromRise(rise))) : r.m2;
+    return { total: t, parts: [{ rise, m2: t, n: r.planes || 0 }], flat: true };
+  }
+  const wsum = list.reduce((a, s) => a + s[1], 0);
+  const k = (wsum > 0 && r.m2 > 0) ? r.m2 / wsum : 1;
+  const two = rise2 != null;
+  const acc = new Map();
+  let total = 0;
+  for (const [deg, m2] of list) {
+    const segRise = riseFromDeg(deg);
+    // a tie goes to the predominant pitch, which is what "predominant" means
+    const pick = (two && Math.abs(segRise - rise2) < Math.abs(segRise - rise)) ? rise2 : rise;
+    const a = k * (m2 * Math.cos(rad(deg))) / Math.cos(rad(degFromRise(pick)));
+    total += a;
+    const e = acc.get(pick) || { rise: pick, m2: 0, n: 0 };
+    e.m2 += a; e.n++; acc.set(pick, e);
+  }
+  return { total, parts: [...acc.values()].sort((x, y) => y.m2 - x.m2) };
+}
+function roofArea(r, rise, rise2) { return roofSplit(r, rise, rise2).total; }
 
 /* The ids being measured right now. A bare boolean greyed the button out on EVERY
    house while one request was in flight, and a request that never settled latched it
@@ -6406,11 +6560,13 @@ async function measureRoof(v) {
      and each closure holds its own record, so they can run side by side. */
   if (roofBusy.has(v.id)) return;
   const key0 = v.key;
+  /* Captured ONCE, before any await. Everything downstream uses this same point. */
+  const from0 = roofPoint(v);
   roofBusy.add(v.id); renderRoofPanel(v);
   try {
     const u = SOLAR_URL
-      + '?location.latitude=' + encodeURIComponent(v.lat)
-      + '&location.longitude=' + encodeURIComponent(v.lon)
+      + '?location.latitude=' + encodeURIComponent(from0.lat)
+      + '&location.longitude=' + encodeURIComponent(from0.lon)
       + '&requiredQuality=MEDIUM'
       + '&key=' + encodeURIComponent(key);
     let res;
@@ -6458,13 +6614,15 @@ async function measureRoof(v) {
        `!= null`, because Number(undefined) is NaN, NaN > 25 is false, and the old test
        waved it through and then printed "NaN m from the door". */
     if (!Number.isFinite(r.lat) || !Number.isFinite(r.lon)) { roofFail(v, 'nobuilding'); return; }
-    const off = haversine(v.lat, v.lon, r.lat, r.lon);
+    const m = roofMatch(v, r, from0);
     /* Non-finite goes to nobuilding, NOT to 'far'. Sharing the message printed "about
        0 m from this door, so it is almost certainly not this house", which contradicts
        itself in the one place the app is supposed to be plainest. */
-    if (!Number.isFinite(off)) { roofFail(v, 'nobuilding'); return; }
-    if (off > ROOF_MATCH_MAX) { roofFail(v, 'far', Math.round(off)); return; }
-    r.off = Math.round(off);
+    if (!Number.isFinite(m.off)) { roofFail(v, 'nobuilding'); return; }
+    if (!m.ok) { roofFail(v, 'far', { off: Math.round(m.off), how: m.how }); return; }
+    r.off = Math.round(m.off);
+    r.how = m.how;              // 'lot' = inside this lot's outline, 'near'/'dist' = judged on distance
+    r.from = from0.src;
     /* requiredQuality=MEDIUM means BASE can never come back, so this is a backstop
        against a tier that does not exist yet rather than a live branch. */
     if (r.quality !== 'HIGH' && r.quality !== 'MEDIUM') { roofFail(v, 'quality'); return; }
@@ -6509,8 +6667,21 @@ function renderRoofPanel(v) {
   let body = '';
   const failed = roofErr && roofErr.id === v.id;
   if (failed) {
+    /* Names WHY it was refused, because the two reasons need different actions from
+       him. Landing outside this lot's own outline means the pin is on the wrong house
+       and moving it fixes it. A bare distance on a lot with no outline is a judgement
+       he can make and the app cannot. */
+    /* Names WHY it was refused, because the reasons want different things from him. And
+       the distance is stated as "from where this lot was measured", NOT "from where you
+       stood" — the query point is the house on the lot now, so quoting it as his own
+       standing distance was simply false. Nothing here tells him to move a pin: there is
+       no pin yet, and inert advice is worse than none. */
     const msg = roofErr.k === 'far'
-      ? `The nearest building the photo can find is about ${esc(String(roofErr.m))} m from this door, so it is almost certainly not this house.`
+      ? (roofErr.m && roofErr.m.how === 'lot'
+          ? `The building the photo found sits outside this lot altogether, about ${esc(String(roofErr.m.off))} m off. That is a different house — check the address is right, then try again.`
+          : roofErr.m && roofErr.m.how === 'far'
+          ? `The building the photo found is on this lot but about ${esc(String(roofErr.m.off))} m from the house, so it is more likely a barn or an outbuilding than the roof you want.`
+          : `The nearest building the photo can find is about ${esc(String(roofErr.m && roofErr.m.off))} m away, and there is no lot outline here to check it against.`)
       : roofErr.k === 'sanity'
       ? `This one does not add up — ${esc(roofErr.m)}. Better to say nothing than to say it wrong.`
       : (ROOF_FAIL[roofErr.k] || ROOF_FAIL.failed);
@@ -6525,7 +6696,10 @@ function renderRoofPanel(v) {
 
   if (r) {
     const rise = v.roofRise != null ? v.roofRise : null;
-    const m2 = roofArea(r, rise);
+    const rise2 = (rise != null && v.roofRise2 != null) ? v.roofRise2 : null;
+    const split = roofSplit(r, rise, rise2);
+    const usedTwo = rise2 != null && !split.flat;
+    const m2 = split.total;
     const ft2 = m2 * M2_TO_FT2;
     const sq = ft2 / 100;
     const lo = sq * (1 - ROOF_BAND), hi = sq * (1 + ROOF_BAND);
@@ -6543,10 +6717,25 @@ function renderRoofPanel(v) {
     body += `<div class="pg">`
       + `<div class="pc"><span>Roof area</span><b>${esc(Math.round(ft2).toLocaleString())}</b><em>square feet</em></div>`
       + `<div class="pc"><span>Squares</span><b>${esc(sq.toFixed(1))}</b><em>likely ${esc(lo.toFixed(0))} – ${esc(hi.toFixed(0))}</em></div>`
-      + `<div class="pc"><span>Average pitch${rise != null ? ' (yours)' : ''}</span><b>${esc(fmtRise(shownRise))}</b>`
+      /* Driven by what the split ACTUALLY did, not by what is in the boxes. On a record
+         with no per-face data the second pitch cannot be applied, and the headline used
+         to read "Your pitches — 11/12 + 4/12" over a number computed from 11/12 alone. */
+      + `<div class="pc"><span>${rise != null ? (usedTwo ? 'Your pitches' : 'Your pitch') : 'Average pitch'}</span>`
+        + `<b>${esc(usedTwo ? fmtRise(rise) + ' + ' + fmtRise(rise2) : fmtRise(shownRise))}</b>`
         + `<em>${rise != null ? 'you set this' : 'steepest face ' + esc(fmtRise(maxRise))}</em></div>`
-      + `<div class="pc"><span>Planes</span><b>${esc(String(r.planes))}</b><em>${r.off != null ? esc(String(r.off)) + ' m from the door' : 'roof faces'}</em></div>`
+      /* How it was matched, not just how far. "Inside this lot" is an answer; a bare
+         distance is only ever a hint, and on a deep lot marked from the pavement it is a
+         misleading one — which is what refused a correct house at 49 m. */
+      + `<div class="pc"><span>Planes</span><b>${esc(String(r.planes))}</b>`
+        + `<em>${esc(ROOF_FROM[r.from] || (r.how === 'lot' ? 'inside this lot' : r.off != null ? r.off + ' m away' : 'roof faces'))}</em></div>`
       + `</div>`;
+    /* The split, back to him, so he can see the assignment was sane without being asked
+       for a percentage. This is the whole point of taking two pitches instead of one. */
+    if (split.parts.length > 1) {
+      body += `<div class="rband">`
+        + split.parts.map(p => `<b>${esc((p.m2 * M2_TO_FT2 / 100).toFixed(1))}</b> squares at ${esc(fmtRise(p.rise))} (${esc(String(p.n))} face${p.n === 1 ? '' : 's'})`).join(' &middot; ')
+        + `. Google reported the area of every face, so the split comes out of the photo rather than out of a percentage you had to guess.</div>`;
+    }
     /* The range is the only uncertainty signal on screen, and it is deliberately the
        only one. A confidence badge driven by pitch and plane count was designed and
        then refused: the most complex roof tested (23 planes, 40°) was also the most
@@ -6577,15 +6766,23 @@ function renderRoofPanel(v) {
        reading "Average pitch (yours) — you set this", and the panel contradicts itself
        about the one number the feature exists to produce. */
     if (mixed && rise == null) {
-      body += `<div class="rwarn">This roof is not one slope. Its faces run from about `
-        + `${esc(fmtRise(meanRise))} on average up to ${esc(fmtRise(maxRise))} at the steepest, `
-        + `and the figure above is the average across the whole roof. `
-        + `<b>If you type a pitch it replaces that average</b>, so type what the roof averages — `
-        + `typing the steepest face here will overstate the size.</div>`;
+      body += `<div class="rwarn">This roof is not one slope — its faces run from about `
+        + `${esc(fmtRise(meanRise))} up to ${esc(fmtRise(maxRise))}, and the figure above is the average across all of them. `
+        + `<b>Put the two pitches you can see in the boxes below</b> and each face goes with whichever it is nearer.</div>`;
     }
+    /* Two boxes, in his words: predominant and secondary. He never tells the app what
+       share of the roof is which — Google already reported the area of every face, so
+       the split is read out of the data. Second box does nothing on its own; a secondary
+       pitch with no predominant one is not a thing. */
     body += `<div class="rover"><input id="dRoofRise" type="text" inputmode="decimal" `
       + `placeholder="${esc(fmtRise(meanRise))}" value="${esc(rise != null ? fmtRise(rise) : '')}">`
-      + `<span class="lab">Roof steeper or flatter than that <b>on average</b>? Type it and the size redoes itself off the footprint. Empty uses the photo.</span></div>`;
+      + `<span class="lab"><b>Predominant pitch.</b> Empty uses the photo${split.flat ? '' : ', and every face keeps the slope Google read for it'}.</span></div>`
+      + `<div class="rover"><input id="dRoofRise2" type="text" inputmode="decimal" `
+      + `placeholder="${rise != null && !split.flat ? esc(fmtRise(maxRise)) : '—'}" value="${esc(rise2 != null ? fmtRise(rise2) : '')}"${rise == null || split.flat ? ' disabled' : ''}>`
+      + `<span class="lab"><b>Secondary pitch</b>${rise == null ? ' — fill the box above first.' : ', for the garage, addition or porch. Leave it empty if the whole roof is one slope.'}</span></div>`;
+    if (split.flat && rise != null) {
+      body += `<div class="rwarn">This one was measured before the app kept each roof face separately, so a second pitch cannot be split out of it. Measure it again and both boxes will work.</div>`;
+    }
 
     const meta = [photo ? 'photo taken ' + photo : '',
                   r.quality === 'HIGH' ? '10 cm photography' : '25 cm photography'].filter(Boolean).join(' · ');
@@ -6609,21 +6806,28 @@ function renderRoofPanel(v) {
 
   const go = $('dRoofGo');
   if (go) go.onclick = () => { roofErr = null; measureRoof(v); };
-  const ri = $('dRoofRise');
-  if (ri) ri.onchange = () => {
-    /* Both handlers close over the record this panel was drawn for. If that is no longer
-       the house on screen, the panel has been repainted underneath them and writing here
-       would put his correction on the wrong door. */
-    if (!roofOnScreen(v)) return;
-    const p = parseRise(ri.value);
-    if (Number.isNaN(p)) {
-      flashToast('Type it like 8/12', 'Rise over twelve — or leave it empty', '#f59e0b');
-      ri.value = v.roofRise != null ? fmtRise(v.roofRise) : ''; return;
-    }
-    v.roofRise = p;
-    roofSave(v);
-    renderRoofPanel(v);
+  /* Both handlers close over the record this panel was drawn for. If that is no longer
+     the house on screen, the panel has been repainted underneath them and writing here
+     would put his correction on the wrong door. */
+  const pitchBox = (el, field) => {
+    if (!el) return;
+    el.onchange = () => {
+      if (!roofOnScreen(v)) return;
+      const p = parseRise(el.value);
+      if (Number.isNaN(p)) {
+        flashToast('Type it like 8/12', 'Rise over twelve — or leave it empty', '#f59e0b');
+        el.value = v[field] != null ? fmtRise(v[field]) : ''; return;
+      }
+      v[field] = p;
+      /* A secondary pitch with no predominant one is not a thing, so clearing the first
+         box clears the second with it rather than leaving a value that does nothing. */
+      if (field === 'roofRise' && p == null) v.roofRise2 = null;
+      roofSave(v);
+      renderRoofPanel(v);
+    };
   };
+  pitchBox($('dRoofRise'), 'roofRise');
+  pitchBox($('dRoofRise2'), 'roofRise2');
 }
 
 function renderPropPanel(v) {
