@@ -3236,7 +3236,7 @@ function openCandidates() {
     el.className = 'cand';
     el.innerHTML = `<div class="sw" style="background:${v?STATUS[v.status].color:'#37475c'}"></div>
       <div class="t"><div class="a">${c.p.occ==='rental'?'⚠️ ':''}${esc(c.p.addr || '(no address)')}</div>
-      <div class="o">${esc(c.p.owner || 'owner not listed')}${v?' · '+STATUS[v.status].short:''}</div></div>
+      <div class="o">${esc(c.p.owner || 'owner not listed')}${v?' · '+esc(STATUS[v.status].short):''}</div></div>
       <div class="d">${Math.round(c.d)}m</div>`;
     el.onclick = () => { state.candIndex = i; pinHouse(c.p.key); renderHouse(); closeSheet('candSheet'); buzz(15); };
     list.appendChild(el);
@@ -3438,7 +3438,10 @@ function openDetail(visit, focusName) {
   layoutDetail(v.status);
   renderReasonChips();
   $('dTitle').textContent = v.addr || 'Lot ' + v.pid;
-  const ln = LINES[v.line || 'roof'];
+  /* `|| LINES.roof` the way every other book lookup in the file does it. A restored
+     backup validates only `v.id`, so a hand-edited or version-skewed file carrying an
+     unknown book made `ln` undefined and threw on the next line, on opening a house. */
+  const ln = LINES[v.line || 'roof'] || LINES.roof;
   const par = state.parcels.get(v.key);
   const occ = v.occ || (par && par.occ) || null;
   const mail = v.mail || (par && par.mail) || '';
@@ -3454,7 +3457,7 @@ function openDetail(visit, focusName) {
                 || ((par && par.occReason) || v.occReason) === 'notahome';
   const kindLabel = kindNow.label || (par && par.occKind) || '';
   const viaStatewide = v.county === 'ohio' || (par && par.fallback);
-  $('dSub').innerHTML = `<span style="color:${ln.color};font-weight:800">${ln.short}</span> · `
+  $('dSub').innerHTML = `<span style="color:${ln.color};font-weight:800">${esc(ln.short)}</span> · `
     + esc(v.owner || 'owner not listed') + ' · ' + esc((COUNTIES.find(c=>c.key===v.county)||{}).name || '?') + (viaStatewide ? '' : ' Co.')
     + (viaStatewide ? `<div class="nagWarn" style="margin-top:8px">${fallbackNote(par || v)}</div>` : '')
     + (notAHome
@@ -5792,13 +5795,13 @@ function renderStats() {
   const by = s => today.filter(v => v.status === s).length;
   const lineTotal = l => state.visitLog.filter(v => (v.line||'roof') === l).length;
   const html = `
-    <div class="stat" style="border-color:${LINES[state.line].color}"><b style="color:${LINES[state.line].color}">${today.length}</b>${LINES[state.line].label.toLowerCase()} today</div>
+    <div class="stat" style="border-color:${LINES[state.line].color}"><b style="color:${LINES[state.line].color}">${today.length}</b>${esc(LINES[state.line].label.toLowerCase())} today</div>
     <div class="stat"><b style="color:${STATUS.talked.color}">${by('talked')}</b>talked</div>
     <div class="stat"><b style="color:${STATUS.material.color}">${by('material')}</b>material</div>
     <div class="stat"><b style="color:${STATUS.noanswer.color}">${by('noanswer')}</b>no answer</div>
     <div class="stat"><b style="color:${STATUS.dnr.color}">${by('dnr')}</b>do not return</div>
-    <div class="stat"><b style="color:${LINES.roof.color}">${lineTotal('roof')}</b>roofing all time</div>
-    <div class="stat"><b style="color:${LINES.appraisal.color}">${lineTotal('appraisal')}</b>appraisal all time</div>`;
+    <div class="stat"><b style="color:${LINES.roof.color}">${lineTotal('roof')}</b>${esc(LINES.roof.label.toLowerCase())} all time</div>
+    <div class="stat"><b style="color:${LINES.appraisal.color}">${lineTotal('appraisal')}</b>${esc(LINES.appraisal.label.toLowerCase())} all time</div>`;
   // The wall of tiles used to fill the top half of the menu before a single button
   // appeared. The day's numbers live in the session log now, which is where anyone
   // would look to ask how the day went, and the count stays on the menu button.
@@ -5844,8 +5847,8 @@ document.querySelectorAll('.dsecHead[data-msec]').forEach(b => {
 /* ---- what version is actually on the phone ----
    Matches the service worker cache name, so "did the update land" is answerable by
    looking rather than guessing. */
-const BUILD_VERSION = 'v19';
-const BUILD_DATE = '29 July 2026';
+const BUILD_VERSION = 'v20';
+const BUILD_DATE = '30 July 2026';
 function renderVersionStamp() {
   const el = $('versionStamp'); if (!el) return;
   el.className = 'small';
@@ -10073,9 +10076,9 @@ async function dayReportHtml(key) {
      an employer paying for one of them would have been handed the other in the number. */
   const byBook = {};
   f.doors.forEach(c => { const l = c.v.line || 'roof'; byBook[l] = (byBook[l] || 0) + 1; });
-  const bookLine = Object.keys(byBook).map(l => `${(LINES[l] || LINES.roof).label}: ${byBook[l]}`).join(' &middot; ');
+  const bookLine = Object.keys(byBook).map(l => `${esc((LINES[l] || LINES.roof).label)}: ${byBook[l]}`).join(' &middot; ');
   const counts = Object.keys(STATUS).filter(k => f.byStatus[k])
-    .map(k => `${(STATUS[k]||{}).label || k}: ${f.byStatus[k]}`).join(' &middot; ');
+    .map(k => `${esc((STATUS[k]||{}).label || k)}: ${f.byStatus[k]}`).join(' &middot; ');
   return `<!doctype html><html><head><meta charset="utf-8">`
    + `<meta name="viewport" content="width=device-width,initial-scale=1">`
    + `<title>${esc(dayLabelLong(key))} — door log</title><style>`

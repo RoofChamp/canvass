@@ -4,7 +4,7 @@
    Parcel queries are network-first with a cache fallback, so a street you
    have already walked still shows its lot lines in a dead zone. */
 
-const SHELL = 'canvass-shell-v19';
+const SHELL = 'canvass-shell-v20';
 const TILES = 'canvass-tiles-v1';
 const DATA  = 'canvass-data-v1';
 
@@ -36,6 +36,30 @@ const isTile = u =>
   /server\.arcgisonline\.com\/ArcGIS\/rest\/services\/World_Imagery/.test(u);
 
 const isParcelQuery = u => /\/(MapServer|FeatureServer)\/\d+\/query/i.test(u);
+
+/* What the shell cache is allowed to touch: this app's own files, and Leaflet from the
+   CDN. Everything else goes straight to the network and is never looked up, never stored.
+
+   Why this guard exists, and it is not hypothetical. The shell lookup below uses
+   {ignoreSearch:true} on purpose, so a reload of index.html carrying a cache-buster still
+   finds the cached copy and the app still opens with no signal. Without this guard that
+   same setting was applied to EVERY request that was not a tile or a parcel query — so
+   any two URLs differing only in their query string matched each other. A per-house
+   lookup, where the house IS the query string, would answer with the FIRST house's result
+   for every house after it, and would keep doing it after a restart, because by then the
+   wrong answer is in the cache. The old catch-all also called cache.put() on requests of
+   any scheme, and a chrome-extension:// request throws there.
+
+   One thing to watch when same-origin DATA files arrive — the storm layer would be the
+   first: they pass this guard, so they must differ by PATH and never by query string, or
+   they will collide with each other in exactly the same way. */
+const isShellScope = u => {
+  let url;
+  try { url = new URL(u); } catch (err) { return false; }
+  if (url.protocol !== 'https:' && url.protocol !== 'http:') return false;
+  if (url.origin === self.location.origin) return true;
+  return url.hostname === 'unpkg.com' && url.pathname.startsWith('/leaflet@');
+};
 
 self.addEventListener('fetch', e => {
   const req = e.request;
@@ -75,6 +99,11 @@ self.addEventListener('fetch', e => {
     })());
     return;
   }
+
+  /* Anything that is not this app's own file or Leaflet: hands off entirely. No cache
+     lookup, no store, no respondWith — the browser does what it would have done with no
+     service worker at all. */
+  if (!isShellScope(url)) return;
 
   // App shell + Leaflet: cache-first, refresh in the background.
   e.respondWith((async () => {
