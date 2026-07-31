@@ -279,6 +279,28 @@ label.f.hasq{display:inline-block;margin:12px 0 5px;vertical-align:middle}
 .cand .a{font-weight:800;font-size:15px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .cand .o{font-size:12px;color:var(--dim);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .cand .d{font-size:11px;color:var(--dim);font-weight:700;flex:0 0 auto}
+/* Re-pointing a record that is already filed. Deliberately the same row shape as the
+   candidate list above: it is the same question — which house is this — asked at a
+   different moment, so it must not read as a different screen. */
+.cand.here{border-color:rgba(56,189,248,.55);background:rgba(56,189,248,.09)}
+.cand .now{font-size:10.5px;color:#7dd3fc;font-weight:800;letter-spacing:.3px;flex:0 0 auto}
+#rpLead{font-size:12.5px;color:#93a6bb;font-weight:700;line-height:1.45;margin-bottom:10px}
+#rpMapHead{font-size:10.5px;color:var(--dim);font-weight:700;letter-spacing:.3px;margin:16px 0 6px}
+#rpMapNote{font-size:11.5px;color:var(--dim);font-weight:700;line-height:1.45;margin-bottom:8px}
+#rpMap{width:100%;height:240px;display:block;border:1px solid var(--line);border-radius:14px;background:#0f151d;touch-action:none}
+#rpBtns{display:flex;gap:8px;margin-top:8px}
+#rpBtns button{flex:1;margin-top:0}
+/* A dead button that looks live is worse than one that is plainly not ready. `.ghost`
+   sets its own background, border and colour, so it beats the browser's disabled styling
+   outright — Use this spot looked exactly like a working button, took the tap, and did
+   nothing at all: no flash, no buzz, no message. */
+#rpBtns button:disabled{opacity:.42;border-style:dashed}
+#dWrong{margin:6px 0 2px}
+/* 44px, not the 38 this was first written at. The panel's own test caught it: everything
+   tappable in here has to clear 44, and a correction button tapped in the cold with a
+   glove on is the last place to shave it. */
+#dWrong button{min-height:44px;padding:0 14px;font-size:13px;font-weight:800;width:auto}
+#dWrong .hint{font-size:11.5px;color:var(--dim);font-weight:700;margin-top:5px;line-height:1.45}
 .crmRow{display:flex;align-items:flex-start;gap:10px;padding:11px 12px;border:1px solid var(--line);
   border-radius:14px;background:var(--card);margin-bottom:8px}
 .crmRow.late{border-color:rgba(239,68,68,.55);background:rgba(239,68,68,.08)}
@@ -847,6 +869,28 @@ select{min-height:44px}
   </div>
 </div>
 
+<!-- Re-pointing a record that is already filed. LIST FIRST, MAP UNDERNEATH, at his word:
+     the list is the normal case — big targets, the address said out loud, no precision
+     needed, and it works with no signal because every lot is already in hand. The map is
+     for the case the list cannot cover, which is the right house not being one of the
+     lots the app holds. -->
+<div id="repointSheet" class="sheet hide">
+  <div class="sheetBody">
+    <div class="sheetHead"><h2>Which house is this?</h2><button class="x" data-close="repointSheet">Done</button></div>
+    <div class="sheetScroll">
+      <div id="rpLead"></div>
+      <div id="rpList"></div>
+      <div id="rpMapHead">Not one of those?</div>
+      <div id="rpMapNote"></div>
+      <canvas id="rpMap"></canvas>
+      <div id="rpBtns">
+        <button class="ghost" id="rpUse">Use this spot</button>
+        <button class="ghost" id="rpClear">Undo my spot</button>
+      </div>
+    </div>
+  </div>
+</div>
+
 <!-- A confirm with more than two answers. The browser's own confirm() only does yes/no,
      and it renders as a cramped grey box with small type — wrong for a screen used at
      arm's length in a truck. Big buttons, full words, and what it will destroy counted
@@ -866,6 +910,11 @@ select{min-height:44px}
     <div class="sheetHead"><h2 id="dTitle">Details</h2><button class="x" data-close="detailSheet">Close</button></div>
     <div class="sheetScroll">
       <div id="dSub" style="color:var(--dim);font-size:13px;margin-bottom:4px"></div>
+      <!-- Correcting which house a FILED record belongs to. The toast's Wrong house only
+           ever reached the last door of this session; this reaches any record, from the
+           one screen that already shows you the address it is arguing with. Same words as
+           the toast on purpose — it is one idea, not two. -->
+      <div id="dWrong"></div>
       <!-- A door marked under the wrong book was previously stuck there. -->
       <div id="dBookRow" class="bookRow"></div>
 
@@ -2974,7 +3023,16 @@ async function mark(status) {
               /* The SECOND pitch travels too. Without this line the same house measured
                  21.5 squares on Tuesday and 26.0 on Thursday — a 20.7% jump from one
                  missing field — with the panel still reading "you set this". */
-              if (prev.roofRise2 != null) v.roofRise2 = prev.roofRise2; }
+              if (prev.roofRise2 != null) v.roofRise2 = prev.roofRise2;
+              /* AND THE SPOT, for the same reason and more so. It is the only field that
+                 records WHICH BUILDING the roof belongs to. Carrying the number without
+                 it: Thursday's panel prints "from the spot you placed" on a record with
+                 no spot, the Wrong house row underneath simultaneously offers to place a
+                 first one, and Measure again silently goes back to the barn he corrected
+                 away from and overwrites the good figure with no warning at all. It is
+                 hand-typed correction exactly like the pitch, so it travels like it. */
+              if (Number.isFinite(prev.pinLat) && Number.isFinite(prev.pinLon)) {
+                v.pinLat = prev.pinLat; v.pinLon = prev.pinLon; } }
   // every status this door has ever had, in order. A "talked" that later turns
   // into "don't come back" is the story, and the last status alone loses it.
   v.log = [...logOf(prev), { id:newId(), ts:v.ts, kind:'status', status, text:'' }];
@@ -3012,6 +3070,9 @@ function restoreToastButtons() {
   swap.onclick = reassignLast; undo.onclick = undoLast;
   delete swap.dataset.mode;
 }
+/* How high the last-opened sheet sits. Lives up here because showToastNow keeps the
+   toast above it and reads it on the very first message of a session. */
+let sheetZ = 80;
 function flashToast(title, sub, color) {
   restoreToastButtons();
   $('toastTitle').textContent = title;
@@ -3028,6 +3089,11 @@ function showToastNow() {
   const t = $('toast');
   t.style.transform = '';
   t.style.transition = '';
+  /* Kept above whatever sheet is open. `sheetZ` starts at 80 and climbs on every
+     openSheet — which openDetail calls on every chip tap — so within a few minutes of
+     ordinary work it passes the toast's fixed 90 and the confirmation of what he just
+     did is drawn UNDERNEATH the panel he is looking at. */
+  t.style.zIndex = Math.max(90, sheetZ + 5);
   t.classList.add('show');
 }
 
@@ -3283,17 +3349,91 @@ function cycleHouse() {
   pinHouse(state.candidates[state.candIndex].p.key);
   buzz(12); renderHouse();
 }
-/** re-point the most recent mark at the next-nearest house */
-async function reassignLast() {
-  /* Same rule as Undo: only a door filed since the app opened can be re-pointed by
-     reflex. Cold-loading the app and tapping Wrong house used to move yesterday's last
-     door onto a neighbour, carrying its owner and its valuation with it. */
-  if (!state.lastVisitId || !canUndo(state.lastVisitId) || state.candidates.length < 2) { cycleHouse(); return; }
-  const v = state.visitLog.find(x => x.id === state.lastVisitId);
-  if (!v) return;
-  let i = state.candidates.findIndex(c => c.p.key === v.key);
-  i = (i + 1) % Math.min(state.candidates.length, 6);
-  const target = state.candidates[i].p;
+/** Move a filed record onto another lot: every parcel-derived field, the slot it
+    occupies, and the rule about what happens to a roof measured against the old one.
+    Pulled out of reassignLast when the house picker became the third caller. Copying it
+    a third time was the alternative, and the roof rule below has already been got wrong
+    twice in two rounds — three divergent copies of it is how it gets got wrong quietly. */
+/** Does correcting this record onto `target` destroy anything he cannot get back?
+    Everything else — owner, address, county, the auditor figures — is re-read from the
+    lot on every move, so it all comes straight back if he moves it again. These two do
+    not, so these two are what a warning has to count. Same answer used to decide whether
+    to ask and to word the question, so the two can never drift apart. */
+function repointCost(v, target) {
+  const cost = { roof:false, spot:false, squares:null };
+  if (!v) return cost;
+  cost.spot = Number.isFinite(v.pinLat) && Number.isFinite(v.pinLon) && !spotSurvives(v, target);
+  if (v.roof && (v.roof.from === 'house' || v.roof.from === 'lot' || (v.roof.from === 'pin' && cost.spot))) {
+    cost.roof = true; cost.squares = rpSquares(v);
+  }
+  return cost;
+}
+/** THE PRICE RE-READ ON THE FAR SIDE OF THE QUESTION, put together with the one he was
+    quoted. Every path here waits on a confirm, and a roof lookup runs for up to twenty
+    seconds — so the answer can land with the question still on the screen, on a record
+    whose quoted price was worked out when there was no roof to lose.
+    It must be called BEFORE the caller writes anything. `repointRecord` does a union of
+    its own as a backstop, but on the map path that one is blind: by the time it runs, the
+    caller has already written the new cross, and a cost worked out against a cross that
+    is inside the target lot by construction always comes back "nothing to lose".
+    `unquotedRoof` marks the case where the move destroys a measurement the question never
+    listed, because it did not exist when the question was written. He is told. */
+function rpFinalCost(v, target, quoted) {
+  const now = repointCost(v, target);
+  const q = quoted || { roof:false, spot:false, squares:null };
+  return {
+    roof: q.roof || now.roof,
+    spot: q.spot || now.spot,
+    squares: q.squares != null ? q.squares : now.squares,
+    unquotedRoof: !q.roof && now.roof,
+  };
+}
+/* Said in the toast rather than swallowed. A measurement he paid for going in the bin
+   without a word is the thing this whole round is about. */
+const rpLate = c => (c && c.unquotedRoof) ? ' · the roof that landed was the old house, taken off' : '';
+
+/** A spot he placed by hand belongs to the HOUSE he placed it on, not to the record. */
+function spotSurvives(v, target) {
+  if (!v || !Number.isFinite(v.pinLat) || !Number.isFinite(v.pinLon)) return false;
+  const rings = target && Array.isArray(target.rings) && target.rings.length ? target.rings : null;
+  return !!rings && pointInRings(v.pinLon, v.pinLat, rings);
+}
+
+/** `costIn` — the cost worked out by the CALLER, before it touched the record. The map
+    path needs this and nothing else does. A roof belongs to the point it was MEASURED
+    from, and on that path that point is about to be overwritten by the new cross. Left
+    to work the cost out for itself, this function tests the brand-new cross against the
+    lot it was just placed inside, finds it sitting happily within, concludes the spot
+    survives — and so keeps a roof that was taken on the other house.
+    That is "the roof goes with the spot" got wrong a FOURTH way. The three before it
+    were wrong about the rule; this one agrees with the rule and defeats it with the
+    order of two lines, which is the harder kind to see. So the cost is passed in now
+    rather than worked out twice, and the question he answered is the one carried out. */
+function repointRecord(v, target, dist, costIn) {
+  /* THE WORSE OF THE TWO PRICES, never just the quoted one.
+     `costIn` is what he was shown. `live` is what the record says NOW, on the far side of
+     the question — and a roof lookup can land in exactly that gap. Tap Measure on bad
+     LTE, tap Wrong house while it is still thinking, and the answer arrives with the
+     confirm still up: the quoted price says there is no roof to lose, because when it was
+     worked out there was not one. Trusting the quote alone leaves house A's roof filed
+     under house B, which is the very thing this round set out to stop — and worse than
+     the original, which recomputed here and caught it.
+     BE STRAIGHT ABOUT WHAT THE UNION DOES AND DOES NOT PROMISE. It does not mean the
+     question can only overstate. It means the MOVE is never gentler than either reading —
+     so a measurement that landed after the question was written is destroyed, having
+     never been listed in it. That is the right outcome for the record, because it is the
+     old house's roof, but it is not a thing to do to a man silently: the callers work out
+     `unquotedRoof` and the toast says so. What the union genuinely rules out is the move
+     being kinder than the words while the record ends up wrong.
+     This is also a BACKSTOP, not the main guard. On the map path the caller has already
+     written the new cross by the time this runs, so `live` here is blind — the honest
+     reading is taken in `rpUseSpot` before that write, by `rpFinalCost`. */
+  const live = repointCost(v, target);
+  const cost = costIn ? {
+    roof: costIn.roof || live.roof,
+    spot: costIn.spot || live.spot,
+    squares: costIn.squares != null ? costIn.squares : live.squares,
+  } : live;
   // detach from the old parcel, within this book of business only
   const oldSlot = vKey(v.key, v.line);
   const older = state.visitLog.filter(x => vKey(x.key, x.line) === oldSlot && x.id !== v.id).sort((a,b)=>b.ts-a.ts)[0];
@@ -3306,31 +3446,686 @@ async function reassignLast() {
   v.occ = target.occ || null; v.mail = target.mail || '';
   v.val = target.val || null; v.sqft = target.sqft || null;
   v.saleTs = target.saleTs || null; v.salePrice = target.salePrice || null;
-  /* THIS TURNS ON WHERE THE MEASUREMENT WAS TAKEN FROM, and it has now been wrong twice.
-     Round two said keep it, reasoning that a roof measured from `v.lat/v.lon` — where he
-     was STANDING — is not invalidated by correcting the lot. That was true when it was
-     written, and a later change in the same round destroyed the premise: the query point
-     is now the house on the SNAPPED lot, validated against that same lot's outline. So a
-     roof taken `from:'house'` or `from:'lot'` is deterministically the OLD lot's
-     building, and keeping it files 402's roof against 400 under a panel line reading
-     "very likely still the right roof" — reads-as-fact, with a reassurance bolted on.
-     A roof taken from his GPS or from a pin he placed IS still tied to where he was
-     rather than to the lot, so that one is kept and flagged. */
+  /* Both of these are stored on the record so the EXPLANATION survives the parcel
+     leaving memory, and the detail sheet falls back to them whenever the new lot's own
+     value is empty. Left behind, the church next door's "nobody lives here" is printed
+     under the corrected house's address, with the correct parcel loaded. */
+  v.occReason = target.occReason || ''; v.servicer = target.servicer || '';
+  /* The deed name is not a name he got at the door — it is the previous lot's owner,
+     auto-filled. Left alone it survives the move AND stops reading as a deed name at
+     all (`nameIsAssumed` wants name === owner), so the old house's owner is presented as
+     something a man said on the step of the new one. */
+  if (v.nameFromOwner) { v.name = target.owner || ''; v.nameCleared = false; }
+  if (!spotSurvives(v, target)) { delete v.pinLat; delete v.pinLon; }
+  /* THIS TURNS ON WHERE THE MEASUREMENT WAS TAKEN FROM, and it has now been wrong three
+     times. Round two said keep it, reasoning that a roof measured from `v.lat/v.lon` —
+     where he was STANDING — is not invalidated by correcting the lot. A later change in
+     the same round destroyed that premise: the query point became the house on the
+     SNAPPED lot, validated against that same lot's outline, so `from:'house'` and
+     `from:'lot'` are deterministically the OLD lot's building.
+     THE THIRD TIME IS THIS ROUND'S OWN. `from:'pin'` was waved through with the rest on
+     the reasoning that a spot he placed is a point HE chose — while the block above was
+     simultaneously deleting that spot for falling outside the lot he has just picked.
+     Both cannot be true: if the app has decided the spot points at another building,
+     then so does the roof measured from it. It goes with the spot now.
+     A roof from his GPS, or from a spot that survives, is still tied to a point he chose
+     rather than to the lot the app snapped to. Those are kept and flagged. */
   if (v.roof) {
-    if (v.roof.from === 'house' || v.roof.from === 'lot') {
-      delete v.roof; delete v.roofRise; delete v.roofRise2;
-    } else {
+    if (cost.roof) { delete v.roof; delete v.roofRise; delete v.roofRise2; }
+    else {
       // segs is a mutable array: copy it, or both records share one
-      v.roof = { ...v.roof, segs: v.roof.segs && v.roof.segs.slice(), lotChanged: true };
+      v.roof = { ...v.roof, segs: v.roof.segs && v.roof.segs.slice() };
+      /* THE DOUBT WINS, and it wins in both orders. `rpFlagRoof` clears `lotChanged`
+         when it raises `ptMoved`; without this line the reverse order put it straight
+         back — place a spot, then correct the lot — and the panel printed "very likely
+         still the right roof" immediately above "may be a different roof". One of those
+         two sentences is always the honest one, and it is never the reassuring one. */
+      if (!v.roof.ptMoved) v.roof.lotChanged = true;
     }
   }
-  v.dist = Math.round(state.candidates[i].d);
-  state.visits.set(vKey(v.key, v.line), v);
-  state.candIndex = i; pinHouse(target.key);
+  if (dist != null && Number.isFinite(dist)) v.dist = Math.round(dist);
+  claimSlot(v);
+}
+
+/* THE SLOT IS THE NEWEST RECORD FOR A HOUSE IN A BOOK, not the last one written.
+   Setting it to whatever has just been touched is how a door knocked on Monday and
+   corrected on Thursday steals the slot from the same house's Wednesday knock — which
+   drops Wednesday out of the CRM list, out of the follow-ups due, out of the go-back
+   route and off the map, and points Details at the older record from then on. That was
+   survivable while only the LAST door of a session could be re-pointed; it is not now
+   that any record in History can be. */
+function claimSlot(v) {
+  const slot = vKey(v.key, v.line);
+  const newest = state.visitLog.filter(x => vKey(x.key, x.line) === slot).sort((a, b) => b.ts - a.ts)[0];
+  state.visits.set(slot, (newest && newest.ts > v.ts) ? newest : v);
+}
+
+/** re-point the most recent mark at the next-nearest house */
+async function reassignLast() {
+  /* Same rule as Undo: only a door filed since the app opened can be re-pointed by
+     reflex. Cold-loading the app and tapping Wrong house used to move yesterday's last
+     door onto a neighbour, carrying its owner and its valuation with it. */
+  if (!state.lastVisitId || !canUndo(state.lastVisitId) || state.candidates.length < 2) { cycleHouse(); return; }
+  const v = state.visitLog.find(x => x.id === state.lastVisitId);
+  if (!v) return;
+  let i = state.candidates.findIndex(c => c.p.key === v.key);
+  i = (i + 1) % Math.min(state.candidates.length, 6);
+  const target = state.candidates[i].p;
+  /* HIS DISTANCE, READ OFF THE LIST HE WAS LOOKING AT — not off whatever the list has
+     become by the time he answers. `state.candidates` is rebuilt wholesale by
+     `recompute()`, which runs off every GPS fix and every parcel tile that lands, and a
+     confirm can sit open for as long as he likes. Read afterwards, `state.candidates[i]`
+     is a DIFFERENT lot when the list reorders — writing another house's distance into
+     `v.dist`, which the day report prints as "marked from N m away" and the export
+     carries as evidence — or `undefined` when the list came back shorter, which throws
+     while the argument is being evaluated, so nothing moves, nothing saves and no toast
+     appears. He taps a destructive confirm and the app does nothing at all, silently. */
+  const targetDist = state.candidates[i].d;
+  /* IT ASKS NOW, because it can now destroy things a second tap cannot bring back. This
+     is a CYCLE button — tap it again and every parcel field is re-read from the next lot
+     — and that is exactly why round twelve was comfortable letting it move anything.
+     A roof and a hand-placed spot break that symmetry: they are deleted, not re-read.
+     One question, once; after the first tap there is nothing left to ask about and the
+     cycling goes back to being free. */
+  /* Counted before the buttons, and read again below on the far side of the wait — a roof
+     lookup started at this door can still be in the air, and twenty seconds is a long
+     confirm. The two are put together, so the question can only ever overstate. */
+  const cost = repointCost(v, target);
+  if (!await rpConfirmCost(v, target, 'Move this door to ' + (target.addr || 'that lot') + '?',
+                           'Move it anyway', 'Leave it where it is', false, { cost })) return;
+  /* Re-checked on the far side of the wait, and against the same conditions the caller
+     came in under: he can undo the door, or walk off it, while the question is up. */
+  if (!state.visitLog.some(x => x.id === v.id) || !canUndo(v.id)) return;
+  /* THE SHEET HAS TO ACTUALLY BE OPEN. `editing` is not cleared when the sheet closes,
+     so this ran against an abandoned form: delete the pre-filled deed name, tap Close
+     rather than Save, then tap Wrong house from the toast — and pullDetail filed the
+     discarded edit, `nameCleared` with it, suppressing the NEW house's deed name for
+     good. The repaint at the bottom had the mirror of the same fault: it sprang the
+     full-screen panel open over the house card, unasked, on a man at a door. */
+  const sheetOpen = !!editing && editing.id === v.id && !$('detailSheet').classList.contains('hide');
+  /* Anything half-typed comes off the form BEFORE the record is rewritten. Pulling it
+     afterwards puts the name box's stale contents back over the deed name just re-read
+     from the new owner. */
+  if (sheetOpen) pullDetail();
+  const final = rpFinalCost(v, target, cost);
+  repointRecord(v, target, targetDist, final);
+  /* NOT `i`. That number indexes the list as it stood BEFORE the question, and
+     `recompute()` rebuilds and re-sorts `state.candidates` wholesale off every GPS fix
+     and every parcel tile that lands. Reordered under an open confirm, `i` then points at
+     a different lot: the toast names the house he moved to and the card underneath shows
+     somebody else's address, owner and valuation. Tap a status button in that window — and
+     he can, for the half minute a man standing still on a porch goes without a new fix —
+     and `mark()` reads the card and files a fresh door on the wrong parcel, carrying that
+     lot's owner and figures with it as fact. Found by the house it moved to. */
+  const iNow = state.candidates.findIndex(c => c.p.key === target.key);
+  /* And -1 when the lot he moved it to is no longer on the list at all — he has walked
+     off, or the tiles moved under him. `current()` then returns null, the card says there
+     is no lot nearby and `mark()` refuses to file anything, which is the honest answer.
+     The alternative is a card naming SOME house for the next half-minute until a fix
+     lands, and a status button filing a door against it. `recompute()` clears the pin and
+     picks properly the moment it next runs. */
+  state.candIndex = iNow;
+  pinHouse(target.key);
   await DB.put('visits', v).catch(()=>{});
   buzz(15);
-  flashToast(STATUS[v.status].label + ' → moved', `${target.addr || target.pid}${target.owner?' · '+target.owner:''}`, STATUS[v.status].color);
+  flashToast(STATUS[v.status].label + ' → moved', `${target.addr || target.pid}${target.owner?' · '+target.owner:''}` + rpLate(final), STATUS[v.status].color);
   renderHouse(); if (window._map) refreshMapLayers();
+  /* The toast sits ABOVE the detail sheet, so Wrong house is tappable while that sheet
+     is open — and it was repainting the panels underneath while leaving the title, the
+     owner and the rental warning at the top of the same sheet naming the house it had
+     just moved away from. He then types a name against a header for a different door.
+     Nothing short of the full repaint fixes that: dTitle and dSub are only ever written
+     by openDetail. */
+  if (sheetOpen) openDetail(v);
+}
+
+/* ---------------- which house is this: correcting a door already filed ---------------- */
+/* His call on the shape, recorded word for word: LIST FIRST, MAP UNDERNEATH IT.
+   The list is the ordinary case — tap the right address off the nearby lots. Big
+   targets, the address said out loud, no precision asked of a cold thumb, and it works
+   with no signal because every one of those lots is already in hand. The map is only
+   for the case the list cannot cover: the right house not being one of the lots the app
+   holds at all, which is most of Madison and Pickaway.
+
+   Two entirely different repairs, deliberately on one screen, because at a door he does
+   not know which of the two he needs — he only knows the card is arguing with the house
+   in front of him. */
+
+const REPOINT_MAX = 8;         // other lots offered in the list — his call
+const REPOINT_RADIUS = 220;    // metres from the record's own point
+
+let rpFor = null;              // the record the sheet is open against
+let rpSpot = null;             // the spot being dragged. NOT written until he taps Use
+let rpCentre = null;           // fixed at open, so the map never jumps under his thumb
+let rpSpan = 140;              // metres across the map
+
+/* Only a door that is actually on disk can be re-pointed. Same guard as roofSave, and
+   for the same reason: `_new` has no slot yet, and a record wiped out from under the
+   open sheet must not be written back — that is how a door he was told could not be
+   undone gets re-created. */
+const rpAlive = v => !!v && !v._new && state.visitLog.some(x => x.id === v.id);
+
+/* MEASURED FROM THE SAME POINT THE ROOF IS. What he is shown here is therefore what the
+   lookup will actually use.
+   Emphatically NOT `state.candidates`: that list is rebuilt from wherever he happens to
+   be standing and expires after two minutes or twenty-five metres. Right for choosing a
+   house before knocking it; wrong here. Reviewing a door from the truck at lunch would
+   have offered him the street the truck was parked on — the same moving-query-point
+   mistake this whole feature exists to correct. */
+const rpAnchor = v => roofPoint(v);
+
+const rpDistTo = (p, a) => (Array.isArray(p.rings) && p.rings.length)
+  ? distToRings(a.lon, a.lat, p.rings)
+  /* A lot with no outline still gets offered, off its centre. Excluding them would hide
+     houses in exactly the thin-data ground where the snap is least reliable. */
+  : (Array.isArray(p.cen) ? haversine(a.lat, a.lon, p.cen[1], p.cen[0]) : Infinity);
+
+function rpNear(v) {
+  const a = rpAnchor(v);
+  if (!a || !Number.isFinite(a.lat) || !Number.isFinite(a.lon)) return { a, here:null, list:[] };
+  let here = null; const out = [];
+  for (const p of state.parcels.values()) {
+    if (!p || !p.key) continue;
+    const d = rpDistTo(p, a);
+    /* The lot it is filed against now is always shown, at the top and marked, however
+       far off it turns out to be — being able to see what you are changing FROM is half
+       of knowing whether to change it. */
+    if (p.key === v.key) { here = { p, d }; continue; }
+    if (d <= REPOINT_RADIUS) out.push({ p, d });
+  }
+  out.sort((x, y) => x.d - y.d);
+  return { a, here, list: out.slice(0, REPOINT_MAX) };
+}
+
+/** The lot a point falls inside, if the app holds one. */
+function lotAt(lon, lat) {
+  let hit = null;
+  for (const p of state.parcels.values()) {
+    if (!p || !Array.isArray(p.rings) || !p.rings.length) continue;
+    if (!pointInRings(lon, lat, p.rings)) continue;
+    /* A real county lot and the statewide stand-in can both cover one point. The county
+       one wins, which is the same order of preference `shadowedByReal` already uses for
+       the labels. */
+    if (!p.fallback) return p;
+    if (!hit) hit = p;
+  }
+  return hit;
+}
+
+/** Squares as the roof panel would print them — so a warning about what it is going to
+    delete quotes the very number he is looking at, not a differently-rounded one. */
+function rpSquares(v) {
+  if (!v || !v.roof) return null;
+  const rise = v.roofRise != null ? v.roofRise : null;
+  const rise2 = (rise != null && v.roofRise2 != null) ? v.roofRise2 : null;
+  const split = roofSplit(v.roof, rise, rise2);
+  return (split.total * M2_TO_FT2 / 100).toFixed(1);
+}
+
+/* The one row on the detail sheet that offers all of this. It sits directly under the
+   address it is arguing with, not behind the accordion where the roof lives — a man in
+   a driveway looking at the wrong name should not have to open anything to say so. */
+function renderWrongHouse(v) {
+  const el = $('dWrong'); if (!el) return;
+  if (!rpAlive(v)) { el.classList.add('hide'); el.innerHTML = ''; return; }
+  el.classList.remove('hide');
+  const spot = Number.isFinite(v.pinLat) && Number.isFinite(v.pinLon);
+  /* Says only what it can stand behind. It used to add "not from the middle of this lot",
+     which is the one thing the spot has usually NOT replaced: `roofPoint` reaches for
+     `p.house` first, and `attachHouses` sets that on any lot with a real building on it,
+     so in the ordinary case the spot replaced the house point — and where the record's
+     lot is not loaded at all there is no middle of a lot to have replaced. */
+  el.innerHTML = `<button class="ghost" id="dWrongGo">🏠 Wrong house?</button>`
+    + `<div class="hint">${spot
+        ? 'Measuring from the spot you placed.'
+        : 'Pick the right address, or point at the house on a map.'}</div>`;
+  const b = $('dWrongGo');
+  if (b) b.onclick = () => openRepoint(v);
+}
+
+function openRepoint(v) {
+  if (!rpAlive(v)) { flashToast('This house is not filed yet', 'Tap Save first', '#f59e0b'); return; }
+  const a = rpAnchor(v);
+  if (!a || !Number.isFinite(a.lat) || !Number.isFinite(a.lon)) {
+    flashToast('Nothing to point at', 'There is no position on this record', '#f59e0b'); return;
+  }
+  /* His typing comes off the form now, while the record is still the one it was typed
+     against and before anything below can rewrite a field the form also holds. */
+  if (editing && editing.id === v.id) pullDetail();
+  rpFor = v;
+  rpSpot = (Number.isFinite(v.pinLat) && Number.isFinite(v.pinLon)) ? { lat:v.pinLat, lon:v.pinLon } : null;
+  rpCentre = { lat:a.lat, lon:a.lon };
+  /* Sized to the lot in hand rather than fixed, so a three-acre lot in Madison and a
+     townhouse row in Clintonville both fill the frame without a zoom control to learn. */
+  rpSpan = 140;
+  const p = state.parcels.get(v.key);
+  if (p && Array.isArray(p.bbox)) {
+    const wM = Math.abs(p.bbox[2] - p.bbox[0]) * mPerDegLon(a.lat);
+    const hM = Math.abs(p.bbox[3] - p.bbox[1]) * mPerDegLat;
+    if (Number.isFinite(wM) && Number.isFinite(hM))
+      rpSpan = Math.max(80, Math.min(320, Math.max(wM, hM) * 2.4));
+  }
+  renderRepoint();
+  openSheet('repointSheet');
+  /* The canvas has no width until the sheet is on screen, and a zero width would draw
+     nothing and silently divide by zero in the scale. */
+  requestAnimationFrame(drawRepointMap);
+}
+
+function renderRepoint() {
+  const v = rpFor; if (!v) return;
+  const { a, here, list } = rpNear(v);
+  /* A record can be filed against a lot the app is not holding — the parcel cache is
+     filled from tiles around where he is, so a door reviewed from the truck at lunch
+     often has none, and a door filed off the statewide layer may never have had one.
+     Saying so matters: without it the first row of the list reads as the current house
+     when it is only the nearest one. */
+  $('rpLead').innerHTML = `Filed as <b>${esc(v.addr || v.pid || 'this house')}</b>. `
+    + (here ? `These are the nearest lots to it, measured ${esc(ROOF_FROM[a && a.src] || 'from this record')}.`
+            : `Its own lot is not loaded, so this list is measured ${esc(ROOF_FROM[a && a.src] || 'from this record')} and none of it is the house below.`);
+
+  const host = $('rpList'); host.innerHTML = '';
+  const row = (p, d, isHere) => {
+    const ex = visitFor(p.key);
+    const el = document.createElement('div');
+    el.className = 'cand' + (isHere ? ' here' : '');
+    el.innerHTML = `<div class="sw" style="background:${ex ? STATUS[ex.status].color : '#37475c'}"></div>`
+      + `<div class="t"><div class="a">${p.occ === 'rental' ? '⚠️ ' : ''}${esc(p.addr || '(no address)')}</div>`
+      + `<div class="o">${esc(p.owner || 'owner not listed')}${ex ? ' · ' + esc(STATUS[ex.status].short) : ''}</div></div>`
+      + (isHere ? `<div class="now">FILED HERE</div>`
+                : `<div class="d">${esc(String(Math.round(d)))}m</div>`);
+    if (!isHere) el.onclick = () => pickRepoint(p, d);
+    host.appendChild(el);
+  };
+  if (here) row(here.p, here.d, true);
+  list.forEach(x => row(x.p, x.d, false));
+  if (!list.length) {
+    const none = document.createElement('p');
+    none.style.color = 'var(--dim)';
+    /* NOT "come back when you have signal". Lots are only ever fetched around the phone's
+       own position or around the big map's view — nothing anywhere fetches them around a
+       record. Reviewing a Mount Sterling door from the kitchen on wifi, he has signal and
+       this sentence would still be there next time, and the time after. */
+    none.textContent = here
+      ? 'No other lots loaded near this one. Use the map below, or come back when you are standing near it.'
+      : 'No lots loaded near this record. Use the map below, or come back when you are standing near it.';
+    host.appendChild(none);
+  }
+  syncRpButtons();
+}
+
+function syncRpButtons() {
+  const v = rpFor; if (!v) return;
+  const note = $('rpMapNote');
+  /* Says the whole of what a spot does, because it does two things and only one of them
+     is obvious. Landing it on another lot MOVES THE DOOR — owner, address, everything —
+     and he cannot be expected to work that out from "the point the roof gets measured
+     from." */
+  if (note) note.textContent = rpSpot
+    ? 'Drag the cross onto the right house, then tap Use this spot. If it lands on another lot, the door moves there too.'
+    : 'Tap where the house is. The cross is the point the roof gets measured from — and if it lands on another lot, the door moves there too.';
+  const use = $('rpUse'); if (use) use.disabled = !rpSpot;
+  /* Shown whenever there is a cross to be rid of, whether it is on the record or only
+     drafted. Hiding it until one was saved left an accidental cross with no way off the
+     screen but backing out of the whole sheet. */
+  const clr = $('rpClear');
+  if (clr) {
+    const saved = Number.isFinite(v.pinLat) && Number.isFinite(v.pinLon);
+    clr.classList.toggle('hide', !saved && !rpSpot);
+    clr.textContent = saved ? 'Undo my spot' : 'Clear the cross';
+  }
+}
+
+/* Everything that changes which house a record is, in one place, so the repaint and the
+   save can never be done one way here and another way there. */
+async function rpApply(v, words) {
+  /* RE-CHECKED HERE, not only before the question. Every one of these paths waits on a
+     confirm, and the toast sits ABOVE that confirm with a live Undo on it — so a door
+     can be undone and deleted from the phone in the seconds between the question and the
+     answer. Writing it here would put it straight back on disk, out of the export, with
+     the undo no longer able to reach it. */
+  if (!rpAlive(v)) {
+    flashToast('That door is no longer there', 'Nothing was changed', '#f59e0b');
+    closeSheet('repointSheet'); return;
+  }
+  claimSlot(v);
+  const ok = await saveVisit(v);
+  buzz(15);
+  if (!ok) flashToast('NOT saved — the phone refused it', 'Free some space and try again.', '#ef4444');
+  else flashToast(words.title, words.sub, words.color || (STATUS[v.status] || {}).color || '#38bdf8');
+  closeSheet('repointSheet');
+  renderHouse(); renderStrip(); if (window._map) refreshMapLayers(); drawMini();
+  /* Full repaint of the sheet, because the ADDRESS and the owner at the top of it have
+     just changed and they are drawn in openDetail rather than by any of the panel
+     renderers. NOT pullDetail here: openRepoint took his typing off the form before any
+     of this ran, and pulling it again now would put the old house's name back over the
+     deed name just re-read from the new owner — with an empty box setting nameCleared
+     and suppressing the new one for good. He cannot type between the two moments
+     anyway; the picker is covering the form. */
+  if (editing && editing.id === v.id) openDetail(v);
+}
+
+/** The question, worded off the same reckoning that does the deleting. */
+/** `opts.cost` — a cost the caller has already worked out, so the question and the move
+    can never be judged off two different states of the record. `opts.replacingSpot` —
+    the caller is about to put a NEW cross on the record, inside the lot named in the
+    question, because he has just placed it there himself.
+    THE QUESTION USED TO CLAIM IT WOULD DELETE THAT CROSS. It does not: the cross he
+    placed is written to the record and kept. Worse, the sentence explaining why was
+    "the spot is outside the lot you are moving it to" — said about a cross he is looking
+    at, sitting plainly INSIDE that lot, in a screenshot he can hold next to the words.
+    A man who has measured a roof reads "this deletes 53.9 squares and the spot you
+    placed", decides the correction is not worth it, and leaves the door on the wrong
+    house. A question that overstates the price is not a safe question; it buys nothing
+    and it costs him the correction. */
+async function rpConfirmCost(v, target, head, goLabel, stayLabel, always, opts) {
+  const cost = (opts && opts.cost) || repointCost(v, target);
+  const replacing = !!(opts && opts.replacingSpot);
+  if (!cost.roof && !cost.spot && !always) return true;
+  const bits = [];
+  if (cost.roof) bits.push(`the roof measurement — <b>${esc(String(cost.squares))} squares</b> — and any pitch you typed`);
+  if (cost.spot && !replacing) bits.push(`the spot you placed by hand`);
+  /* Why THAT roof is not THIS house's roof, said off `from` rather than assumed. The one
+     sentence used to be hard-wired to the house-on-the-lot story, so it told him a roof
+     taken from the spot he placed by hand had been "taken from a point on the house it is
+     filed against now" — in the same breath as the next sentence deleting that spot for
+     belonging to a different building. And on `from:'lot'` it claimed a point on the
+     house in the one case `roofPoint` reaches for the middle of the lot precisely because
+     there is no house point at all. */
+  const why = !cost.roof ? ''
+    : (v.roof && v.roof.from) === 'pin'
+      /* "The spot below" is the cross on the canvas. On the map path that is the NEW
+         cross, which is not where the measurement was taken from — so pointing at it
+         names the wrong thing. Say where the cross WAS. */
+      /* Says WHERE, and claims nothing about WHOSE. An earlier draft of this said the old
+         cross was "on the house it is filed against now" — which nothing checks, and
+         which printed directly above "the lot it is filed against now is not loaded" in
+         the very case the map exists for: no lot in hand, most of Madison and Pickaway.
+         Two sentences contradicting each other, on the one screen that deletes a
+         measurement he paid for. */
+      ? (replacing
+          ? `That measurement was taken from where the cross was before, not from where you have just put it, so it goes with the old one. `
+          : `That measurement was taken from the spot below, so it goes where the spot goes. `)
+    : (v.roof && v.roof.from) === 'lot'
+      ? `That measurement was taken from the middle of the lot it is filed against now, so it is that lot's building and not this one's. `
+      : `That measurement was taken off the house on the lot it is filed against now, so it is that house's roof and not this one's. `;
+  /* Promised only when it is true. Everything else here is re-read from a PARCEL OBJECT,
+     and the list only ever offers lots the app is holding — so on a record whose own lot
+     is not loaded, the sheet three lines above is already saying so and there is nothing
+     to move back to. */
+  const canGoBack = !!state.parcels.get(v.key);
+  const k = await askChoice(head,
+    (bits.length ? `This deletes ${bits.join(' and ')}. ` : `This moves the door onto that lot — the owner, the address and the auditor figures all come from it. `)
+    + why
+    + (cost.spot && !replacing ? `The spot is outside the lot you are moving it to, so it belongs to the other house. ` : '')
+    /* Counted off what the message actually LISTS, not off the cost flags. With the spot
+       no longer listed on the map path, `cost.roof && cost.spot` would still have said
+       "these do" about one thing. */
+    + (bits.length && canGoBack
+        ? `The owner, the address and the auditor figures all come back if you move it again — ${bits.length > 1 ? 'these do' : 'this does'} not.` : '')
+    + (bits.length && !canGoBack
+        ? `The lot it is filed against now is not loaded, so moving it back is not something you can do from here.` : ''),
+    [{ key:'go', label:goLabel, danger:true }, { key:'no', label:stayLabel }]);
+  return k === 'go';
+}
+
+async function pickRepoint(p, d) {
+  const v = rpFor;
+  if (!v || !p) return;
+  if (!rpAlive(v)) { flashToast('That door is no longer there', '', '#f59e0b'); closeSheet('repointSheet'); return; }
+  if (p.key === v.key) return;
+  /* Counted before the buttons, never after. Read again below, on the far side of the
+     wait, because a roof lookup can land in that gap — and the two are put together, so
+     the question can overstate the price but the move can never quietly understate it. */
+  const cost = repointCost(v, p);
+  if (!await rpConfirmCost(v, p, 'Move this door to ' + (p.addr || 'that lot') + '?',
+                           'Move it anyway', 'Leave it where it is', false, { cost })) return;
+  /* Again on the far side of the wait, BEFORE anything is mutated. rpApply checks too,
+     but by then repointRecord has already rewritten a dead record in memory and pushed
+     it into the slot index — half a move, on a door he was told was gone. */
+  if (!rpAlive(v)) { flashToast('That door is no longer there', 'Nothing was changed', '#f59e0b'); closeSheet('repointSheet'); return; }
+  /* HIS DISTANCE FROM THE DOOR, measured from where he actually STOOD. `d` off the list
+     is measured from the roof anchor — the old lot's house point — and `v.dist` is not a
+     display figure: the day report prints it as "marked from N m away" over a 40 m flag
+     and the export carries it as evidence. Feeding it a lot-to-lot distance flags a door
+     he stood at, or quietly clears the flag on one he did not. */
+  /* And only on a door he actually stood at. A record filed off the big map, a scout mark
+     or the appointment picker is built at the lot centroid with `acc:0` and `dist:0`, and
+     the app has a predicate for exactly that — the day report already refuses to print a
+     distance for those. Writing a real-looking metre figure onto one manufactures the
+     evidence the export then carries. */
+  const fromHim = measuredAtDoor(v) && Number.isFinite(v.lat) && Number.isFinite(v.lon)
+    ? rpDistTo(p, { lat:v.lat, lon:v.lon }) : null;
+  const final = rpFinalCost(v, p, cost);
+  repointRecord(v, p, fromHim, final);
+  await rpApply(v, { title: (STATUS[v.status] || {}).label + ' → moved',
+                     sub: `${p.addr || p.pid}${p.owner ? ' · ' + p.owner : ''}` + rpLate(final) });
+}
+
+async function rpUseSpot() {
+  const v = rpFor;
+  if (!v || !rpSpot) return;
+  if (!rpAlive(v)) { flashToast('That door is no longer there', '', '#f59e0b'); closeSheet('repointSheet'); return; }
+  const spot = { lat: rpSpot.lat, lon: rpSpot.lon };
+  /* WHERE THE LOOKUP POINTS, before and after — not whether he tapped the button.
+     Re-confirming a spot already on the record, seeing the cross sitting on the right
+     roof and tapping Use this spot, moves nothing; stamping a good measurement "may be
+     a different roof" for it is a doubt only a paid lookup can lift. */
+  const was = roofAnchorKey(v);
+  const hit = lotAt(spot.lon, spot.lat);
+  const moving = !!hit && hit.key !== v.key;
+  /* MOVING THE DOOR OFF THE MAP ASKS EXACTLY AS MOVING IT OFF THE LIST DOES — including
+     on a door with no roof and no earlier spot, which is most of them, and which is the
+     case that was still going through silently. An accidental cross a thumb-width onto
+     the neighbour's lot re-filed the door — owner, address, valuation — on one more tap,
+     with nothing on screen having warned that a cross could do that. */
+  /* WORKED OUT NOW, ON THE RECORD AS IT STANDS — before the new cross is written over
+     the old one. A roof belongs to the point it was MEASURED from, and three lines below
+     that point stops existing. Recomputed after the write, the answer is always "nothing
+     was lost", because the thing it tests is the cross he placed a second ago inside the
+     lot he placed it in. That is how a roof taken on 105 came to be filed as 107's.
+     The same object is then handed to BOTH the question and the move, so the price he
+     was quoted and the price he pays cannot come apart. */
+  const cost = moving ? repointCost(v, hit) : null;
+  if (moving && !await rpConfirmCost(v, hit, 'That spot is on ' + (hit.addr || 'a different lot') + '.',
+                                     'Use it, and move the door there', 'Leave this door alone', true,
+                                     { cost, replacingSpot:true })) return;
+  if (!rpAlive(v)) { flashToast('That door is no longer there', 'Nothing was changed', '#f59e0b'); closeSheet('repointSheet'); return; }
+  /* READ AGAIN HERE, and this is the LAST moment it can be read honestly on this path.
+     One line below, the new cross goes onto the record — and after that every question
+     about the old cross has the wrong answer, including the one `repointRecord` asks
+     itself. A roof lookup that landed while the question was up is caught here and
+     nowhere else. */
+  const final = moving ? rpFinalCost(v, hit, cost) : null;
+  /* Written BEFORE repointRecord, on purpose: that function decides whether a spot
+     survives a change of lot by testing it against the new lot's outline, and this one is
+     inside it by construction. Writing it afterwards would step over that rule. Nothing
+     about the roof is decided from here on — `final` above already settled it. */
+  v.pinLat = spot.lat; v.pinLon = spot.lon;
+  if (moving) repointRecord(v, hit, measuredAtDoor(v) && Number.isFinite(v.lat) && Number.isFinite(v.lon)
+    ? rpDistTo(hit, { lat:v.lat, lon:v.lon }) : null, final);
+  if (roofAnchorKey(v) !== was) rpFlagRoof(v);
+  await rpApply(v, moving
+    ? { title:'Moved, and pointed', sub: (hit.addr || hit.pid || 'that lot') + rpLate(final) }
+    : { title:'Spot placed', sub:'The roof gets measured from there now', color:'#f59e0b' });
+}
+
+async function rpClearSpot() {
+  const v = rpFor;
+  if (!v) return;
+  if (!rpAlive(v)) { flashToast('That door is no longer there', '', '#f59e0b'); closeSheet('repointSheet'); return; }
+  const saved = Number.isFinite(v.pinLat) && Number.isFinite(v.pinLon);
+  /* A CROSS HE HAS ONLY DRAWN, not saved, is the case this button was ADDED for — an
+     accidental tap on the map with no way off the screen but backing out of the whole
+     sheet. It used to return here on exactly that, doing nothing at all: no flash, no
+     buzz, no message, cross still sitting on the canvas, which is the one thing the
+     disabled styling three inches away exists to prevent. */
+  if (!saved) {
+    if (!rpSpot) return;
+    rpSpot = null; buzz(10); drawRepointMap(); syncRpButtons();
+    return;
+  }
+  const was = roofAnchorKey(v);
+  delete v.pinLat; delete v.pinLon;
+  rpSpot = null;
+  /* Only if the lookup actually moves. Taking a spot off a lot whose house point is where
+     the roof was measured from anyway puts it back on the very same coordinates. */
+  if (roofAnchorKey(v) !== was) rpFlagRoof(v);
+  /* Says where it has gone back TO, read off the record rather than assumed. `roofPoint`
+     falls to the middle of the lot when there is no building point, and to where he stood
+     when the lot is not loaded at all — which is the ordinary state for a door reviewed
+     away from the street. */
+  await rpApply(v, { title:'Spot taken off',
+                     sub:'Back to measuring ' + (ROOF_FROM[roofPoint(v).src] || 'off this record'),
+                     color:'#64748b' });
+}
+
+/* A roof that survives keeps its number and says plainly that the point it was taken
+   from has moved. No reassurance is offered, because none is available: the app cannot
+   tell whether the old point and the new one are the same building. */
+/* The query point as one comparable value. Used to decide whether anything has actually
+   moved, rather than assuming a tap on Use this spot or Undo my spot moved something —
+   both can leave the lookup pointing at exactly the coordinates the roof was taken from,
+   and stamping "may be a different roof" on it is a doubt nothing in the app can lift
+   afterwards except paying Google for another look. */
+function roofAnchorKey(v) {
+  const a = roofPoint(v);
+  return Number.isFinite(a.lat) && Number.isFinite(a.lon) ? a.lat + ',' + a.lon : 'none';
+}
+
+function rpFlagRoof(v) {
+  if (!v || !v.roof) return;
+  // segs is a mutable array: copy it, or two records end up sharing one
+  v.roof = { ...v.roof, segs: v.roof.segs && v.roof.segs.slice(), ptMoved: true };
+  /* AND THE REASSURANCE GOES. Both flags can be set by one tap — placing a spot on the
+     neighbour's lot moves the door (lotChanged) and moves the point (ptMoved) together —
+     and the panel would then print "very likely still the right roof" immediately above
+     "may be a different roof". That is the exact sentence the last round had to go back
+     and delete, printed directly over its own retraction. The doubt is the truer of the
+     two, so the doubt is the one that survives. */
+  delete v.roof.lotChanged;
+}
+
+function drawRepointMap() {
+  const v = rpFor, cv = $('rpMap');
+  if (!cv || !v || !rpCentre) return;
+  const w = cv.clientWidth, h = cv.clientHeight;
+  if (!w || !h || !rpSpan) return;
+  const dpr = window.devicePixelRatio || 1;
+  if (cv.width !== Math.round(w * dpr) || cv.height !== Math.round(h * dpr)) {
+    cv.width = Math.round(w * dpr); cv.height = Math.round(h * dpr);
+  }
+  const g = cv.getContext('2d'); if (!g) return;
+  g.setTransform(dpr, 0, 0, dpr, 0, 0);
+  g.clearRect(0, 0, w, h);
+  g.fillStyle = '#0f151d'; g.fillRect(0, 0, w, h);
+  const kx = mPerDegLon(rpCentre.lat), ky = mPerDegLat, sc = w / rpSpan;
+  const X = pt => w / 2 + (pt[0] - rpCentre.lon) * kx * sc;
+  const Y = pt => h / 2 - (pt[1] - rpCentre.lat) * ky * sc;
+
+  /* Chosen on the OUTLINE overlapping the frame, not on the centroid being near it. The
+     hub map filters on the centroid because there it is only about what shows; here what
+     shows decides what he can tap, and `lotAt` tests rings. A six-acre farm parcel whose
+     middle is 180 m off can reach well inside this little frame — so the centroid filter
+     drew empty black over ground that would silently re-file the door onto that farm. */
+  const halfW = rpSpan / 2, halfH = (rpSpan * h / w) / 2;
+  const west = rpCentre.lon - halfW / kx, east = rpCentre.lon + halfW / kx;
+  const south = rpCentre.lat - halfH / ky, north = rpCentre.lat + halfH / ky;
+  const near = [];
+  for (const p of state.parcels.values()) {
+    if (!p || !Array.isArray(p.cen)) continue;
+    const bb = Array.isArray(p.bbox) ? p.bbox : [p.cen[0], p.cen[1], p.cen[0], p.cen[1]];
+    if (bb[2] < west || bb[0] > east || bb[3] < south || bb[1] > north) continue;
+    near.push(p);
+  }
+  const trace = rings => {
+    g.beginPath();
+    for (const ring of rings) { ring.forEach((pt, i) => i ? g.lineTo(X(pt), Y(pt)) : g.moveTo(X(pt), Y(pt))); g.closePath(); }
+  };
+  /* Fills first, then every edge — the same two passes as the hub map, for the same
+     reason: neighbouring lots share an edge and a stroke is centred on the path, so one
+     lot drawn later paints over the inner half of its neighbour's border. */
+  for (const p of near) {
+    if (!Array.isArray(p.rings) || !p.rings.length) continue;
+    trace(p.rings);
+    const ex = visitFor(p.key);
+    if (p.key === v.key) { g.fillStyle = 'rgba(56,189,248,.20)'; g.fill(); }
+    else if (ex) { g.fillStyle = STATUS[ex.status].color + '30'; g.fill(); }
+  }
+  for (const p of near) {
+    if (!Array.isArray(p.rings) || !p.rings.length) continue;
+    trace(p.rings);
+    const mine = p.key === v.key;
+    g.strokeStyle = mine ? '#38bdf8' : '#3a4a5e';
+    g.lineWidth = mine ? 2.4 : .9;
+    g.stroke();
+  }
+  /* House numbers, whatever the hub map is set to show. On every other map they are one
+     choice among six; on this one the number IS the question being asked. */
+  g.font = '700 11px system-ui,-apple-system,sans-serif';
+  g.textAlign = 'center'; g.textBaseline = 'middle';
+  for (const p of near) {
+    const n = labelLines(p, ['num'], 1)[0];
+    const at = p.house || p.cen;
+    if (!n || !at) continue;
+    const x = X(at), y = Y(at);
+    if (x < -12 || x > w + 12 || y < -12 || y > h + 12) continue;
+    g.lineWidth = 3; g.strokeStyle = 'rgba(3,7,12,.9)'; g.strokeText(n, x, y);
+    g.fillStyle = '#cbd5e1'; g.fillText(n, x, y);
+  }
+  /* NOTHING TO AIM AT, said on the map rather than left as a black rectangle. This is
+     the state the map exists for — no lot lines in hand — and the sheet above it is
+     already four sentences about a list that is empty, so the one thing that must not
+     also happen is being told to tap a picture of nothing. */
+  const drew = near.some(p => Array.isArray(p.rings) && p.rings.length);
+  const knocked = measuredAtDoor(v) && Number.isFinite(v.lat) && Number.isFinite(v.lon);
+  if (!drew) {
+    g.fillStyle = '#7c8ba1';
+    g.font = '700 12px system-ui,-apple-system,sans-serif';
+    g.fillText('No lot lines loaded here.', w / 2, h / 2 - 30);
+    g.fillText(knocked ? 'Aim off the grey dot, which is where you stood.'
+                       : 'There is nothing on this record to aim off.', w / 2, h / 2 - 12);
+  }
+  /* Where he was standing when he knocked — and ONLY when he was. A door filed off the
+     big map, off a scout mark or off the appointment picker is built at the middle of the
+     lot with `acc:0`, and the day report already refuses to print a distance for those.
+     Drawing that centroid and calling it "where you stood" would put the app's one piece
+     of real evidence on this map beside a number it made up. `measuredAtDoor` is the
+     predicate the rest of the file already uses for exactly this question. */
+  const stood = measuredAtDoor(v) && Number.isFinite(v.lat) && Number.isFinite(v.lon);
+  if (stood) {
+    const x = X([v.lon, v.lat]), y = Y([v.lon, v.lat]);
+    g.beginPath(); g.arc(x, y, 4, 0, Math.PI * 2);
+    g.fillStyle = 'rgba(148,163,184,.9)'; g.fill();
+    /* The key goes on only when the thing it explains is actually in the frame. Off the
+       edge — ordinary at an 80 m span — it left a lone swatch in the corner labelled
+       "where you stood", which is a dot pointing at nothing. */
+    if (x > -4 && x < w + 4 && y > -4 && y < h + 4) {
+      g.textAlign = 'left'; g.font = '700 10px system-ui,-apple-system,sans-serif';
+      g.beginPath(); g.arc(12, h - 12, 4, 0, Math.PI * 2); g.fillStyle = 'rgba(148,163,184,.9)'; g.fill();
+      g.fillStyle = '#93a6bb'; g.fillText('where you stood', 21, h - 11);
+      g.textAlign = 'center';
+    }
+  }
+  if (rpSpot) {
+    const x = X([rpSpot.lon, rpSpot.lat]), y = Y([rpSpot.lon, rpSpot.lat]);
+    g.strokeStyle = '#f59e0b'; g.lineWidth = 2.5;
+    g.beginPath(); g.moveTo(x - 12, y); g.lineTo(x + 12, y); g.moveTo(x, y - 12); g.lineTo(x, y + 12); g.stroke();
+    g.beginPath(); g.arc(x, y, 7, 0, Math.PI * 2); g.stroke();
+  }
+}
+
+/* The whole map is the target, not a little marker to be grabbed — a tap is a drag of
+   no length, so one gesture covers both and neither needs a steady hand. */
+function rpPointAt(e) {
+  const cv = $('rpMap');
+  if (!cv || !rpCentre || !rpSpan) return null;
+  const b = cv.getBoundingClientRect();
+  if (!b.width || !b.height) return null;
+  const kx = mPerDegLon(rpCentre.lat), sc = b.width / rpSpan;
+  if (!kx || !sc) return null;
+  return { lon: rpCentre.lon + (e.clientX - b.left - b.width / 2) / (kx * sc),
+           lat: rpCentre.lat - (e.clientY - b.top - b.height / 2) / (mPerDegLat * sc) };
 }
 
 /* ---------------- detail sheet ---------------- */
@@ -3528,6 +4323,7 @@ function openDetail(visit, focusName) {
                  + (explain ? `<div style="margin-top:4px;color:#93a6bb;font-size:12px;line-height:1.45">${esc(explain)}</div>` : '')
                : (why ? `<div style="margin-top:6px;color:var(--dim)">Occupancy unknown: ${esc(why)}.</div>` : ''));
   renderBookRow();
+  renderWrongHouse(v);
   $('dName').value = v.name||''; $('dGoesBy').value = v.goesBy||'';
   $('dNameNote').textContent = nameIsFromDeed(v) ? 'This came off the county deed, not from the door.' : '';
   renderPropPanel(withParcelStats(v, state.parcels.get(v.key)));
@@ -3949,7 +4745,13 @@ async function persistEditing(opts) {
       + 'Close this and open the house again if you want it back.', '#ef4444');
     return false;
   }
-  state.visits.set(vKey(editing.key, editing.line), editing);
+  /* claimSlot, not a bare set. The slot holds the NEWEST record for a house in a book,
+     and Wrong house can now hand the detail sheet an OLD record filed against a house he
+     has knocked again since. Saving a note on it then set the slot to the old one, and
+     Tuesday's knock disappeared out of the CRM list, the follow-ups due, the go-back
+     route and off the map while still sitting in the log — one tap after the correction
+     that made it reachable. */
+  claimSlot(editing);
   return saveVisit(editing);
 }
 async function saveVisit(v) {
@@ -4119,8 +4921,9 @@ async function clearDetailContent() {
 
 /* ---------------- sheets ---------------- */
 /* Sheets can be opened from other sheets (menu → export). DOM order alone would
-   leave the newer one buried, so each open lifts it above whatever is showing. */
-let sheetZ = 80;
+   leave the newer one buried, so each open lifts it above whatever is showing.
+   Declared far above, beside the toast, because `showToastNow` reads it and a `let` read
+   before its declaration has run throws rather than reading undefined. */
 function openSheet(id){ const el = $(id); el.style.zIndex = ++sheetZ; el.classList.remove('hide'); }
 function closeSheet(id){ $(id).classList.add('hide'); }
 
@@ -4182,6 +4985,12 @@ function backToMenuIfCameFromIt() {
     opts: [{ key, label, sub, danger }] — resolves with the key, or null if backed out. */
 function askChoice(title, body, opts) {
   return new Promise(resolve => {
+    /* THE TOAST COMES DOWN FIRST. It is z-index 90 against this sheet's 80-something, so
+       its Undo and Wrong house buttons sat ON TOP of a question and were tappable while
+       it was open. Undo a door mid-question and the answer then wrote it back to the
+       phone. A question with more than two answers is a modal thing; it gets the screen
+       to itself, and the toast has had its four seconds. */
+    $('toast').classList.remove('show');
     $('askTitle').textContent = title;
     $('askBody').innerHTML = body;
     const host = $('askBtns'); host.innerHTML = '';
@@ -4838,14 +5647,14 @@ function buildCsv(o) {
      position, so a new column inserted in the middle silently shifts every one after it. */
   const head = ['Date','Time','Work','Status','Address','Owner','Status history','Market value','Floor area sq ft','Last sale date','Last sale price','Likely rental','Owner mailing address','County','Parcel ID','Contact name','Name from deed','Goes by','Area','Phone','Email','Tags','Stage','Follow up','Notes','Year built','Latitude','Longitude','GPS accuracy m','Distance to lot m',
     'Roof sq ft','Roof squares','Roof pitch','Roof planes','Roof pitch set by hand','Roof photo date','Roof imagery','Roof measured on',
-    'Roof second pitch','Roof split'];
+    'Roof second pitch','Roof split','Roof measured from','Roof needs a recheck'];
   const yr = v => yearBuilt(v) || '';
   /* Exported as plain numbers, and the imagery tier travels beside them in its own
      column. A 25 cm figure and a 10 cm figure are not the same claim, and a spreadsheet
      that shows only the number has thrown away the part that says how much to trust it. */
   const roofCols = v => {
     const r = v.roof;
-    if (!r || !(r.m2 > 0)) return ['','','','','','','','','',''];
+    if (!r || !(r.m2 > 0)) return ['','','','','','','','','','','',''];
     const rise = v.roofRise != null ? v.roofRise : null;
     const rise2 = (rise != null && v.roofRise2 != null) ? v.roofRise2 : null;
     const split = roofSplit(r, rise, rise2);
@@ -4864,7 +5673,16 @@ function buildCsv(o) {
             /* Spelled out rather than left implicit: whoever reads this file later can
                see how the two pitches divided the roof without re-deriving it. */
             split.parts.length > 1
-              ? split.parts.map(p => `${(p.m2 * M2_TO_FT2 / 100).toFixed(1)} sq at ${fmtRise(p.rise)}`).join(' + ') : ''];
+              ? split.parts.map(p => `${(p.m2 * M2_TO_FT2 / 100).toFixed(1)} sq at ${fmtRise(p.rise)}`).join(' + ') : '',
+            /* WHICH POINT IT WAS ASKED ABOUT, and whether the app is still standing
+               behind it. The rule this file already states four lines up — a number
+               without the part that says how much to trust it has thrown the important
+               part away — applies hardest here: on screen `ptMoved` reads "it may be a
+               different roof, measure it again", and it was leaving as a clean figure in
+               the file his own compliance research expects to be subpoenaed. */
+            ROOF_FROM[r.from] ? ROOF_FROM[r.from].replace(/^from /, '') : '',
+            r.ptMoved ? 'yes — the point it was measured from has moved since'
+              : r.lotChanged ? 'yes — the house it is filed against changed since' : ''];
   };
   const lines = [head.map(q).join(',')];
   rows.forEach(v => {
@@ -5939,8 +6757,8 @@ document.querySelectorAll('.dsecHead[data-msec]').forEach(b => {
 /* ---- what version is actually on the phone ----
    Matches the service worker cache name, so "did the update land" is answerable by
    looking rather than guessing. */
-const BUILD_VERSION = 'v22';
-const BUILD_DATE = '30 July 2026';
+const BUILD_VERSION = 'v24';
+const BUILD_DATE = '31 July 2026';
 function renderVersionStamp() {
   const el = $('versionStamp'); if (!el) return;
   el.className = 'small';
@@ -6421,7 +7239,11 @@ function roofPoint(v) {
   }
   return { lat: v && v.lat, lon: v && v.lon, src: 'gps' };
 }
-const ROOF_FROM = { pin:'from your pin', house:'from the house on this lot',
+/* "Pin" is taken twice over in this app already — the lock screen's PIN and the truck
+   pin he drops by holding the map. A third one on the house panel is the sort of thing
+   that stops a stranger dead, so the field stays `pinLat`/`pinLon` under the covers and
+   nothing on screen ever says the word. */
+const ROOF_FROM = { pin:'from the spot you placed', house:'from the house on this lot',
                     lot:'from the middle of this lot', gps:'from where you stood' };
 
 /** Is the building Google found the one this record is filed against? */
@@ -6431,6 +7253,16 @@ function roofMatch(v, r, origin) {
      meant the URL was built from one point and the guard judged against another. */
   const from = origin || roofPoint(v);
   const off = haversine(from.lat, from.lon, r.lat, r.lon);
+  /* HE POINTED AT IT. HIS POINT IS THE ANSWER, NOT THE LOT.
+     The map half of Wrong house exists for the house that is not one of the lots the app
+     holds — most of Madison and Pickaway. In exactly that case the record keeps its old
+     lot, so judging the answer against that lot's outline refused every attempt for ever
+     and said "That is a different house" about the house he had just put the cross on:
+     the feature defeating its own purpose, on its primary path. When the query point is
+     a spot he placed by hand, the only sensible question is how far Google's building is
+     from the point he chose. `ROOF_MATCH_MAX` is his own roof tester's figure, and it is
+     the same number this function already falls back to when there is no outline. */
+  if (from.src === 'pin') return { ok: off <= ROOF_MATCH_MAX, off, how:'spot' };
   const p = state.parcels.get(v.key);
   /* Fallback parcels are used too. An earlier version of this line read `!p.fallback`
      on the belief that the statewide layer carries no outlines — it does: `fetchTile`
@@ -6562,6 +7394,7 @@ async function measureRoof(v) {
   const key0 = v.key;
   /* Captured ONCE, before any await. Everything downstream uses this same point. */
   const from0 = roofPoint(v);
+  const spot0 = (Number.isFinite(v.pinLat) && Number.isFinite(v.pinLon)) ? v.pinLat + ',' + v.pinLon : '';
   roofBusy.add(v.id); renderRoofPanel(v);
   try {
     const u = SOLAR_URL
@@ -6631,8 +7464,21 @@ async function measureRoof(v) {
 
     /* The lot moved under us. "Wrong house" re-points the record while a request is in
        flight, and attaching this answer to a lot the record no longer claims is the same
-       reads-as-fact failure that guard exists to stop. Throw the answer away. */
-    if (v.key !== key0) { roofFail(v, 'nobuilding'); return; }
+       reads-as-fact failure that guard exists to stop. Throw the answer away.
+       THE KEY IS NO LONGER THE ONLY INPUT. Placing or clearing a spot moves the query
+       point WITHOUT moving the lot — so on a slow rural request he could tap Measure,
+       then correct the point on the very sheet the button lives on, and the answer for
+       the old point would land captioned with the new one's provenance: the barn's roof
+       filed under "from the spot you placed", or a spot-measured roof stamped
+       `from:'house'` on a record that no longer has a spot.
+       THE SPOT, THOUGH — NOT THE WHOLE POINT. Comparing the whole point threw away
+       perfectly good answers, because a parcel tile landing mid-request moves `roofPoint`
+       from `gps` to `house` on its own, and the note at the top of this function says
+       that is ORDINARY. The answer was validated against `from0`, and `r.from` records
+       `from0`, so a tile arriving late invalidates nothing. Only a hand-placed spot
+       appearing, moving or going does. */
+    const spotNow = (Number.isFinite(v.pinLat) && Number.isFinite(v.pinLon)) ? v.pinLat + ',' + v.pinLon : '';
+    if (v.key !== key0 || spotNow !== spot0) { roofFail(v, 'nobuilding'); return; }
     delete r._segSum;
     delete r._groundReported;
     roofErr = null;
@@ -6667,25 +7513,37 @@ function renderRoofPanel(v) {
   let body = '';
   const failed = roofErr && roofErr.id === v.id;
   if (failed) {
-    /* Names WHY it was refused, because the two reasons need different actions from
-       him. Landing outside this lot's own outline means the pin is on the wrong house
-       and moving it fixes it. A bare distance on a lot with no outline is a judgement
-       he can make and the app cannot. */
     /* Names WHY it was refused, because the reasons want different things from him. And
-       the distance is stated as "from where this lot was measured", NOT "from where you
-       stood" — the query point is the house on the lot now, so quoting it as his own
-       standing distance was simply false. Nothing here tells him to move a pin: there is
-       no pin yet, and inert advice is worse than none. */
+       the distance is stated as the distance from where this lot was measured, NOT "from
+       where you stood" — the query point is the house on the lot now, so quoting it as
+       his own standing distance was simply false. */
     const msg = roofErr.k === 'far'
-      ? (roofErr.m && roofErr.m.how === 'lot'
-          ? `The building the photo found sits outside this lot altogether, about ${esc(String(roofErr.m.off))} m off. That is a different house — check the address is right, then try again.`
+      /* Names the spot only while there IS one. The refusal is decided before the guard
+         further down, so clearing the spot during a slow request landed a message telling
+         him to move a thing that was no longer on the record. */
+      ? (roofErr.m && roofErr.m.how === 'spot'
+          ? (Number.isFinite(v.pinLat) && Number.isFinite(v.pinLon)
+              ? `The nearest building the photo can find is about ${esc(String(roofErr.m.off))} m from the spot you placed. Move the spot onto the roof itself and try again.`
+              : `The nearest building the photo can find is about ${esc(String(roofErr.m.off))} m from the point this was asked about, which is no longer the point on this record. Try again.`)
+          : roofErr.m && roofErr.m.how === 'lot'
+          ? `The building the photo found sits outside this lot altogether, about ${esc(String(roofErr.m.off))} m off. That is a different house.`
           : roofErr.m && roofErr.m.how === 'far'
-          ? `The building the photo found is on this lot but about ${esc(String(roofErr.m.off))} m from the house, so it is more likely a barn or an outbuilding than the roof you want.`
+          ? `The building the photo found is on this lot but about ${esc(String(roofErr.m.off))} m from where this house was measured, so it is more likely a barn or an outbuilding than the roof you want.`
           : `The nearest building the photo can find is about ${esc(String(roofErr.m && roofErr.m.off))} m away, and there is no lot outline here to check it against.`)
       : roofErr.k === 'sanity'
       ? `This one does not add up — ${esc(roofErr.m)}. Better to say nothing than to say it wrong.`
       : (ROOF_FAIL[roofErr.k] || ROOF_FAIL.failed);
     body = `<div class="rfail">${esc(msg)}</div>`;
+    /* The advice this message used to be missing. Both refusals about DISTANCE are the
+       same complaint — the app is asking about a different building from the one he is
+       standing in front of — and there is now something he can do about it, so it says
+       so and puts the button right there. It is offered only for those, and only on a
+       door already filed: on a key error or no signal, correcting the house fixes
+       nothing and would just be one more thing to try. */
+    if (roofErr.k === 'far' && rpAlive(v)) {
+      body += `<div class="rband">If the address on this card is not the house you are looking at, say so and measure again.</div>`
+        + `<button class="ghost" id="dRoofWrong" style="margin-top:8px">🏠 Wrong house?</button>`;
+    }
     /* An earlier good measurement is kept and still shown — but it is NOT left looking
        like the answer to the attempt that just failed. "Better to say nothing than to
        say it wrong" printed directly above a confident square count is saying it wrong.
@@ -6794,8 +7652,20 @@ function renderRoofPanel(v) {
     /* The lot was corrected after this was measured. The number is probably still right —
        it was taken from where he stood, not from the lot — but "probably" is exactly the
        thing this panel is not allowed to leave unsaid. */
+    /* Only claims the reassuring half when it knows WHERE it was taken from. A record
+       measured before this app stored `from` carries no provenance at all, and by this
+       file's own reasoning such a roof was most likely taken off the lot the app had
+       snapped to — the case that gets deleted, not reassured about. */
     if (r.lotChanged) body += `<div class="rwarn">This was measured before you corrected which house this is. `
-      + `It was taken from where you were standing, so it is very likely still the right roof — but measure again if you want to be sure.</div>`;
+      + (ROOF_FROM[r.from]
+          ? `It was taken ${esc(ROOF_FROM[r.from])} rather than off the lot the app had snapped to, so it is very likely still the right roof — but measure again if you want to be sure.`
+          : `Nothing on this record says which point it was taken from, so measure it again before you use it.`)
+      + `</div>`;
+    /* The point the lookup uses has been moved by hand since this number was taken. No
+       reassurance is offered with it, because none is available: nothing in the app can
+       tell whether the old point and the new one are the same building. That is exactly
+       the sentence the last round had to go back and delete from the line above. */
+    if (r.ptMoved) body += `<div class="rwarn">You have moved the spot this house is measured from since this was taken, so it may be a different roof. Measure it again.</div>`;
     /* Every other thing on this sheet that writes to an unfiled record says so. Without
        it he measures from Details on a house he has not knocked, taps a status on the
        main screen instead of Save, and the lookup is spent with nothing kept. */
@@ -6806,6 +7676,8 @@ function renderRoofPanel(v) {
 
   const go = $('dRoofGo');
   if (go) go.onclick = () => { roofErr = null; measureRoof(v); };
+  const wrong = $('dRoofWrong');
+  if (wrong) wrong.onclick = () => openRepoint(v);
   /* Both handlers close over the record this panel was drawn for. If that is no longer
      the house on screen, the panel has been repainted underneath them and writing here
      would put his correction on the wrong door. */
@@ -6894,6 +7766,29 @@ $('undoBtn').onclick = undoLast;
 $('detailBtn').onclick = () => openDetail(null);
 $('swapBtn').onclick = openCandidates;
 $('house').addEventListener('dblclick', openCandidates);
+/* The house picker for a door already filed. Pointer events rather than touch, so the
+   same code answers a thumb in a driveway and a mouse on the bench. */
+(() => {
+  const cv = $('rpMap'); if (!cv) return;
+  let down = false;
+  const put = e => {
+    const q = rpPointAt(e); if (!q) return;
+    rpSpot = q; drawRepointMap(); syncRpButtons();
+  };
+  cv.addEventListener('pointerdown', e => {
+    down = true;
+    /* Capture, or dragging a finger off the edge of the little map leaves it stuck
+       down and the next tap anywhere on the sheet moves the cross. */
+    try { cv.setPointerCapture(e.pointerId); } catch (err) {}
+    put(e); e.preventDefault();
+  });
+  cv.addEventListener('pointermove', e => { if (down) { put(e); e.preventDefault(); } });
+  const up = e => { down = false; try { cv.releasePointerCapture(e.pointerId); } catch (err) {} };
+  cv.addEventListener('pointerup', up);
+  cv.addEventListener('pointercancel', up);
+  $('rpUse').onclick = rpUseSpot;
+  $('rpClear').onclick = rpClearSpot;
+})();
 $('modePill').onclick = toggleMode;
 /* Turning tracking back on with no session left the app in a state where BOTH backstops
    were dead — goneQuiet and arrivedHome each return early on `!state.session` — so the GPS
