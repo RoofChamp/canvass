@@ -4608,23 +4608,41 @@ function openDetail(visit, focusName) {
      unknown book made `ln` undefined and threw on the next line, on opening a house. */
   const ln = LINES[v.line || 'roof'] || LINES.roof;
   const par = state.parcels.get(v.key);
-  const occ = v.occ || (par && par.occ) || null;
-  const mail = v.mail || (par && par.mail) || '';
-  const why = par && par.occWhy;
+  const viaStatewide = v.county === 'ohio' || (par && par.fallback);
+  /* THE COUNTY'S OWN RECORD FOR THIS GROUND, read live, when this door is filed against
+     the statewide copy. See countyTwinFor. Everything below prefers it, because it is the
+     same house and it is the one carrying the owner's name. Nothing is written. */
+  const twin = viaStatewide ? countyTwinFor(v, par) : null;
+  const src = twin || par;
+  const shownOwner = twin ? twin.owner : v.owner;
+  const shownCounty = twin ? twin.county : v.county;
+  const occ = (twin ? twin.occ : (v.occ || (par && par.occ))) || null;
+  const mail = (twin ? twin.mail : (v.mail || (par && par.mail))) || '';
+  const why = src && src.occWhy;
   // say in words what a corporate address on the far side of the country means.
   // Prefer the parcel in hand, fall back to what was stored with the record.
-  const explain = occExplain((par && par.occReason) || v.occReason,
-                             (par && par.servicer) || v.servicer);
+  const explain = occExplain((src && src.occReason) || (twin ? '' : v.occReason),
+                             (src && src.servicer) || (twin ? '' : v.servicer));
   /* Worked out from `extra`, which the record already carries — so a business still
      reads as a business tomorrow, with no new field on the record. */
-  const kindNow = propertyKind(COUNTIES.find(c => c.key === v.county), (par && par.extra) || v.extra);
+  const kindNow = propertyKind(COUNTIES.find(c => c.key === shownCounty), (src && src.extra) || v.extra);
   const notAHome = kindNow.resid === false
-                || ((par && par.occReason) || v.occReason) === 'notahome';
-  const kindLabel = kindNow.label || (par && par.occKind) || '';
-  const viaStatewide = v.county === 'ohio' || (par && par.fallback);
+                || ((src && src.occReason) || (twin ? '' : v.occReason)) === 'notahome';
+  const kindLabel = kindNow.label || (src && src.occKind) || '';
   $('dSub').innerHTML = `<span style="color:${ln.color};font-weight:800">${esc(ln.short)}</span> · `
-    + esc(v.owner || 'owner not listed') + ' · ' + esc((COUNTIES.find(c=>c.key===v.county)||{}).name || '?') + (viaStatewide ? '' : ' Co.')
-    + (viaStatewide ? `<div class="nagWarn" style="margin-top:8px">${fallbackNote(par || v)}</div>` : '')
+    + esc(shownOwner || 'owner not listed') + ' · '
+    + esc((COUNTIES.find(c=>c.key===shownCounty)||{}).name || '?') + (twin || !viaStatewide ? ' Co.' : '')
+    /* QUIET, at his word — a grey line under the name, not another yellow box. The yellow
+       one is replaced rather than kept: it says the record "does not publish an owner
+       name", which would be sitting directly under the owner's name. Both cannot be true
+       on one screen. What stays true and is worth saying is that the DOOR is still filed
+       against the statewide copy, because that is what the map colours and the export
+       carry — so the line says both halves. */
+    + (twin
+        ? `<div style="margin-top:6px;color:#93a6bb;font-size:12px;line-height:1.45">`
+          + `Owner and figures read from ${esc((COUNTIES.find(c=>c.key===twin.county)||{}).name || 'the county')} County just now. `
+          + `The door itself is still filed against the statewide record.</div>`
+        : viaStatewide ? `<div class="nagWarn" style="margin-top:8px">${fallbackNote(par || v)}</div>` : '')
     + (notAHome
         ? `<div style="margin-top:6px;color:#93c5fd;font-weight:700">🏢 Not a home${kindLabel ? ' — ' + esc(kindLabel) : ''}.</div>`
           + `<div style="margin-top:4px;color:#93a6bb;font-size:12px;line-height:1.45">${esc(occExplain('notahome'))}</div>`
@@ -4637,7 +4655,18 @@ function openDetail(visit, focusName) {
   renderWrongHouse(v);
   $('dName').value = v.name||''; $('dGoesBy').value = v.goesBy||'';
   $('dNameNote').textContent = nameIsFromDeed(v) ? 'This came off the county deed, not from the door.' : '';
-  renderPropPanel(withParcelStats(v, state.parcels.get(v.key)));
+  /* The figures too, off the county's record, when there is one for this ground.
+     A COPY, never the record itself. `withParcelStats` fills the blanks on whatever it is
+     handed and that is the right thing for a county-filed door — the figures it copies in
+     are that lot's own. Here they belong to a DIFFERENT record than the one filed, so
+     writing them onto this one would be exactly the silent rewrite this whole approach
+     exists to avoid. The panel reads them; the record keeps its blanks. */
+  const propPar = state.parcels.get(v.key);
+  const propTwin = (v.county === 'ohio' || (propPar && propPar.fallback))
+                     ? countyTwinFor(v, propPar) : null;
+  renderPropPanel(propTwin
+    ? withParcelStats({ ...v, val:null, sqft:null, saleTs:null, salePrice:null, extra:null }, propTwin)
+    : withParcelStats(v, propPar));
   renderRoofPanel(v);
   renderApptLink(v);
   $('dPhone').value = v.phone||'';
@@ -7085,7 +7114,7 @@ document.querySelectorAll('.dsecHead[data-msec]').forEach(b => {
 /* ---- what version is actually on the phone ----
    Matches the service worker cache name, so "did the update land" is answerable by
    looking rather than guessing. */
-const BUILD_VERSION = 'v25';
+const BUILD_VERSION = 'v26';
 const BUILD_DATE = '31 July 2026';
 function renderVersionStamp() {
   const el = $('versionStamp'); if (!el) return;
@@ -7371,6 +7400,38 @@ const yearsSince = ts => Math.floor((Date.now() - ts) / (365.25 * DAY));
    a map tap, has no value or floor area on it. The parcel is in hand either way,
    so fill the gaps from it rather than showing an empty panel. Display only: the
    record is not written back unless he saves it. */
+/* THE COUNTY'S RECORD FOR THE SAME GROUND AS THIS STATEWIDE ONE, if it is loaded.
+   His idea, and a better one than the repair button it replaces. A door filed against the
+   statewide copy carries no owner name and never will — the name is copied onto the record
+   at the moment he taps a door button and is never looked up again. So he stands at a
+   house with the owner's name printed on the lot right behind the panel, and the panel
+   says "owner not listed". Nothing is wrong with the data; the record is just a snapshot
+   from a moment when the wrong copy was loaded.
+   Rather than rewrite the record, READ the county's one and show that. Nothing is
+   repointed, nothing is merged, no old record is touched, and it works on records made
+   long before any of this was fixed.
+   Worked out ON DEMAND for the one house being opened, rather than read out of
+   `state.twinOf` — that map is only filled in for lots near his GPS, so a house he has
+   panned the big map over to would not be covered. This walks the loaded lots for the one
+   he is looking at, which is cheap for one house and correct everywhere.
+   `realTwinOf` does the deciding, so this inherits both of its guards: the statewide lot's
+   own centre must be inside its OWN outline first, and TWO county lots covering it means
+   no answer at all. A wrong pairing here would put a stranger's name in front of him as
+   fact, so "not sure" has to mean "say nothing". */
+function countyTwinFor(v, par) {
+  const p = par || (v && state.parcels.get(v.key));
+  if (!p || !p.fallback || !p.cen || !p.rings) return null;
+  const x = p.cen[0], y = p.cen[1];
+  const reals = [];
+  for (const q of state.parcels.values()) {
+    if (!q || q.fallback || !q.rings || !q.bbox) continue;
+    const b = q.bbox;
+    if (x < b[0] || x > b[2] || y < b[1] || y > b[3]) continue;   // cheap reject first
+    reals.push(q);
+  }
+  return realTwinOf(p, reals);
+}
+
 function withParcelStats(rec, p) {
   if (!rec || !p) return rec;
   if (rec.val == null && p.val != null) rec.val = p.val;
