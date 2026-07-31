@@ -1862,6 +1862,13 @@ const state = {
   started: false,
   wake: null,
   netErr: '',
+  /* A county service that ANSWERED and refused the query, as opposed to no signal. Kept
+     apart from netErr because the two send him to do completely different things. */
+  tileRefused: '',
+  /* county lot key -> the statewide copy of the same ground that is no longer offered.
+     Derived from the lots loaded right now, rebuilt as they load, never stored and never
+     backed up. It exists so a door filed against the copy is still found. */
+  twinOf: new Map(),
   paused: false,        // tracking suspended by the user
   fixes: [],            // recent raw GPS fixes, for smoothing
   still: false,         // standing rather than walking
@@ -2226,10 +2233,55 @@ const TILE = 0.006; // ~0.66 km lat, ~0.51 km lon at 40°N
 // 7: property class pulled in per county, so businesses stop reading as rentals (v11)
 const PARSE_V = 7;
 const tileKey = (c, lat, lon) => `v${PARSE_V}:${c.key}:${Math.floor(lat/TILE)}:${Math.floor(lon/TILE)}`;
+/* An EMPTY square is believed for a day and then asked again.
+   It is a CLAIM — "this county has nothing here" — not data, and until v25 the app could
+   not tell that claim apart from a county server refusing the query. A refusal is not
+   cached at all now, but a county that quietly returns nothing because a field name
+   changed under it looks exactly like open farmland, and no code can tell those two
+   apart. So an empty square gets an expiry and real lots never do.
+   THE COST IS BOUNDED ON BOTH SIDES, and the first version of this comment was wrong about
+   both of them. `state.tilesDone` holds one attempt per square per session — but the catch
+   used to clear that guard on a failed fetch, so in a dead zone an expired empty was
+   retried on every pass, sequentially, inside the GPS handler, rather than "nothing at
+   all". The guard is now held when we already had an empty for that square. And an empty
+   only expires for a county whose own bbox covers the point, so straying into Knox or
+   Morrow does not cost seven lookups a square, every day, to re-learn a fact that cannot
+   change. Both were found by review; neither was found by a check. */
+const EMPTY_TILE_MS = 24 * 3600 * 1000;
+/* Bump this string to make one build clear every square already saved as empty. */
+const EMPTY_PURGE_TAG = 'v25-refused-query';
 async function purgeStaleTiles() {
   try {
     const all = await DB.all('tiles');
     for (const t of all) if (!t.key.startsWith(`v${PARSE_V}:`)) await DB.del('tiles', t.key);
+    /* ONCE, ON THIS BUILD: drop every square saved as EMPTY by a build that could not tell
+       a refused query from a county with genuinely nothing in it. Those squares are why a
+       house in Powell reads "owner not listed · Ohio statewide" while its neighbour has an
+       owner: one bad answer, once, and that ground had no county data again for ever.
+       Deliberately NOT done by bumping PARSE_V, which would throw away every cached square
+       including the good ones — he would drive into a dead zone with nothing loaded at
+       all. This drops only squares that hold nothing, so nothing can be lost by it: the
+       worst case is one re-query of ground the county really is empty on. */
+    if (localStorage.getItem('emptyTilePurge') !== EMPTY_PURGE_TAG) {
+      /* THE TAG GOES DOWN FIRST. If a single delete below rejects, or storage is full when
+         this is written, the tag never lands and the purge runs again on EVERY launch —
+         wiping every legitimately empty square each time and defeating the day-long memory
+         for good. Marked first, and a purge that half-finishes is not worth repeating: the
+         squares it missed hold nothing, and the expiry re-asks them within a day anyway. */
+      try { localStorage.setItem('emptyTilePurge', EMPTY_PURGE_TAG); } catch (e) {}
+      for (const t of all) {
+        if (!t.key.startsWith(`v${PARSE_V}:`)) continue;
+        /* RE-READ BEFORE DELETING. `all` is a snapshot taken before the first loop, and
+           this runs at startup while the Start tap can already have fired: a square that
+           was empty when the snapshot was taken can have been re-asked and filled with
+           260 lots by the time we reach it, and deleting it on the strength of the stale
+           copy throws away ground he has just paid for — bare, next morning, in the dead
+           zone. The old comment claimed this "drops only squares that hold nothing", and
+           without this line that was not true. */
+        const cur = await DB.get('tiles', t.key).catch(()=>null);
+        if (cur && Array.isArray(cur.parcels) && !cur.parcels.length) await DB.del('tiles', t.key);
+      }
+    }
   } catch (e) {}
 }
 const tileBBox = (lat, lon) => {
@@ -2252,7 +2304,21 @@ async function fetchTile(c, lat, lon, silent) {
   state.tilesDone.add(key);
 
   const cached = await DB.get('tiles', key).catch(()=>null);
-  if (cached && cached.parcels) { cached.parcels.forEach(addParcel); return cached.parcels.length; }
+  let hadCachedEmpty = false;
+  if (cached && Array.isArray(cached.parcels)) {
+    /* Lots are kept for ever. An empty square is a claim with an expiry — see
+       EMPTY_TILE_MS. A missing timestamp counts as expired, so a square written by
+       anything that did not stamp it gets asked again rather than believed for ever. */
+    if (cached.parcels.length) { cached.parcels.forEach(addParcel); return cached.parcels.length; }
+    hadCachedEmpty = true;
+    if (cached.ts && Date.now() - cached.ts < EMPTY_TILE_MS) return 0;
+    /* AND ONLY FOR A COUNTY WHOSE GROUND THIS IS. `countiesFor` hands back all seven real
+       counties for a point inside none of them — Knox, Morrow, anywhere he strays — and
+       every square there is empty for all seven, for ever, correctly. Expiring those would
+       be seven lookups per square per day to re-learn a fact that cannot change. The
+       expiry is for a county that OUGHT to have lots here and did not answer with any. */
+    if (!inBBox(c, lat, lon)) return 0;
+  }
 
   const [w,s,e,n] = tileBBox(lat, lon);
   const fields = [c.pid, c.addr, ...c.owner, ...c.extra].filter(Boolean).join(',');
@@ -2263,16 +2329,44 @@ async function fetchTile(c, lat, lon, silent) {
   };
   if (!silent) { state.tilesLoading++; renderStrip(); }
   let out = [];
+  /* A REFUSED QUERY IS NOT AN EMPTY COUNTY, and until v25 this could not tell them apart.
+     An ArcGIS server that will not answer a query does NOT fail: it replies 200 with an
+     error object in the body. `res.json()` parses it happily, nothing throws, and the old
+     code fell out of the second attempt with `features: []` — then cleared the offline
+     warning and WROTE THAT EMPTY SQUARE TO THE PHONE. The record's timestamp was never
+     read by anything, so that square answered "no lots here" on every launch for ever,
+     and the only thing that could clear it was a change to PARSE_V in a later build.
+     The ground was left with no county data at all, so Ohio's statewide copy — which
+     publishes no owner name — became the only record there, and every door knocked on it
+     was filed against that. This is what emptied 187 Chasely Cir.
+     The connection test could not see it either: that asks for a COUNT, with no fields
+     and no geometry, at the middle of the county. This asks for nine things at his square.
+     Green there says the host answers the phone and nothing more. */
+  let refused = '';
+  const serverSaid = x => {
+    const e = x && x.error;
+    if (!e) return '';
+    const d = Array.isArray(e.details) && e.details.length ? ' — ' + e.details[0] : '';
+    return String(e.message || 'refused') + d;
+  };
   try {
+    let feats = null;
     let res = await fetch(`${c.url}/query?` + new URLSearchParams({...base, f:'geojson'}), {mode:'cors'});
-    let j = await res.json();
-    if (!j || !j.features) {
+    const gj = await res.json();
+    if (gj && Array.isArray(gj.features)) feats = gj.features;
+    else {
+      /* The geojson endpoint gave nothing usable. Some county services answer one format
+         and not the other, so the second attempt is a real second chance, not a formality. */
       res = await fetch(`${c.url}/query?` + new URLSearchParams({...base, f:'json'}), {mode:'cors'});
-      j = await res.json();
-      j = { features: (j.features||[]).map(f => ({ properties:f.attributes, geometry:{rings:f.geometry && f.geometry.rings} })) };
+      const raw = await res.json();
+      if (raw && Array.isArray(raw.features))
+        feats = raw.features.map(f => ({ properties:f.attributes, geometry:{rings:f.geometry && f.geometry.rings} }));
+      else
+        refused = serverSaid(raw) || serverSaid(gj) || 'the county service returned no lot list';
     }
+    const j = { features: feats || [] };
     const attrs = [];
-    for (const f of (j.features||[])) {
+    for (const f of (refused ? [] : j.features)) {
       const rings = esriToRings(f.geometry);
       if (!rings || !rings.length) continue;
       const a = f.properties || {};
@@ -2323,15 +2417,45 @@ async function fetchTile(c, lat, lon, silent) {
     });
 
     // put the owner's name on the house instead of the middle of the lot
-    try { attachHouses(out, await fetchBuildings(w, s, e, n)); }
+    /* Not on a refusal: `out` is empty, so there is nothing to attach a footprint to, and
+       it is a wasted round-trip per refused square per session on a phone in a truck. */
+    try { if (!refused) attachHouses(out, await fetchBuildings(w, s, e, n)); }
     catch (e) { /* footprints are a nicety; parcels still work without them */ }
 
-    state.netErr = '';
-    DB.put('tiles', {key, ts:Date.now(), parcels:out}).catch(()=>{});
+    if (!refused) {
+      state.netErr = '';
+      /* CLEARED BY A COUNTY, NEVER BY THE STAND-IN. This erased itself in the exact case
+         it exists for: Delaware refuses, the loop falls through to the statewide layer,
+         that succeeds, and the warning was wiped by the very fetch the refusal caused —
+         then wiped eight more times by the neighbour warm-up, which by then is warming
+         statewide tiles. The pill flashed for one fetch and was gone, and Diagnostics was
+         blank by the time he opened it. He would be looking at owner-less records with
+         nothing on screen saying why. */
+      if (!c.fallback) state.tileRefused = '';
+      DB.put('tiles', {key, ts:Date.now(), parcels:out}).catch(()=>{});
+    }
   } catch (err) {
-    state.tilesDone.delete(key);
+    /* NOT RETRIED WHEN WE ALREADY HELD AN EMPTY FOR THIS SQUARE. The catch clears the
+       once-per-session guard so a dead-zone square is tried again when signal returns —
+       right, and it was written before empty squares could expire. With the expiry, an old
+       empty falls through to the network, the fetch fails, the guard is cleared, and it is
+       retried on EVERY ensureParcels pass (every 60 m) and every map move, for ever,
+       sequentially, inside the GPS handler. The strip sticks on "loading lots…", which
+       also hides the offline pill, and the house card stops updating as he walks. v24 was
+       silent on that same ground because the empty short-circuited before the fetch.
+       Holding the guard puts that back exactly: one attempt this session, then the cached
+       empty answers, and the next app open tries again. */
+    if (!hadCachedEmpty) state.tilesDone.delete(key);
     state.netErr = (err && err.message) || 'network';
   }
+  /* A REFUSAL IS NOT WRITTEN DOWN, and it does not switch the warning off.
+     It also stays in `state.tilesDone`, so it is tried ONCE this session and not on every
+     pan: the server is up and will refuse again in milliseconds, so retrying is a cost
+     with no prospect of a different answer. The next time he opens the app it is asked
+     again from scratch. Not permanent, and not a hammering. That pair is the whole point:
+     the old code was permanent, and the obvious correction — retry always — would put a
+     failing query on every map movement. */
+  if (refused) state.tileRefused = `${c.name}: ${refused}`;
   out.forEach(addParcel);
   if (!silent) { state.tilesLoading--; renderStrip(); }
   return out.length;
@@ -2367,8 +2491,13 @@ function realParcelsInView(inView) {
 /* pointInRings, NOT a bounding box. That distinction is the entire lesson of the second
    attempt: a box round an L-shaped or diagonal lot covers a great deal of ground that
    the lot itself does not. */
-function shadowedByReal(p, reals) {
-  if (!p || !p.fallback || !p.cen || !p.rings) return false;
+function shadowedByReal(p, reals) { return !!realTwinOf(p, reals); }
+/* The county lot that is the SAME GROUND as this statewide one, or null.
+   Split out of shadowedByReal in v25 so that the labels and the choice of which house a
+   door is filed against can never drift apart — they are now literally the same question
+   asked once. The comment below is the whole safety of it and has not changed. */
+function realTwinOf(p, reals) {
+  if (!p || !p.fallback || !p.cen || !p.rings) return null;
   const x = p.cen[0], y = p.cen[1];
   /* THE POINT HAS TO BE INSIDE ITS OWN LOT FIRST, and this line is the whole safety of
      the thing. `ringsCentroid` is a vertex average, not an area centroid — on an
@@ -2382,13 +2511,158 @@ function shadowedByReal(p, reals) {
      it is not inside its own lot we simply do not know, and the answer to not knowing is
      to leave his label alone — he sees the doubling he already had, and nothing is
      silenced that should not be. */
-  if (!pointInRings(x, y, p.rings)) return false;
+  if (!pointInRings(x, y, p.rings)) return null;
+  /* MORE THAN ONE MATCH MEANS WE DO NOT KNOW WHICH. County layers are not always a clean
+     tiling: condominium and PUD units routinely share one identical polygon per unit, and
+     a lot re-platted since the statewide layer's 2023 snapshot can leave two county lots
+     over the same ground. Taking the first match would pick a unit by array order and
+     then carry that unit's owner, phone and roof onto a fresh record. Two matches, no
+     answer. Costs him the doubling he already had; the alternative costs him a stranger's
+     details presented as his own. */
+  let found = null;
   for (const r of reals) {
     const b = r.bbox;
     if (x < b[0] || x > b[2] || y < b[1] || y > b[3]) continue;   // cheap reject first
-    if (pointInRings(x, y, r.rings)) return true;
+    if (!pointInRings(x, y, r.rings)) continue;
+    if (found && found.key !== r.key) return null;
+    found = r;
   }
-  return false;
+  return found;
+}
+
+/* ---- v25 fault B: the county copy is the one a door gets filed against -------------
+   `recompute()` sorted the houses he might be standing at by distance and NOTHING ELSE.
+   Both copies of a house are in `state.parcels`, both cover the same ground, so for a
+   point inside the lot both are at distance 0 and the winner was decided by whichever
+   tile happened to load first. `mark()` then copies the county, the owner, the address
+   and the extras onto the record AT THAT MOMENT — it is a snapshot, it never re-reads —
+   so a door filed against the statewide copy says "owner not listed" for ever. That is
+   the photograph he sent from Powell.
+   Three things made it worse than a coin toss:
+     · standing still LOCKS IT IN. `heldKey` only gives way to a rival 6 m closer, twice
+       running, and the twins are 0–3 m apart. So once it settles on the statewide copy it
+       cannot move off while he stands there — which is exactly when he taps.
+     · a tap on the map hits the lot drawn LAST, usually the statewide one.
+     · "Wrong house" cycles to the twin, showing the IDENTICAL ADDRESS. He would confirm
+       believing nothing changed, and that path clears the deed name and can delete the
+       roof measurement. That was the most serious thing in the review.
+
+   WHAT THIS DOES: when a statewide lot and a county lot are the same ground, the
+   statewide one is not offered as the house a door is filed against. Nothing is deleted,
+   nothing stops being drawn, and no stored record is rewritten.
+
+   AND THE ONE CONDITION THE REVIEW INSISTED ON, which is what makes it safe: the copy is
+   only dropped when the county lot that shadows it IS ITSELF IN THE SAME LIST. No
+   replacement present, no dropping. Escalating a display test into one that decides where
+   a door is filed multiplies the cost of a false positive — for a label it is a missing
+   number, for this it is a door filed against a stranger with their owner and valuation
+   attached as fact. Requiring the replacement to be present makes it impossible to remove
+   the ONLY record for a house, including everywhere outside the seven counties, where the
+   statewide copy is all there is. */
+function dropTwins(list, getP, alsoReal) {
+  /* TWO PASSES, BECAUSE THE PAIRING IS NOT ALWAYS ONE-TO-ONE — and the first version of
+     this assumed it was. The statewide layer is a 2023 snapshot. A lot the county has
+     MERGED since then is two statewide records inside one county lot; a lot the county
+     has SPLIT is one statewide record across two. Condominium and PUD parcels are worse:
+     Ohio county layers routinely carry one identical polygon per unit, so every statewide
+     copy in the block matches the same first county lot.
+     Written one-pass, last-write-wins, that put a stranger's name, phone, notes, tags,
+     follow-up date, roof measurement and whole status log onto a fresh record through
+     mark()'s carry-forward, silently and as fact.
+     So: work out every pairing first, then ACT ONLY ON THE UNAMBIGUOUS ONES. Two statewide
+     copies claiming one county lot means we do not know which is which, and the answer to
+     not knowing on this project has cost three pulled attempts to learn: leave both alone.
+     He sees the doubling he already had, which is the outcome we can be sure about. */
+  const reals = [];
+  for (const x of list) { const p = getP(x); if (p && !p.fallback && p.rings && p.bbox) reals.push(p); }
+  /* County lots that are in front of him but not in THIS list. The repoint sheet is the
+     case: it holds the lot the record is filed on now separately, at the top and marked,
+     so that lot is plainly on screen and yet was not counted — which left the statewide
+     copy of that very lot in the list of places to move the door TO, showing the same
+     address. Still a closed set of lots he can see; nothing hypothetical is counted. */
+  if (alsoReal) for (const p of alsoReal) if (p && !p.fallback && p.rings && p.bbox) reals.push(p);
+  if (!reals.length) return list;
+
+  // pass one: who claims whom, and how many claim each
+  const pair = new Map();          // statewide key -> county parcel
+  const claims = new Map();        // county key -> how many statewide copies claim it
+  for (const x of list) {
+    const p = getP(x);
+    if (!p || !p.fallback) continue;
+    const twin = realTwinOf(p, reals);
+    if (!twin) continue;
+    pair.set(p.key, twin);
+    claims.set(twin.key, (claims.get(twin.key) || 0) + 1);
+  }
+
+  // pass two: act only where exactly one copy claims the lot
+  const out = [];
+  for (const x of list) {
+    const p = getP(x);
+    const twin = p ? pair.get(p.key) : null;
+    if (twin && claims.get(twin.key) === 1) {
+      /* Remembered, not discarded. A door he knocked before this build is filed against
+         the copy being dropped, and without this pairing the app would forget a house it
+         has plainly been to — the "already knocked" tag gone, and his name, phone, notes
+         and roof failing to travel to the next knock. Nothing is deleted; it is a lookup.
+         Both ways round, in one map: a key is either a county one or a statewide one and
+         never both, so there is no collision between the two directions. The county->copy
+         direction is REWRITTEN rather than added to, so a better answer worked out from a
+         fuller set of lots replaces an earlier guess instead of sitting behind it. */
+      state.twinOf.set(p.key, twin.key);
+      state.twinOf.set(twin.key, p.key);
+      continue;
+    }
+    /* Ambiguous, or not a twin at all. If this lot was paired earlier from a thinner set
+       of lots, that pairing is now known to be unsafe and is taken back. */
+    if (twin) { state.twinOf.delete(p.key); state.twinOf.delete(twin.key); }
+    out.push(x);
+  }
+  return out;
+}
+const pickP = x => x.p;
+
+/* The record for this house, wherever it happens to be filed — under the county lot, or
+   under the statewide copy this build has just stopped offering. READ ONLY. Nothing is
+   rewritten, nothing is merged, and the older record keeps colouring its own lot. */
+function visitForHouse(p, line) {
+  if (!p) return null;
+  const own = visitFor(p.key, line);
+  if (own) return own;
+  const twin = state.twinOf.get(p.key);
+  return twin ? visitFor(twin, line) : null;
+}
+
+/* Which lot a record STARTED FROM SCRATCH on this one should be filed against.
+   Both copies are still drawn on the map — a door already filed against the statewide one
+   has to keep colouring its lot, or ground he has walked reads as unwalked. But the copy
+   drawn LAST sits on top and takes the tap, and that is usually the statewide one. So a
+   tap that is about to create a NEW record uses the county lot for the same ground.
+   `hasRecord` is the whole of the exception: tapping a door he has already knocked opens
+   that door, on the lot it is actually filed against, untouched.
+   Pulled out of the map's click handler so it can be asked directly. A rule that decides
+   where a door is filed should not be reachable only by simulating a tap on a Leaflet
+   polygon — that is how it ends up with no check at all. */
+/* The record a tap on this lot should open, or nothing. Pulled out of the map's click
+   handler for the same reason as filedAgainst: a rule that decides whether he is looking
+   at a door he has already knocked, or at a blank sheet, should be answerable without
+   simulating a tap on a Leaflet polygon — that is how it ended up with no check on it.
+   visitForHouse, NOT visitFor, and this is the fault that would have cost him records.
+   `filedAgainst` sends a NEW record to the county lot; but where the door is filed against
+   the statewide copy, a bare lookup on the copy found nothing, so the tap opened a BLANK
+   sheet for a house he had plainly worked — and saving it wrote a SECOND record onto the
+   county lot. `claimSlot` keeps the newest, so his name, phone, notes and follow-up
+   dropped out of the customer list, out of the follow-ups due, out of the calendar export
+   and off the go-back route, surviving only in History, with the lot's colour changed
+   under him. Found by review. No check had it. */
+function tapRecordFor(p, alt) {
+  return visitForHouse(p, state.line) || alt || null;
+}
+
+function filedAgainst(p, hasRecord) {
+  if (hasRecord || !p || !p.fallback) return p;
+  const twin = state.twinOf.get(p.key);
+  return (twin && state.parcels.get(twin)) || p;
 }
 
 let lastTileCenter = null;
@@ -2438,7 +2712,11 @@ function recompute() {
     if (d <= 140) near.push({p, d});
   }
   near.sort((a,b) => a.d - b.d);
-  state.candidates = near.slice(0, 12);
+  /* The statewide copy of a house whose county lot is right here is not a house he can be
+     standing at — it is the same house twice. See dropTwins. The picker reads this list
+     too, so a copy he can never file against is also one he can never pick by hand and
+     then watch vanish on the next fix. */
+  state.candidates = dropTwins(near, pickP).slice(0, 12);
   // a manual house pick expires once you walk off or after two minutes,
   // so the very next door snaps automatically again
   if (state.manualKey && state.manualAt) {
@@ -2532,10 +2810,17 @@ function renderStrip() {
   /* The county name is not news — it is the same county all day, and it is on the
      details panel anyway. But this chip is also how a dead zone announces itself, so
      it stays and only speaks when it has something to say. */
-  const county = state.tilesLoading ? 'loading lots…' : state.netErr ? '⚠︎ offline' : '';
+  /* Offline and "the county turned the lookup down" are DIFFERENT, and saying the wrong
+     one is worse than saying nothing. He has five bars and 5G; being told he is offline
+     sends him looking for signal instead of telling him the county data is missing here
+     and the statewide stand-in is what he is being shown. Offline wins when both are true,
+     because no signal is the bigger fact. */
+  const county = state.tilesLoading ? 'loading lots…'
+               : state.netErr ? '⚠︎ offline'
+               : state.tileRefused ? '⚠︎ no county data' : '';
   $('countyPill').textContent = county;
   $('countyPill').classList.toggle('hide', !county);
-  $('countyPill').classList.toggle('warn', !!state.netErr);
+  $('countyPill').classList.toggle('warn', !!(state.netErr || state.tileRefused));
   /* The named patch he is in. Hidden when he is not in one, and stood down while the
      county chip has something urgent to say, so the strip never grows a row for this. */
   const inArea = state.pos ? areasAt(state.pos.lat, state.pos.lon) : [];
@@ -2555,7 +2840,8 @@ function renderHouse() {
   const c = current();
   if (!c) {
     $('addr').textContent = state.parcels.size ? 'No lot nearby' : 'Loading lot lines…';
-    $('owner').textContent = state.netErr ? 'No signal — parcels unavailable here' : '—';
+    $('owner').textContent = state.netErr ? 'No signal — parcels unavailable here'
+                           : state.tileRefused ? 'The county turned this lookup down' : '—';
     $('alreadyTag').classList.add('hide'); $('rentTag').classList.add('hide');
     $('staleTag').classList.add('hide'); $('propLine').classList.add('hide');
     drawMini(); return;
@@ -2574,8 +2860,13 @@ function renderHouse() {
   // a record off the statewide layer says so, with its own date, every time
   $('staleTag').classList.toggle('hide', !p.fallback);
   if (p.fallback) $('staleTag').textContent = `📋 statewide record${p.currentTo ? ' · ' + fallbackAge(p) : ''}`;
-  const v = visitFor(p.key);
-  const other = visitFor(p.key, state.line === 'roof' ? 'appraisal' : 'roof');
+  /* visitForHouse, not visitFor: a door he knocked before this build — or in a moment when
+     only the statewide copy was loaded — is filed against that copy, and this build no
+     longer offers it. Looking only under the county key would make the app forget a house
+     it has plainly been to, and the tag going quiet at a door he worked yesterday is a
+     good way to knock it twice. Read only. */
+  const v = visitForHouse(p);
+  const other = visitForHouse(p, state.line === 'roof' ? 'appraisal' : 'roof');
   const tag = $('alreadyTag');
   if (v) {
     tag.classList.remove('hide');
@@ -3008,7 +3299,15 @@ async function mark(status) {
     name:'', goesBy:'', nameFromOwner:false, phone:'', email:'', notes:'', tags:[], follow:'',
   };
   // carry contact details forward, but only from the same book of business
-  const prev = state.visits.get(vKey(p.key, state.line));
+  /* The house's last record, wherever it is filed. Before v25 this looked only under the
+     lot he is standing at, so a door filed against the statewide copy — which is what
+     happened whenever that copy loaded first — carried NOTHING forward on the next knock:
+     his name for the man, the phone number, the notes, the tags, the follow-up date and
+     the roof measurement all failed to travel, silently. They were never deleted; they
+     were attached to a lot the app had stopped offering. This finds them.
+     It reads. It does not move or merge anything, and the older record keeps its place in
+     History and keeps colouring its own lot. */
+  const prev = visitForHouse(p, state.line);
   if (prev) { v.name=prev.name; v.goesBy=prev.goesBy||''; v.nameFromOwner=!!prev.nameFromOwner;
               v.phone=prev.phone; v.email=prev.email; v.notes=prev.notes; v.tags=prev.tags||[]; v.follow=prev.follow||''; v.prevId=prev.id;
               /* The roof is a property of the BUILDING, so it carries forward like the
@@ -3634,7 +3933,13 @@ function rpNear(v) {
     if (d <= REPOINT_RADIUS) out.push({ p, d });
   }
   out.sort((x, y) => x.d - y.d);
-  return { a, here, list: out.slice(0, REPOINT_MAX) };
+  /* THE MOST SERIOUS ONE. Without this, "Wrong house" offers the statewide twin of the
+     house the door is already on, showing the IDENTICAL ADDRESS — he confirms believing
+     nothing changed, and repointRecord clears the deed name and can delete the roof
+     measurement. The lot it is filed against NOW is held separately in `here` and is
+     never in this list, so it cannot be dropped by mistake: moving a door BACK off a
+     statewide copy stays possible, which is the whole point of the repair. */
+  return { a, here, list: dropTwins(out, pickP, here ? [here.p] : []).slice(0, REPOINT_MAX) };
 }
 
 /** The lot a point falls inside, if the app holds one. */
@@ -4271,7 +4576,13 @@ function openDetail(visit, focusName) {
     const c = current();
     v = state.lastVisitId ? state.visitLog.find(x => x.id === state.lastVisitId) : null;
     if (c && (!v || v.key !== c.p.key)) {
-      const existing = visitFor(c.p.key);
+      /* visitForHouse, or the Details button contradicts the card directly above it.
+         The card says "Roofing: Talked · 3 days ago" — it uses visitForHouse now — and
+         this used the bare lookup, so at a house whose only record is on the statewide
+         copy he tapped Details and got an EMPTY sheet with the status pre-set. His notes
+         and phone number would look deleted, and re-typing them makes a second record for
+         one house. */
+      const existing = visitForHouse(c.p);
       v = existing || null;
       if (!v) {
         // let them add notes before ever tapping a status
@@ -5207,11 +5518,28 @@ function refreshMapLayers() {
         fillColor: col, fillOpacity: v ? .55 : (mapOpts.sat ? .04 : .10),
       });
       poly.on('click', () => {
-        const ex = visitFor(p.key, state.line) || alt;
-        openDetail(withParcelStats(ex || { id:'v'+Date.now()+Math.random().toString(36).slice(2,6), key:p.key, county:p.county,
-          pid:p.pid, status:'noanswer', line:state.line, ts:Date.now(), lat:p.cen[1], lon:p.cen[0], acc:0, dist:0,
-          owner:p.owner, addr:p.addr, extra:p.extra, occ:p.occ||null, mail:p.mail||'',
-          name:'',goesBy:'',nameFromOwner:false,phone:'',email:'',notes:'',tags:[],follow:'', _new:true }, p));
+        /* visitForHouse, NOT visitFor. This is the fault that would have cost him records.
+           `filedAgainst` below sends a NEW record to the county lot — but if the door he
+           knocked is filed against the statewide copy, a bare `visitFor(p.key)` on the
+           copy finds nothing, so the tap opened a BLANK sheet for a house he had plainly
+           worked, and saving it wrote a second record onto the county lot. `claimSlot`
+           keeps the newest, so his name, phone, notes and follow-up dropped out of the
+           customer list, out of the follow-ups due, out of the calendar export and off the
+           go-back route — surviving only in History, with the lot's colour changed under
+           him. Found by review, not by any check. */
+        const ex = tapRecordFor(p, alt);
+        /* BOTH copies of a lot are still drawn, deliberately — a door already filed
+           against the statewide one must keep colouring its own lot, or ground he has
+           walked reads as unwalked. But the copy drawn LAST sits on top and takes the
+           tap, and that is usually the statewide one. So when the tap lands on a copy
+           with no record of its own and the county lot for the same ground is loaded, the
+           record he is about to start is filed against the COUNTY one. An existing record
+           is never redirected: tapping a door he has knocked opens that door. */
+        const f = filedAgainst(p, !!ex);
+        openDetail(withParcelStats(ex || { id:'v'+Date.now()+Math.random().toString(36).slice(2,6), key:f.key, county:f.county,
+          pid:f.pid, status:'noanswer', line:state.line, ts:Date.now(), lat:f.cen[1], lon:f.cen[0], acc:0, dist:0,
+          owner:f.owner, addr:f.addr, extra:f.extra, occ:f.occ||null, mail:f.mail||'',
+          name:'',goesBy:'',nameFromOwner:false,phone:'',email:'',notes:'',tags:[],follow:'', _new:true }, f));
       });
       pl.addLayer(poly);
       /* A soft wash over the lot, not a ring around it. Checked against his own street:
@@ -6757,7 +7085,7 @@ document.querySelectorAll('.dsecHead[data-msec]').forEach(b => {
 /* ---- what version is actually on the phone ----
    Matches the service worker cache name, so "did the update land" is answerable by
    looking rather than guessing. */
-const BUILD_VERSION = 'v24';
+const BUILD_VERSION = 'v25';
 const BUILD_DATE = '31 July 2026';
 function renderVersionStamp() {
   const el = $('versionStamp'); if (!el) return;
@@ -8463,6 +8791,11 @@ function renderDiag() {
     state.heading == null ? 'No compass' : `Facing ${Math.round(state.heading)}° (${state.headingSrc})`,
   ];
   if (state.netErr) rows.push(`Last network error: ${esc(state.netErr)}`);
+  /* The county's OWN words, verbatim. This is the one line that tells the difference
+     between "the tower is gone" and "Delaware renamed a field and every lookup here has
+     been quietly failing" — and the connection test above cannot show it, because it
+     sends a different, much simpler query at the middle of the county. */
+  if (state.tileRefused) rows.push(`County service refused: ${esc(state.tileRefused)}`);
   $('diag').innerHTML = rows.join('<br>');
 }
 
@@ -9043,10 +9376,33 @@ function renderCrm() {
      rather than replacing them: the automatic name is the street or the town, and a
      patch he has named by hand is a different question, not a better answer to the
      same one. */
-  if (state.areas.length) {
-    const nh = document.createElement('div');
+  /* ONE ROW, MADE ONCE AND REUSED. It used to be built with createElement and inserted
+     after the filter row on EVERY render, and nothing ever took the old one away. Every
+     chip on this panel calls renderCrm(), so every tap left another complete copy of the
+     row on screen — each copy frozen showing the selection as it stood when it was made.
+     Six taps, six rows, and tapping "All my areas" to clear it added a seventh. It read
+     as a filter that could not be cleared. The filter was clearing correctly every time;
+     the screen was lying about it.
+     Reported from the field 2026-07-31. Present since v10 (`d92a668`), when named areas
+     were added — `crmChips`, `crmSort` and `fh` above are all emptied and refilled, and
+     this row was the one that was not. It is now the same shape as the others: found by
+     id, emptied, refilled, and HIDDEN rather than removed when there is nothing to put in
+     it, so its position never has to be worked out twice.
+     The first version also tested `isConnected` here, on the reasoning that an id lookup
+     could hand back a detached node. It cannot: `$` is getElementById, which searches the
+     document tree only, so anything it returns is by definition in the document. The test
+     was harmless and the REASON GIVEN FOR IT WAS FALSE, which is worse than useless — the
+     next person reads it and believes the file behaves in a way it does not. Removed. */
+  let nh = $('crmNamedRow');
+  if (!nh) {
+    nh = document.createElement('div');
+    nh.id = 'crmNamedRow';
     nh.className = 'chips'; nh.style.marginTop = '6px';
     fh.parentElement.insertBefore(nh, fh.nextSibling);
+  }
+  nh.innerHTML = '';
+  nh.classList.toggle('hide', !state.areas.length);
+  if (state.areas.length) {
     mkChip(nh, 'named:', 'All my areas', !crmNamed, () => { crmNamed = ''; renderCrm(); });
     state.areas.forEach(a =>
       mkChip(nh, 'named:'+a.id, '\u{1F4CD} ' + a.name, crmNamed === a.id, () => { crmNamed = a.id; renderCrm(); }));
@@ -9982,11 +10338,61 @@ function findLocal(q) {
     The appointment form has no map to take a centre from, so the point is passed in
     rather than read off window._map. The big map passes its centre; the form passes
     where he is standing. */
+/* EVERY COUNTY HE WORKS, NOT JUST THE ONE HE IS STANDING IN.
+   This used to be `countiesFor(lat, lon)[0]`, and `countiesFor` narrows to the county
+   whose bbox contains the point — so searching an address was silently limited to wherever
+   his GPS happened to be. Reported from the road: he was out of the area and could not
+   look up a house in the county he was going to.
+   All seven are asked at once and the answers merged. Ordered by the county he is in
+   first, then by distance, so local results still come out on top and a search from
+   Dublin does not lead with Circleville. Each row already carries the county's name, and
+   renderFind prints it as a tag, so two houses with the same number on the same street
+   name in different counties are told apart on sight.
+   `allSettled`: one county's service being down or slow must not take the search with it,
+   which is the whole reason the old single-county version failed quietly rather than
+   loudly. A county that answers nothing and a county that refuses look the same from here
+   — that distinction is fetchTile's job, not this one's. */
 async function findRemoteAt(q, lat, lon, signal) {
-  const c = countiesFor(lat, lon)[0];
-  if (!c) return [];
   const needle = findNorm(q).replace(/'/g, "''");
   if (needle.length < 3) return [];
+  const real = COUNTIES.filter(c => !c.fallback);
+  if (!real.length) return [];
+  const mid = c => [(c.bbox[0]+c.bbox[2])/2, (c.bbox[1]+c.bbox[3])/2];
+  const list = real.slice().sort((a, b) => {
+    const ia = inBBox(a, lat, lon) ? 0 : 1, ib = inBBox(b, lat, lon) ? 0 : 1;
+    if (ia !== ib) return ia - ib;
+    const [ax, ay] = mid(a), [bx, by] = mid(b);
+    return haversine(lat, lon, ay, ax) - haversine(lat, lon, by, bx);
+  });
+  /* One slow county must not hold the other six. The fetch is left to finish or be
+     aborted by the next keystroke; it simply stops being waited on. */
+  const capped = p => Promise.race([p, new Promise(r => setTimeout(() => r([]), 8000))]);
+  const settled = await Promise.allSettled(
+    list.map((c, i) => capped(findInCounty(c, needle, signal)).then(rows => ({ i, rows }))));
+  if (settled.every(s => s.status === 'rejected')) {
+    /* Every one of them failed. That is a real failure and the caller must be told, or an
+       outage reads as "no such address". */
+    throw (settled[0] && settled[0].reason) || new Error('no county answered');
+  }
+  const seen = new Set(), out = [];
+  for (const s of settled) {
+    if (s.status !== 'fulfilled') continue;
+    for (const row of s.value.rows) {
+      if (seen.has(row.key)) continue;
+      seen.add(row.key);
+      out.push({ ...row, rank: s.value.i });
+    }
+  }
+  return out.sort((a, b) => {
+    if (a.rank !== b.rank) return a.rank - b.rank;
+    const na = parseInt(a.addr, 10), nb = parseInt(b.addr, 10);
+    if (isFinite(na) && isFinite(nb) && na !== nb) return na - nb;
+    return a.addr.localeCompare(b.addr);
+  }).slice(0, 12);
+}
+
+/** one county, asked by address. */
+async function findInCounty(c, needle, signal) {
   const fields = [c.pid, c.addr, ...c.owner].filter(Boolean).join(',');
   const params = {
     where: `UPPER(${c.addr}) LIKE '%${needle}%'`,
@@ -10015,7 +10421,8 @@ async function findRemoteAt(q, lat, lon, signal) {
   }
   return out;
 }
-/** the big map's version: the county comes from whatever it is looking at */
+/** the big map's version: ordered from whatever the map is looking at, but every county
+    he works is asked either way — see findRemoteAt. */
 function findRemote(q, signal) {
   if (!window._map) return Promise.resolve([]);
   const c0 = window._map.getCenter();
@@ -10075,11 +10482,11 @@ function runFind() {
       if ($('findInput').value !== q) return;                 // he kept typing
       const have = new Set(local.map(r => findNorm(r.addr)));
       const merged = local.concat(remote.filter(r => !have.has(findNorm(r.addr))));
-      renderFind(merged.slice(0, 14), merged.length ? '' : 'No match in this county.');
+      renderFind(merged.slice(0, 14), merged.length ? '' : 'No match in any of your seven counties.');
     } catch (e) {
       if (e.name === 'AbortError') return;
       if (!local.length) renderFind([], navigator.onLine
-        ? 'The county service did not answer. Streets already loaded can still be searched.'
+        ? 'No county service answered. Streets already loaded can still be searched.'
         : 'No signal, so only streets already loaded can be searched.');
     } finally { findAbort = null; }
   }, 280);
@@ -10493,7 +10900,10 @@ function lotsNear(lat, lon, n, maxM) {
     if (d <= lim) near.push({ p, d });
   }
   near.sort((a, b) => a.d - b.d);
-  return near.slice(0, n || 5);
+  /* Same rule as the door list. The sort screen writes `m.key` and `m.county` onto a
+     scout mark from whatever is picked here, so two identical address buttons in the
+     shortlist is the same misfiling in a different coat. */
+  return dropTwins(near, pickP).slice(0, n || 5);
 }
 /* Which side of the truck a lot was on. Positive turn = to his right. */
 function sideOfMark(m, p) {

@@ -4,7 +4,7 @@
    Parcel queries are network-first with a cache fallback, so a street you
    have already walked still shows its lot lines in a dead zone. */
 
-const SHELL = 'canvass-shell-v24';
+const SHELL = 'canvass-shell-v25';
 const TILES = 'canvass-tiles-v1';
 const DATA  = 'canvass-data-v1';
 
@@ -26,6 +26,75 @@ const EXTRA_FILES = [
 const SHELL_FILES = CORE_FILES.concat(EXTRA_FILES);
 
 const isShellCache = k => k.startsWith('canvass-shell-');
+
+/* THE SHELL HOLDS ONE ENTRY PER FILE, FILED UNDER ITS PLAIN ADDRESS.
+   The LOOKUP has always matched with {ignoreSearch:true}, which is right — a reload
+   carrying a cache-buster still finds the cached copy, and that is what lets the app open
+   with no signal. The STORE did not match it: `c.put(req, …)` filed the response under
+   the full address, question mark and all. So every load of `index.html?anything` added
+   ANOTHER ~690 KB copy that nothing would ever look up by name and nothing would ever
+   remove. Four verification fetches during one deploy left about 2 MB of duplicates in
+   one browser, and it is invisible from inside the app, because the lookup ignores the
+   query string and answers out of the first entry regardless.
+
+   THE FIX IS TO STORE NOTHING FOR A CACHE-BUSTED LOAD, and the first attempt at it was
+   worse than the bug. Filing the refreshed copy under the plain address does stop the
+   duplicates — and it also turns a write that used to land on an inert junk key into a
+   write straight over the live copy of index.html. The load used to verify a deploy is
+   exactly that shape, and it is made at the one moment the server is least trustworthy:
+   `_PROGRESS.md` has GitHub's edge serving the old build for four minutes after a push
+   with the deployments API already reporting success. That would have left a phone
+   opening the wrong build in a dead zone, permanently, with the cache marked complete and
+   every check reporting healthy. Two review agents found it independently.
+   So: a plain load refreshes the shell, exactly as it always has. A cache-busted load is
+   served from the cache and stores nothing at all. No duplicates, and the live copy is
+   only ever replaced by the same request that replaced it before this change.
+
+   `bareKey(u) === u` is the test for "no query string", and it is written that way rather
+   than as `!new URL(u).search` on purpose: a URL ending in a bare `?` has an EMPTY search
+   and is still a distinct cache key, so the obvious test lets that one shape through.
+
+   Why `trim()` is not simply pointed at this cache, and the first version of this comment
+   had the reason WRONG — it said the oldest entry is index.html. It is not. The precache
+   runs `Promise.allSettled`, so entries land in completion order, and index.html at
+   690 KB is among the LAST to arrive, not the first; a background refresh then moves it
+   later still. The real reason is better: everything in this cache is a file the app
+   cannot open without, so a size cap on it is a cap on whether the app opens, and
+   "oldest" here means "longest since it was successfully refreshed" — which is precisely
+   the file that failed to come down in a dead zone. Bounding the cache by what may be
+   stored, rather than by count, is the right instrument. */
+const bareKey = u => {
+  try { const x = new URL(u); return x.origin + x.pathname; } catch (err) { return u; }
+};
+
+/* A RESPONSE THAT ARRIVED BY REDIRECT CANNOT BE SERVED TO A NAVIGATION.
+   The browser rejects it outright — the app does not open, every time, with signal or
+   without. `./` is precached, and a host that redirects `/` to `/index.html` is an
+   ordinary hosting change; `c.add` follows the redirect and stores what it landed on,
+   redirect flag and all. Harmless today only because `start_url` is `./index.html`, so
+   nothing navigates to `./`. One hosting change away from the app never opening again.
+   Rebuilding the response around the same body, status and headers clears the flag.
+   Used by the precache and by the carry-over in activate. The background refresh does not
+   use it — it declines to store a redirected response at all, which is the conservative
+   half of the same question: the precache has already dealt with the legitimate case, and
+   stripping the flag off a runtime response would make a redirect the app never asked for
+   servable to a navigation.
+   `res` is CLONED before its body is read. Reading it directly and then handing `res`
+   back from the catch returns a response whose body is already used, and the caller's
+   `c.put` rejects on it — so the guard that reads as "leave that one as it came" would
+   quietly have stored nothing at all.
+   `content-encoding`, `content-length` and `content-range` are dropped: the body here has
+   already been decoded, and carrying a header that says otherwise onto it is a mismatch
+   waiting for a browser that trusts it. */
+async function unredirected(res) {
+  if (!res || !res.redirected) return res;
+  try {
+    const copy = res.clone();
+    const h = new Headers(res.headers);
+    h.delete('content-encoding'); h.delete('content-length'); h.delete('content-range');
+    return new Response(await copy.blob(), { status: res.status, statusText: res.statusText, headers: h });
+  } catch (err) { return res; }
+}
 
 /* A SHELL THAT FINISHED INSTALLING SAYS SO, IN WRITING.
    Without this there is no way to tell a complete shell from the wreckage of an install
@@ -76,6 +145,17 @@ self.addEventListener('install', e => {
          in the working rules for this reason. */
       throw new Error('shell incomplete, install refused: ' + missed.join(', '));
     }
+    /* Strip the redirect flag off anything that came back through one. CORE only: these
+       are the app's own files and any of them can be the target of a navigation. Leaflet
+       is script and stylesheet — a redirected response is served to those without
+       complaint, and unpkg does redirect. Each file is guarded on its own, because this
+       is tidying, and tidying must never be the reason a complete shell is refused. */
+    for (const f of CORE_FILES) {
+      try {
+        const hit = await c.match(f);
+        if (hit && hit.redirected) await c.put(f, await unredirected(hit));
+      } catch (err) { /* leave that one as it came; the shell is still complete */ }
+    }
     await Promise.allSettled(EXTRA_FILES.map(f => c.add(new Request(f, {cache:'reload'}))));
     /* Marked once the app's own files are all in. Leaflet is deliberately not part of
        this test: a shell without it still opens and still works the doors. */
@@ -102,6 +182,52 @@ self.addEventListener('activate', e => {
          `caches.keys()` comes back in CREATION order, not sorted. */
       const olderShells = byNewest(keys.filter(k => isShellCache(k) && k !== SHELL));
 
+      /* FOLD AWAY DUPLICATES A PREVIOUS BUILD LEFT IN THIS CACHE.
+         BE EXACT ABOUT WHAT THIS DOES AND DOES NOT REACH. It opens SHELL and nothing
+         else, so it touches only the cache this build is installing into. On the ordinary
+         deploy that makes it a no-op: SHELL is brand new, the precache writes plain keys,
+         and the bloated old shell — the one holding the ~2 MB — is reclaimed whole by
+         `caches.delete` further down, which is code that was already here. The first
+         version of this comment claimed it also cleaned up the ONE old shell kept as a
+         lifeboat. It does not, and it deliberately will not: a lifeboat is only kept when
+         this install came up SHORT, which makes it the only shell on the phone that can
+         open the app. Tidying inside it is exactly the class of clever housekeeping that
+         destroyed data three times in round eleven. Its duplicates cost storage and stay.
+         What is left for this loop is the build that ships without bumping the cache name,
+         where SHELL is the same cache it has always been, duplicates and all — and one
+         migration off a build made before this change. From v25 on, nothing writes a
+         query-keyed entry, so it finds nothing.
+         It runs before the carry-over and the completeness proof so that every step after
+         it reads plain keys instead of duplicates. That ordering is tidiness, NOT safety,
+         and it is worth being exact about which is which: the safety is one line, and it
+         is the `preserved` flag below. Nothing is deleted until a plain-address copy is
+         confirmed to exist. When the copy cannot be made — a phone at its storage limit —
+         the duplicate is left exactly where it is. That costs storage. Deleting it would
+         cost the file.
+         Measured, not assumed: moving this block below the completeness proof changes the
+         outcome of none of the service-worker checks. It is written down because a
+         comment claiming an ordering is load-bearing, when nothing can tell, is how the
+         wrong thing survives the next edit. */
+      try {
+        for (const r of await c.keys()) {
+          const bare = bareKey(r.url);
+          /* Not `!new URL(r.url).search`: a URL ending in a bare `?` has an empty search
+             and is still a separate cache key, so that test leaves the duplicate behind.
+             An address that will not parse comes back unchanged and is skipped. */
+          if (bare === r.url) continue;
+          let preserved = false;
+          try {
+            if (await c.match(bare)) preserved = true;
+            else {
+              const hit = await c.match(r);
+              if (hit) { await c.put(bare, await unredirected(hit.clone())); preserved = true; }
+              else preserved = true;   /* nothing readable under it to lose */
+            }
+          } catch (err) { preserved = false; }
+          if (preserved) { try { await c.delete(r); } catch (err) {} }
+        }
+      } catch (err) { /* could not list the shell; the steps below still run */ }
+
       /* Anything this install could not get, taken out of a shell it is replacing. */
       for (const f of SHELL_FILES) {
         try {
@@ -109,7 +235,10 @@ self.addEventListener('activate', e => {
           for (const k of olderShells) {
             const old = await caches.open(k);
             const hit = await old.match(f, {ignoreSearch:true});
-            if (hit) { await c.put(f, hit.clone()); break; }
+            /* Cleaned on the way in. A shell built before this change can be holding a
+               redirected copy of './', and carrying it forward would carry the fault
+               forward with it, into the shell that is about to become the only one. */
+            if (hit) { await c.put(f, await unredirected(hit.clone())); break; }
           }
         } catch (err) { /* this one file could not be carried; the rest still can */ }
       }
@@ -248,7 +377,19 @@ self.addEventListener('fetch', e => {
   e.respondWith((async () => {
     const c = await caches.open(SHELL);
     const hit = await c.match(req, {ignoreSearch:true});
-    const net = fetch(req).then(res => { if (res.ok) c.put(req, res.clone()); return res; }).catch(() => null);
+    /* THREE CONDITIONS BEFORE ANYTHING IS WRITTEN BACK, and each one is load-bearing.
+       `res.ok` — an error page is not the app.
+       `bareKey(url) === url` — no query string. This is the whole cure for the cache
+       growing without limit, and it is also what keeps a cache-busted load from writing
+       over the live copy of index.html. A cache-busted load is answered out of the cache
+       and stores nothing.
+       `!res.redirected` — a redirected response is ambiguous at runtime. The precache has
+       already handled the legitimate case, and laundering a redirect the app never asked
+       for into a copy servable to a navigation is not a trade worth making. */
+    const net = fetch(req).then(res => {
+      if (res.ok && !res.redirected && bareKey(url) === url) refreshShell(c, req, res.clone());
+      return res;
+    }).catch(() => null);
     if (hit) return hit;
     const res = await net;
     if (res) return res;
@@ -257,6 +398,35 @@ self.addEventListener('fetch', e => {
     return (await olderShellMatch(req)) || new Response('Offline', {status:503});
   })());
 });
+
+/* The background refresh. Deliberately not awaited — the answer has already gone back to
+   the page — so it must swallow its own failures. A phone at its storage limit rejects on
+   `put`, and an unhandled rejection there surfaces as a page error for a request that was
+   served perfectly well out of the cache. v24 had the bare `c.put` and that rejection.
+   The REQUEST is passed, not a string built from its address. A request carries the
+   headers an entry is matched against when the response names any of them in `Vary`, and
+   a key built from a string carries none. GitHub Pages sends `Vary: Accept-Encoding`
+   today, which is a forbidden header name and appears on neither side, so it matches
+   either way — but a host that added `Vary: Accept` tomorrow would stop a string-keyed
+   entry ever matching a navigation, and this is the only path that can re-store one under
+   the real request. Keeping it that way is what leaves the shell able to heal itself.
+   BE STRAIGHT ABOUT WHERE THAT IS NOT TRUE: the fold in `activate` writes `c.put(bare, …)`
+   with a plain string, because folding a duplicate means writing it under a DIFFERENT
+   address from the one the request names, and there is no request for that address to
+   borrow. It is a migration path, it runs on duplicates only, and the first plain load
+   with signal re-stores the file under the real request through this function. Said here
+   because the sentence above, left alone, reads as a rule the file keeps everywhere. It
+   does not.
+   NOTHING IS STORED FOR A CACHE-BUSTED LOAD, and that gives up one thing v24 had by
+   accident. A shell that was somehow missing index.html used to be healed by the next
+   cache-busted load with signal, because the entry it left behind was found by the
+   {ignoreSearch:true} lookup. That is gone. It is the price of not writing a stale edge
+   over the live copy, it is the right way round, and the case is close to unreachable in
+   any event — an install that fails is thrown away by the browser and the previous worker
+   carries on with its complete cache. Written down so nobody rediscovers it as a bug. */
+function refreshShell(c, req, res) {
+  (async () => { await c.put(req, res); })().catch(() => {});
+}
 
 async function trim(name, max) {
   const c = await caches.open(name);
