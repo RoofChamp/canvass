@@ -846,6 +846,18 @@ select{min-height:44px}
     <button class="chip" id="mkSelNone">Clear selection</button>
   </div>
   <div id="marksBody"></div>
+  <!-- Send, above Delete, and deliberately OUTSIDE #mkDangerWrap. That wrap is hidden
+       until something is ticked, so a Send button parked inside it would not exist on the
+       ordinary path — which is the path he asked for. It stays above the destructive
+       button so the last thing on the screen is still the one that destroys.
+       THE 18px OF PADDING IS LOAD-BEARING. With the 4px it was built with, Send sat
+       fifteen pixels above Delete — and the note on the danger wrap below says in as many
+       words that a button must not be put beside the one that destroys. Eighteen here,
+       plus the wrap's own border and the delete button's own 10px margin, is 29px of
+       clear space. Caught by review. -->
+  <div id="mkExportWrap" style="padding:0 12px 18px">
+    <button class="ghost" id="mkExport"><span class="emo">📤</span> <span data-lbl="lbl.mx.open">Send this list…</span></button>
+  </div>
   <!-- Under the list, and only once something is ticked. Kept well clear of "Clear
        selection": one button that unticks and one that destroys, side by side, is the
        accident the schedule screen was already built to avoid. -->
@@ -1280,6 +1292,52 @@ select{min-height:44px}
   </div>
 </div>
 
+<!-- ============ send the scouted list ============
+     His ask, twice, in his own words: he could not get his scouted houses off the phone.
+     Verified before it was built — buildCsv and buildGeo both read visitsFor(), which is
+     DOORS. state.marks was in neither, so the only file that held a mark was the backup.
+
+     ONE DOOR. He was offered a button on the Export screen as well, was told a real
+     second copy there cannot see the ticks and would therefore build a different file
+     from the same button, and RULED that the Export screen is left alone entirely.
+     #exportSheet is not touched by this feature. Do not add a button there without
+     asking him again.
+
+     ONE SCOPE. Everything on this sheet — every count, every button face, the preview and
+     all three files — reads marksInScope() and nothing else. That is visibleMarks(), the
+     same definition the list, Select all and the delete button already share.
+
+     EVERY NODE HERE IS BUILT ONCE AND ONLY EVER RETEXTED OR HIDDEN. renderExport()
+     rebuilds its chips with innerHTML on every pass; that pattern is deliberately NOT
+     copied, because a chip rebuilt under his finger swallows the tap that caused it —
+     which is exactly how `put this back` lost its first tap last round.
+
+     NOTHING HERE CARRIES `why`. wireExplainers() sweeps the document and folds every
+     .why behind a "? What this does" pill, and the two lines on this sheet that must be
+     read — the count, and the line saying the ticks have won — would have been hidden. -->
+<div id="mxSheet" class="sheet hide">
+  <div class="sheetBody">
+    <div class="sheetHead"><h2 id="mxTitle" data-lbl="lbl.mx.title">Send this list</h2><button class="x" data-close="mxSheet">Close</button></div>
+    <div class="sheetScroll">
+      <label class="f">Which dates</label>
+      <div class="chips" id="mxRange"></div>
+      <!-- Only speaks when the ticks have taken over. Fixed wording: it contains a count,
+           and the registry holds plain strings, not templates. -->
+      <div class="small hide" id="mxTicked" style="margin-top:12px;color:#f59e0b"></div>
+      <div class="small" id="mxCount" style="margin-top:12px"></div>
+      <button class="primary" id="mxCsv">📊 Spreadsheet</button>
+      <button class="ghost" id="mxGeo">🗺 Map file</button>
+      <!-- BELOW the map file button, not above the spreadsheet. It describes the map file
+           and nothing else, and sitting at the top of the sheet it read as a description
+           of whatever button came first — which was the spreadsheet. Caught by review. -->
+      <div id="mxGeoSummary" class="nagOk" style="margin-top:8px"></div>
+      <button class="ghost" id="mxShowMe">👁 Show me what is in the map file</button>
+      <button class="ghost" id="mxPage">📄 Page to hand out</button>
+      <div class="small" style="margin-top:6px">The spreadsheet opens in Excel or Google Sheets. The map file opens in Google My Maps. The page opens in any browser, and prints to PDF through Share → Print.</div>
+    </div>
+  </div>
+</div>
+
 <!-- ============ rename things ============
      One scrolling list, grouped by where the name appears, in LBL_GROUPS order. His
      ruling: one screen, not tap-in-place. Every row is built in code from the registry
@@ -1298,7 +1356,7 @@ select{min-height:44px}
            other `.why` in the file is inside the menu and is meant to collapse; this one
            is the one thing on this screen that has to be read before he renames anything,
            and with `why` on it he would never have seen it. Caught by review. -->
-      <div class="small" style="margin-bottom:12px;color:#5b6b7f">Your words go on the buttons, the maps, the menu and the screens. <b>They also go into the spreadsheet and the map file you export</b>, so a sheet exported before a rename will not match one exported after. Nothing already saved on the phone is changed by a rename.</div>
+      <div class="small" style="margin-bottom:12px;color:#5b6b7f">Your words go on the buttons, the maps, the menu and the screens. <b>They also go into the spreadsheet, the map file and the page you hand out</b>, so a file made before a rename will not match one made after. Nothing already saved on the phone is changed by a rename.</div>
       <div id="rnList"></div>
       <button class="ghost danger" id="rnResetAll" style="margin-top:22px">Put every name back</button>
       <div class="small" id="rnResetNote" style="margin-top:6px"></div>
@@ -1814,7 +1872,7 @@ const LBL_CAP = { door:35, doorShort:12, stage:35, mark:35, range:35, menu:60, s
    above each block. The books come last because they are the one group whose words
    are stored somewhere else, and because they are the pair he is least likely to
    be looking for. */
-const LBL_GROUPS = ['door', 'stage', 'mark', 'range', 'menu', 'line'];
+const LBL_GROUPS = ['door', 'stage', 'mark', 'range', 'menu', 'mx', 'line'];
 const LBL_GROUP_TITLE = {
   door:  'The four big buttons',
   stage: 'Stages',
@@ -1824,6 +1882,10 @@ const LBL_GROUP_TITLE = {
   mark:  'Marks from the truck',
   range: 'Date ranges',
   menu:  'The menu',
+  /* NOT "Sending the scouted houses", for the same reason `mark` is not "Scout marks":
+     `lbl.menu.mMarks` is renameable, so writing its word into a heading here would be a
+     second copy of a name he can change. */
+  mx:    'Sending a list out',
   line:  'Your two books',
 };
 const LABELS = {
@@ -1897,6 +1959,30 @@ const LABELS = {
      of words. Caught by review. Same id on both elements, which is his ruling: a menu
      name renames the screen it opens. */
   'lbl.menu.mRename':      { def:'Rename things',                                  group:'menu', cap:LBL_CAP.menu, note:'The button in Settings, and the title of this screen.' },
+
+  /* ---- sending the scouted list. TWO words, and the reason there are only two is
+         worth reading before a third is added.
+
+         The three format buttons — Spreadsheet, Map file, Page to hand out — each carry a
+         COUNT on their face, "(12)". The registry stores plain strings, not templates
+         with a hole in them, so a renameable word there would either lose the count or
+         need a substitution mechanism this feature does not otherwise want. They are
+         fixed, and that is a decision rather than an oversight. The same applies to both
+         count lines and to the sentence that says the ticks have taken over.
+
+         The word "scouted houses" is NOT coined again here. The sheet is called "Send
+         this list", which cannot go stale, and the page he hands to somebody takes its
+         heading from `lbl.menu.mMarks` — so renaming the screen renames the document, and
+         there is one word for one thing rather than four for one thing.
+
+         A THIRD was written and then taken out again: `lbl.mx.mapLink`, the "Open in the
+         map" link on the hand-out page. The suite refused it, and the suite was right —
+         its rule is that every name in the registry must be able to reach a SCREEN, and
+         that one only ever reaches a generated document. The rename list is the words he
+         lives with and might call something else; wording inside a file the app writes is
+         not one of those. It is fixed. */
+  'lbl.mx.open':           { def:'Send this list…',                                group:'mx', cap:LBL_CAP.menu, note:'The button under your scouted houses.' },
+  'lbl.mx.title':          { def:'Send this list',                                 group:'mx', cap:LBL_CAP.menu, note:'Title of the sheet that button opens.' },
 
   /* ---- the two books of business. THE ONE PAIR WHOSE WORDS ARE NOT KEPT IN
          `customLabels`, and deliberately so.
@@ -8013,7 +8099,7 @@ document.querySelectorAll('.dsecHead[data-msec]').forEach(b => {
 /* ---- what version is actually on the phone ----
    Matches the service worker cache name, so "did the update land" is answerable by
    looking rather than guessing. */
-const BUILD_VERSION = 'v29';
+const BUILD_VERSION = 'v30';
 const BUILD_DATE = '1 August 2026';
 function renderVersionStamp() {
   const el = $('versionStamp'); if (!el) return;
@@ -12485,6 +12571,395 @@ function openScoutedHouse(m) {
   return true;
 }
 
+/* The ONE copy of the print stylesheet every hand-out document uses. Two of them leave
+   the phone now — the call sheet and the scouted-houses page — and both are printed to
+   PDF and given to somebody. Two copies of these rules would eventually disagree, and
+   the one that disagreed would be the one in a stranger's hand. Extra rules for a
+   particular document are APPENDED after this, never forked from it.
+   DECLARED HERE, above its first consumer, rather than beside phoneListHtml where it was
+   extracted from. `const` has no hoisting: read before this line executes it throws, and
+   marksPageHtml below is the first thing that reads it. Nothing calls either function
+   during load today, so the old order was safe — and was a tripwire for whoever moves a
+   block next. Caught by review. */
+const HANDOUT_CSS = `
+  :root{color-scheme:light}
+  *{box-sizing:border-box}
+  body{margin:0;padding:18px 16px 40px;background:#fff;color:#111827;
+       font:15px/1.45 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif}
+  header{border-bottom:2px solid #111827;padding-bottom:10px;margin-bottom:14px}
+  h1{margin:0;font-size:20px;letter-spacing:-.2px}
+  .sub{color:#6b7280;font-size:12.5px;margin-top:3px}
+  article{border:1px solid #e5e7eb;border-radius:10px;padding:11px 13px;margin-bottom:10px;
+          break-inside:avoid;page-break-inside:avoid}
+  h2{margin:0 0 2px;font-size:16px;display:flex;flex-wrap:wrap;gap:8px;align-items:baseline}
+  .tel{font-size:15px;font-weight:700;color:#1d4ed8;text-decoration:none;white-space:nowrap}
+  .addr{margin:0 0 6px;font-size:13.5px;color:#374151}
+  .meta{margin:0;display:flex;flex-wrap:wrap;gap:6px;font-size:11.5px}
+  .meta span{border:1px solid #d1d5db;border-radius:999px;padding:1px 8px;color:#374151}
+  .bk.rf{border-color:#0ea5e9;color:#0369a1}
+  .bk.ap{border-color:#a855f7;color:#7e22ce}
+  .due{border-color:#f59e0b;color:#92400e}
+  .due.late{border-color:#ef4444;color:#b91c1c;font-weight:700}
+  .deed{color:#6b7280}
+  .last{margin:7px 0 0;font-size:12.5px;color:#374151}
+  /* Notes are the reason he is looking at this at all, so they do not read as small print. */
+  .note{margin-top:8px;padding:8px 10px;border-left:4px solid #f59e0b;background:#fffbeb;
+        border-radius:0 8px 8px 0;font-size:14px;white-space:pre-wrap}
+  footer{margin-top:16px;color:#6b7280;font-size:11.5px}
+  @media print{ body{padding:0} article{border-color:#9ca3af} .tel{color:#111827} }
+`;
+
+/* ---------------- sending the scouted list ----------------
+   HIS ASK, twice, in his own words: "i do not have the ability to export the list of my
+   scouted homes." He was right, and it was worse than awkward — buildCsv and buildGeo
+   both read visitsFor(), which is DOORS. state.marks was in neither, so the only file on
+   earth that held a scout mark was the full JSON backup.
+
+   Three shapes, because he asked for three: a spreadsheet to work from at a laptop, a map
+   file to drive from, and a page to hand to somebody.
+
+   THE UNSORTED ONES ARE THE POINT. He said so twice. A mark that was never turned into a
+   house has a position and a time and nothing else, so every one of the three has to be
+   honest about that rather than printing a row that merely looks incomplete.
+
+   NOTHING HERE WRITES A RECORD, and nothing here writes a localStorage key. No mark,
+   door, note, tag, follow-up or setting is created, changed or deleted by any of it: it
+   is read-only over state.marks and state.parcels from end to end.
+
+   The ONE thing that is not read-only is the map preview, and only indirectly: it opens
+   the big map, and the map loads and caches lot lines for whatever it is looking at,
+   exactly as it does when he opens it himself. That is the map's own behaviour, not this
+   feature's, and it is written down here rather than left to be discovered because the
+   sentence above would otherwise be claiming more than is true. Caught by review. */
+const mxOpts = { range:'all' };
+/* Metres. HIS RULING, chosen from 80 / 150 / 300. Far enough to cover GPS drift plus the
+   distance from the truck to a house set back off a rural frontage; past it the nearest
+   house is plausibly on a different street, and naming that is worse than silence. */
+const NEAR_MAX = 150;
+
+/* THE scope. Every count, every button face, the preview and all three files read this
+   and nothing else. A second copy of this filter is how the number on the button and the
+   rows in the file come to disagree, and he would find out weeks later at a laptop. */
+function marksInScope() {
+  const vis = visibleMarks();
+  /* HIS RULING: ticks beat the dates. Ticking is him pointing at exactly what he wants,
+     so the range is IGNORED rather than ANDed — the rejected behaviour was a file quietly
+     smaller than what he ticked. `vis` not `state.marks`, so a tick left behind under a
+     filter he has since changed can never reach the file. */
+  const ticked = vis.filter(m => marksSel.has(m.id));
+  if (ticked.length) return ticked;
+  const from = rangeStart(mxOpts.range);
+  return vis.filter(m => m.ts >= from);
+}
+const mxTicksOn = () => visibleMarks().some(m => marksSel.has(m.id));
+/* `scouted-`, never `canvass-`: a marks file and a door file landing in Downloads on the
+   same day must not be able to overwrite one another. The middle word says `ticked` when
+   the ticks are in charge, because naming it after a range that was ignored would be a
+   filename that lies about its own contents. */
+const mxName = ext => `scouted-${mxTicksOn() ? 'ticked' : mxOpts.range}-${stamp()}.${ext}`;
+
+/* ---- the nearest house the app already knows about ----
+   NOT a lookup, not a guess: state.parcels holds lot outlines and owner names for ground
+   he has actually driven and loaded, and this is the same data the sorting screen offers
+   him candidates from. It is still only ever printed UNDER ITS OWN LABEL, never in an
+   address slot, and it says nothing at all rather than naming a house it is not sure of. */
+function nearHouseIndex() {
+  const out = [];
+  /* Every parcel already carries `bbox` from ringsBBox() and is measurable by
+     distToRings(). An earlier version of this walked every ring to derive its own
+     bounding box and then measured to the nearest VERTEX, and review killed both:
+     a second definition of a rectangle the parcel already holds, and — much worse —
+     a distance that is wrong on exactly the case NEAR_MAX was chosen for. */
+  for (const p of state.parcels.values()) {
+    if (!p || !p.addr || !p.rings || !p.rings.length || !p.bbox) continue;
+    out.push(p);
+  }
+  return out;
+}
+/** {key, addr, owner, m, on} or null — null means say nothing, not "say zero" */
+function nearHouse(lat, lon, idx) {
+  if (lat == null || lon == null || !isFinite(lat) || !isFinite(lon) || !idx || !idx.length) return null;
+  const dLat = NEAR_MAX / mPerDegLat;
+  const dLon = NEAR_MAX / Math.max(1, Math.abs(mPerDegLon(lat)));
+  let best = null;
+  for (const p of idx) {
+    const w = p.bbox[0], s = p.bbox[1], e = p.bbox[2], n = p.bbox[3];
+    if (lat > n + dLat || lat < s - dLat || lon > e + dLon || lon < w - dLon) continue;
+    /* distToRings measures to the nearest EDGE and returns 0 inside, so being on the lot
+       beats being near it without a second pass. Measuring to the nearest CORNER instead
+       — which is what this did before review — misses the house you are parked in front
+       of on any lot with long road frontage: four hundred metres of frontage, ten metres
+       off the line, and the nearest corner is two hundred metres away. It then names a
+       smaller neighbour up the road whose corner happens to be closer, which is the wrong
+       answer wearing the confident wording. */
+    const m = distToRings(lon, lat, p.rings);
+    if (!(m <= NEAR_MAX)) continue;
+    /* Lowest key among equals, so two exports of identical data are byte-identical.
+       Without a deterministic tie-break the same phone can name two different
+       neighbours on two runs and every single-run test still passes. */
+    if (!best || m < best.m || (m === best.m && p.key < best.key))
+      best = { key:p.key, addr:p.addr, owner:p.owner || '', m, on: m === 0 };
+  }
+  return best;
+}
+/* The one place this is put into words, so the guard cannot be reworded into a lie in one
+   document while staying honest in the other. NOT renameable, deliberately. */
+function nearHouseLine(near) {
+  if (!near) return 'no nearby house in the app’s saved lot lines';
+  if (near.on) return `the mark is on this lot: ${near.addr}`;
+  return `nearest house the app knows: ${near.addr}, ${Math.round(near.m)} m away`;
+}
+
+/* ---- the spreadsheet ----
+   Its OWN file, not new columns on the door CSV. Mixing marks into a sheet of doors mixes
+   two kinds of record, and that file's own comment warns that he has spreadsheets keyed
+   to column position. These twelve columns are fixed for the same reason, and anything
+   later goes on the END. */
+function buildMarksCsv() {
+  const rows = marksInScope();
+  if (!rows.length) { flashToast('Nothing to send', 'No marks match those options', '#64748b'); return null; }
+  const idx = nearHouseIndex();
+  const head = ['Made','Time','Kind','Sorted onto a house?','Address','Owner','County',
+                'Latitude','Longitude','Map link','Nearest house the app knows','Distance to it (m)'];
+  const lines = [head.map(q).join(',')];
+  rows.forEach(m => {
+    const d = new Date(m.ts);
+    const lat = m.lat.toFixed(6), lon = m.lon.toFixed(6);
+    /* Only for the ones that were never sorted. A sorted mark already carries the real
+       address in its own column, and a second, weaker opinion beside it would invite
+       somebody to wonder which of the two the app actually meant. */
+    const near = m.key ? null : nearHouse(m.lat, m.lon, idx);
+    lines.push([
+      d.toLocaleDateString(), d.toLocaleTimeString(),
+      (MARK_KINDS[m.kind] || { label:m.kind }).label,
+      /* Never blank, and it says the whole thing. An empty Address cell beside an explicit
+         "no" reads as deliberate at a laptop; the same cell beside a blank reads as a
+         file that failed halfway. */
+      m.key ? 'yes' : 'no — never sorted, position only',
+      m.key ? (m.addr || '') : '',
+      m.key ? (m.owner || '') : '',
+      m.key ? ((COUNTIES.find(c => c.key === m.county) || {}).name || '') : '',
+      lat, lon,
+      `https://www.google.com/maps/search/?api=1&query=${lat},${lon}`,
+      near ? near.addr : '', near ? Math.round(near.m) : '',
+    ].map(q).join(','));
+  });
+  /* BOM, and CRLF, both matching the door CSV. Without the BOM Excel and Sheets read the
+     file as the local codepage and every apostrophe and accent arrives mangled. */
+  return { name: mxName('csv'), text:'﻿' + lines.join('\r\n'), type:'text/csv;charset=utf-8' };
+}
+
+/* ---- the map file ----
+   HIS RULING: scout marks and nothing else, every one of them a dot at the spot he was
+   actually standing or driving. No walking tracks, no truck pin, and no lot outlines even
+   for the sorted ones — a mark records where HE was, and drawing it as a polygon would
+   make this file and the door file describe the same mark differently. If he wants his
+   tracks as well, the door map file loads beside this one as a second layer. */
+function marksGeoFeatures() {
+  return marksInScope().map(m => {
+    const k = MARK_KINDS[m.kind] || { label:m.kind, color:'#38bdf8' };
+    const props = {
+      name: (m.key && m.addr) ? `${k.label} — ${m.addr}` : `${k.label} — ${markWhen(m.ts)}`,
+      /* `kind` is the fixed key so he can style by it in My Maps and the styling survives
+         a rename; `kindLabel` is the word he can change. Both, on purpose. */
+      kind: m.kind,
+      kindLabel: k.label,
+      sorted: m.key ? 'yes' : 'no',
+      made: new Date(m.ts).toISOString(),
+      'marker-color': k.color,
+    };
+    if (m.key) {
+      props.address = m.addr || '';
+      props.owner = m.owner || '';
+      props.county = (COUNTIES.find(c => c.key === m.county) || {}).name || '';
+    }
+    /* lon FIRST. GeoJSON is x,y and a swapped pair puts Ohio in the Indian Ocean. */
+    return { type:'Feature', properties:props, geometry:{ type:'Point', coordinates:[m.lon, m.lat] } };
+  });
+}
+function buildMarksGeo() {
+  const feats = marksGeoFeatures();
+  if (!feats.length) { flashToast('Nothing to send', 'No marks match those options', '#64748b'); return null; }
+  return { name: mxName('geojson'),
+           text: JSON.stringify({ type:'FeatureCollection', features:feats }),
+           type:'application/geo+json' };
+}
+/* Plain words, not a wall of coordinates — the same reason geoSummary exists for doors. */
+function marksGeoSummary() {
+  const rows = marksInScope();
+  if (!rows.length) return 'Nothing matches those options, so the map file would be empty.';
+  const un = rows.filter(m => !m.key).length;
+  return `This file holds <b>${rows.length} scout mark${rows.length === 1 ? '' : 's'}</b> as dots — `
+    + `<b>${un} never sorted onto a house</b>, ${rows.length - un} sorted. Each dot is the spot you `
+    + `were when you made it, not the lot. It opens in Google My Maps or QGIS.`;
+}
+/* Drawn from the SAME builder the file is written from, so the preview cannot show
+   something the file does not contain. */
+async function showMarksGeoPreview() {
+  const feats = marksGeoFeatures();
+  if (!feats.length) { flashToast('Nothing to show', 'No marks match those options', '#64748b'); return; }
+  /* NOTHING IS TORN DOWN UNTIL THE MAP IS KNOWN TO BE UP. openMap() catches a failed
+     Leaflet load, re-hides the map and toasts "Map needs signal" — and this used to close
+     the sheet and the Scouted houses screen FIRST, so on a dead-signal phone that had
+     never opened the big map he lost both screens, got a toast, and landed on the main
+     screen with no way back but the menu. This app's whole premise is working with no
+     signal. Caught by review. */
+  await openMap();
+  if (!window.L || !window._map) return;
+  closeSheet('mxSheet'); exitMarks(); closeSheet('menuSheet');
+  if (window._previewLayer) { window._map.removeLayer(window._previewLayer); window._previewLayer = null; }
+  window._previewLayer = L.geoJSON({ type:'FeatureCollection', features:feats }, {
+    pointToLayer: (f, ll) => L.circleMarker(ll, { radius:7, color:'#fff', weight:2,
+                   fillColor: f.properties['marker-color'] || '#38bdf8', fillOpacity:1 }),
+  }).addTo(window._map);
+  mapOpts.follow = false; syncMapBtns();
+  try { window._map.fitBounds(window._previewLayer.getBounds(), { padding:[36,36] }); } catch (e) {}
+  /* The same three lines the door preview ends with, and they are not optional. Without
+     them the dots appear with no caption and #previewDone — the only way to clear the
+     layer without shutting the whole map — stays hidden. Worse, the two previews share
+     window._previewLayer: showing the door file and then this one left the blue bar still
+     saying "37 things" over a map holding scout marks. Caught by review. */
+  $('previewTxt').textContent = `Showing exactly what is in the map file — ${feats.length} scout mark${feats.length === 1 ? '' : 's'}.`;
+  $('previewBar').classList.remove('hide');
+  $('findWrap').classList.add('hide');     // the address search sits right on this bar
+}
+
+/* ---- the page he can hand to somebody ----
+   HIS RULING: the never-sorted ones come FIRST, in their own block with a count. They are
+   the reason the feature exists. Everything interpolated goes through esc() — the kind
+   words are renameable, which makes them the one piece of attacker-shaped input in a
+   document that leaves the phone. */
+const MARKS_PAGE_CSS = `
+  .grp{margin:18px 0 8px;font-size:13px;font-weight:700;color:#111827;
+       border-bottom:1px solid #e5e7eb;padding-bottom:4px}
+  .kind{border:1px solid #d1d5db;border-radius:999px;padding:1px 8px;font-size:11.5px}
+  .near{margin:7px 0 0;font-size:12.5px;color:#374151}
+  .nokey{margin:0 0 6px;font-size:13.5px;color:#6b7280;font-style:italic}
+  .go{display:inline-block;margin-top:7px;font-size:13px;font-weight:700;
+      color:#1d4ed8;text-decoration:none}
+  @media print{ .go{color:#111827} }
+`;
+function marksPageHtml(list) {
+  const when = new Date().toLocaleString([], { weekday:'short', day:'numeric', month:'short',
+                                               hour:'numeric', minute:'2-digit' });
+  const idx = nearHouseIndex();
+  const card = m => {
+    const k = MARK_KINDS[m.kind] || { label:m.kind, color:'#6b7280' };
+    const ll = `${m.lat.toFixed(6)},${m.lon.toFixed(6)}`;
+    const near = m.key ? null : nearHouse(m.lat, m.lon, idx);
+    /* The heading is the most useful thing this card knows. For a sorted mark that is its
+       address; for one that was never sorted it is the nearest house the app can honestly
+       name, and only when there is none does it fall back to the time it was made. It
+       used to print "Never sorted onto a house" on every unsorted card — under a group
+       heading that had just said exactly that, seven cards running, so the headline slot
+       of the block he cares most about carried nothing. Caught by review. */
+    const head = (m.key && m.addr) ? m.addr
+               : near ? `Near ${near.addr}`
+               : markWhen(m.ts);
+    return `<article>
+      <h2>${esc(head)}</h2>
+      ${m.key ? '' : `<p class="nokey">Never sorted onto a house — position and time only.</p>`}
+      <p class="meta">
+        <span class="kind" style="border-color:${esc(k.color)}">${esc(k.label)}</span>
+        <span>${esc(markWhen(m.ts))}</span>
+        ${m.owner ? `<span>${esc(m.owner)}</span>` : ''}
+      </p>
+      ${near || !m.key ? `<p class="near">${esc(nearHouseLine(near))}</p>` : ''}
+      <a class="go" href="https://www.google.com/maps/search/?api=1&amp;query=${esc(ll)}">Open in the map → ${esc(ll)}</a>
+    </article>`;
+  };
+  const un = list.filter(m => !m.key);
+  const so = list.filter(m => m.key);
+  const block = (rows, title) => rows.length
+    ? `<div class="grp">${esc(title)} (${rows.length})</div>` + rows.map(card).join('\n') : '';
+  /* The document takes its name from the SCREEN's name, so renaming "Scouted houses" to
+     anything else renames the file he hands somebody as well. Written out here it would
+     have been a fourth word for one thing — the screen title, the button, the sheet and
+     the document all saying something different. Caught by review. */
+  const title = LBL('lbl.menu.mMarks');
+  return `<!doctype html><html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>${esc(title)}</title>
+<style>${HANDOUT_CSS}${MARKS_PAGE_CSS}</style></head><body>
+<header><h1>${esc(title)}</h1>
+<div class="sub">${list.length} mark${list.length === 1 ? '' : 's'} · made ${esc(when)} · CanvassEaze</div></header>
+${list.length ? block(un, 'Never sorted onto a house') + block(so, 'Sorted onto a house')
+              : '<p>Nothing matches those options.</p>'}
+<footer>Nearest-house lines come only from ground where the lot lines had been loaded, and they are the app’s best guess, not the address of the mark. Map links are tappable. To print: Share → Print → pinch out → Save as PDF.</footer>
+</body></html>`;
+}
+
+/* ---- the sheet ----
+   Every node below is built ONCE and only ever retexted, re-flagged or hidden. The
+   chips are NOT rebuilt with innerHTML the way renderExport() rebuilds its own, because
+   a chip rebuilt under his finger swallows the tap that caused it. */
+function renderMarksExport() {
+  const ticks = mxTicksOn();
+  const rows = marksInScope();
+  const n = rows.length;
+  const host = $('mxRange');
+  if (!host.firstChild) {
+    Object.keys(RANGES).forEach(k => {
+      const b = document.createElement('button');
+      b.className = 'chip';
+      b.dataset.mxr = k;
+      b.onclick = () => { if (b.disabled) return; mxOpts.range = k; renderMarksExport(); buzz(8); };
+      host.appendChild(b);
+    });
+  }
+  [...host.children].forEach(b => {
+    const k = b.dataset.mxr;
+    /* Read out of RANGES, which the registry writes through, so a renamed range reaches
+       this sheet without the word being written down a second time. */
+    b.textContent = RANGES[k];
+    b.classList.toggle('on', !ticks && mxOpts.range === k);
+    /* The REAL disabled property, not a grey class. A chip that only looks dead still
+       fires, and moves the scope under him after the sheet has told him it cannot. */
+    b.disabled = ticks;
+    b.style.opacity = ticks ? '.45' : '1';
+  });
+  $('mxTicked').classList.toggle('hide', !ticks);
+  if (ticks) $('mxTicked').textContent = n === 1
+    ? 'Only the 1 ticked one goes in the file. The dates are switched off while anything is ticked.'
+    : `Only the ${n} ticked ones go in the file. The dates are switched off while anything is ticked.`;
+  $('mxCount').textContent = n
+    ? `${n} mark${n === 1 ? '' : 's'} will go in the file.`
+    : 'No marks match. Nothing would go in the file.';
+  $('mxGeoSummary').innerHTML = marksGeoSummary();
+  /* The count on the face is a promise, and it is kept because the face and the builder
+     read the same scope. */
+  $('mxCsv').textContent = n ? `\u{1F4CA} Spreadsheet (${n})` : '\u{1F4CA} Spreadsheet';
+  $('mxGeo').textContent = n ? `\u{1F5FA} Map file (${n})` : '\u{1F5FA} Map file';
+  $('mxPage').textContent = n ? `\u{1F4C4} Page to hand out (${n})` : '\u{1F4C4} Page to hand out';
+  [$('mxCsv'), $('mxGeo'), $('mxPage'), $('mxShowMe')].forEach(b => {
+    b.disabled = !n;
+    b.style.opacity = n ? '1' : '.45';
+  });
+}
+/* The scope is read ONCE, at the tap, and the same list builds the file. */
+function exportMarks(shape) {
+  const p = shape === 'csv' ? buildMarksCsv()
+          : shape === 'geo' ? buildMarksGeo()
+          : (() => { const list = marksInScope();
+                     if (!list.length) { flashToast('Nothing to send', 'No marks match those options', '#64748b'); return null; }
+                     return { name: mxName('html'), text: marksPageHtml(list), type:'text/html' }; })();
+  if (!p) return;
+  deliver(p, shape === 'page' ? 'Open it from Files, then Share → Print to make a PDF'
+                              : 'Pick where to put it');
+}
+/* HIS RULING: the range opens on Everything EVERY time, not merely the first time. A
+   Today left behind from last week is a file quietly holding a third of what he meant. */
+function openMarksExport() {
+  mxOpts.range = 'all';
+  renderMarksExport();
+  openSheet('mxSheet');
+}
+$('mkExport').onclick = openMarksExport;
+$('mxCsv').onclick = () => exportMarks('csv');
+$('mxGeo').onclick = () => exportMarks('geo');
+$('mxPage').onclick = () => exportMarks('page');
+$('mxShowMe').onclick = showMarksGeoPreview;
+
 /* ---------------- the call sheet ----------------
    A self-contained page of whatever the customer list is currently showing. It shares
    from the phone and prints to PDF from iOS through the normal Share → Print route.
@@ -12530,33 +13005,7 @@ function phoneListHtml(rows, heading) {
   return `<!doctype html><html lang="en"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>${esc(heading)}</title>
-<style>
-  :root{color-scheme:light}
-  *{box-sizing:border-box}
-  body{margin:0;padding:18px 16px 40px;background:#fff;color:#111827;
-       font:15px/1.45 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif}
-  header{border-bottom:2px solid #111827;padding-bottom:10px;margin-bottom:14px}
-  h1{margin:0;font-size:20px;letter-spacing:-.2px}
-  .sub{color:#6b7280;font-size:12.5px;margin-top:3px}
-  article{border:1px solid #e5e7eb;border-radius:10px;padding:11px 13px;margin-bottom:10px;
-          break-inside:avoid;page-break-inside:avoid}
-  h2{margin:0 0 2px;font-size:16px;display:flex;flex-wrap:wrap;gap:8px;align-items:baseline}
-  .tel{font-size:15px;font-weight:700;color:#1d4ed8;text-decoration:none;white-space:nowrap}
-  .addr{margin:0 0 6px;font-size:13.5px;color:#374151}
-  .meta{margin:0;display:flex;flex-wrap:wrap;gap:6px;font-size:11.5px}
-  .meta span{border:1px solid #d1d5db;border-radius:999px;padding:1px 8px;color:#374151}
-  .bk.rf{border-color:#0ea5e9;color:#0369a1}
-  .bk.ap{border-color:#a855f7;color:#7e22ce}
-  .due{border-color:#f59e0b;color:#92400e}
-  .due.late{border-color:#ef4444;color:#b91c1c;font-weight:700}
-  .deed{color:#6b7280}
-  .last{margin:7px 0 0;font-size:12.5px;color:#374151}
-  /* Notes are the reason he is looking at this at all, so they do not read as small print. */
-  .note{margin-top:8px;padding:8px 10px;border-left:4px solid #f59e0b;background:#fffbeb;
-        border-radius:0 8px 8px 0;font-size:14px;white-space:pre-wrap}
-  footer{margin-top:16px;color:#6b7280;font-size:11.5px}
-  @media print{ body{padding:0} article{border-color:#9ca3af} .tel{color:#111827} }
-</style></head><body>
+<style>${HANDOUT_CSS}</style></head><body>
 <header><h1>${esc(heading)}</h1>
 <div class="sub">${rows.length} ${rows.length === 1 ? 'person' : 'people'} · made ${esc(when)} · CanvassEaze</div></header>
 ${rows.length ? rows.map(cell).join('\n') : '<p>Nothing matches those filters.</p>'}
@@ -13479,8 +13928,15 @@ function loadSettings() {
      a position is dropped rather than carried around half-formed, because the sorting
      screen and both maps all read straight off this list. */
   try { const mk = JSON.parse(localStorage.getItem('marks') || '[]');
+        /* `ts` joined lat and lon on this guard in v30. It was never checked, and a mark
+           without one is not merely untidy: new Date(undefined).toISOString() THROWS, so
+           one such record — from a hand-edited backup, or a build older than the field —
+           silently killed the whole map-file export with no message and no file, while
+           the sheet still said one mark would go in it. And on the untricked path
+           `undefined >= 0` is false, so it was invisible even under Everything. */
         state.marks = Array.isArray(mk) ? mk.filter(x => x && x.id && MARK_KINDS[x.kind]
-          && typeof x.lat === 'number' && typeof x.lon === 'number' && isFinite(x.lat) && isFinite(x.lon)) : [];
+          && typeof x.lat === 'number' && typeof x.lon === 'number' && isFinite(x.lat) && isFinite(x.lon)
+          && typeof x.ts === 'number' && isFinite(x.ts)) : [];
       } catch(e){ state.marks = []; }
   try { const dj = parseFloat(localStorage.getItem('driveAdj')); if (isFinite(dj) && dj > 0) state.driveAdj = dj; } catch(e){}
   loadLineNames();
