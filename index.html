@@ -677,7 +677,16 @@ select{min-height:44px}
            instructions". He has knocked thousands of doors on these buttons and does
            not need No Answer explained to him as "nobody home". The .sub rule below
            is kept — the class is gone from here, not from the stylesheet, because
-           these four are the only place it was ever used and it costs nothing. -->
+           these four are the only place it was ever used and it costs nothing.
+
+           THE WORDS BELOW ARE A FALLBACK, NOT THE SOURCE. renderStatusWords() writes
+           them from STATUS at boot. They are still spelt out here so a build where the
+           script fails before that point shows four readable buttons rather than four
+           empty ones — and a check asserts every one of them matches STATUS.label, so
+           the two can never drift apart in silence again. If you change a word here,
+           change it in STATUS, or the suite will say so.
+           The icon is its own span for the same reason it is on the menu buttons: it
+           is not part of the name and must never have to be retyped. -->
       <button class="act" id="b-talked"  data-s="talked">   <span class="ico">🗣️</span><span class="big">Talked</span></button>
       <button class="act" id="b-material" data-s="material"><span class="ico">📄</span><span class="big">Left Material</span></button>
       <button class="act" id="b-noanswer" data-s="noanswer"><span class="ico">🚪</span><span class="big">No Answer</span></button>
@@ -805,10 +814,17 @@ select{min-height:44px}
        Move me buttons were drawn straight over. It is a button you tap now. -->
   <div id="legend" class="hide">
     <div class="dpHead" style="padding:0 0 6px;font-size:14px">What the colours mean<button class="x" id="legendClose">Done</button></div>
-    <div><i style="background:#22c55e"></i>Talked</div>
-    <div><i style="background:#3b82f6"></i>Left material</div>
-    <div><i style="background:#f59e0b"></i>No answer</div>
-    <div><i style="background:#ef4444"></i>Don't come back</div>
+    <!-- Swatch colour and wording both come from STATUS via renderStatusWords(). They
+         were written out by hand here until v27, which meant the legend explaining the
+         map's colours held its own second copy of both — and three of the four words
+         had already drifted from the rest of the app. The values below are the same
+         ones STATUS holds; they are a fallback and a check asserts they match.
+         "Not hit" is not an outcome. It is the absence of one, has no STATUS entry,
+         and is deliberately left alone. -->
+    <div><i data-sw="talked" style="background:#22c55e"></i><span data-s="talked">Talked</span></div>
+    <div><i data-sw="material" style="background:#3b82f6"></i><span data-s="material">Left Material</span></div>
+    <div><i data-sw="noanswer" style="background:#f59e0b"></i><span data-s="noanswer">No Answer</span></div>
+    <div><i data-sw="dnr" style="background:#ef4444"></i><span data-s="dnr">Don't Come Back</span></div>
     <div><i style="background:#94a3b8"></i>Not hit</div>
     <div style="margin-top:4px;border-top:1px solid var(--line);padding-top:4px">
       <span style="border:1.5px solid #cbd5e1;display:inline-block;width:11px;height:11px;border-radius:3px;margin-right:6px;vertical-align:-1px"></span>Roofing</div>
@@ -1196,12 +1212,17 @@ select{min-height:44px}
 
       <div class="dsec"><button class="dsecHead" data-msec="work"><i>▾</i>Out working</button>
         <div class="dsecBody" id="msecWork">
-          <button class="ghost" id="mCrm">👥 Customers and follow-ups</button>
-          <button class="ghost" id="mAreas">📍 By area — the patches you named, round by round</button>
-          <button class="ghost" id="mRoute">🔁 Doors to try again</button>
-          <button class="ghost" id="mScout">🔭 Scout</button>
-          <button class="ghost" id="mMarks">🔎 Scouted houses</button>
-          <button class="ghost" id="mAppt">📋 Schedule and appointments</button>
+          <!-- The icon and the words are separate spans on every menu button. They used
+               to be one text node, which meant renaming a button would have made him
+               retype the emoji on a phone keyboard every time. The single space between
+               the two spans is the same one space that was in the text before, so
+               nothing moves on screen. -->
+          <button class="ghost" id="mCrm"><span class="emo">👥</span> <span class="mtxt">Customers and follow-ups</span></button>
+          <button class="ghost" id="mAreas"><span class="emo">📍</span> <span class="mtxt">By area — the patches you named, round by round</span></button>
+          <button class="ghost" id="mRoute"><span class="emo">🔁</span> <span class="mtxt">Doors to try again</span></button>
+          <button class="ghost" id="mScout"><span class="emo">🔭</span> <span class="mtxt">Scout</span></button>
+          <button class="ghost" id="mMarks"><span class="emo">🔎</span> <span class="mtxt">Scouted houses</span></button>
+          <button class="ghost" id="mAppt"><span class="emo">📋</span> <span class="mtxt">Schedule and appointments</span></button>
           <!-- The truck block moved to Settings at his word. It was four rows and a
                readout sitting between the last thing he taps out here and "How you're
                doing", which is where History lives — and he does not need it: he drops
@@ -1213,8 +1234,8 @@ select{min-height:44px}
            stats screen behind it went unfound. Ending is a button inside. -->
       <div class="dsec"><button class="dsecHead" data-msec="review"><i>▾</i>How you're doing</button>
         <div class="dsecBody" id="msecReview">
-          <button class="ghost" id="mSession">📊 How today's going — doors, miles, hours</button>
-          <button class="ghost" id="mDaysLog">📅 History — every day you were out, door by door</button>
+          <button class="ghost" id="mSession"><span class="emo">📊</span> <span class="mtxt">How today's going — doors, miles, hours</span></button>
+          <button class="ghost" id="mDaysLog"><span class="emo">📅</span> <span class="mtxt">History — every day you were out, door by door</span></button>
         </div></div>
 
       <div class="dsec"><button class="dsecHead" data-msec="day"><i>▾</i>End of day</button>
@@ -1224,14 +1245,14 @@ select{min-height:44px}
                two taps away under a heading that says How you're doing. It is still
                there — this is a second way in, at the top of the tier he opens when he
                is finished, above the backup he should take next. -->
-          <button class="ghost" id="mEndDay" style="margin-top:0">■ End the day — stop tracking</button>
+          <button class="ghost" id="mEndDay" style="margin-top:0"><span class="emo">■</span> <span class="mtxt">End the day — stop tracking</span></button>
           <div class="small" id="endDayNote" style="margin:5px 0 16px"></div>
-          <button class="primary" id="mBackupShare" style="margin-top:0">📤 Full backup — send it somewhere safe</button>
-          <button class="ghost" id="mBackup">💾 Full backup — just download it</button>
+          <button class="primary" id="mBackupShare" style="margin-top:0"><span class="emo">📤</span> <span class="mtxt">Full backup — send it somewhere safe</span></button>
+          <button class="ghost" id="mBackup"><span class="emo">💾</span> <span class="mtxt">Full backup — just download it</span></button>
           <div class="small why" style="margin-top:5px">Every door, note, tag, stage, follow-up, appointment and walking track, in one file. This is the only thing that can rebuild the app if the phone is lost or the icon is deleted. Get it off the phone.</div>
-          <button class="ghost" id="mRestore" style="margin-top:12px">⤴︎ Restore from a full backup</button>
+          <button class="ghost" id="mRestore" style="margin-top:12px"><span class="emo">⤴︎</span> <span class="mtxt">Restore from a full backup</span></button>
           <input type="file" id="restoreFile" accept=".json,application/json" class="hide">
-          <button class="ghost" id="mExport" style="margin-top:16px">⬇︎ Export…</button>
+          <button class="ghost" id="mExport" style="margin-top:16px"><span class="emo">⬇︎</span> <span class="mtxt">Export…</span></button>
           <div class="small why" style="margin-top:5px">A spreadsheet or a map file, for working at a laptop. Useful, but <b>this is not a backup</b> — it leaves things out and nothing can restore from it.</div>
         </div></div>
 
@@ -1462,12 +1483,60 @@ const COUNTIES = [
    than a hunt through the file. */
 const APP_NAME = 'CanvassEaze';
 
+/* One name per outcome, and it is the word on the big button.
+   Before this the same four outcomes were written out in SIX separate places and
+   nothing kept any of them in step: the button markup said "Talked", `label` said
+   "Talked to", the map legend said "Talked", and three stat blocks said "talked" and
+   "do not return". Renaming an outcome would have changed some of them and left the
+   rest — including the button he presses three hundred times a day. Everything that
+   NAMES an outcome now reads it from here. See renderStatusWords().
+   `label` is that name. It reaches the button, the map legend, the pill under the
+   house, the toast, the day report, the history, the filter chips, the session and
+   start-screen tiles, the area round summary, the CSV and the map file. The starting
+   words are the BUTTON's, his call — the button is the thing he reads all day, so it
+   is the one that did not move.
+   `short` is a separate, shorter word for the two list rows where the long one will
+   not fit: the house-picker sheet and the repoint list. It is deliberately NOT worked
+   out from `label`, because no rule turns "Don't Come Back" into "DNR" — so it is
+   still hand-written, and a rename does not reach it. That is a known gap and it
+   belongs to the editor slice, where `short` gets its own box.
+   `color` paints the lot on both maps and the legend swatch. It is NOT the colour of
+   the big button — those are the four CSS variables at the top of the stylesheet, a
+   darker set chosen to carry white text. The two have always differed and neither is
+   derived from the other. */
 const STATUS = {
-  talked:   { label:'Talked to',        color:'#22c55e', short:'Talked' },
-  material: { label:'Left material',    color:'#3b82f6', short:'Material' },
-  noanswer: { label:'No answer',        color:'#f59e0b', short:'No answer' },
-  dnr:      { label:"Don't come back",  color:'#ef4444', short:'DNR' },
+  talked:   { label:'Talked',           color:'#22c55e', short:'Talked' },
+  material: { label:'Left Material',    color:'#3b82f6', short:'Material' },
+  noanswer: { label:'No Answer',        color:'#f59e0b', short:'No answer' },
+  dnr:      { label:"Don't Come Back",  color:'#ef4444', short:'DNR' },
 };
+/* Writes every FIXED place an outcome is named — the four door buttons and the map
+   legend. Everything else that names one is inside a template that is rebuilt from
+   STATUS on every render, so it needs no registration here.
+   The markup still carries the same words as a fallback, so a build where this never
+   runs reads correctly rather than showing empty buttons and a legend of colours with
+   nothing beside them. A check asserts the markup and STATUS agree, so the two cannot
+   drift apart in silence the way they did between v16 and v26.
+   textContent, not innerHTML: a typed "<" is then text by construction rather than by
+   remembering to call esc() at one more site.
+   Called from renderSwitchUi(), which is already the "redraw the fixed furniture"
+   pass — it runs at boot AND after a restore, is wrapped so a failure cannot stop a
+   restore finishing, and is documented as safe to call before the elements exist. */
+function renderStatusWords() {
+  document.querySelectorAll('#grid .act[data-s]').forEach(b => {
+    const s = STATUS[b.dataset.s];
+    const big = b.querySelector('.big');
+    if (s && big) big.textContent = s.label;
+  });
+  document.querySelectorAll('#legend [data-s]').forEach(el => {
+    const s = STATUS[el.dataset.s];
+    if (s) el.textContent = s.label;
+  });
+  document.querySelectorAll('#legend [data-sw]').forEach(el => {
+    const s = STATUS[el.dataset.sw];
+    if (s) el.style.background = s.color;
+  });
+}
 const TAGS = ['Appointment set','Wants estimate','Storm damage','Insurance claim','Callback later','Renter','Not interested','Already has contractor','Roof looks new'];
 
 /* The two books of business. Marks, counts and exports stay separate;
@@ -7063,10 +7132,10 @@ function renderStats() {
   const lineTotal = l => state.visitLog.filter(v => (v.line||'roof') === l).length;
   const html = `
     <div class="stat" style="border-color:${LINES[state.line].color}"><b style="color:${LINES[state.line].color}">${today.length}</b>${esc(LINES[state.line].label.toLowerCase())} today</div>
-    <div class="stat"><b style="color:${STATUS.talked.color}">${by('talked')}</b>talked</div>
-    <div class="stat"><b style="color:${STATUS.material.color}">${by('material')}</b>material</div>
-    <div class="stat"><b style="color:${STATUS.noanswer.color}">${by('noanswer')}</b>no answer</div>
-    <div class="stat"><b style="color:${STATUS.dnr.color}">${by('dnr')}</b>do not return</div>
+    <div class="stat"><b style="color:${STATUS.talked.color}">${by('talked')}</b>${esc(STATUS.talked.label.toLowerCase())}</div>
+    <div class="stat"><b style="color:${STATUS.material.color}">${by('material')}</b>${esc(STATUS.material.label.toLowerCase())}</div>
+    <div class="stat"><b style="color:${STATUS.noanswer.color}">${by('noanswer')}</b>${esc(STATUS.noanswer.label.toLowerCase())}</div>
+    <div class="stat"><b style="color:${STATUS.dnr.color}">${by('dnr')}</b>${esc(STATUS.dnr.label.toLowerCase())}</div>
     <div class="stat"><b style="color:${LINES.roof.color}">${lineTotal('roof')}</b>${esc(LINES.roof.label.toLowerCase())} all time</div>
     <div class="stat"><b style="color:${LINES.appraisal.color}">${lineTotal('appraisal')}</b>${esc(LINES.appraisal.label.toLowerCase())} all time</div>`;
   // The wall of tiles used to fill the top half of the menu before a single button
@@ -7114,8 +7183,8 @@ document.querySelectorAll('.dsecHead[data-msec]').forEach(b => {
 /* ---- what version is actually on the phone ----
    Matches the service worker cache name, so "did the update land" is answerable by
    looking rather than guessing. */
-const BUILD_VERSION = 'v26';
-const BUILD_DATE = '31 July 2026';
+const BUILD_VERSION = 'v27';
+const BUILD_DATE = '1 August 2026';
 function renderVersionStamp() {
   const el = $('versionStamp'); if (!el) return;
   el.className = 'small';
@@ -10699,10 +10768,11 @@ function renderAreaOne() {
     el.className = 'crmRow';
     const clock = t => new Date(t).toLocaleTimeString([], { hour:'numeric', minute:'2-digit' });
     const got = [];
-    if (r.talked)   got.push(`${r.talked} talked`);
-    if (r.material) got.push(`${r.material} material`);
-    if (r.noanswer) got.push(`${r.noanswer} no answer`);
-    if (r.dnr)      got.push(`${r.dnr} don't come back`);
+    /* Lower-cased off STATUS rather than written out, so a renamed outcome reads the
+       same here as it does on the button. `got` is escaped at the innerHTML site below,
+       so these do not need their own esc(). */
+    for (const k of ['talked', 'material', 'noanswer', 'dnr'])
+      if (r[k]) got.push(`${r[k]} ${(STATUS[k] || { label:k }).label.toLowerCase()}`);
     const extra = [];
     if (r.appts)  extra.push(`${r.appts} booked`);
     if (r.quoted) extra.push(`${r.quoted} quoted`);
@@ -12316,10 +12386,10 @@ function openSession() {
   $('sesTitle').textContent = state.session ? 'This session' : 'Today so far';
   $('sesStats').innerHTML = `
     <div class="stat"><b>${s.rows.length}</b>doors</div>
-    <div class="stat"><b style="color:${STATUS.talked.color}">${by('talked')}</b>talked</div>
-    <div class="stat"><b style="color:${STATUS.material.color}">${by('material')}</b>material</div>
-    <div class="stat"><b style="color:${STATUS.noanswer.color}">${by('noanswer')}</b>no answer</div>
-    <div class="stat"><b style="color:${STATUS.dnr.color}">${by('dnr')}</b>do not return</div>
+    <div class="stat"><b style="color:${STATUS.talked.color}">${by('talked')}</b>${esc(STATUS.talked.label.toLowerCase())}</div>
+    <div class="stat"><b style="color:${STATUS.material.color}">${by('material')}</b>${esc(STATUS.material.label.toLowerCase())}</div>
+    <div class="stat"><b style="color:${STATUS.noanswer.color}">${by('noanswer')}</b>${esc(STATUS.noanswer.label.toLowerCase())}</div>
+    <div class="stat"><b style="color:${STATUS.dnr.color}">${by('dnr')}</b>${esc(STATUS.dnr.label.toLowerCase())}</div>
     <div class="stat"><b>${(s.metres/1609).toFixed(2)}</b>miles walked</div>
     <div class="stat"><b>${(s.drivenM/1609).toFixed(2)}</b>miles driven</div>
     <div class="stat"><b>${s.mins}</b>minutes out</div>`;
@@ -12632,6 +12702,12 @@ function renderSwitchUi() {
     if (typeof renderQuietChip   === 'function') renderQuietChip();
     if (typeof renderHubDataChips === 'function') renderHubDataChips();
     if (typeof renderMapDataChips === 'function') renderMapDataChips();
+    /* The door buttons and the map legend take their words from STATUS. Here rather
+       than in loadSettings() for two reasons: this pass is already wrapped, so a throw
+       cannot abandon the six settings that used to be read after it; and a restore
+       calls this, which is what the next slice needs when a restored backup carries
+       renamed labels. */
+    if (typeof renderStatusWords === 'function') renderStatusWords();
   } catch (e) {}    // a chip that will not draw must never stop a restore finishing
 }
 
