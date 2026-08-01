@@ -101,6 +101,15 @@ input,textarea,select{font:inherit;color:var(--txt);background:var(--card2);bord
    entry point being hittable from a moving truck. */
 #scoutPill{font-weight:800;font-size:11.5px;padding:5px 12px;min-height:44px;
   background:var(--card);border-color:#f59e0b;color:#fcd34d}
+/* The Scout pill is the ONE renameable name that sits in the top strip, and #stripEnd
+   does not wrap. Without this, a long enough Scout name pushes the menu button off the
+   right-hand edge, where #strip{overflow:hidden} hides it — and that button is the only
+   way into the menu, which is the only way to Backup, Restore, Export, Settings and to
+   the editor that would undo the rename. `lbl.menu.mScout` is capped at 14 for this
+   reason, measured; this is the belt as well, so a narrower phone or a longer strip
+   ellipsises the word rather than losing the menu. Visible, not silent. */
+#scoutPill{flex:0 1 auto;min-width:0;max-width:45vw}
+#scoutPill .mtxt{overflow:hidden;text-overflow:ellipsis;min-width:0}
 #scoutPill .go{color:#b45309;font-weight:900;margin-left:1px}
 #truckPill{background:#3b0d24;border-color:#f472b6;color:#fbcfe8;font-weight:800}
 #gpsPill.paused{background:#2a1608;border-color:#f59e0b;color:#fcd34d}
@@ -644,7 +653,15 @@ select{min-height:44px}
            row is already 44px because of the two buttons beside it, so a 44px Scout pill
            here costs nothing at all. Beside ROOFING it cost 16px off the map and the four
            big buttons, every single time, because that row is only 28px tall. -->
-      <button class="pill" id="scoutPill">🔭 Scout<span class="go">›</span></button>
+      <!-- Split the same way the menu buttons were: icon in its own span, words in
+           theirs, so a rename never means retyping an emoji on a phone keyboard. The
+           words carry the menu button's id — one name for Scout, wherever it is written.
+           NOT pixel-identical, unlike the menu: `.pill` is an inline-flex box with a 5px
+           gap, so the space that used to sit inside one text node became the flex gap
+           every other pill in this strip already uses. Measured: the pill is 1px wider,
+           the strip is the same height at 320, 360, 375 and 390, and nothing below it
+           moves. -->
+      <button class="pill" id="scoutPill"><span class="emo">🔭</span> <span class="mtxt" data-lbl="lbl.menu.mScout">Scout</span><span class="go">›</span></button>
       <button id="doneBtn" aria-label="how today is going"><b id="menuCount">0</b> today</button>
       <button id="menuBtn">☰<span id="menuDot" class="hide"></span></button>
     </span>
@@ -718,7 +735,7 @@ select{min-height:44px}
 <div id="scoutView" class="hide">
   <div id="scoutTop">
     <div>
-      <div id="scoutTitle">Scout</div>
+      <div id="scoutTitle" data-lbl="lbl.menu.mScout">Scout</div>
       <div id="scoutSub" class="small">Tap what you see.</div>
     </div>
     <!-- The ONLY controls are up here, away from the three big ones. Sorting used to be a
@@ -762,7 +779,7 @@ select{min-height:44px}
       <!-- was a SECOND element with id="sortTitle" — a duplicate id in the document.
            Nothing reads it today, so it was inert, but the next thing to set the sort
            screen's heading would have silently written to whichever came first. -->
-      <div id="marksTitle" class="screenTitle">Scouted houses</div>
+      <div id="marksTitle" class="screenTitle" data-lbl="lbl.menu.mMarks">Scouted houses</div>
       <div class="small" id="marksSub"></div>
     </div>
     <button id="marksExit">Done</button>
@@ -827,17 +844,22 @@ select{min-height:44px}
     <div><i data-sw="dnr" style="background:#ef4444"></i><span data-s="dnr">Don't Come Back</span></div>
     <div><i style="background:#94a3b8"></i>Not hit</div>
     <div style="margin-top:4px;border-top:1px solid var(--line);padding-top:4px">
-      <span style="border:1.5px solid #cbd5e1;display:inline-block;width:11px;height:11px;border-radius:3px;margin-right:6px;vertical-align:-1px"></span>Roofing</div>
-    <div><span style="border:1.5px dashed #e9d5ff;display:inline-block;width:11px;height:11px;border-radius:3px;margin-right:6px;vertical-align:-1px"></span>Appraisal</div>
+      <span style="border:1.5px solid #cbd5e1;display:inline-block;width:11px;height:11px;border-radius:3px;margin-right:6px;vertical-align:-1px"></span><span data-line="roof">Roofing</span></div>
+    <div><span style="border:1.5px dashed #e9d5ff;display:inline-block;width:11px;height:11px;border-radius:3px;margin-right:6px;vertical-align:-1px"></span><span data-line="appraisal">Appraisal</span></div>
     <div style="margin-top:4px;border-top:1px solid var(--line);padding-top:4px">
       <span style="display:inline-block;width:11px;height:11px;border-radius:2px;margin-right:6px;vertical-align:-1px;background:rgba(234,179,8,.30);border:1px solid rgba(234,179,8,.5)"></span>Likely a rental</div>
-    <div><span style="display:inline-block;width:13px;height:11px;margin-right:5px;vertical-align:-1px;border:1px solid #a855f7;background:repeating-linear-gradient(45deg,#a855f7 0 3px,transparent 3px 7px)"></span>Appraisal flyer left — worth a roofing knock</div>
+    <div><span style="display:inline-block;width:13px;height:11px;margin-right:5px;vertical-align:-1px;border:1px solid #a855f7;background:repeating-linear-gradient(45deg,#a855f7 0 3px,transparent 3px 7px)"></span><span data-line-note>Appraisal flyer left — worth a roofing knock</span></div>
     <div style="margin-top:4px;border-top:1px solid var(--line);padding-top:4px">
       <span style="display:inline-block;width:16px;height:3px;border-radius:2px;margin-right:5px;vertical-align:2px;background:#94a3b8;opacity:.6"></span>Driven, not walked</div>
     <div style="margin-top:4px;border-top:1px solid var(--line);padding-top:4px;font-weight:700">Scouted from the truck — seen, not knocked</div>
-    <div><span style="display:inline-block;width:10px;height:10px;margin-right:8px;vertical-align:-1px;transform:rotate(45deg);border:2px solid #a855f7;border-radius:2px"></span>Yard sign</div>
-    <div><span style="display:inline-block;width:10px;height:10px;margin-right:8px;vertical-align:-1px;transform:rotate(45deg);border:2px solid #38bdf8;border-radius:2px"></span>Tarp</div>
-    <div><span style="display:inline-block;width:10px;height:10px;margin-right:8px;vertical-align:-1px;transform:rotate(45deg);border:2px solid #f59e0b;border-radius:2px"></span>Damage</div>
+    <!-- The words and the three diamond colours used to be written out here by
+         hand, a second copy of MARK_KINDS that nothing kept in step. renderMarkWords()
+         writes both now, the same way renderStatusWords() writes the outcomes above.
+         The words below are the fallback for a build whose script dies before boot
+         finishes, and a check asserts they still match MARK_KINDS. -->
+    <div><span data-mkw="sign" style="display:inline-block;width:10px;height:10px;margin-right:8px;vertical-align:-1px;transform:rotate(45deg);border:2px solid #a855f7;border-radius:2px"></span><span data-mk="sign">Yard sign</span></div>
+    <div><span data-mkw="tarp" style="display:inline-block;width:10px;height:10px;margin-right:8px;vertical-align:-1px;transform:rotate(45deg);border:2px solid #38bdf8;border-radius:2px"></span><span data-mk="tarp">Tarp</span></div>
+    <div><span data-mkw="damage" style="display:inline-block;width:10px;height:10px;margin-right:8px;vertical-align:-1px;transform:rotate(45deg);border:2px solid #f59e0b;border-radius:2px"></span><span data-mk="damage">Damage</span></div>
     <div style="color:var(--dim)">Hollow means still to sort. Filled means you have put it on a house.
       The diamond sits where the truck was, not on the lot.</div>
     <div style="margin-top:4px;border-top:1px solid var(--line);padding-top:4px" id="legendTracks"></div>
@@ -1107,7 +1129,9 @@ select{min-height:44px}
 
 <div id="routeSheet" class="sheet hide">
   <div class="sheetBody">
-    <div class="sheetHead"><h2>Doors to try again</h2><button class="x" data-close="routeSheet">Close</button></div>
+    <!-- Same id as the menu button that opens this sheet, at his word: rename it once
+         and the button and the screen it opens can never say two different things. -->
+    <div class="sheetHead"><h2 data-lbl="lbl.menu.mRoute">Doors to try again</h2><button class="x" data-close="routeSheet">Close</button></div>
     <div class="sheetScroll">
       <div class="statsbox" id="rtHead"></div>
       <label class="f">Doors from</label>
@@ -1210,19 +1234,22 @@ select{min-height:44px}
     <div class="sheetScroll">
       <div id="backupNag" class="hide"></div>
 
-      <div class="dsec"><button class="dsecHead" data-msec="work"><i>▾</i>Out working</button>
+      <!-- The words of a section heading sit in their own span so a rename can reach
+           them without touching the caret, which setMSection rewrites on every open and
+           close. The caret is not a label and is never editable. -->
+      <div class="dsec"><button class="dsecHead" data-msec="work"><i>▾</i><span data-lbl="lbl.menu.sec.work">Out working</span></button>
         <div class="dsecBody" id="msecWork">
           <!-- The icon and the words are separate spans on every menu button. They used
                to be one text node, which meant renaming a button would have made him
                retype the emoji on a phone keyboard every time. The single space between
                the two spans is the same one space that was in the text before, so
                nothing moves on screen. -->
-          <button class="ghost" id="mCrm"><span class="emo">👥</span> <span class="mtxt">Customers and follow-ups</span></button>
-          <button class="ghost" id="mAreas"><span class="emo">📍</span> <span class="mtxt">By area — the patches you named, round by round</span></button>
-          <button class="ghost" id="mRoute"><span class="emo">🔁</span> <span class="mtxt">Doors to try again</span></button>
-          <button class="ghost" id="mScout"><span class="emo">🔭</span> <span class="mtxt">Scout</span></button>
-          <button class="ghost" id="mMarks"><span class="emo">🔎</span> <span class="mtxt">Scouted houses</span></button>
-          <button class="ghost" id="mAppt"><span class="emo">📋</span> <span class="mtxt">Schedule and appointments</span></button>
+          <button class="ghost" id="mCrm"><span class="emo">👥</span> <span class="mtxt" data-lbl="lbl.menu.mCrm">Customers and follow-ups</span></button>
+          <button class="ghost" id="mAreas"><span class="emo">📍</span> <span class="mtxt" data-lbl="lbl.menu.mAreas">By area — the patches you named, round by round</span></button>
+          <button class="ghost" id="mRoute"><span class="emo">🔁</span> <span class="mtxt" data-lbl="lbl.menu.mRoute">Doors to try again</span></button>
+          <button class="ghost" id="mScout"><span class="emo">🔭</span> <span class="mtxt" data-lbl="lbl.menu.mScout">Scout</span></button>
+          <button class="ghost" id="mMarks"><span class="emo">🔎</span> <span class="mtxt" data-lbl="lbl.menu.mMarks">Scouted houses</span></button>
+          <button class="ghost" id="mAppt"><span class="emo">📋</span> <span class="mtxt" data-lbl="lbl.menu.mAppt">Schedule and appointments</span></button>
           <!-- The truck block moved to Settings at his word. It was four rows and a
                readout sitting between the last thing he taps out here and "How you're
                doing", which is where History lives — and he does not need it: he drops
@@ -1232,31 +1259,31 @@ select{min-height:44px}
       <!-- These two are read sitting down, not on a porch, so they left "Out working".
            was "■ End session / session log", which read like a stop button, so the
            stats screen behind it went unfound. Ending is a button inside. -->
-      <div class="dsec"><button class="dsecHead" data-msec="review"><i>▾</i>How you're doing</button>
+      <div class="dsec"><button class="dsecHead" data-msec="review"><i>▾</i><span data-lbl="lbl.menu.sec.review">How you're doing</span></button>
         <div class="dsecBody" id="msecReview">
-          <button class="ghost" id="mSession"><span class="emo">📊</span> <span class="mtxt">How today's going — doors, miles, hours</span></button>
-          <button class="ghost" id="mDaysLog"><span class="emo">📅</span> <span class="mtxt">History — every day you were out, door by door</span></button>
+          <button class="ghost" id="mSession"><span class="emo">📊</span> <span class="mtxt" data-lbl="lbl.menu.mSession">How today's going — doors, miles, hours</span></button>
+          <button class="ghost" id="mDaysLog"><span class="emo">📅</span> <span class="mtxt" data-lbl="lbl.menu.mDaysLog">History — every day you were out, door by door</span></button>
         </div></div>
 
-      <div class="dsec"><button class="dsecHead" data-msec="day"><i>▾</i>End of day</button>
+      <div class="dsec"><button class="dsecHead" data-msec="day"><i>▾</i><span data-lbl="lbl.menu.sec.day">End of day</span></button>
         <div class="dsecBody" id="msecDay">
           <!-- The tier is called End of day and could not end the day. The only button
                that stops the session and the GPS was at the foot of the stats screen,
                two taps away under a heading that says How you're doing. It is still
                there — this is a second way in, at the top of the tier he opens when he
                is finished, above the backup he should take next. -->
-          <button class="ghost" id="mEndDay" style="margin-top:0"><span class="emo">■</span> <span class="mtxt">End the day — stop tracking</span></button>
+          <button class="ghost" id="mEndDay" style="margin-top:0"><span class="emo">■</span> <span class="mtxt" data-lbl="lbl.menu.mEndDay">End the day — stop tracking</span></button>
           <div class="small" id="endDayNote" style="margin:5px 0 16px"></div>
-          <button class="primary" id="mBackupShare" style="margin-top:0"><span class="emo">📤</span> <span class="mtxt">Full backup — send it somewhere safe</span></button>
-          <button class="ghost" id="mBackup"><span class="emo">💾</span> <span class="mtxt">Full backup — just download it</span></button>
+          <button class="primary" id="mBackupShare" style="margin-top:0"><span class="emo">📤</span> <span class="mtxt" data-lbl="lbl.menu.mBackupShare">Full backup — send it somewhere safe</span></button>
+          <button class="ghost" id="mBackup"><span class="emo">💾</span> <span class="mtxt" data-lbl="lbl.menu.mBackup">Full backup — just download it</span></button>
           <div class="small why" style="margin-top:5px">Every door, note, tag, stage, follow-up, appointment and walking track, in one file. This is the only thing that can rebuild the app if the phone is lost or the icon is deleted. Get it off the phone.</div>
-          <button class="ghost" id="mRestore" style="margin-top:12px"><span class="emo">⤴︎</span> <span class="mtxt">Restore from a full backup</span></button>
+          <button class="ghost" id="mRestore" style="margin-top:12px"><span class="emo">⤴︎</span> <span class="mtxt" data-lbl="lbl.menu.mRestore">Restore from a full backup</span></button>
           <input type="file" id="restoreFile" accept=".json,application/json" class="hide">
-          <button class="ghost" id="mExport" style="margin-top:16px"><span class="emo">⬇︎</span> <span class="mtxt">Export…</span></button>
+          <button class="ghost" id="mExport" style="margin-top:16px"><span class="emo">⬇︎</span> <span class="mtxt" data-lbl="lbl.menu.mExport">Export…</span></button>
           <div class="small why" style="margin-top:5px">A spreadsheet or a map file, for working at a laptop. Useful, but <b>this is not a backup</b> — it leaves things out and nothing can restore from it.</div>
         </div></div>
 
-      <div class="dsec"><button class="dsecHead" data-msec="settings"><i>▸</i>Settings</button>
+      <div class="dsec"><button class="dsecHead" data-msec="settings"><i>▸</i><span data-lbl="lbl.menu.sec.settings">Settings</span></button>
         <div class="dsecBody hide" id="msecSettings">
           <label class="f">Home</label>
           <div class="chips">
@@ -1497,9 +1524,9 @@ const APP_NAME = 'CanvassEaze';
    is the one that did not move.
    `short` is a separate, shorter word for the two list rows where the long one will
    not fit: the house-picker sheet and the repoint list. It is deliberately NOT worked
-   out from `label`, because no rule turns "Don't Come Back" into "DNR" — so it is
-   still hand-written, and a rename does not reach it. That is a known gap and it
-   belongs to the editor slice, where `short` gets its own box.
+   out from `label`, because no rule turns "Don't Come Back" into "DNR" — so it has its
+   own box in the registry and its own cap, and a rename reaches it. It was a known gap
+   until v28.
    `color` paints the lot on both maps and the legend swatch. It is NOT the colour of
    the big button — those are the four CSS variables at the top of the stylesheet, a
    darker set chosen to carry white text. The two have always differed and neither is
@@ -1535,6 +1562,37 @@ function renderStatusWords() {
   document.querySelectorAll('#legend [data-sw]').forEach(el => {
     const s = STATUS[el.dataset.sw];
     if (s) el.style.background = s.color;
+  });
+}
+/* The same job for the three scout marks. The big map's legend had its own
+   hand-written copy of all three words AND of all three colours — the exact
+   shape of the fault the door legend turned out to have in round seventeen,
+   sitting one block further down the same block of markup and missed because
+   nobody looked past the outcomes. Found by `02 Tests\wordhunt.mjs`.
+   Everywhere else that names a mark reads MARK_KINDS already. */
+/* And the same job again for the two book names, which have been renameable since long
+   before any of this and were STILL written out by hand in the big map's legend — so
+   renaming Roofing left the legend calling it Roofing eight lines above a walking track
+   labelled with his word. The map's filter button and the Export screen's book chips
+   held copies too; all of them read LINES now. Called from applyLabels() and from
+   setLineName(), which between them are every path that can change one. */
+function renderBookWords() {
+  document.querySelectorAll('#legend [data-line]').forEach(el => {
+    const l = LINES[el.dataset.line];
+    if (l) el.textContent = l.label;
+  });
+  const note = document.querySelector('#legend [data-line-note]');
+  if (note) note.textContent =
+    `${LINES.appraisal.label} flyer left — worth a ${LINES.roof.label.toLowerCase()} knock`;
+}
+function renderMarkWords() {
+  document.querySelectorAll('#legend [data-mk]').forEach(el => {
+    const m = MARK_KINDS[el.dataset.mk];
+    if (m) el.textContent = m.label;
+  });
+  document.querySelectorAll('#legend [data-mkw]').forEach(el => {
+    const m = MARK_KINDS[el.dataset.mkw];
+    if (m) el.style.borderColor = m.color;
   });
 }
 const TAGS = ['Appointment set','Wants estimate','Storm damage','Insurance claim','Callback later','Renter','Not interested','Already has contractor','Roof looks new'];
@@ -1576,8 +1634,236 @@ function setLineName(k, name) {
   if (clean) saved[k] = clean; else delete saved[k];
   try { localStorage.setItem('lineNames', JSON.stringify(saved)); } catch (e) {}
   renderMode(); renderStrip(); renderHouse(); renderStats();
+  /* The big map's legend named both books by hand until v28. This is the other path
+     that can change one, so it redraws them here too. */
+  if (typeof renderBookWords === 'function') renderBookWords();
   if (window._map) refreshMapLayers();
 }
+/* ==========================================================================
+   RENAMEABLE NAMES — the registry
+   ==========================================================================
+   Every user-facing name in the first batch has an id and a default. The app
+   looks the name up instead of having it written into the markup. If he has
+   overridden that id he gets his word; if he has not, he gets the app's.
+
+   This is `LINE_DEFAULTS` / `applyLineName` above, generalised, and it is
+   deliberately the same shape — tidy the text, cap it, blank means put it back,
+   store only the override — so there is one idea here rather than two. The two
+   book names still run on their own copy of it and fold into this table when
+   the editor screen is built. Folding them in now would mean two pieces of code
+   writing the same name, which is worse than the duplication it removes.
+
+   WHY IT EXISTS. Round ten renamed six menu items by hand and every word cost a
+   full deploy: bump the version, bump the shell, push, wait for Pages, fight the
+   service worker. Wording is never right the first time and cannot be judged at
+   a desk — only by reaching for the wrong button in a driveway. With this in,
+   trying a name is a settings change on his phone, in the truck.
+
+   FOUR RULES THIS TABLE KEEPS.
+   1. An id is for ever. It is what his saved word is keyed on, so renaming an id
+      loses that word exactly the way renaming a tag would orphan a record.
+   2. Only overrides are stored, never the defaults. Rename three things and the
+      file holds three lines — and a later version's better wording still reaches
+      him everywhere he has not overruled it. Writing all 39 out would freeze his
+      app's wording at whatever version introduced the editor, for ever, and he
+      would never learn why later improvements stopped arriving.
+   3. `into` writes the word into the keyed map, so the hundred places that
+      already read `STATUS[k].label` need no change at all. The alternative —
+      calling LBL() at every read site — is a hundred chances to miss one, and
+      round seventeen has already shown what missing one looks like.
+   4. Every place a name is written on screen is either in a keyed map, or
+      carries `data-lbl`, or is rebuilt from a keyed map on every render. There
+      is no fourth kind, and `02 Tests\wordhunt.mjs` is how that was established
+      rather than assumed.
+
+   THE CAPS ARE NOT ALL MEASURED. `door` is 35 — his ruling, from the 37 that
+   `02 Tests\doorcap.mjs` measured on his own handset, rounded down. Every other
+   number here is a guess wide enough not to clip anything the app ships with,
+   and a check enforces that much. They want measuring the way the door group
+   was before the editor screen starts warning him against them. */
+const LBL_KEY = 'customLabels';
+const LBL_CAP = { door:35, doorShort:12, stage:20, mark:20, range:20, menu:60, scout:14 };
+/* group · what the editor screen sorts by, in this order. */
+const LBL_GROUPS = ['door', 'stage', 'mark', 'range', 'menu'];
+const LABELS = {
+  /* ---- what happened at the door. `name` is the big button; `short` is the
+         separate, shorter word for the two list rows where the long one will
+         not fit — the house-picker sheet and the repoint list. It is NOT worked
+         out from the name, by his ruling: no rule turns "Don't Come Back" into
+         "DNR". Before this round a rename could not reach it at all. ---- */
+  'lbl.door.talked.name':    { def:'Talked',          group:'door', cap:LBL_CAP.door,      note:'Top left button.',                   into:v => { STATUS.talked.label   = v; } },
+  'lbl.door.talked.short':   { def:'Talked',          group:'door', cap:LBL_CAP.doorShort, note:'Short form, for tight list rows.',   into:v => { STATUS.talked.short   = v; } },
+  'lbl.door.material.name':  { def:'Left Material',   group:'door', cap:LBL_CAP.door,      note:'Top right button.',                  into:v => { STATUS.material.label = v; } },
+  'lbl.door.material.short': { def:'Material',        group:'door', cap:LBL_CAP.doorShort, note:'Short form, for tight list rows.',   into:v => { STATUS.material.short = v; } },
+  'lbl.door.noanswer.name':  { def:'No Answer',       group:'door', cap:LBL_CAP.door,      note:'Bottom left button.',                into:v => { STATUS.noanswer.label = v; } },
+  'lbl.door.noanswer.short': { def:'No answer',       group:'door', cap:LBL_CAP.doorShort, note:'Short form, for tight list rows.',   into:v => { STATUS.noanswer.short = v; } },
+  'lbl.door.dnr.name':       { def:"Don't Come Back", group:'door', cap:LBL_CAP.door,      note:'Bottom right button.',               into:v => { STATUS.dnr.label      = v; } },
+  'lbl.door.dnr.short':      { def:'DNR',             group:'door', cap:LBL_CAP.doorShort, note:'Short form, for tight list rows.',   into:v => { STATUS.dnr.short      = v; } },
+
+  /* ---- stages. Where the person stands, as opposed to what happened at the
+         door. `DISPO` is declared further down the file; the arrow is not run
+         until boot, so the order does not matter. ---- */
+  'lbl.stage.new':      { def:'New',            group:'stage', cap:LBL_CAP.stage, note:'Nothing has happened yet.',        into:v => { DISPO.new.label      = v; } },
+  'lbl.stage.callback': { def:'Callback',       group:'stage', cap:LBL_CAP.stage, note:'Ring them back.',                  into:v => { DISPO.callback.label = v; } },
+  'lbl.stage.appt':     { def:'Appointment',    group:'stage', cap:LBL_CAP.stage, note:'Booked in.',                       into:v => { DISPO.appt.label     = v; } },
+  'lbl.stage.quoted':   { def:'Quoted',         group:'stage', cap:LBL_CAP.stage, note:'Price given.',                     into:v => { DISPO.quoted.label   = v; } },
+  'lbl.stage.signed':   { def:'Signed',         group:'stage', cap:LBL_CAP.stage, note:'Job won.',                         into:v => { DISPO.signed.label   = v; } },
+  'lbl.stage.cold':     { def:'Not interested', group:'stage', cap:LBL_CAP.stage, note:'Said no.',                         into:v => { DISPO.cold.label     = v; } },
+  'lbl.stage.dead':     { def:'Dead',           group:'stage', cap:LBL_CAP.stage, note:'Nothing more to do here.',         into:v => { DISPO.dead.label     = v; } },
+
+  /* ---- scout marks. Three things he can see from a moving truck. ---- */
+  'lbl.mark.sign':   { def:'Yard sign', group:'mark', cap:LBL_CAP.mark, note:'A sign from another contractor in the garden.', into:v => { MARK_KINDS.sign.label   = v; } },
+  'lbl.mark.tarp':   { def:'Tarp',      group:'mark', cap:LBL_CAP.mark, note:'Cover on the roof.',                            into:v => { MARK_KINDS.tarp.label   = v; } },
+  'lbl.mark.damage': { def:'Damage',    group:'mark', cap:LBL_CAP.mark, note:'Something you can see from the road.',          into:v => { MARK_KINDS.damage.label = v; } },
+
+  /* ---- date ranges. HIS RULING: one name each, shared by the Export screen and
+         by "Doors to try again". Those two had separate copies of the same four
+         words until this round, so the app could say "Last 7 days" on one screen
+         and something else on the other. ---- */
+  'lbl.range.today': { def:'Today',        group:'range', cap:LBL_CAP.range, note:'Since midnight.',   into:v => { RANGES.today = v; } },
+  'lbl.range.week':  { def:'Last 7 days',  group:'range', cap:LBL_CAP.range, note:'This week.',        into:v => { RANGES.week  = v; } },
+  'lbl.range.month': { def:'Last 30 days', group:'range', cap:LBL_CAP.range, note:'This month.',       into:v => { RANGES.month = v; } },
+  'lbl.range.all':   { def:'Everything',   group:'range', cap:LBL_CAP.range, note:'No date limit.',    into:v => { RANGES.all   = v; } },
+
+  /* ---- the menu. These live in the markup and are reached by `data-lbl`, so
+         they have no `into`. Where the same words are also a screen title or a
+         pill, the SAME id is on that element too — his ruling, so the menu and
+         the screen it opens can never say two different things. ---- */
+  'lbl.menu.sec.work':     { def:'Out working',      group:'menu', cap:LBL_CAP.menu, note:'Section heading.' },
+  'lbl.menu.sec.review':   { def:"How you're doing", group:'menu', cap:LBL_CAP.menu, note:'Section heading.' },
+  'lbl.menu.sec.day':      { def:'End of day',       group:'menu', cap:LBL_CAP.menu, note:'Section heading.' },
+  'lbl.menu.sec.settings': { def:'Settings',         group:'menu', cap:LBL_CAP.menu, note:'Section heading.' },
+  'lbl.menu.mCrm':         { def:'Customers and follow-ups',                          group:'menu', cap:LBL_CAP.menu, note:'Menu button.' },
+  'lbl.menu.mAreas':       { def:'By area — the patches you named, round by round', group:'menu', cap:LBL_CAP.menu, note:'Menu button.' },
+  'lbl.menu.mRoute':       { def:'Doors to try again',                                 group:'menu', cap:LBL_CAP.menu, note:'Menu button, and the title of the screen it opens.' },
+  /* The one name in this batch with a cap of its own, and it is MEASURED rather than
+     guessed: `02 Tests\scoutcap.mjs` puts the longest name that keeps the menu button
+     on screen at 14 on his 390-wide handset and 9 at 320, using the widest letter there
+     is. It is the only name that lands on a fixed control in the top strip. */
+  'lbl.menu.mScout':       { def:'Scout',                                              group:'menu', cap:LBL_CAP.scout, note:'Menu button, the pill on the main screen, and the screen itself. Short — it shares the top strip with the menu button.' },
+  'lbl.menu.mMarks':       { def:'Scouted houses',                                     group:'menu', cap:LBL_CAP.menu, note:'Menu button, and the title of the screen it opens.' },
+  'lbl.menu.mAppt':        { def:'Schedule and appointments',                          group:'menu', cap:LBL_CAP.menu, note:'Menu button.' },
+  'lbl.menu.mSession':     { def:"How today's going — doors, miles, hours",        group:'menu', cap:LBL_CAP.menu, note:'Menu button.' },
+  'lbl.menu.mDaysLog':     { def:'History — every day you were out, door by door', group:'menu', cap:LBL_CAP.menu, note:'Menu button.' },
+  'lbl.menu.mEndDay':      { def:'End the day — stop tracking',                    group:'menu', cap:LBL_CAP.menu, note:'Menu button.' },
+  'lbl.menu.mBackupShare': { def:'Full backup — send it somewhere safe',           group:'menu', cap:LBL_CAP.menu, note:'Menu button.' },
+  'lbl.menu.mBackup':      { def:'Full backup — just download it',                 group:'menu', cap:LBL_CAP.menu, note:'Menu button.' },
+  'lbl.menu.mRestore':     { def:'Restore from a full backup',                          group:'menu', cap:LBL_CAP.menu, note:'Menu button.' },
+  'lbl.menu.mExport':      { def:'Export…',                                        group:'menu', cap:LBL_CAP.menu, note:'Menu button.' },
+};
+/* His words, keyed by id. A display cache and nothing else — every write reads
+   the file back first, so this can never win over what is on disk. That is the
+   loadSwitches lesson: memory that is allowed to win does not merely ignore a
+   restored value, it writes over it on the next tap. */
+let customLabels = {};
+function customLabelsSaved() {
+  try {
+    const o = JSON.parse(localStorage.getItem(LBL_KEY) || '{}');
+    return (o && typeof o === 'object' && !Array.isArray(o)) ? o : {};
+  } catch (e) { return {}; }
+}
+/* `LABELS` is a plain object, so `LABELS['toString']` and `LABELS['constructor']` are
+   truthy and would sail through a bare `if (!e)` guard — an id of `toString` would then
+   have no cap and no default, and would be stored and carried in the backup as junk.
+   One guard, used by all three of the functions below. */
+function lblEntry(id) {
+  return Object.prototype.hasOwnProperty.call(LABELS, id) ? LABELS[id] : null;
+}
+/** his word for this id, or the app's. Never blank, and never undefined.
+    NOT called `L`, which is what the spec asked for. Leaflet's global is `L`, and a
+    top-level `function L(id)` in this file takes it — the map then dies on
+    "L.map is not a function" and every lot line and owner name on the big map
+    disappears. It shipped that way for exactly one test run. Do not rename it back. */
+function LBL(id) {
+  const e = lblEntry(id);
+  if (!e) return '';
+  const own = Object.prototype.hasOwnProperty.call(customLabels, id) ? customLabels[id] : null;
+  /* Tidied and capped HERE, not only where it is written. A restore puts the file's
+     value straight onto the phone without ever going through setLabel, so a backup
+     edited by hand, or written by a later build with a different cap, could otherwise
+     land a word of any length on the four big buttons and on the Scout pill in the top
+     strip. The cap is a property of the value, not of the one function that happens to
+     write it. */
+  return (typeof own === 'string' && own.trim())
+    ? own.replace(/\s+/g, ' ').trim().slice(0, e.cap)
+    : e.def;
+}
+/* Writes every name into the place it is read from: the keyed maps first, then
+   the markup, then the two passes that draw the fixed furniture from those maps.
+   That order matters — both of those passes read the maps.
+
+   Called from renderSwitchUi(), which is already the "redraw the fixed furniture"
+   pass: it runs at boot AND after a restore, it is wrapped so a throw cannot
+   abandon what follows it, and it is safe to call before the elements exist. A
+   restored backup carrying his names therefore redraws for free.
+
+   textContent, never innerHTML, so a name he types with a "<" in it is text by
+   construction rather than by remembering to call esc(). */
+function applyLabels() {
+  customLabels = customLabelsSaved();
+  for (const id in LABELS) {
+    const e = LABELS[id];
+    /* One at a time. A map that will not take a word must not stop the other
+       thirty-eight — a half-applied rename is a bug report, a fully missing one
+       is a blank app. */
+    if (e.into) { try { e.into(LBL(id)); } catch (err) {} }
+  }
+  try {
+    document.querySelectorAll('[data-lbl]').forEach(el => {
+      const id = el.dataset.lbl;
+      if (lblEntry(id)) el.textContent = LBL(id);
+    });
+  } catch (err) {}
+  /* One at a time, for the same reason the map writes are: a throw in the first of three
+     redraws must not silently skip the other two, and inside setLabel it must not skip
+     the repaint that follows, after the word has already been written to disk. */
+  try { if (typeof renderStatusWords === 'function') renderStatusWords(); } catch (err) {}
+  try { if (typeof renderMarkWords   === 'function') renderMarkWords();   } catch (err) {}
+  try { if (typeof renderBookWords   === 'function') renderBookWords();   } catch (err) {}
+}
+/* Everything on screen right now that shows one of these names and is not redrawn
+   by applyLabels itself. Sheets build their rows from the keyed maps every time
+   they open, so they need nothing here; the main screen and the map layers are
+   already drawn and would otherwise keep the old word until something else moved.
+   The same list setLineName has used since the books became renameable, which is
+   the point — a rename that lands on three of the five places it appears looks
+   like a fault in the app rather than in the editor. */
+function renderAfterRename() {
+  try {
+    renderMode(); renderStrip(); renderHouse(); renderStats();
+    if (window._map) refreshMapLayers();
+  } catch (e) {}
+}
+/** his word for one id. Blank puts the app's word back. Returns what was stored. */
+function setLabel(id, name) {
+  const e = lblEntry(id);
+  if (!e) return '';
+  const clean = String(name == null ? '' : name).replace(/\s+/g, ' ').trim().slice(0, e.cap);
+  /* Read from the file, not from memory. See the note on `customLabels`. */
+  const saved = customLabelsSaved();
+  /* Typing the app's own word stores nothing. If it were stored, a later version
+     with better wording would lose to a word he never actually chose to override,
+     and there would be no way for him to tell why. */
+  if (clean && clean !== e.def) saved[id] = clean; else delete saved[id];
+  let wrote = true;
+  try { localStorage.setItem(LBL_KEY, JSON.stringify(saved)); } catch (err) { wrote = false; }
+  applyLabels();
+  renderAfterRename();
+  /* Never silent. applyLabels re-reads the file, so a refused write already shows as the
+     word snapping back — but a name that will not stick and says nothing about why reads
+     as the app being broken. No work is at risk here, so a message rather than the red
+     banner a refused DOOR gets. */
+  if (!wrote && typeof flashToast === 'function') {
+    flashToast('That name did not save', 'The phone refused to write it — free some space', '#f59e0b');
+  }
+  return clean;
+}
+/** how many names he has overridden — the count the reset-everything prompt needs. */
+function customLabelCount() {
+  const saved = customLabelsSaved();
+  return Object.keys(saved).filter(id => lblEntry(id)).length;
+}
+
 const dayKey = ts => { const d = new Date(ts); return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`; };
 /* Kept, unused. Walking lines are coloured by book now, not by day — which day a
    walk belongs to is answered by ticking days on and off in the Days panel. This is
@@ -4775,8 +5061,18 @@ function openDetail(visit, focusName) {
       pullDetail();
       if ((editing.dispo || 'new') !== k) {
         editing.dispo = k;
+        /* The APP'S word for the stage, not his. This line is written into the door
+           record, and from there into the CSV Notes column, the phone list and the day
+           report — so a word he can change must never be the one that lands in it.
+           Rename Quoted to Priced and every note already on disk would still say
+           Quoted, uncorrectably, and two houses staged either side of the rename would
+           read as two different stages. A STATUS entry has this right already: it
+           stores the key and the word is worked out at read time. Doing the same here
+           means a new log kind, and record formats do not change without his go — so
+           the stable word goes in instead, and the rename reaches every other place. */
+        const stageWord = (LABELS['lbl.stage.' + k] || {}).def || k;
         editing.log = [...logOf(editing), { id:newId(), ts:Date.now(), kind:'note',
-          text:`Stage set to ${d.label}.` }];
+          text:`Stage set to ${stageWord}.` }];
       }
       openDetail(editing);
     };
@@ -5773,7 +6069,7 @@ function syncMapBtns() {
   $('mapFollow').classList.toggle('on', mapOpts.follow);
   const f = $('mapFilter');
   f.textContent = mapOpts.filter === 'all' ? '👁 All work'
-    : mapOpts.filter === 'roof' ? '👁 Roofing only' : '👁 Appraisal only';
+    : mapOpts.filter === 'roof' ? `👁 ${LINES.roof.label} only` : `👁 ${LINES.appraisal.label} only`;
   f.classList.toggle('on', mapOpts.filter !== 'all');
 }
 
@@ -6276,6 +6572,13 @@ const BACKUP_LOCAL = [
      an explanation OF his work rather than the work itself — no door, step, appointment or
      area is in here, and a refused write costs a sentence, not a record. */
   ['quietCloses', false],
+  /* His own words for the app's buttons and headings. Flagged false because losing it
+     loses no work — every door, area and appointment is untouched by a rename, and the
+     app's own wording comes back. It travels because a phone swap that silently put
+     every name back to the factory word would look exactly like the rename feature
+     having broken, and he would have no way to tell the difference. Not a list, so it
+     replaces rather than merges, the same as `lineNames`. */
+  ['customLabels', false],
 ];
 /* The two flagged `true` that are LISTS get merged on the way back in, never replaced —
    same rule as door records. Restoring Monday's file on Wednesday must not take the
@@ -6408,7 +6711,7 @@ function renderExport() {
       el.appendChild(b);
     });
   };
-  chip('xLine', [['all','Both'],['roof','Roofing','#0ea5e9'],['appraisal','Appraisal','#a855f7']],
+  chip('xLine', [['all','Both'],['roof',LINES.roof.label,'#0ea5e9'],['appraisal',LINES.appraisal.label,'#a855f7']],
        xOpts.line, v => xOpts.line = v);
   chip('xRange', Object.entries(RANGES).map(([k,l]) => [k,l]), xOpts.range, v => xOpts.range = v);
   chip('xStatus', [['all','All statuses'], ...Object.entries(STATUS).map(([k,s]) => [k, s.label, s.color])],
@@ -7183,7 +7486,7 @@ document.querySelectorAll('.dsecHead[data-msec]').forEach(b => {
 /* ---- what version is actually on the phone ----
    Matches the service worker cache name, so "did the update land" is answerable by
    looking rather than guessing. */
-const BUILD_VERSION = 'v27';
+const BUILD_VERSION = 'v28';
 const BUILD_DATE = '1 August 2026';
 function renderVersionStamp() {
   const el = $('versionStamp'); if (!el) return;
@@ -7428,7 +7731,9 @@ function renderApptLink(v) {
   }
   if ((v.dispo || 'new') !== 'appt') { el.classList.add('hide'); el.innerHTML = ''; return; }
   el.classList.remove('hide');
-  el.innerHTML = `<div class="nagWarn">This one is on the Appointment stage but has no time on the schedule.</div>`;
+  /* The stage is named from DISPO, not written out — renaming a stage has to reach the
+     sentences that talk about it as well as the chips that set it. */
+  el.innerHTML = `<div class="nagWarn">This one is on the ${esc(DISPO.appt.label)} stage but has no time on the schedule.</div>`;
   const add = document.createElement('button');
   add.className = 'primary'; add.textContent = '📅 Put it on the schedule';
   add.onclick = () => {
@@ -8696,8 +9001,15 @@ $('restoreFile').onchange = async e => {
        had a second ago — which reads as the restore having quietly done nothing.
        syncWakeToWant because a restored file can switch the screen lock off while one is
        being held, and nothing else would ever let go of it. */
-    renderStats(); renderAreas(); renderSoundChip();
-    renderSwitchUi(); syncWakeToWant(); drawMini();
+    /* renderSwitchUi FIRST, because it is what puts a restored backup's renamed names
+       into STATUS, DISPO, MARK_KINDS, RANGES and the markup. Everything after it reads
+       those, so the old order left the gate tiles and the house card showing the words
+       the phone had a second ago until the next GPS fix redrew them. renderHouse for
+       the same reason — the card's "Roofing: Talked · 3 days ago" line names an outcome
+       and nothing else on this path redraws it. */
+    renderSwitchUi();
+    renderStats(); renderAreas(); renderSoundChip(); renderHouse();
+    syncWakeToWant(); drawMini();
 
     const said = `${wrote} door record${wrote===1?'':'s'} put back`
       + (kept ? `, ${kept} already here and left alone` : '')
@@ -10141,7 +10453,7 @@ $('apSave').onclick = () => {
   apptDraft = null; $('apptForm').classList.add('hide');
   renderAppts(); renderStrip(); buzz(20);
   flashToast('Appointment saved',
-    staged ? 'That customer is now on the Appointment stage' :
+    staged ? `That customer is now on the ${DISPO.appt.label} stage` :
     d.lat == null ? 'No location on it, so no drive time' : '', '#22c55e');
 };
 
@@ -11109,7 +11421,7 @@ function renderSort() {
     $('sortSub').textContent = left.length ? `${left.length} skipped — tap Done, they will be here next time.` : 'All done.';
     host.innerHTML = left.length
       ? '<div class="small" style="padding:12px 2px">That is the end of the list. The ones you skipped are still waiting.</div>'
-      : '<div class="small" style="padding:12px 2px">All sorted. They are in <b>Scouted houses</b> — in the menu, or on the Scouted button while you are scouting.</div>';
+      : `<div class="small" style="padding:12px 2px">All sorted. They are in <b>${esc(LBL('lbl.menu.mMarks'))}</b> — in the menu, or on the Scouted button while you are scouting.</div>`;
     return;
   }
   if (m.key || m.dropped) return sortNext();
@@ -11449,7 +11761,7 @@ function exitMarks() { $('marksView').classList.add('hide'); }
 function leaveScoutToSort() {
   if (!scoutOpen) return;
   exitScout();
-  flashToast('Back on the main screen', 'Sorting is a parked job. Tap Scout at the top to carry on scouting.', '#f59e0b');
+  flashToast('Back on the main screen', `Sorting is a parked job. Tap ${LBL('lbl.menu.mScout')} at the top to carry on scouting.`, '#f59e0b');
 }
 /* Not `= exitMarks`: exitMarks is also called on the way DEEPER — opening the house
    behind a mark, or dropping into sorting — and those must not throw the menu back up
@@ -11761,7 +12073,11 @@ function renderRoute() {
     <div class="stat"><b>${r.done.length}</b>done tonight</div>`;
 
   const when = $('rtWhen'); when.innerHTML = '';
-  [['today','Today'],['week','Last 7 days'],['all','Everything']].forEach(([k, label]) => {
+  /* From RANGES rather than written out again. These three were a second copy of the
+     Export screen's four date words, so renaming one there left this screen saying the
+     old thing. HIS RULING: one name each, shared by both screens. Three of the four,
+     because a month of doors to try again is not a run anybody drives. */
+  ['today','week','all'].map(k => [k, RANGES[k]]).forEach(([k, label]) => {
     const b = document.createElement('button');
     b.className = 'chip' + (routeWhen === k ? ' on' : ''); b.textContent = label;
     b.onclick = () => {
@@ -12487,7 +12803,7 @@ function renderBackupNag() {
        still in the count above, so every other thing he can look at agrees it is there. */
     + (visitWriteFailed ? `<br>⚠️ <b>The phone refused to save a door record.</b> What is on screen may not be on the phone. Take a full backup now — this usually means it has run out of room.` : '')
     + (overdue ? `<br>Delete the app icon and they are gone. Take a full backup below.` : '')
-    + (storageGrant === false ? `<br>⚠️ The browser has also refused to protect this app's storage — see Settings.` : '')
+    + (storageGrant === false ? `<br>⚠️ The browser has also refused to protect this app's storage — see ${esc(LBL('lbl.menu.sec.settings'))}.` : '')
     + (dayWriteFailed ? `<br>⚠️ <b>The phone refused to save your walking track.</b> Back up now — this usually means it has run out of room.` : '')
     /* The toast for this shows once and is gone in fifteen seconds. Without a line
        here the app would go on quietly refusing to save the track with nothing on
@@ -12658,6 +12974,11 @@ const BACKUP_SWITCHES = ['snapMax','hubSpan','trackDetail','hubSat','headUp','re
 /* Not held in memory at all — read straight from storage at the moment they are used, so
    a restore takes effect without anything having to reload them. */
 const BACKUP_ONDEMAND = ['menuSecs', 'quietCloses'];
+/* Read back by applyLabels(), which renderSwitchUi() runs at boot and again at the end of
+   a restore. Neither owned by loadSwitches nor read fresh at the point of use, so it is
+   named here — otherwise the check that every backed-up key has something reading it back
+   cannot see this one, and the v12 fault it exists to catch would be open again. */
+const BACKUP_RENDERED = ['customLabels'];
 function loadSwitches() {
   /* Corrected values are written straight back. Substituting a default in memory and
      leaving the bad one on disk means every backup from then on carries the bad one to
@@ -12702,12 +13023,14 @@ function renderSwitchUi() {
     if (typeof renderQuietChip   === 'function') renderQuietChip();
     if (typeof renderHubDataChips === 'function') renderHubDataChips();
     if (typeof renderMapDataChips === 'function') renderMapDataChips();
-    /* The door buttons and the map legend take their words from STATUS. Here rather
-       than in loadSettings() for two reasons: this pass is already wrapped, so a throw
-       cannot abandon the six settings that used to be read after it; and a restore
-       calls this, which is what the next slice needs when a restored backup carries
-       renamed labels. */
-    if (typeof renderStatusWords === 'function') renderStatusWords();
+    /* Every renameable name goes on here — his word if he has one, the app's if not —
+       and applyLabels() ends by calling renderStatusWords() and renderMarkWords(), so
+       the door buttons and both halves of the map legend are covered by this one call.
+       Here rather than in loadSettings() for two reasons: this pass is already wrapped,
+       so a throw inside a localStorage read cannot abandon the six settings that used
+       to be read after it; and a restore calls this, so a backup carrying his names
+       redraws with them without a reload. */
+    if (typeof applyLabels === 'function') applyLabels();
   } catch (e) {}    // a chip that will not draw must never stop a restore finishing
 }
 
