@@ -270,6 +270,27 @@ label.f.hasq{display:inline-block;margin:12px 0 5px;vertical-align:middle}
 .chip{background:var(--card2);border:1px solid var(--line);border-radius:999px;padding:9px 13px;font-size:13px;font-weight:700;color:var(--dim)}
 .chip.on{background:#1e3a5f;border-color:#3b82f6;color:#dbeafe}
 .chips{display:flex;flex-wrap:wrap;gap:8px;margin-top:4px}
+/* A NAME HE TYPES MAY BE ONE LONG WORD WITH NO SPACES IN IT, and an unbreakable run of
+   letters does not wrap — it pushes whatever is beside it off the edge of the screen.
+   `02 Tests\capsweep.mjs` measured what that costs on a 320px phone: SEVEN characters
+   in a scout mark and the map legend runs off its panel; TEN in a menu name and Back
+   and Scouted leave the Scout screen; NINETEEN in a stage or a range and the chip runs
+   off its sheet. Every one of those is the same failure the Scout pill has a guard for
+   — a control he needs walks off the edge and there is no way back to it.
+   With this in, the same measurement returns 80 characters with nothing pushed off, on
+   every one of the four widths. Belt as well as braces: the cap stops him getting there,
+   and this stops it mattering if he ever does.
+   IT DOES NOTHING AT ALL TO A NAME THAT ALREADY FITS, which is why the before-and-after
+   pictures of these screens are pixel for pixel identical.
+   THE WHOLE OF `#legend`, not `#legend [data-mk]`. The review caught that: the three
+   scout marks were covered and the four door outcomes six lines above them in the same
+   panel were not, along with both book names and the note under them. `#legend` is
+   absolutely positioned 8px from each edge with no overflow of its own, so an uncovered
+   35-character name spills straight out of the rounded panel and across the map.
+   `.dchip` is the stage word in the Customers list, whose cap went from 20 to 35 in this
+   same change. `.rnWas` is the greyed default on the editor screen, which would otherwise
+   push `put this back` off its own row. */
+#scoutTitle,#marksTitle,#routeSheet .sheetHead h2,.chip,.dchip,.scoutBtn>span,#legend,#menuSheet .mtxt,.rnWas{overflow-wrap:anywhere}
 /* Which book this door is filed under, and the one tap that moves it. */
 .bookRow{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin:2px 0 12px}
 .bookRow .bookLab{font-size:12px;font-weight:700;color:var(--dim);letter-spacing:.03em}
@@ -622,6 +643,37 @@ select{min-height:44px}
 #alertBar{display:block;width:calc(100% - 20px);margin:0 10px 6px;text-align:left;font-size:13.5px;line-height:1.3;
   color:#fff;background:#b91c1c;border:1px solid #ef4444;border-radius:12px;padding:9px 12px;font-weight:800;
   flex:0 0 auto;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-height:38px}
+/* The same strip, saying something that is not a fault. Amber rather than the alarm red,
+   because being in edit mode is a thing he chose, not a thing that went wrong. Identical
+   box, so the 38px it costs the grid is the 38px that was already being discussed and
+   never a second one. */
+#alertBar.editing{background:#a16207;border-color:#f59e0b}
+/* ---------- rename things ----------
+   A row is: what it is, the box, and then — ONLY when he has changed it — the app's own
+   word and a way back to it. Nothing on an unchanged row but the note and the box, so a
+   screen of 41 rows reads as a list of names rather than as a wall of controls. */
+.rnGrp{margin:22px 0 4px;display:flex;align-items:baseline;gap:10px;flex-wrap:wrap}
+.rnGrp h3{margin:0;font-size:13px;font-weight:800;color:var(--dim);letter-spacing:.4px;text-transform:uppercase}
+.rnGrp .chip{padding:5px 10px;font-size:11.5px;min-height:0}
+.rnRow{padding:11px 0 13px;border-bottom:1px solid var(--line)}
+.rnRow.on input{border-color:#3b82f6}
+.rnNote{font-size:11px;color:#5b6b7f;line-height:1.5;margin-bottom:5px}
+/* The default and the way back to it, on one line under the box. Present only on a row
+   he has changed — decision 7: he has to be able to see where he is overriding the app
+   rather than following it, because a later version's better wording will not reach a
+   row he has overridden and nothing else would ever tell him why. */
+.rnBack{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-top:6px}
+.rnWas{font-size:11px;color:#5b6b7f;flex:1;min-width:0;overflow-wrap:anywhere}
+.rnBack .chip{padding:5px 10px;font-size:11.5px;min-height:0;flex:0 0 auto}
+/* The count appears only inside the last stretch before the cap — his ruling. Quiet on
+   all 41 rows the rest of the time. */
+.rnCount{font-size:11px;font-weight:800;color:#fbbf24;margin-top:5px}
+/* `hidden` on its own loses to `.rnBack{display:flex}` and to `.chip`, which are more
+   specific than the browser's own [hidden] rule. These nodes are built once and hidden
+   rather than created and destroyed — see rnDecorate — so the hiding has to actually
+   win. */
+.rnRow [hidden],.rnGrp [hidden]{display:none}
+.rnDupe{font-size:11px;font-weight:700;color:#fbbf24;margin-top:5px}
 #lockScreen{position:fixed;inset:0;z-index:300;background:var(--bg);display:flex;align-items:center;justify-content:center;padding:24px}
 #lockBox{display:flex;flex-direction:column;align-items:center;gap:14px;width:100%;max-width:300px}
 #lockTitle{font-size:18px;font-weight:800}
@@ -1228,6 +1280,42 @@ select{min-height:44px}
   </div>
 </div>
 
+<!-- ============ rename things ============
+     One scrolling list, grouped by where the name appears, in LBL_GROUPS order. His
+     ruling: one screen, not tap-in-place. Every row is built in code from the registry
+     rather than written out here, because writing 41 rows into the markup would be a
+     second copy of the table and this whole feature exists to remove second copies.
+     Everything below `#rnList` is written with textContent, never innerHTML, so a name
+     typed with a "<" in it is text by construction. -->
+<div id="renameSheet" class="sheet hide">
+  <div class="sheetBody">
+    <div class="sheetHead"><h2 data-lbl="lbl.menu.mRename">Rename things</h2><button class="x" data-close="renameSheet">Close</button></div>
+    <div class="sheetScroll">
+      <!-- Said once, here, rather than found in a spreadsheet three weeks later. Tier C
+           safety text: not renameable, and it never will be. -->
+      <!-- `small`, NOT `small why`. `wireExplainers()` sweeps the whole document for
+           `.why` and folds every one of them behind a "? What this does" pill. Every
+           other `.why` in the file is inside the menu and is meant to collapse; this one
+           is the one thing on this screen that has to be read before he renames anything,
+           and with `why` on it he would never have seen it. Caught by review. -->
+      <div class="small" style="margin-bottom:12px;color:#5b6b7f">Your words go on the buttons, the maps, the menu and the screens. <b>They also go into the spreadsheet and the map file you export</b>, so a sheet exported before a rename will not match one exported after. Nothing already saved on the phone is changed by a rename.</div>
+      <div id="rnList"></div>
+      <button class="ghost danger" id="rnResetAll" style="margin-top:22px">Put every name back</button>
+      <div class="small" id="rnResetNote" style="margin-top:6px"></div>
+      <!-- TWO WAYS OUT, and they do different things, so they say different things.
+           `Close` shuts this screen and LEAVES editing on, which is his ruling — he tries
+           a name in a driveway, comes back, tries another, and having it lapse every time
+           would fight him. The amber bar is what stops that being quiet.
+           But the bar is on the main screen, UNDER this sheet and under the menu behind
+           it, so from here it cannot be tapped at all. Review found that: the only way to
+           finish was two taps he had no reason to know about. This is the same control as
+           the bar, on the screen he is actually looking at. -->
+      <button class="ghost" id="rnDone" style="margin-top:26px"><span class="emo">✓</span> <span class="mtxt">Done — stop editing names</span></button>
+      <div class="small" style="margin-top:6px">Close leaves this on so you can come back to it. This turns it off and takes the orange strip away.</div>
+    </div>
+  </div>
+</div>
+
 <div id="menuSheet" class="sheet hide">
   <div class="sheetBody">
     <div class="sheetHead"><h2>Menu</h2><button class="x" data-close="menuSheet">Close</button></div>
@@ -1307,11 +1395,12 @@ select{min-height:44px}
           </div>
           <div class="small" id="parkInfo" style="margin-top:6px"></div>
 
-          <label class="f">What your two books are called</label>
-          <div class="small why" style="margin-bottom:6px">The names on the mode pill. Renaming one changes nothing about what is already saved against it.</div>
-          <input id="mLineRoof" maxlength="18" placeholder="Roofing" autocomplete="off">
-          <input id="mLineAppraisal" maxlength="18" placeholder="Appraisal" autocomplete="off" style="margin-top:8px">
-          <button class="chip" id="mLineReset" style="margin-top:8px">Put both names back</button>
+          <!-- "What your two books are called" was a block of its own here until v29, with
+               two boxes and a reset button that only these two names had. It has moved into
+               Rename things at the foot of this section, where the other thirty-nine live,
+               so there is ONE place to change a word rather than two that look nothing like
+               each other. The words are still kept in `lineNames`, exactly where they were:
+               that key is in the backup twice over and two restore paths read it. -->
 
           <label class="f">Show on the mini map</label>
           <div class="chips" id="mHubData"></div>
@@ -1395,6 +1484,17 @@ select{min-height:44px}
 
           <label class="f">Storage on this phone</label>
           <div id="storageNote" class="small"></div>
+
+          <!-- ADVANCED. Not behind a gesture, and that was decided against what he first
+               asked for: he wanted the editor to be non-obvious, and the hard rules say
+               build so a stranger could use it and put nothing behind press-and-hold.
+               Settings is shut by default, which buys the obscurity without the trap of
+               forgetting the way back in and being stuck with names you cannot undo.
+               Above "Erase all data" on purpose — the destructive button stays last. -->
+          <label class="f">Advanced</label>
+          <div class="small why" style="margin-bottom:6px">Change the app's own words to the ones you use. Nothing you have logged is touched by a rename — every door, area, appointment and scout mark is filed against a code, not against a word.</div>
+          <button class="ghost" id="mRename"><span class="emo">✏️</span> <span class="mtxt" data-lbl="lbl.menu.mRename">Rename things</span></button>
+          <div class="small" id="renameInfo" style="margin-top:6px"></div>
 
           <button class="ghost danger" id="mWipe" style="margin-top:18px">Erase all data</button>
         </div></div>
@@ -1574,8 +1674,9 @@ function renderStatusWords() {
    before any of this and were STILL written out by hand in the big map's legend — so
    renaming Roofing left the legend calling it Roofing eight lines above a walking track
    labelled with his word. The map's filter button and the Export screen's book chips
-   held copies too; all of them read LINES now. Called from applyLabels() and from
-   setLineName(), which between them are every path that can change one. */
+   held copies too; all of them read LINES now. Called from applyLabels(), which is the
+   single path every write goes through — `setLineName` is a wrapper onto `setLabel` and
+   calls nothing itself. */
 function renderBookWords() {
   document.querySelectorAll('#legend [data-line]').forEach(el => {
     const l = LINES[el.dataset.line];
@@ -1609,36 +1710,40 @@ const LINES = {
    renamed book still lines up with everything already saved against it.
    Deliberately still two books: the mode pill is one tap precisely because there
    are two of them, and it is a core-loop control used hundreds of times a day. */
-const LINE_DEFAULTS = { roof:'Roofing', appraisal:'Appraisal' };
-const LINE_NAME_MAX = 18;
+/* `const LINE_DEFAULTS = { roof:'Roofing', appraisal:'Appraisal' }` was HERE and is
+   gone. It was a fourth written-out copy of two words the registry, `LINES` and the
+   markup already hold, and once `applyLineName` went nothing read it at all. The first
+   attempt at this replaced it with getters onto `LABELS` — which is declared ninety-nine
+   lines FURTHER DOWN, so the first top-level line anyone ever added between the two that
+   touched it would have thrown a ReferenceError out of its temporal dead zone and taken
+   the whole script with it, on a phone, offline. Deleted instead. The defaults live in
+   `LABELS` and nowhere else. Caught by review. */
 function lineNamesSaved() {
   try {
     const o = JSON.parse(localStorage.getItem('lineNames') || '{}');
     return (o && typeof o === 'object' && !Array.isArray(o)) ? o : {};
   } catch (e) { return {}; }
 }
-function applyLineName(k, name) {
-  const clean = String(name == null ? '' : name).replace(/\s+/g, ' ').trim().slice(0, LINE_NAME_MAX);
-  const use = clean || LINE_DEFAULTS[k];
-  LINES[k].label = use;
-  LINES[k].short = use.toUpperCase();
-  return clean;
-}
-function loadLineNames() {
-  const saved = lineNamesSaved();
-  Object.keys(LINE_DEFAULTS).forEach(k => applyLineName(k, saved[k]));
-}
-function setLineName(k, name) {
-  const clean = applyLineName(k, name);
-  const saved = lineNamesSaved();
-  if (clean) saved[k] = clean; else delete saved[k];
-  try { localStorage.setItem('lineNames', JSON.stringify(saved)); } catch (e) {}
-  renderMode(); renderStrip(); renderHouse(); renderStats();
-  /* The big map's legend named both books by hand until v28. This is the other path
-     that can change one, so it redraws them here too. */
-  if (typeof renderBookWords === 'function') renderBookWords();
-  if (window._map) refreshMapLayers();
-}
+/* THESE TWO ARE WRAPPERS NOW, NOT A SECOND MECHANISM. v29 folded the two book names
+   into the registry below, where they get the same editor row, the same cap, the same
+   counter and the same three levels of reset as the other thirty-nine. What did NOT
+   move is where the words are kept: `lineNames` is in BACKUP_LOCAL and is written a
+   second time as a top-level field of every backup file ever taken, and both restore
+   paths read it. The registry entry names that key in its `store` instead.
+
+   They are kept rather than deleted because a great deal of the suite calls them, and
+   because "rename the roofing book" is a real thing to want to say in code. What matters
+   is that neither of them writes anything any more — `setLabel` is the one writer, and
+   `applyLabels` is the one loader. `applyLineName` and `LINE_NAME_MAX` are gone: the cap
+   is `LBL_CAP.line`, still 18, and the uppercasing moved into the registry's `into`. */
+/* WRAPPED, because of where it is called from. `loadSettings()` calls this above seven
+   more localStorage reads, and in v28 what sat there was two lines of pure string work.
+   It is 41 `into` callbacks, a document-wide querySelectorAll and three render passes
+   now. Every statement inside applyLabels is already individually caught, so it cannot
+   throw today — this is the trap closed rather than a fault fixed, and it is the same
+   reasoning that moved renderDoorButtons out of the middle of loadSettings in v27. */
+function loadLineNames() { try { applyLabels(); } catch (e) {} }
+function setLineName(k, name) { return setLabel('lbl.line.' + k, name); }
 /* ==========================================================================
    RENAMEABLE NAMES — the registry
    ==========================================================================
@@ -1646,12 +1751,14 @@ function setLineName(k, name) {
    looks the name up instead of having it written into the markup. If he has
    overridden that id he gets his word; if he has not, he gets the app's.
 
-   This is `LINE_DEFAULTS` / `applyLineName` above, generalised, and it is
+   This is what `LINE_DEFAULTS` / `applyLineName` above used to be, generalised — and
+   as of v29 those two book names are IN here rather than beside it, and it is
    deliberately the same shape — tidy the text, cap it, blank means put it back,
-   store only the override — so there is one idea here rather than two. The two
-   book names still run on their own copy of it and fold into this table when
-   the editor screen is built. Folding them in now would mean two pieces of code
-   writing the same name, which is worse than the duplication it removes.
+   store only the override — so there is one idea here rather than two. THE TWO BOOK
+   NAMES ARE IN THIS TABLE as of v29, and the thing that was worried about — two
+   pieces of code writing the same name — did not happen: `store` points those two
+   entries at the `lineNames` key, `setLabel` is still the only writer, and
+   `setLineName` is a wrapper onto it rather than a second one.
 
    WHY IT EXISTS. Round ten renamed six menu items by hand and every word cost a
    full deploy: bump the version, bump the shell, push, wait for Pages, fight the
@@ -1676,15 +1783,49 @@ function setLineName(k, name) {
       is no fourth kind, and `02 Tests\wordhunt.mjs` is how that was established
       rather than assumed.
 
-   THE CAPS ARE NOT ALL MEASURED. `door` is 35 — his ruling, from the 37 that
-   `02 Tests\doorcap.mjs` measured on his own handset, rounded down. Every other
-   number here is a guess wide enough not to clip anything the app ships with,
-   and a check enforces that much. They want measuring the way the door group
-   was before the editor screen starts warning him against them. */
+   EVERY CAP HERE IS NOW MEASURED. `02 Tests\capsweep.mjs` swept all of them at
+   320, 360, 375 and 390, writing through this file's own setLabel with the cap
+   lifted first — measuring through the cap can only ever return the cap.
+
+   WHAT THE SWEEP FOUND, and it moved the question. An ordinary name with spaces
+   in it breaks NOTHING: 59 characters of mixed-case words pushes no control off
+   any screen at any width, because chips and headings wrap at the spaces. The
+   only thing that breaks anything is ONE LONG WORD WITH NO SPACES, and the
+   `overflow-wrap:anywhere` rule in the stylesheet now stops that costing him a
+   control. So these numbers are no longer "where the screen breaks". They are
+   "where it stops reading well", which is a different and better question.
+
+   35 is the widest a chip can be and still sit on ONE line on a 320px phone (42
+   on his own 390). The narrowest phone wins, the way `doorcap.mjs` did it. That
+   is why stage, mark and range all read 35, and it is the same 35 he already
+   ruled for the door buttons — one number, not four.
+
+   `doorShort` is the one the stylesheet cannot help. `.cand .o` is the owner's
+   name and the short name on one nowrap ellipsised line, in the house picker and
+   the repoint list, so nothing overflows — the OWNER NAME is eaten instead, and
+   silently. Measured against a twelve-letter owner name: 16 characters at 320.
+   12 keeps the owner readable. Today's longest short name is 9.
+
+   `scout` at 14 and `door` at 35 are unchanged and are both his rulings.
+   `line` is the 18 the two book names have always had. */
 const LBL_KEY = 'customLabels';
-const LBL_CAP = { door:35, doorShort:12, stage:20, mark:20, range:20, menu:60, scout:14 };
-/* group · what the editor screen sorts by, in this order. */
-const LBL_GROUPS = ['door', 'stage', 'mark', 'range', 'menu'];
+const LBL_CAP = { door:35, doorShort:12, stage:35, mark:35, range:35, menu:60, scout:14, line:18 };
+/* group · what the editor screen sorts by, in this order, and the heading it puts
+   above each block. The books come last because they are the one group whose words
+   are stored somewhere else, and because they are the pair he is least likely to
+   be looking for. */
+const LBL_GROUPS = ['door', 'stage', 'mark', 'range', 'menu', 'line'];
+const LBL_GROUP_TITLE = {
+  door:  'The four big buttons',
+  stage: 'Stages',
+  /* NOT "Scout marks". `lbl.menu.mScout` is renameable, so a heading with the word
+     Scout written into it is a second copy of a name he can change — rename Scout to
+     Drive-by and this heading would still say Scout marks. Caught by review. */
+  mark:  'Marks from the truck',
+  range: 'Date ranges',
+  menu:  'The menu',
+  line:  'Your two books',
+};
 const LABELS = {
   /* ---- what happened at the door. `name` is the big button; `short` is the
          separate, shorter word for the two list rows where the long one will
@@ -1750,6 +1891,39 @@ const LABELS = {
   'lbl.menu.mBackup':      { def:'Full backup — just download it',                 group:'menu', cap:LBL_CAP.menu, note:'Menu button.' },
   'lbl.menu.mRestore':     { def:'Restore from a full backup',                          group:'menu', cap:LBL_CAP.menu, note:'Menu button.' },
   'lbl.menu.mExport':      { def:'Export…',                                        group:'menu', cap:LBL_CAP.menu, note:'Menu button.' },
+  /* The editor's own name. It was written out by hand in TWO places — the Settings
+     button and the heading of the screen it opens — and was the only button in the menu
+     he could not rename, in the feature whose entire purpose is removing second copies
+     of words. Caught by review. Same id on both elements, which is his ruling: a menu
+     name renames the screen it opens. */
+  'lbl.menu.mRename':      { def:'Rename things',                                  group:'menu', cap:LBL_CAP.menu, note:'The button in Settings, and the title of this screen.' },
+
+  /* ---- the two books of business. THE ONE PAIR WHOSE WORDS ARE NOT KEPT IN
+         `customLabels`, and deliberately so.
+
+         They have had a key of their own, `lineNames`, since long before this
+         registry existed. That key is in `BACKUP_LOCAL` AND written a second time
+         as a top-level field of every backup file ever taken, and both restore
+         paths read it. Moving the two words into `customLabels` would mean a
+         migration across a key two restore paths already depend on — on a phone
+         where losing data is the worst thing that can happen — and it would buy
+         him nothing he can see: the screen, the lookup, the cap, the counter and
+         all three levels of reset are the registry's either way.
+
+         `store` is the one line that buys that. `LBL` reads through it and
+         `setLabel` writes through it, so there is still exactly ONE piece of code
+         that writes a book name. `setLineName` is kept as a thin wrapper onto
+         `setLabel` rather than as a second writer.
+
+         `into` uppercases for `short` the way `applyLineName` always did — ROOFING
+         is a fair short form of Roofing, which is why the books can derive theirs
+         and the door outcomes cannot. ---- */
+  'lbl.line.roof':      { def:'Roofing',   group:'line', cap:LBL_CAP.line, store:'lineNames:roof',
+                          note:'The mode pill, both maps and the Work column in every export.',
+                          into:v => { LINES.roof.label = v;      LINES.roof.short = v.toUpperCase(); } },
+  'lbl.line.appraisal': { def:'Appraisal', group:'line', cap:LBL_CAP.line, store:'lineNames:appraisal',
+                          note:'The other half of the mode pill. Renaming changes nothing already filed under it.',
+                          into:v => { LINES.appraisal.label = v; LINES.appraisal.short = v.toUpperCase(); } },
 };
 /* His words, keyed by id. A display cache and nothing else — every write reads
    the file back first, so this can never win over what is on disk. That is the
@@ -1769,6 +1943,33 @@ function customLabelsSaved() {
 function lblEntry(id) {
   return Object.prototype.hasOwnProperty.call(LABELS, id) ? LABELS[id] : null;
 }
+/* An entry may name a DIFFERENT key to keep its word in — today only the two books,
+   which have used `lineNames` since long before this table existed and whose key two
+   restore paths already read. Everything above this line is the same for them as for
+   the other thirty-nine; only the shelf the word sits on is different.
+   Read fresh from the file every time, never from a cache: `customLabels` gets away
+   with a cache because `applyLabels` refreshes it on every pass, and adding a second
+   cache with a different refresh rule is how two sources of truth start. */
+function lblStore(e) {
+  if (!e || typeof e.store !== 'string') return null;
+  const i = e.store.indexOf(':');
+  return i < 0 ? null : { key: e.store.slice(0, i), sub: e.store.slice(i + 1) };
+}
+function lblStoreRead(st) {
+  try {
+    const o = JSON.parse(localStorage.getItem(st.key) || '{}');
+    return (o && typeof o === 'object' && !Array.isArray(o)) ? o : {};
+  } catch (e) { return {}; }
+}
+/** the word he has SAVED for this id, or null. Not the default, and not tidied. */
+function lblOwn(id, e) {
+  const st = lblStore(e);
+  if (st) {
+    const o = lblStoreRead(st);
+    return Object.prototype.hasOwnProperty.call(o, st.sub) ? o[st.sub] : null;
+  }
+  return Object.prototype.hasOwnProperty.call(customLabels, id) ? customLabels[id] : null;
+}
 /** his word for this id, or the app's. Never blank, and never undefined.
     NOT called `L`, which is what the spec asked for. Leaflet's global is `L`, and a
     top-level `function L(id)` in this file takes it — the map then dies on
@@ -1777,7 +1978,7 @@ function lblEntry(id) {
 function LBL(id) {
   const e = lblEntry(id);
   if (!e) return '';
-  const own = Object.prototype.hasOwnProperty.call(customLabels, id) ? customLabels[id] : null;
+  const own = lblOwn(id, e);
   /* Tidied and capped HERE, not only where it is written. A restore puts the file's
      value straight onto the phone without ever going through setLabel, so a backup
      edited by hand, or written by a later build with a different cap, could otherwise
@@ -1840,13 +2041,15 @@ function setLabel(id, name) {
   if (!e) return '';
   const clean = String(name == null ? '' : name).replace(/\s+/g, ' ').trim().slice(0, e.cap);
   /* Read from the file, not from memory. See the note on `customLabels`. */
-  const saved = customLabelsSaved();
+  const st = lblStore(e);
+  const saved = st ? lblStoreRead(st) : customLabelsSaved();
+  const slot = st ? st.sub : id;
   /* Typing the app's own word stores nothing. If it were stored, a later version
      with better wording would lose to a word he never actually chose to override,
      and there would be no way for him to tell why. */
-  if (clean && clean !== e.def) saved[id] = clean; else delete saved[id];
+  if (clean && clean !== e.def) saved[slot] = clean; else delete saved[slot];
   let wrote = true;
-  try { localStorage.setItem(LBL_KEY, JSON.stringify(saved)); } catch (err) { wrote = false; }
+  try { localStorage.setItem(st ? st.key : LBL_KEY, JSON.stringify(saved)); } catch (err) { wrote = false; }
   applyLabels();
   renderAfterRename();
   /* Never silent. applyLabels re-reads the file, so a refused write already shows as the
@@ -1858,10 +2061,321 @@ function setLabel(id, name) {
   }
   return clean;
 }
-/** how many names he has overridden — the count the reset-everything prompt needs. */
-function customLabelCount() {
+/** how many names he has overridden — the count the reset prompts need.
+    Counted off the FILE, and across every shelf a word can sit on, so the two book
+    names are in the number the "put everything back" prompt shows him. A prompt that
+    says 12 and then puts 14 back is the same fault as a destructive button that does
+    not count what it will destroy. Pass a group to count only that block. */
+function customLabelCount(group) { return customLabelIds(group).length; }
+/** every id he has a saved word for, in registry order. What the reset buttons act on,
+    what the counted prompts count, and what marks a row as changed — ONE definition for
+    all three, so a prompt can never say 12 and then put 14 back.
+
+    "Changed" is deliberately "there IS a saved word", not "the word on screen differs
+    from the default". Those come apart in one real case: a saved word that the cap
+    trims back down to the app's own word. He is still overriding that id — a later
+    version's better wording will not reach it — and decision 7 says that is exactly
+    what the row has to show him. */
+function customLabelIds(group) {
   const saved = customLabelsSaved();
-  return Object.keys(saved).filter(id => lblEntry(id)).length;
+  const out = [];
+  for (const id in LABELS) {
+    const e = LABELS[id];
+    if (group && e.group !== group) continue;
+    const st = lblStore(e);
+    const own = st ? lblStoreRead(st)[st.sub]
+                   : (Object.prototype.hasOwnProperty.call(saved, id) ? saved[id] : undefined);
+    if (typeof own === 'string' && own.trim()) out.push(id);
+  }
+  return out;
+}
+const lblIsCustom = id => {
+  const e = lblEntry(id); if (!e) return false;
+  const own = lblOwn(id, e);
+  return typeof own === 'string' && !!own.trim();
+};
+
+/* ==========================================================================
+   RENAME THINGS — the editor screen
+   ==========================================================================
+   HIS RULING: one screen, grouped by where the name appears, not tap-in-place.
+   Tap-in-place would mean making about 143 things tappable across 15 screens,
+   and every one of them is a new way to mistap while he is holding the phone in
+   a driveway.
+
+   EDIT MODE STAYS ON UNTIL HE TURNS IT OFF, also his ruling, because trying
+   wording out over a day means coming back here a dozen times and having it
+   lapse on every reload would fight him. What makes that safe is the bar: for as
+   long as it is live, the main screen carries a strip that says so, and it
+   survives a reload exactly as the mode itself does. It cannot be quietly on for
+   days and it cannot be forgotten.
+
+   THE BAR IS THE EXISTING ALERT STRIP, NOT A SECOND ONE. That strip already
+   costs the grid 38px and he has said he wants that revisited; a second bar
+   makes the thing he complained about worse. If both want to speak at once the
+   edit bar wins — he can only be in edit mode deliberately, whereas a write
+   failure is passive and is still there when he is finished. The strip is ONE
+   button, so rather than nest a `Done` control inside it, the whole bar IS the
+   Done, which is the shape it already has for a write failure.
+
+   READ FROM THE FILE, NEVER FROM A VARIABLE. There is no `let labelEditOn`
+   deliberately: a cached copy would need loading at boot and reloading after a
+   restore, which is two more orderings to get wrong for a single character on
+   disk. That is the loadSwitches lesson in miniature. */
+const LBL_EDIT_KEY = 'labelEdit';
+/* Deliberately NOT in BACKUP_LOCAL. It describes this phone at this moment, the
+   same as `quietClose` and `session` — carrying it to another handset would put
+   an editing warning on a phone nobody was editing. */
+const labelEditOn = () => { try { return localStorage.getItem(LBL_EDIT_KEY) === '1'; } catch (e) { return false; } };
+function setLabelEdit(on) {
+  try { if (on) localStorage.setItem(LBL_EDIT_KEY, '1'); else localStorage.removeItem(LBL_EDIT_KEY); } catch (e) {}
+  try { renderAlertBar(); } catch (e) {}
+  try { renderRenameInfo(); } catch (e) {}
+}
+/* How close to the cap the count appears. His ruling: nothing on the row until he is
+   near it, then a count, and quiet the rest of the time.
+
+   TWO THINGS THE REVIEW CORRECTED HERE, and the first is his ruling being broken by a
+   flat number. Eight characters of headroom is the right stretch on a cap of 35 and
+   nonsense on a cap of 12: `doorShort` is 12, "No answer" is 9, so THREE rows carried an
+   amber count on a clean install before he had typed a character. The stretch is a third
+   of the cap now, never more than eight and never less than three.
+   And the count only speaks while the caret is IN that box. It is the one thing on this
+   screen that is about what he is typing at this moment, so a row he has never touched
+   has nothing to say. Between them, 41 rows are quiet until he is in one and near its
+   limit — which is what he actually asked for. */
+const RN_WARN_AT = 8;
+const rnWarnAt = cap => Math.min(RN_WARN_AT, Math.max(3, Math.floor(cap / 3)));
+const rnCountText = (e, inp) => (document.activeElement === inp && (e.cap - inp.value.length) <= rnWarnAt(e.cap))
+  ? `${inp.value.length} of ${e.cap} letters` : '';
+/** the ids of one group, in registry order */
+const lblGroupIds = g => Object.keys(LABELS).filter(id => LABELS[id].group === g);
+/** another name in the same group AND of the same kind that already reads this way.
+    "Same kind" is why the cap is compared as well as the group: a door outcome's name
+    and its short name are both in `door`, and today three of the four pairs are the
+    same word — "Talked" and "Talked". Warning about that would be warning about the
+    app's own wording, every time the screen drew. */
+function lblDuplicateOf(id) {
+  const e = lblEntry(id); if (!e) return '';
+  const mine = LBL(id).trim().toLowerCase();
+  if (!mine) return '';
+  for (const other in LABELS) {
+    if (other === id) continue;
+    const o = LABELS[other];
+    if (o.group !== e.group || o.cap !== e.cap) continue;
+    if (LBL(other).trim().toLowerCase() === mine) return LBL(other);
+  }
+  return '';
+}
+/** one row. Built in code from the registry, never written out in the markup, because
+    41 rows of markup would be a second copy of the table this feature exists to remove.
+    textContent throughout — a name typed with a "<" in it is then text by construction
+    rather than by remembering to call esc() at one more site. */
+/* THE INPUT NODES ARE BUILT ONCE AND NEVER REPLACED, and that is a correctness rule
+   rather than a tidiness one. The first version of this redrew the whole list inside the
+   box's `change` handler. `change` fires on BLUR — so tapping straight from one box to
+   the next fires it, the list rebuilds, and the box he was reaching for is thrown away
+   before the tap lands on it. The keyboard never opens and the second name cannot be
+   typed at all. Everything that changes after a rename — the mark, the app's own word,
+   the way back, the two group counts, another row's duplicate warning — is written into
+   a `.rnDeco` block beside the box instead, and the box itself is left where it is.
+   The one thing written back INTO a box is a value the app changed behind him — a reset,
+   or a restore — and only while that box does not have the caret in it. */
+function rnDecorate(row) {
+  const id = row.dataset.lblRow;
+  const e = lblEntry(id); if (!e) return;
+  const inp = row.querySelector('input');
+  const custom = lblIsCustom(id);
+  row.classList.toggle('on', custom);
+  if (inp && document.activeElement !== inp && inp.value !== LBL(id)) inp.value = LBL(id);
+  const count = row.querySelector('.rnCount');
+  if (count && inp) count.textContent = rnCountText(e, inp);
+
+  /* NOTHING HERE IS CREATED OR REMOVED — every node was built once by rnRow and is only
+     ever retexted and hidden. The first version cleared `.rnDeco` and rebuilt it, which
+     rebuilt the `put this back` button too, and that is the very fault the input nodes
+     were rescued from one paragraph above: `change` fires on BLUR, so tapping from a box
+     straight onto its own `put this back` fired the rename, replaced the button under his
+     finger, and swallowed the tap. He would have had to tap it twice, every time. */
+  const dupeTxt = lblDuplicateOf(id);
+  const dupe = row.querySelector('.rnDupe');
+  if (dupe) {
+    /* Warns, does not block. He may mean it. */
+    dupe.textContent = dupeTxt ? `Another one in this group also reads \u201c${dupeTxt}\u201d.` : '';
+    dupe.hidden = !dupeTxt;
+  }
+  /* Only on a row he has changed — decision 7. Without it he cannot see where he is
+     overriding the app rather than following it, and a later version's better wording
+     would lose to an old word of his with nothing ever saying why. */
+  const back = row.querySelector('.rnBack');
+  const was  = row.querySelector('.rnWas');
+  if (was)  was.textContent = `The app calls this \u201c${e.def}\u201d`;
+  if (back) back.hidden = !custom;
+}
+function rnRow(id) {
+  const e = LABELS[id];
+  const row = document.createElement('div');
+  row.className = 'rnRow';
+  row.dataset.lblRow = id;
+
+  const note = document.createElement('div');
+  note.className = 'rnNote';
+  note.textContent = e.note || '';
+  row.appendChild(note);
+
+  const inp = document.createElement('input');
+  inp.type = 'text';
+  inp.value = LBL(id);
+  /* Belt: the box will not take the 36th character. The braces are the slice inside
+     setLabel and the second slice inside LBL, because a restore can put a word on this
+     phone without ever passing through either the box or the setter. */
+  inp.maxLength = e.cap;
+  inp.autocomplete = 'off';
+  inp.spellcheck = false;
+  /* An iPhone capitalises the first letter and can substitute a word ON BLUR — which is
+     the same instant `change` fires and the word is written to disk. He types dnr and the
+     phone stores Dnr; he types a trade word and the phone stores something else. Forty-one
+     boxes, so it is worth two attributes. Caught by review. */
+  inp.autocapitalize = 'none';
+  inp.setAttribute('autocorrect', 'off');
+  inp.setAttribute('aria-label', e.note || id);
+  row.appendChild(inp);
+
+  const count = document.createElement('div');
+  count.className = 'rnCount';
+  row.appendChild(count);
+  /* Built once, here, and never rebuilt. rnDecorate only retexts and hides them. */
+  const deco = document.createElement('div');
+  deco.className = 'rnDeco';
+  const dupe = document.createElement('div');
+  dupe.className = 'rnDupe';
+  dupe.hidden = true;
+  deco.appendChild(dupe);
+  const back = document.createElement('div');
+  back.className = 'rnBack';
+  back.hidden = true;
+  const was = document.createElement('span');
+  was.className = 'rnWas';
+  back.appendChild(was);
+  const backBtn = document.createElement('button');
+  backBtn.className = 'chip';
+  backBtn.textContent = 'put this back';
+  backBtn.onclick = () => { setLabel(id, ''); rnRefresh(); buzz(8); };
+  back.appendChild(backBtn);
+  deco.appendChild(back);
+  row.appendChild(deco);
+
+  /* The count follows every keystroke while he is in the box, and goes when he leaves.
+     One formula, in rnCountText, called from here and from rnDecorate — written out twice
+     it would be a second copy of the rule, which is the fault this whole feature exists
+     to remove, and only one of the two copies was ever exercised. */
+  const showCount = () => { count.textContent = rnCountText(e, inp); };
+  inp.oninput = showCount;
+  inp.onfocus = showCount;
+  inp.onblur  = showCount;
+  /* Applied when he LEAVES the box, not on every keystroke. Renaming per letter would
+     redraw the whole app forty times while he types one word, and would file a
+     half-typed word the moment he looked away. */
+  inp.onchange = () => { setLabel(id, inp.value); rnRefresh(); };
+
+  rnDecorate(row);
+  return row;
+}
+const renameScroller = () => $('renameSheet') && $('renameSheet').querySelector('.sheetScroll');
+const renameScrollTop = () => { const s = renameScroller(); return s ? s.scrollTop : 0; };
+const renameScrollTo = y => { const s = renameScroller(); if (s) s.scrollTop = y; };
+
+/** everything that can change after ONE rename, WITHOUT touching a single input node.
+    A rename can light up another row's duplicate warning and can change a group count
+    two headings away, so this walks the lot rather than only the row he typed in. */
+function rnRefresh() {
+  const host = $('rnList'); if (!host) return;
+  host.querySelectorAll('.rnRow').forEach(rnDecorate);
+  /* Retexted and hidden, never removed and rebuilt — same reason as the row's way back:
+     a chip replaced under his finger swallows the tap that was aimed at it. */
+  host.querySelectorAll('.rnGrp').forEach(head => {
+    const n = customLabelCount(head.dataset.lblGrp);
+    const b = head.querySelector('.chip');
+    if (!b) return;
+    b.textContent = `put ${n === 1 ? 'it' : `these ${n}`} back`;
+    b.hidden = !n;
+  });
+  renderRenameResetNote();
+  renderRenameInfo();
+}
+function renderRename() {
+  const host = $('rnList'); if (!host) return;
+  host.textContent = '';
+  for (const g of LBL_GROUPS) {
+    const ids = lblGroupIds(g);
+    if (!ids.length) continue;
+    const head = document.createElement('div');
+    head.className = 'rnGrp';
+    head.dataset.lblGrp = g;
+    const h3 = document.createElement('h3');
+    h3.textContent = LBL_GROUP_TITLE[g] || g;
+    head.appendChild(h3);
+    const gb = document.createElement('button');
+    gb.className = 'chip';
+    gb.hidden = true;
+    gb.onclick = () => resetLabelGroup(g);
+    head.appendChild(gb);
+    host.appendChild(head);
+    ids.forEach(id => host.appendChild(rnRow(id)));
+  }
+  rnRefresh();
+}
+function renderRenameResetNote() {
+  const el = $('rnResetNote'); if (!el) return;
+  const n = customLabelCount();
+  el.textContent = n
+    ? `${n} name${n === 1 ? ' is' : 's are'} your own word${n === 1 ? '' : 's'}. The rest follow the app.`
+    : 'Every name is the app’s own word. Nothing to put back.';
+  const b = $('rnResetAll');
+  if (b) b.disabled = !n;
+}
+/** the line under the Rename things button in Settings */
+function renderRenameInfo() {
+  const el = $('renameInfo'); if (!el) return;
+  const n = customLabelCount();
+  el.textContent = (labelEditOn() ? 'Editing names is ON. ' : '')
+    + (n ? `${n} name${n === 1 ? '' : 's'} changed from the app’s own.` : 'Nothing renamed yet.');
+}
+/* The two counted prompts. Same rule every other destructive thing in the app follows:
+   say how many, and name enough of them that the number is not a leap of faith. */
+function resetLabelGroup(g) {
+  const ids = customLabelIds(g);
+  if (!ids.length) return;
+  if (!confirm(`Put ${ids.length} name${ids.length === 1 ? '' : 's'} in "${LBL_GROUP_TITLE[g] || g}" back to how the app has them?\n\n`
+    + ids.map(id => `• ${LBL(id)} → ${LABELS[id].def}`).join('\n')
+    + `\n\nNothing you have logged is affected.`)) return;
+  ids.forEach(id => setLabel(id, ''));
+  rnRefresh();
+  buzz(10);
+  flashToast('Put back', `${ids.length} name${ids.length === 1 ? '' : 's'} in ${LBL_GROUP_TITLE[g] || g}`, '#38bdf8');
+}
+function resetAllLabels() {
+  const ids = customLabelIds();
+  if (!ids.length) {
+    flashToast('Nothing to put back', 'Every name is already the app’s own word', '#38bdf8');
+    return;
+  }
+  const shown = ids.slice(0, 10);
+  if (!confirm(`Put ${ids.length} name${ids.length === 1 ? '' : 's'} back to how the app has them?\n\n`
+    + shown.map(id => `• ${LBL(id)} → ${LABELS[id].def}`).join('\n')
+    + (ids.length > shown.length ? `\n• and ${ids.length - shown.length} more` : '')
+    + `\n\nThis only changes words. Nothing you have logged is affected, and it cannot be undone.`)) return;
+  ids.forEach(id => setLabel(id, ''));
+  rnRefresh();
+  renameScrollTo(0);
+  buzz([15, 40, 15]);
+  flashToast('Names put back', `${ids.length} back to the app’s own words`, '#38bdf8');
+}
+function openRename() {
+  setLabelEdit(true);
+  renderRename();
+  openSheet('renameSheet');
+  renameScrollTo(0);
 }
 
 const dayKey = ts => { const d = new Date(ts); return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`; };
@@ -5489,6 +6003,19 @@ async function flushVisits() {
 function renderWriteAlerts() { renderAlertBar(); renderBackupNag(); }
 function renderAlertBar() {
   const el = $('alertBar'); if (!el) return;
+  /* EDIT MODE WINS, and it is checked before anything else for that reason. His ruling:
+     he can only be in edit mode deliberately, whereas a write failure is passive and is
+     still there when he is finished. The cost is stated plainly rather than hidden — a
+     write failure is not on the main screen while he is renaming things. It is still in
+     the menu, in full, because renderWriteAlerts draws the backup nag alongside this.
+     Amber, not the red this bar wears for a fault: being in edit mode is not a fault. */
+  if (labelEditOn()) {
+    el.classList.remove('hide');
+    el.classList.add('editing');
+    el.textContent = '✏️ EDITING NAMES — tap here when you have finished';
+    return;
+  }
+  el.classList.remove('editing');
   /* Ordered worst first, because only the first one is shown. Each is a short headline —
      the full explanation of every one of them is in the backup nag inside the menu, which
      is exactly where this taps through to. */
@@ -7486,7 +8013,7 @@ document.querySelectorAll('.dsecHead[data-msec]').forEach(b => {
 /* ---- what version is actually on the phone ----
    Matches the service worker cache name, so "did the update land" is answerable by
    looking rather than guessing. */
-const BUILD_VERSION = 'v28';
+const BUILD_VERSION = 'v29';
 const BUILD_DATE = '1 August 2026';
 function renderVersionStamp() {
   const el = $('versionStamp'); if (!el) return;
@@ -7502,18 +8029,15 @@ function renderVersionStamp() {
 /* Seeded from what the browser said last time, so the menu can answer the question
    before "Start canvassing" has been tapped this session. */
 let storageGrant = (() => { const v = localStorage.getItem('storageGrant'); return v === '1' ? true : v === '0' ? false : null; })();
+/* The two boxes and the reset button this used to fill are gone from Settings — the two
+   book names are rows on the Rename things screen now, beside the other thirty-nine.
+   Kept as a no-op wrapper because a good deal of the suite calls it after a rename, and
+   because what it MEANT — put the book names back on screen — is what renderRename does
+   when that screen is open, and what applyLabels does everywhere else. */
 function renderLineNames() {
-  const saved = lineNamesSaved();
-  if ($('mLineRoof')) $('mLineRoof').value = saved.roof || '';
-  if ($('mLineAppraisal')) $('mLineAppraisal').value = saved.appraisal || '';
+  if (typeof rnRefresh === 'function' && $('rnList') && $('rnList').children.length) rnRefresh();
+  if (typeof renderRenameInfo === 'function') renderRenameInfo();
 }
-$('mLineRoof').onchange = e => { setLineName('roof', e.target.value); renderLineNames(); };
-$('mLineAppraisal').onchange = e => { setLineName('appraisal', e.target.value); renderLineNames(); };
-$('mLineReset').onclick = () => {
-  setLineName('roof', ''); setLineName('appraisal', '');
-  renderLineNames(); buzz(10);
-  flashToast('Names put back', `${LINES.roof.label} and ${LINES.appraisal.label}`, '#38bdf8');
-};
 function renderQuietChip() {
   const b = $('mQuiet'); if (!b) return;
   b.classList.toggle('on', !!state.quietPrompt);
@@ -8636,7 +9160,33 @@ $('toastSwap').onclick = reassignLast;
 /* The menu is the only way to reach Backup, Restore, Export and the Schedule, so it
    opens FIRST and every render runs behind a guard. Nothing in here is worth being
    unable to take a backup over. */
-$('alertBar').onclick = () => $('menuBtn').click();
+/* Two jobs, because it is two bars wearing one box. In edit mode the whole strip IS the
+   Done — tapping it turns editing off and shuts the editor, so he is never left looking
+   at a screen the bar has just said he has finished with. Otherwise it does what it has
+   always done and taps through to the menu, where the full explanation of the fault is. */
+$('alertBar').onclick = () => {
+  if (labelEditOn()) {
+    setLabelEdit(false);
+    closeSheet('renameSheet');
+    buzz(10);
+    flashToast('Finished renaming', 'Your words are saved. Change them again any time from Settings.', '#38bdf8');
+    return;
+  }
+  $('menuBtn').click();
+};
+$('mRename').onclick = () => { openRename(); buzz(10); };
+$('rnResetAll').onclick = () => resetAllLabels();
+/* The same control as the bar, on the screen he is looking at. The bar is on the MAIN
+   screen, underneath this sheet and underneath the menu behind it, so from in here it
+   cannot be tapped at all — review found that the only way to finish was two taps he had
+   no reason to know about. `Close` in the head still just closes, and leaves editing on,
+   which is his ruling. */
+$('rnDone').onclick = () => {
+  setLabelEdit(false);
+  closeSheet('renameSheet');
+  buzz(10);
+  flashToast('Finished renaming', 'Your words are saved. Change them again any time from Settings.', '#38bdf8');
+};
 /* ---------------- the "?" explainers ----------------
    His ask, and it is the biggest single thing wrong with that menu: 21 blocks of prose,
    two of them a solid paragraph each, between him and the setting he came in to change.
@@ -13031,6 +13581,13 @@ function renderSwitchUi() {
        to be read after it; and a restore calls this, so a backup carrying his names
        redraws with them without a reload. */
     if (typeof applyLabels === 'function') applyLabels();
+    /* Three things that draw HIS names rather than the app's, and all three have to
+       follow a restore as well as a boot. The bar because edit mode survives a reload
+       and has to say so before he has touched anything; the editor rows and the
+       Settings line because a restored backup can change every word on them. */
+    if (typeof renderAlertBar   === 'function') renderAlertBar();
+    if (typeof renderRenameInfo === 'function') renderRenameInfo();
+    if (typeof rnRefresh        === 'function' && $('rnList') && $('rnList').children.length) rnRefresh();
   } catch (e) {}    // a chip that will not draw must never stop a restore finishing
 }
 
