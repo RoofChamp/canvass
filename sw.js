@@ -4,9 +4,18 @@
    Parcel queries are network-first with a cache fallback, so a street you
    have already walked still shows its lot lines in a dead zone. */
 
-const SHELL = 'canvass-shell-v30';
+const SHELL = 'canvass-shell-v31';
 const TILES = 'canvass-tiles-v1';
 const DATA  = 'canvass-data-v1';
+/* STORM DAY FILES AND THEIR INDEX. Its own cache, and both reasons are load-bearing.
+   NOT the shell: the shell name is bumped every deploy and everything outside the keep
+   list is deleted at activate, and this cache will hold days THE PHONE BUILT ITSELF that
+   exist nowhere else until a later deploy republishes them. Losing those is losing work.
+   NOT `canvass-data-v1`: that one is trimmed to 900 entries by insertion order on every
+   parcel query, so an afternoon of lot lookups would quietly evict storm days.
+   The name must never begin `canvass-shell-` — `isShellCache` below matches that prefix,
+   and a cache caught by it can be kept as a lifeboat and searched for shell files. */
+const STORMS = 'canvass-storms-v1';
 
 /* WITHOUT THESE FILES THE APP DOES NOT OPEN. All of them are this app's own, off the
    same server the phone just fetched sw.js from, so if any one of them cannot be had,
@@ -264,8 +273,25 @@ self.addEventListener('activate', e => {
         if (!keep) keep = olderShells[0] || null;
       }
 
+      /* THIS LOOP USED TO DELETE BY A LIST OF FOUR NAMES, AND THAT WAS A TRAP.
+         It read `if (k === SHELL || k === TILES || k === DATA || k === keep) continue;`
+         — deny by default over the whole cache namespace. Every cache this file did not
+         personally know about was destroyed, silently, inside the catch below.
+         That was survivable while every cache was rebuildable from the network. It stopped
+         being survivable the moment a cache could hold something the network does not have:
+         `canvass-storms-v1` will carry storm days THE PHONE BUILT ITSELF, and until a later
+         deploy republishes them they exist nowhere else. Under the old rule, adding that
+         cache and forgetting to add its name here would have wiped them on the next ordinary
+         deploy — no error, no warning, discovered at a door with no signal.
+         So the rule is inverted. THIS LOOP ONLY EVER DELETES OLD APP SHELLS. Anything that is
+         not a shell is left alone, whoever wrote it and whether or not this file knows the
+         name. A cache that is genuinely dead now costs storage until someone removes it on
+         purpose, and that is the correct side to err on: storage is cheap and his work is not.
+         KEEP IT THIS WAY. If a future cache ever does need clearing, clear it by name, here,
+         deliberately — do not turn this back into a list of survivors. */
       for (const k of keys) {
-        if (k === SHELL || k === TILES || k === DATA || k === keep) continue;
+        if (!isShellCache(k)) continue;          // tiles, parcel answers, storms, anything new
+        if (k === SHELL || k === keep) continue; // this build, and the one lifeboat
         try { await caches.delete(k); } catch (err) { /* leave it; it costs storage, not correctness */ }
       }
     } catch (err) {
@@ -304,6 +330,25 @@ const isTile = u =>
   /server\.arcgisonline\.com\/ArcGIS\/rest\/services\/World_Imagery/.test(u);
 
 const isParcelQuery = u => /\/(MapServer|FeatureServer)\/\d+\/query/i.test(u);
+
+/* STORM FILES. Same origin AND under the storms folder — both halves are needed.
+   The same-origin half is not decoration: this test runs BEFORE the shell-scope guard
+   below, so without it any third-party address that happened to contain the word would be
+   pulled into the storm cache and answered from it for ever.
+   Matching on the PATH and never on a query string is the whole design, and the note below
+   explains why it has to be. */
+const isStormFile = u => {
+  let url;
+  try { url = new URL(u); } catch (err) { return false; }
+  return url.origin === self.location.origin && /\/storms\/v\d+\//.test(url.pathname);
+};
+
+/* What a storm file that is not on the phone and cannot be fetched comes back as.
+   A 504 so `res.ok` is false, and a JSON body so a reader that goes straight to .json()
+   gets an object with a flag rather than a syntax error out of the word "Offline". */
+const stormMiss = () => new Response(
+  JSON.stringify({ offline: true, note: 'storm file not on this phone and no signal' }),
+  { status: 504, headers: { 'Content-Type': 'application/json' } });
 
 /* What the shell cache is allowed to touch: this app's own files, and Leaflet from the
    CDN. Everything else goes straight to the network and is never looked up, never stored.
@@ -364,6 +409,72 @@ self.addEventListener('fetch', e => {
         if (hit) return hit;
         throw err;
       }
+    })());
+    return;
+  }
+
+  /* STORM FILES. This branch must sit HERE — after the parcel queries and BEFORE the
+     shell-scope guard below — and the position is not a style choice.
+     Storm files are same-origin, so `isShellScope` says yes to them, so without this
+     branch they fall into the app-shell handler at the bottom of this file and are written
+     into `canvass-shell-vNN`. That looks fine and works fine right up until the next
+     deploy bumps the shell name, at which point activate deletes the lot. There is a live
+     example of the same fault already in the tree: icon-512-maskable.png is in the
+     manifest but not in CORE_FILES, so it is a shell squatter with no lifecycle.
+
+     THE INDEX is network-first with a short timeout and a cache fallback. It is the one
+     mutable file — report counts change as people file late — and it is small. The timeout
+     matters: on one bar a plain network-first hangs the whole storm panel until the phone
+     gives up on its own, and he opens this in a truck.
+
+     THE DAY FILES are cache-first and never revalidated here. A day that has been built is
+     finished; its geometry will not change. Two things write into this cache: this branch,
+     when a published file is fetched on a miss, and THE PAGE ITSELF, which puts the days it
+     builds straight in through caches.open(). There is no message channel in this file and
+     none is wanted — the page is a first-class writer here, which is exactly why the delete
+     loop above had to stop being a list of four names.
+     Because this branch never revalidates, the job of noticing that a published day has
+     been rebuilt belongs to the page: it compares each day's build stamp against the index
+     and re-fetches what changed. Doing it here would mean a network round trip per day on
+     every draw, which is the opposite of what an offline-first layer is for.
+
+     NOTHING IS TRIMMED. The tiles and parcel caches are capped because they grow without
+     limit as he drives; this one is a finite library measured in hundreds of files, and a
+     trim here would evict from the FRONT of the key list, which is oldest-written — so it
+     would throw away real storm days and keep whatever junk arrived last. The size guard
+     lives in the page, before the download, where it can say so on screen.
+
+     A MISS WITH NO SIGNAL RETURNS A 504 CARRYING JSON, not the plain-text 503 the shell
+     branch uses. Storm code reads these as data, and a text body would blow up in the JSON
+     parser as a syntax error rather than reading as "not here yet". Both the status and the
+     body say the same thing, so either check works. */
+  if (isStormFile(url)) {
+    e.respondWith((async () => {
+      const c = await caches.open(STORMS);
+      const isIndex = /\/manifest\.json$/.test(new URL(url).pathname);
+
+      if (isIndex) {
+        const timeout = new Promise(r => setTimeout(() => r(null), 4000));
+        try {
+          const res = await Promise.race([fetch(req), timeout]);
+          if (res && res.ok && !res.redirected) { await c.put(req, res.clone()); return res; }
+          if (res && res.ok) return res;   /* arrived via a redirect: serve it, do not store it */
+        } catch (err) { /* fall through to whatever is on the phone */ }
+        const hit = await c.match(req);
+        return hit || stormMiss();
+      }
+
+      const hit = await c.match(req);
+      if (hit) return hit;
+      try {
+        const res = await fetch(req);
+        /* !res.redirected for the same reason the shell branch checks it: a stored
+           redirected response cannot be served to a navigation later, and storing one is
+           how a file gets permanently unusable with nothing on screen to say why. */
+        if (res.ok && !res.redirected) await c.put(req, res.clone());
+        if (res.ok) return res;
+        return stormMiss();
+      } catch (err) { return stormMiss(); }
     })());
     return;
   }

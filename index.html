@@ -403,13 +403,13 @@ label.f.hasq{display:inline-block;margin:12px 0 5px;vertical-align:middle}
 .rtStop.done .t b{text-decoration:line-through}
 /* ---------- property summary above the entry fields ---------- */
 #dProp{border:1px solid var(--line);border-radius:14px;background:var(--card);padding:11px 12px;margin:8px 0 4px}
-#dProp .pg,#dRoof .pg{display:grid;grid-template-columns:1fr 1fr;gap:8px}
-#dProp .pc,#dRoof .pc{background:var(--card2);border:1px solid var(--line);border-radius:11px;padding:7px 9px}
-#dProp .pc b,#dRoof .pc b{display:block;font-size:15px;font-weight:800;color:var(--txt);line-height:1.25}
-#dProp .pc span,#dRoof .pc span{font-size:10.5px;color:var(--dim);font-weight:700;letter-spacing:.3px;text-transform:uppercase}
-#dProp .pc em,#dRoof .pc em{display:block;font-style:normal;font-size:11px;color:var(--dim);font-weight:700;margin-top:1px}
-#dProp .pmeta,#dRoof .pmeta{font-size:11.5px;color:var(--dim);font-weight:700;margin-top:9px;line-height:1.45}
-#dProp .pnote,#dRoof .pnote{font-size:11px;color:#5b6b7f;margin-top:7px;line-height:1.45}
+#dProp .pg,#dRoof .pg,#dStorm .pg{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+#dProp .pc,#dRoof .pc,#dStorm .pc{background:var(--card2);border:1px solid var(--line);border-radius:11px;padding:7px 9px}
+#dProp .pc b,#dRoof .pc b,#dStorm .pc b{display:block;font-size:15px;font-weight:800;color:var(--txt);line-height:1.25}
+#dProp .pc span,#dRoof .pc span,#dStorm .pc span{font-size:10.5px;color:var(--dim);font-weight:700;letter-spacing:.3px;text-transform:uppercase}
+#dProp .pc em,#dRoof .pc em,#dStorm .pc em{display:block;font-style:normal;font-size:11px;color:var(--dim);font-weight:700;margin-top:1px}
+#dProp .pmeta,#dRoof .pmeta,#dStorm .pmeta{font-size:11.5px;color:var(--dim);font-weight:700;margin-top:9px;line-height:1.45}
+#dProp .pnote,#dRoof .pnote,#dStorm .pnote{font-size:11px;color:#5b6b7f;margin-top:7px;line-height:1.45}
 /* The roof block sits inside the same section as the auditor facts rather than earning a
    section of its own — the anti-bloat rule from the round-twelve plan. The rule above it
    is what says the numbers below came from somewhere else entirely. */
@@ -424,6 +424,26 @@ label.f.hasq{display:inline-block;margin:12px 0 5px;vertical-align:middle}
 #dRoof .rover input{width:78px;min-height:44px;background:var(--card2);border:1px solid var(--line);
   border-radius:10px;color:var(--txt);font-size:15px;font-weight:800;text-align:center;padding:0 8px}
 #dRoof .rover .lab{font-size:11.5px;color:var(--dim);font-weight:700;flex:1;min-width:120px;line-height:1.4}
+/* THE STORM BLOCK — a third panel beside the auditor facts and the roof, sharing their
+   rules rather than inventing a third look. It is the only place in the app where storm
+   history is attached to one address, and it is the screen he hands to a homeowner, so
+   every rule below is about it being readable at arm's length by somebody who has never
+   seen the app before. The caption at the bottom is FIXED and is not in the label
+   registry: a sentence that exists to keep a compliance line cannot be renameable. */
+#dStorm{border:1px solid var(--line);border-radius:14px;background:var(--card);padding:11px 12px;margin:8px 0 4px}
+#dStorm .rhead{font-size:10.5px;color:var(--dim);font-weight:700;letter-spacing:.3px;text-transform:uppercase;margin-bottom:8px}
+#dStorm .pc b{font-size:22px;line-height:1.15}
+/* Years sit on one baseline. Floating bars read as noise rather than as a count — found
+   by photographing it before it went in. A zero year keeps a stub so the gap is visibly
+   a zero and not a rendering fault. */
+#dStorm .yrs{display:grid;grid-template-columns:repeat(6,1fr);gap:6px;margin-top:12px;align-items:end}
+#dStorm .yr{text-align:center;display:flex;flex-direction:column;justify-content:flex-end;height:74px}
+#dStorm .yr .bar{background:#14b8a6;border-radius:4px 4px 0 0;margin:0 auto;width:70%}
+#dStorm .yr .n{font-size:12px;font-weight:800;color:var(--txt);margin-top:3px}
+#dStorm .yr .y{font-size:10px;color:var(--dim);font-weight:700}
+#dStorm .srow{display:flex;justify-content:space-between;gap:10px;padding:5px 0;border-top:1px solid var(--line);font-size:12px}
+#dStorm .srow b{font-weight:800;color:var(--txt);white-space:nowrap}
+#dStorm .srow span{color:var(--dim);font-weight:700;text-align:right}
 #dLog{display:flex;flex-direction:column;gap:7px}
 .logRow{display:flex;gap:9px;align-items:flex-start;background:var(--card);border:1px solid var(--line);border-radius:12px;padding:9px 11px}
 .logRow i{width:9px;height:9px;border-radius:3px;flex:0 0 auto;margin-top:5px}
@@ -582,6 +602,17 @@ select{min-height:44px}
 #eraseBar{position:absolute;top:calc(var(--safe-t) + 60px);left:8px;right:8px;z-index:600;background:rgba(220,38,38,.95);border-radius:14px;padding:11px 13px;display:flex;align-items:center;gap:10px;font-weight:800;font-size:13px;box-shadow:0 8px 24px rgba(0,0,0,.5)}
 #previewBar{position:absolute;top:calc(var(--safe-t) + 60px);left:8px;right:8px;z-index:601;background:rgba(37,99,235,.95);border-radius:14px;padding:11px 13px;display:flex;align-items:center;gap:10px;font-weight:800;font-size:13px;box-shadow:0 8px 24px rgba(0,0,0,.5)}
 #previewBar .mbtn{margin-left:auto;background:rgba(0,0,0,.35)}
+/* Sits BELOW #findWrap (safe-t + 52px, about 44px tall) rather than over it, because the
+   address field is how he gets to a house and the storm chip must never cover it. Lower
+   z-index than #findWrap's 1002 for the same reason. */
+#stormBar{position:absolute;top:calc(var(--safe-t) + 104px);left:8px;right:8px;z-index:600;
+  background:rgba(13,148,136,.94);border-radius:14px;padding:9px 11px;display:flex;align-items:center;
+  gap:10px;font-weight:800;font-size:12.5px;box-shadow:0 8px 24px rgba(0,0,0,.5)}
+/* Off is slate, not teal. The chip's own colour has to say which state it is in before he
+   reads a word of it, or the words are doing all the work at arm's length in daylight. */
+#stormBar.off{background:rgba(30,41,59,.92)}
+#stormBar .mbtn{background:rgba(0,0,0,.32);min-height:38px;padding:0 12px;white-space:nowrap}
+#stormBar #stormTxt{flex:1;min-width:0;line-height:1.35;font-size:11.5px;font-weight:700;color:#e2e8f0}
 #eraseBar .mbtn{margin-left:auto;background:rgba(0,0,0,.35)}
 .mewrap{position:relative;width:0;height:0}
 .mecone{position:absolute;left:0;top:0;width:96px;height:96px;transform-origin:50% 50%;
@@ -956,6 +987,16 @@ select{min-height:44px}
     <span id="previewTxt"></span>
     <button class="mbtn" id="previewDone">Done</button>
   </div>
+  <!-- THE STORM CHIP. Deliberately NOT a ninth button in #mapBottom: that row already wraps
+       onto two lines on his phone and seatMapPanel() exists to cope with it. This is the
+       #previewBar shape instead — a thing that sits on the map, says what it is doing in
+       words, and is tapped where he is looking. One tap cycles off → big map → both maps,
+       which is his own ruling narrowed: the app cannot carry a separate setting per map,
+       so the small map follows the big one. -->
+  <div id="stormBar" class="off">
+    <button class="mbtn" id="stormCycle">⛈ Storms off</button>
+    <span id="stormTxt"></span>
+  </div>
   <div id="eraseBar" class="hide">
     <span id="eraseTxt">Drag the box over the track you want gone.</span>
     <button class="mbtn hide" id="eraseGo">Clear</button>
@@ -1050,7 +1091,7 @@ select{min-height:44px}
       <div class="dsec"><button class="dsecHead" data-sec="who"><i>▸</i>Who lives here</button>
         <div class="dsecBody hide" id="dsecWho"></div></div>
       <div class="dsec"><button class="dsecHead" data-sec="prop"><i>▸</i>What the auditor holds</button>
-        <div class="dsecBody hide" id="dsecProp"><div id="dProp" class="hide"></div><div id="dRoof" class="hide"></div></div></div>
+        <div class="dsecBody hide" id="dsecProp"><div id="dProp" class="hide"></div><div id="dRoof" class="hide"></div><div id="dStorm" class="hide"></div></div></div>
       <div class="dsec"><button class="dsecHead" data-sec="log"><i>▸</i>Everything logged here<span class="cnt" id="dLogCount"></span></button>
         <div class="dsecBody hide" id="dsecLog"><div id="dLog"></div></div></div>
       <div class="dsec"><button class="dsecHead" data-sec="danger"><i>▸</i>Clear or delete this house</button>
@@ -3990,6 +4031,19 @@ function drawMini() {
     }
   };
 
+  /* THE STORM WASH ON THE SMALL MAP, and only at state 2 — his chip's third position.
+     Uniform, so the rotation cannot smear it, and drawn BEFORE pass one so every status
+     fill and every status edge still reads straight through it. The rectangle is drawn
+     oversized because the canvas is rotated when he is in head-up mode and a canvas-sized
+     rectangle would leave the corners bare. */
+  if (stormState.show === 2 && stormState.miniAlpha > 0) {
+    g.save();
+    g.globalAlpha = stormState.miniAlpha;
+    g.fillStyle = STORM_HUE;
+    g.fillRect(-w, -h, w * 3, h * 3);
+    g.restore();
+  }
+
   // ---- pass one: fills ----
   for (const { p, v } of near) {
     trace(p);
@@ -5623,6 +5677,7 @@ function openDetail(visit, focusName) {
     ? withParcelStats({ ...v, val:null, sqft:null, saleTs:null, salePrice:null, extra:null }, propTwin)
     : withParcelStats(v, propPar));
   renderRoofPanel(v);
+  renderStormPanel(v);
   renderApptLink(v);
   $('dPhone').value = v.phone||'';
   $('dEmail').value = v.email||'';
@@ -6394,12 +6449,38 @@ async function openMap() {
     window._labelLayer  = L.layerGroup().addTo(m);
     window._routeLayer  = L.layerGroup().addTo(m);
     window._meLayer     = L.layerGroup().addTo(m);
+    /* THE STORM PANE — the first custom pane in this app, and both reasons are real.
+       ORDER. Every polygon in here has always landed in Leaflet's one shared overlay pane,
+       where stacking is nothing but the order things were added in during the refresh pass.
+       A storm layer added straight to the map — which is how it has to be, see below — sits
+       ABOVE the lots until the first refresh clears and re-appends them, and BELOW after.
+       Same code, different answer depending on when you looked. A pane makes "storm fill
+       under every status edge and every route line, above the tiles" a fact about the
+       document instead of a race, and that is also what keeps door status on top, which is
+       the standing rule.
+       TAPS. pointerEvents is killed on the pane itself, not just on each shape. Only the lot
+       polygon is clickable on this map and everything else opts out one at a time; that is
+       nine separate places to remember. Killing it here means a storm shape CANNOT swallow a
+       door tap even if whoever adds the next one forgets. The comment on the lot click
+       records what one mis-routed tap already cost: a blank sheet on a worked house and a
+       duplicate record.
+       350 sits between the tiles at 200 and the overlay pane at 400.
+       Creating a pane routes nothing by itself — every storm path must also carry
+       `pane:'storm'` or it lands back in the shared one. */
+    m.createPane('storm');
+    m.getPane('storm').style.zIndex = 350;
+    m.getPane('storm').style.pointerEvents = 'none';
     m.on('dragstart', () => { mapOpts.follow = false; syncMapBtns(); });
     m.on('moveend', () => { refreshMapLayers(); loadForView(); renderMapDataNote(); });
     m.on('zoomend', renderMapDataNote);
   }
   setTimeout(() => { window._map.invalidateSize(); if (state.pos && mapOpts.follow) window._map.setView([state.pos.lat,state.pos.lon]); refreshMapLayers(); }, 60);
   syncMapBtns();
+  /* Read from storage on every open rather than once at boot: the map can be opened from
+     seven places and a restore can rewrite the key underneath any of them. */
+  stormShowLoad();
+  syncStormBar();
+  refreshStormLayer(true);
 }
 async function loadForView() {
   const m = window._map; if (!m || m.getZoom() < 16) return;
@@ -7158,6 +7239,302 @@ function clearGeoPreview() {
   $('previewBar').classList.add('hide');
   if ($('eraseBar').classList.contains('hide')) $('findWrap').classList.remove('hide');
 }
+
+/* ============================ THE STORM LAYER =====================================
+   Five years of hail swaths, drawn over the map he already uses, so he picks a street by
+   looking instead of by memory.
+
+   WHAT THIS IS NOT. It is not a statement about anybody's roof. The radar estimates hail
+   ALOFT over an AREA on a DATE, it over-detects, and across the seven counties it saw hail
+   on 224 days while people phoned reports in on 54 of them. The truth is between those two
+   numbers and this layer does not claim to know where. Every word it puts on screen has to
+   survive "how do you know that about my roof?" with "we do not". The Ohio Attorney General
+   sues roofers over the other answer, and he is an appraiser and umpire besides.
+   That is why nothing here ever prints hit, struck, damaged, confirmed, verified or
+   impacted, and why nothing here is ever tied to a slope or a side of a building.
+
+   ADDRESSES NEVER CARRY A QUESTION MARK. The service worker's shell lookup matches with
+   {ignoreSearch:true}, so `days.json?d=07-21` and `days.json?d=07-22` are the same entry to
+   it and the first day fetched would answer for every day afterwards, permanently. And its
+   write-back test is `bareKey(url) === url`, so a query-carrying request is never stored at
+   all. One folder, one file per day, no exceptions. */
+const STORM_BASE = './storms/v2';
+const STORM_CLASSES = ['0.75in', '1.00in', '1.75in'];
+/* Teal, and one hue at three opacities rather than three new colours.
+   The map's vocabulary is already full: green, blue, amber and red are the four door
+   outcomes, sky is the roofing book, violet is appraisal and the flyer hash, yellow is the
+   rental wash, slate is an unworked lot AND the driven track. A conventional hail ramp
+   running green to yellow to orange to red would collide with all four outcomes at once.
+   Teal is unused, and holding one hue means the layer reads as one thing rather than as
+   four more colours to learn. PROVISIONAL: both this and a banded treatment get
+   photographed for him before either is settled. */
+const STORM_HUE = '#14b8a6';
+/* A QUARTER OF THE FIRST DRAFT, and the reason is measured rather than judged.
+   These fills STACK — that is Travis's ruling and it is the whole mechanism: ground that
+   has been under more storms comes out darker, which is the thing he actually wants to
+   see. But stacking compounds, 1 − Π(1 − a), and the first draft's 0.10 / 0.18 / 0.30 hit
+   0.91 over Westerville old town, where ten real storm days overlap. Photographed on the
+   real aerial view with the county's own lot lines, that is not a dark tint: the roofs,
+   the driveways and the trees are simply gone, and the amber and red door colours go with
+   them. Measured across the seven counties on a 1.1 km grid, a point is covered by six to
+   twelve storm days, so the heavy case is the ordinary case and not an edge.
+   At a quarter the same ten days land at 0.43 — obviously a lot of storm history, with
+   every roof and every door colour still readable. His call, made from the photograph. */
+const STORM_FILL = { '0.75in': 0.025, '1.00in': 0.045, '1.75in': 0.075 };
+
+const stormState = {
+  index: null,        // the manifest, held once per session
+  days: new Map(),    // date -> parsed day file
+  show: 0,            // 0 off, 1 big map, 2 big map and mini map
+  miniAlpha: 0,       // the small map's wash, worked out on refresh and not per frame
+  active: [],         // the dates currently drawn
+  onPhone: 0,         // how many day files are actually here, for the honesty line
+  indexFailed: false,
+};
+
+/* A storm file that is not on the phone and cannot be fetched comes back from the worker
+   as a 504 carrying {offline:true}. Both the status and the body say so, and this checks
+   the status, because a body check alone would be fooled by a real file that happened to
+   contain the word. Anything unreadable is treated as absent, never as empty. */
+async function stormFetch(path) {
+  try {
+    const res = await fetch(`${STORM_BASE}/${path}`);
+    if (!res.ok) return null;
+    const j = await res.json();
+    return (j && j.offline) ? null : j;
+  } catch (err) { return null; }
+}
+
+async function loadStormIndex() {
+  if (stormState.index) return stormState.index;
+  const j = await stormFetch('manifest.json');
+  if (!j || !Array.isArray(j.storms)) { stormState.indexFailed = true; return null; }
+  stormState.index = j;
+  stormState.indexFailed = false;
+  return j;
+}
+
+async function loadStormDay(date) {
+  if (stormState.days.has(date)) return stormState.days.get(date);
+  const j = await stormFetch(`days/${date}.json`);
+  if (j) { stormState.days.set(date, j); stormState.onPhone++; }
+  return j;
+}
+
+/* Which storms could possibly cover a point, answered from the index alone so that
+   nothing downloads to find out. The bounding box is a coarse first pass: a box hit is a
+   candidate, not an answer, and the real test is the rings. */
+function stormCandidates(lon, lat) {
+  const ix = stormState.index;
+  if (!ix) return [];
+  return ix.storms.filter(s => {
+    const b = s.bbox;
+    return b && lon >= b[0] && lon <= b[2] && lat >= b[1] && lat <= b[3];
+  });
+}
+
+/* Is the point inside this day's swath, and in which class? Returns the biggest class
+   containing it, or null. Uses the app's own ring test, the same one the lot lookup uses,
+   so a point on a boundary is decided the same way in both places. */
+function stormClassAt(day, lon, lat) {
+  if (!day || !day.features) return null;
+  /* Ranked deliberately rather than taken from whichever feature matched last. The builder
+     happens to write the classes smallest first, so "last match wins" would give the right
+     answer today and quietly give the wrong one the day somebody reorders them. */
+  let best = -1;
+  for (const f of day.features) {
+    const g = f.geometry; if (!g) continue;
+    const rank = STORM_CLASSES.indexOf(f.properties.class);
+    if (rank <= best) continue;                       // cannot improve on what we have
+    const polys = g.type === 'MultiPolygon' ? g.coordinates : [g.coordinates];
+    for (const poly of polys) {
+      if (pointInRings(lon, lat, poly)) { best = rank; break; }
+    }
+  }
+  return best < 0 ? null : STORM_CLASSES[best];
+}
+
+/* THE SMALL MAP'S WASH, WORKED OUT ONCE RATHER THAN EVERY FRAME.
+   `drawMini` is a raw canvas redrawn continuously while he drives, and the mini map is
+   clamped to between 60 and 600 metres across — smaller than any shape in this library.
+   So the honest and cheap answer is not to draw the polygons there at all: the whole
+   canvas is inside one band, so the whole canvas takes one wash.
+
+   Composited exactly the way the big map's overlapping fills composite, so the two maps
+   cannot disagree about how dark the same ground is: every class containing the point
+   within a day, then every day in the active set, combined as 1 − Π(1 − a). */
+function stormWashAt(lon, lat) {
+  let clear = 1;
+  for (const d of stormState.active) {
+    const day = stormState.days.get(d);
+    if (!day || !day.features) continue;
+    for (const f of day.features) {
+      const g = f.geometry; if (!g) continue;
+      const polys = g.type === 'MultiPolygon' ? g.coordinates : [g.coordinates];
+      let inside = false;
+      for (const poly of polys) { if (pointInRings(lon, lat, poly)) { inside = true; break; } }
+      if (inside) clear *= (1 - (STORM_FILL[f.properties.class] || 0.10));
+    }
+  }
+  return 1 - clear;
+}
+
+/* HOW MUCH ROOM IS LEFT, asked BEFORE anything is downloaded.
+   The browser clears storage per SITE, not per file, so filling this phone with storm data
+   raises the chance of losing the door records sitting beside them. `guardStorage()` already
+   asks for the protected grant; this is the other half, and there was none.
+   Returns null when the browser will not say, which is not a failure — plenty of phones do
+   not implement it — and a null is treated as "go ahead", because refusing to work on a
+   silent browser would be worse than the risk. */
+async function stormRoom() {
+  try {
+    if (!navigator.storage || !navigator.storage.estimate) return null;
+    const e = await navigator.storage.estimate();
+    if (!e || !e.quota) return null;
+    return { used: e.usage || 0, quota: e.quota, free: e.quota - (e.usage || 0) };
+  } catch (err) { return null; }
+}
+
+/* THE ACTIVE SET. When he switches the layer on it draws the ten most recent storms over
+   where he is standing — his ruling, and it is the only sane default: there are 224 days in
+   the library and no screen can carry them at once.
+   Everything else is one tap away in the list. Nothing downloads to decide this: the index
+   carries a bounding box per day and that is the whole filter. The rings are only tested on
+   days whose file is already here, which is why the count of what was actually checked
+   travels with the answer — see stormCoverage below. */
+const STORM_OPEN_N = 10;
+async function stormActiveSet(lon, lat, n = STORM_OPEN_N) {
+  await loadStormIndex();
+  const cands = stormCandidates(lon, lat).sort((a, b) => (a.date < b.date ? 1 : -1));
+  const out = [];
+  for (const s of cands) {
+    if (out.length >= n) break;
+    const day = await loadStormDay(s.date);
+    if (day && stormClassAt(day, lon, lat)) out.push(s.date);
+  }
+  return out;
+}
+
+/* WHAT THIS PHONE CAN ACTUALLY ANSWER FROM, and it goes on screen beside the answer.
+   A storm reading built from a partly downloaded library looks exactly like a storm reading
+   built from a complete one. "No storms over this street" and "no storms in the eleven days
+   I happen to have" are different sentences and only one of them is honest.
+   So every storm readout carries this, on the same line, not in a note and not in settings. */
+function stormCoverage() {
+  const ix = stormState.index;
+  if (!ix) return { have: 0, total: 0, whole: false, line: 'Storm library not loaded on this phone yet.' };
+  const total = ix.storms.length;
+  const have = stormState.days.size;
+  const whole = have >= total;
+  return { have, total, whole,
+    line: whole ? `Checked all ${total} storm days on this phone.`
+                : `Checked ${have} of ${total} storm days on this phone. The rest are not downloaded.` };
+}
+
+/* DRAWN ONCE, NOT ON EVERY PAN.
+   This layer is added straight to the map and never to one of the four groups, so
+   refreshMapLayers — which runs on every single pan, from thirty-four call sites — cannot
+   touch it. That is the whole reason the panning cost of this feature is zero rather than
+   something a guard has to keep down. It is the same shape as the export preview above.
+   It is rebuilt on exactly three things: the layer being switched on, the active set
+   changing, and his position moving far enough that a different set of storms covers him.
+   Never on a pan. */
+function clearStormLayer() {
+  if (window._stormLayer && window._map) window._map.removeLayer(window._stormLayer);
+  window._stormLayer = null;
+}
+
+async function drawStormLayer() {
+  if (!window.L || !window._map) return;
+  clearStormLayer();
+  if (!stormState.show || !stormState.active.length) return;
+  const feats = [];
+  for (const d of stormState.active) {
+    const day = stormState.days.get(d);
+    if (!day || !day.features) continue;
+    for (const f of day.features) feats.push(f);
+  }
+  if (!feats.length) return;
+  window._stormLayer = L.geoJSON({ type:'FeatureCollection', features:feats }, {
+    pane: 'storm',                 /* creating the pane routes nothing on its own */
+    interactive: false,            /* belt as well as the pane's braces */
+    style: f => ({
+      pane: 'storm',
+      color: STORM_HUE,
+      weight: 1,
+      opacity: 0.55,
+      fillColor: STORM_HUE,
+      fillOpacity: STORM_FILL[f.properties.class] || 0.10,
+      interactive: false,
+    }),
+  }).addTo(window._map);
+}
+
+/* --------------------------------------------------------------- the storm chip */
+
+/* Three states in one control. The words say which, because a coloured pill with no
+   words is exactly the kind of thing that has to be learned, and this app's rule is that
+   a stranger should be able to use it. */
+const STORM_SHOW_WORDS = ['⛈ Storms off', '⛈ Storms · big map', '⛈ Storms · both maps'];
+/* How far he has to move before the set of storms over him is worked out again. The
+   swaths are kilometres across and the active set is ten of them, so recomputing on every
+   position fix would be pure waste; 300 m is well inside the smallest feature in the
+   library and is about a block and a half. */
+const STORM_REFRESH_M = 300;
+let stormLastAt = null;
+
+/* Read where it is used, not in loadSwitches — this is not a settings row, it has three
+   states rather than two, and BACKUP_ONDEMAND is the list that says so. Anything that is
+   not 1 or 2 is off, so a corrupted value fails to OFF rather than to a drawn layer. */
+function stormShowLoad() {
+  const raw = Number(localStorage.getItem('stormShow'));
+  stormState.show = (raw === 1 || raw === 2) ? raw : 0;
+  return stormState.show;
+}
+
+function syncStormBar() {
+  const bar = $('stormBar'); if (!bar) return;
+  bar.classList.toggle('off', !stormState.show);
+  const btn = $('stormCycle');
+  if (btn) btn.textContent = STORM_SHOW_WORDS[stormState.show] || STORM_SHOW_WORDS[0];
+  const txt = $('stormTxt'); if (!txt) return;
+  if (!stormState.show) { txt.textContent = ''; return; }
+  if (stormState.indexFailed) { txt.textContent = 'The storm library is not on this phone yet and cannot be fetched right now.'; return; }
+  if (!stormState.index) { txt.textContent = 'Loading the storm library…'; return; }
+  const n = stormState.active.length;
+  /* The coverage line goes on the SAME line as the answer, every time. A count built from
+     eleven day files looks identical to one built from all of them. */
+  txt.textContent = (n
+    ? `${n} storm day${n === 1 ? '' : 's'} drawn over where you are standing. `
+    : `No storm day in the library covers where you are standing. `) + stormCoverage().line;
+}
+
+/* Rebuilt on exactly three things: the chip being tapped, the map being opened, and him
+   moving far enough that a different set of storms covers him. NEVER on a pan — the layer
+   is added straight to the map rather than to one of the four groups precisely so that
+   refreshMapLayers, which runs from thirty-four call sites including every pan, cannot
+   touch it. */
+async function refreshStormLayer(force) {
+  if (!stormState.show) {
+    clearStormLayer(); stormState.active = []; stormLastAt = null; stormState.miniAlpha = 0;
+    syncStormBar(); try { drawMini(); } catch (e) {}
+    return;
+  }
+  syncStormBar();
+  const p = state.pos;
+  if (!p) { stormState.active = []; syncStormBar(); return; }
+  if (!force && stormLastAt && haversine(stormLastAt.lat, stormLastAt.lon, p.lat, p.lon) < STORM_REFRESH_M) return;
+  const at = { lat: p.lat, lon: p.lon };
+  const set = await stormActiveSet(p.lon, p.lat);
+  /* He may have switched it off, or walked on, while the day files were coming down. */
+  if (!stormState.show) return;
+  stormState.active = set; stormLastAt = at;
+  stormState.miniAlpha = stormWashAt(p.lon, p.lat);
+  await drawStormLayer();
+  syncStormBar();
+  try { drawMini(); } catch (e) {}
+}
+
 /* Everything that does NOT live in the database has to be named here by hand, or it
    silently does not travel with a backup.
 
@@ -7192,6 +7569,11 @@ const BACKUP_LOCAL = [
      having broken, and he would have no way to tell the difference. Not a list, so it
      replaces rather than merges, the same as `lineNames`. */
   ['customLabels', false],
+  /* Three states, not a switch, so it does not belong to `loadSwitches` and is named in
+     BACKUP_ONDEMAND instead. It travels because a phone swap that silently put the storm
+     layer back to off would read as the feature having broken. Flagged false: losing it
+     loses one tap, not a record. */
+  ['stormShow', false],
 ];
 /* The two flagged `true` that are LISTS get merged on the way back in, never replaced —
    same rule as door records. Restoring Monday's file on Wednesday must not take the
@@ -7767,6 +8149,12 @@ function startGps() {
     if (state.override && now - state.override.ts > 300000) clearOverride(true);
     const use = state.override ? { lat:state.override.lat, lon:state.override.lon, acc:5 } : sm;
     state.pos = { lat:use.lat, lon:use.lon, acc:use.acc, heading:pos.coords.heading, ts:now, raw:pos.coords.accuracy };
+    /* Cheap on every fix and expensive on almost none of them: it returns immediately
+       unless the layer is on AND he has moved 300 m since the set was last worked out.
+       Put here rather than on the map's moveend because the set follows WHERE HE IS, not
+       where the map is looking — panning to check a street two miles away must not change
+       what the layer says is over him. */
+    if (stormState.show) refreshStormLayer(false);
 
     /* --- dwell lock --- */
     const speed = recentSpeed();
@@ -8099,8 +8487,8 @@ document.querySelectorAll('.dsecHead[data-msec]').forEach(b => {
 /* ---- what version is actually on the phone ----
    Matches the service worker cache name, so "did the update land" is answerable by
    looking rather than guessing. */
-const BUILD_VERSION = 'v30';
-const BUILD_DATE = '1 August 2026';
+const BUILD_VERSION = 'v31';
+const BUILD_DATE = '2 August 2026';
 function renderVersionStamp() {
   const el = $('versionStamp'); if (!el) return;
   el.className = 'small';
@@ -9075,6 +9463,203 @@ function renderRoofPanel(v) {
   pitchBox($('dRoofRise2'), 'roofRise2');
 }
 
+/* ------------------------------------------------------------------ the storm block */
+
+/* Sizes as words, never as decimals. His standing rule, and it also happens to be what a
+   homeowner reads without stopping. */
+const STORM_SIZE_WORD = { '0.75in':'three quarter inch', '1.00in':'one inch', '1.75in':'one and three quarter inch' };
+const STORM_YEARS_SHOWN = 6;
+const STORM_PANEL_AUTO = 12;
+/* Keyed to the record, not a bare boolean. A global would follow him to the next house and
+   latch the "Checking…" state on a panel whose downloads finished two doors ago — the same
+   fault `roofBusy` was changed from a boolean to a Set to fix. */
+const stormPanelBusy = new Set();
+
+/* WHAT THIS PHONE CAN SAY ABOUT ONE POINT, FROM THE DAYS IT ALREADY HOLDS.
+   Deliberately does not fetch anything. `stormCandidates` answers from the manifest alone
+   and returns about a hundred days over Columbus — a hundred requests fired because he
+   tapped a house while standing on a doorstep is not something this app is allowed to do.
+   So the panel counts what is here, says exactly what it checked, and puts the rest behind
+   one deliberate tap that states the file count and the megabytes first. */
+function stormAtPoint(lon, lat) {
+  const cands = stormCandidates(lon, lat).sort((a, b) => (a.date < b.date ? 1 : -1));
+  const rows = []; const absent = []; const byYear = {};
+  for (const s of cands) {
+    const y = s.date.slice(0, 4);
+    const e = byYear[y] || (byYear[y] = { hit: 0, checked: 0, total: 0 });
+    e.total++;
+    const day = stormState.days.get(s.date);
+    if (!day) { absent.push(s); continue; }
+    e.checked++;
+    const cls = stormClassAt(day, lon, lat);
+    if (cls) { e.hit++; rows.push({ date: s.date, cls, reports: s.hailReportsClean || 0 }); }
+  }
+  return { rows, absent, byYear, checked: cands.length - absent.length, candidates: cands.length };
+}
+
+/* THE PANEL HE HANDS TO A HOMEOWNER.
+   Three rules hold this together and none of them is decoration:
+
+   1. Every sentence is about an AREA. Not this house, not this roof, not this owner. The
+      caption at the bottom says so in plain words and is not renameable, because a line
+      that exists to hold a compliance boundary cannot be a line he can edit later.
+   2. It never writes. It reads `state`, the manifest and the cached day files, and it puts
+      nothing on the record — so handing the phone across cannot change a door.
+   3. It states what it checked. A count built from eleven day files looks exactly like a
+      count built from all of them, and only one of those is honest. */
+function renderStormPanel(v) {
+  const el = $('dStorm'); if (!el) return;
+  if (!v || v.lat == null || v.lon == null) {
+    el.classList.add('hide'); el.innerHTML = ''; return;
+  }
+  /* The manifest is 72 KB and answers every question this panel asks about WHICH days are
+     candidates, so it is fetched here rather than waiting for him to open the map layer.
+     Without this the panel would simply never appear for anybody who taps a house before
+     switching storms on, which is most people most of the time. It is fetched once per
+     session; `loadStormIndex` returns the held copy afterwards. */
+  if (!stormState.index) {
+    el.classList.add('hide'); el.innerHTML = '';
+    if (!stormState.indexFailed) {
+      /* `roofOnScreen`, NOT `rpAlive`. rpAlive is false for a record that has not been
+         filed yet, and tapping an unworked lot is the commonest way into this sheet — so
+         guarding with it would mean the panel never appeared for exactly those houses.
+         roofOnScreen asks the question that actually matters here: is this still the
+         record the sheet is showing. It is the app's one test for that and is shared
+         deliberately rather than copied, so the two panels cannot drift apart. */
+      loadStormIndex().then(ix => { if (ix && roofOnScreen(v)) renderStormPanel(v); });
+    }
+    return;
+  }
+  el.classList.remove('hide');
+
+  /* CHECK THE MOST RECENT TWELVE WITHOUT ASKING, AND ASK FOR THE REST.
+     Cold, this panel would otherwise open on "0 storm days, out of 0 checked", which is
+     honest and useless. Twelve is chosen against the measurement, not for neatness: one
+     spot in these counties is covered by six to twelve storm days over five years, so
+     twelve most-recent candidates reaches the whole history of most addresses and all of
+     the recent history of the rest. Twelve day files are about eighty kilobytes and they
+     stay on the phone, so the cost is paid once per area and never again. Anything beyond
+     that states its file count and its megabytes and waits for a tap. */
+  if (!stormPanelBusy.has(v.id)) {
+    const cold = stormCandidates(v.lon, v.lat)
+      .sort((a, b) => (a.date < b.date ? 1 : -1))
+      .slice(0, STORM_PANEL_AUTO)
+      .filter(s => !stormState.days.has(s.date));
+    if (cold.length) {
+      stormPanelBusy.add(v.id);
+      el.innerHTML = `<div class="rhead">Storms over this area</div>`
+        + `<div class="pmeta">Checking the ${cold.length} most recent storm day${cold.length === 1 ? '' : 's'}…</div>`;
+      (async () => {
+        for (const s of cold) { await loadStormDay(s.date); }
+        stormPanelBusy.delete(v.id);
+        if (roofOnScreen(v)) renderStormPanel(v);
+      })();
+      return;
+    }
+  }
+
+  const { rows, absent, byYear, checked, candidates } = stormAtPoint(v.lon, v.lat);
+  const big = rows.filter(r => r.cls === '1.00in' || r.cls === '1.75in');
+  const withRep = rows.filter(r => r.reports > 0);
+  const cov = stormCoverage();
+
+  const thisYear = new Date().getFullYear();
+  const years = [];
+  for (let y = thisYear - (STORM_YEARS_SHOWN - 1); y <= thisYear; y++) years.push(y);
+  const maxYear = Math.max(1, ...years.map(y => (byYear[y] ? byYear[y].hit : 0)));
+
+  const niceDate = d => {
+    const p = d.split('-');
+    return `${Number(p[2])} ${['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'][Number(p[1]) - 1]} ${p[0]}`;
+  };
+
+  let body = `<div class="rhead">Storms over this area</div>`;
+
+  if (!candidates) {
+    body += `<div class="pmeta">No storm day in the library reaches this address.</div>`;
+  } else {
+    body += `<div class="pg">`
+      + `<div class="pc"><span>Storm days here</span><b>${rows.length}</b>`
+      + `<em>of ${checked} day${checked === 1 ? '' : 's'} checked</em></div>`
+      + `<div class="pc"><span>At one inch or more</span><b>${big.length}</b>`
+      + (big.length ? `<em>largest ${esc(STORM_SIZE_WORD[big[0].cls] || '')}</em>` : `<em>none of them</em>`)
+      + `</div></div>`;
+
+    /* A YEAR THAT WAS NOT CHECKED PRINTS A DASH, NEVER A ZERO.
+       Caught by photographing it. Cold, the panel checks the twelve most recent days, which
+       for a busy address are all in one or two years — and the strip then read 0 0 0 0 0 4,
+       which a homeowner holding the phone would read as "no storms here until last year".
+       That is a false statement made by a layout. A year with nothing checked is unknown,
+       and unknown is a dash. */
+    body += `<div class="yrs">` + years.map(y => {
+      const e = byYear[y];
+      const known = !!e && e.checked > 0;
+      const n = known ? e.hit : 0;
+      const partial = known && e.checked < e.total;
+      return `<div class="yr"><div class="bar" style="height:${known ? 6 + (n / maxYear) * 40 : 4}px;`
+        + `opacity:${known ? (n ? 1 : .18) : .10}"></div>`
+        + `<div class="n">${known ? n + (partial ? '+' : '') : '–'}</div>`
+        + `<div class="y">${String(y).slice(2)}</div></div>`;
+    }).join('') + `</div>`;
+    if (absent.length) {
+      body += `<div class="pnote" style="margin-top:6px">A dash means that year has not been checked on this phone yet.`
+        + (years.some(y => byYear[y] && byYear[y].checked > 0 && byYear[y].checked < byYear[y].total)
+            ? ` A plus means part of that year is still unchecked.` : ``) + `</div>`;
+    }
+
+    if (rows.length) {
+      body += `<div class="rhead" style="margin-top:12px;margin-bottom:2px">Most recent</div>`;
+      for (const r of rows.slice(0, 4)) {
+        body += `<div class="srow"><b>${esc(niceDate(r.date))}</b>`
+          + `<span>radar estimated ${esc(STORM_SIZE_WORD[r.cls] || '')}`
+          + (r.reports ? ' · a report was filed that day' : '') + `</span></div>`;
+      }
+    }
+
+    /* The sentence a hostile reader gets to see. Every noun in it is an area or a day. */
+    body += `<div class="pmeta">`
+      + (rows.length
+          ? `Radar estimated hail of three quarter inch or larger over this area on ${rows.length} day${rows.length === 1 ? '' : 's'}`
+            + ` out of the ${checked} checked. `
+            + (withRep.length
+                ? `${withRep.length} of those day${withRep.length === 1 ? '' : 's'} also had a hail report filed on the ground somewhere in the seven counties.`
+                : `None of those days had a hail report filed on the ground anywhere in the seven counties.`)
+          : `None of the ${checked} storm day${checked === 1 ? '' : 's'} checked reached this area.`)
+      + `</div>`;
+
+    /* The honesty line, on the same screen as the answer rather than in settings. */
+    body += `<div class="pnote">${esc(cov.line)}</div>`;
+
+    if (absent.length) {
+      const kb = absent.reduce((a, s) => a + (s.gzip || s.bytes || 0), 0);
+      body += `<button class="ghost" id="dStormGo" style="margin-top:9px">`
+        + `Check ${absent.length} more storm day${absent.length === 1 ? '' : 's'} for this address</button>`
+        + `<div class="pnote">That downloads ${absent.length} file${absent.length === 1 ? '' : 's'}, about `
+        + `${kb >= 1024 * 1024 ? (kb / 1024 / 1024).toFixed(1) + ' MB' : Math.max(1, Math.round(kb / 1024)) + ' KB'}.</div>`;
+    }
+  }
+
+  /* FIXED, and deliberately not in the label registry. */
+  body += `<div class="pnote">This describes storms over an area. It says nothing about this roof.</div>`;
+  el.innerHTML = body;
+
+  const go = $('dStormGo');
+  if (go) go.onclick = async () => {
+    const kb = absent.reduce((a, s) => a + (s.gzip || s.bytes || 0), 0);
+    const size = kb >= 1024 * 1024 ? (kb / 1024 / 1024).toFixed(1) + ' MB' : Math.max(1, Math.round(kb / 1024)) + ' KB';
+    if (!confirm(`Download ${absent.length} storm day file${absent.length === 1 ? '' : 's'}?\n\n`
+      + `That is about ${size} over your data connection. They stay on this phone afterwards and work with no signal.`)) return;
+    go.disabled = true; go.textContent = 'Checking…';
+    /* One at a time on purpose. A hundred parallel requests on a phone in a driveway is
+       how a feature that works on a desk stops working on a doorstep. */
+    for (const s of absent) { await loadStormDay(s.date); }
+    /* If he has walked to the next door and the sheet now shows a different house, this
+       must not paint that house's panel under the new house's title — the same fault two
+       reviews caught on the roof panel before it shipped. */
+    if (roofOnScreen(v)) renderStormPanel(v); else go.disabled = false;
+  };
+}
+
 function renderPropPanel(v) {
   const el = $('dProp'); if (!el) return;
   const built = yearBuilt(v);
@@ -9754,6 +10339,16 @@ $('mapSat').onclick = () => { mapOpts.sat = !mapOpts.sat;
   if (mapOpts.sat) { window._map.removeLayer(window._street); window._satL.addTo(window._map); }
   else { window._map.removeLayer(window._satL); window._street.addTo(window._map); }
   syncMapBtns(); refreshMapLayers(); };
+/* One tap moves it on one step and wraps. Written to storage on every tap rather than on
+   some later save, because the state this control holds IS the whole setting — there is
+   nowhere else it could be recovered from. */
+$('stormCycle').onclick = async () => {
+  stormState.show = (stormState.show + 1) % 3;
+  localStorage.setItem('stormShow', String(stormState.show));
+  buzz(10);
+  syncStormBar();
+  await refreshStormLayer(true);
+};
 /* Sit the panel on top of the button bar wherever the bar actually is, rather than
    at a guessed height. The bar wraps to two rows on a narrow phone. */
 function seatMapPanel(el) {
@@ -13979,7 +14574,7 @@ function loadSettings() {
 const BACKUP_SWITCHES = ['snapMax','hubSpan','trackDetail','hubSat','headUp','rentalMark','wake'];
 /* Not held in memory at all — read straight from storage at the moment they are used, so
    a restore takes effect without anything having to reload them. */
-const BACKUP_ONDEMAND = ['menuSecs', 'quietCloses'];
+const BACKUP_ONDEMAND = ['menuSecs', 'quietCloses', 'stormShow'];
 /* Read back by applyLabels(), which renderSwitchUi() runs at boot and again at the end of
    a restore. Neither owned by loadSwitches nor read fresh at the point of use, so it is
    named here — otherwise the check that every backed-up key has something reading it back
