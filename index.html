@@ -444,6 +444,18 @@ label.f.hasq{display:inline-block;margin:12px 0 5px;vertical-align:middle}
 #dStorm .srow{display:flex;justify-content:space-between;gap:10px;padding:5px 0;border-top:1px solid var(--line);font-size:12px}
 #dStorm .srow b{font-weight:800;color:var(--txt);white-space:nowrap}
 #dStorm .srow span{color:var(--dim);font-weight:700;text-align:right}
+/* THE SECOND DOOR INTO THE PICKER, one per storm on this address. `.ghost` is 100% wide
+   with a 10px top margin, which is right for a stacked button and wrong for one sitting
+   at the end of a row, so both are overridden here rather than by inventing a new class.
+   The row wraps: on a wide screen the button sits on the same line, on his phone it drops
+   under the words instead of squeezing them into eighty pixels. */
+#dStorm .srow{flex-wrap:wrap}
+/* 44 PIXELS, like every other inline button in this file — `.chip`, `.x`, `.mini-btn`,
+   `.mbtn`, `.tbtn` and `select` all carry that floor. The first version of this rule cut
+   `.ghost`'s padding down to 5px and produced a 25px target, the smallest in the app, on
+   the entry point to the whole feature, tapped with a cold thumb on a doorstep. */
+#dStorm .srow .dsCmp{width:auto;flex:0 0 auto;margin:2px 0 0 auto;padding:0 14px;
+  min-height:44px;font-size:12px;font-weight:800;border-radius:12px;white-space:nowrap}
 #dLog{display:flex;flex-direction:column;gap:7px}
 .logRow{display:flex;gap:9px;align-items:flex-start;background:var(--card);border:1px solid var(--line);border-radius:12px;padding:9px 11px}
 .logRow i{width:9px;height:9px;border-radius:3px;flex:0 0 auto;margin-top:5px}
@@ -612,7 +624,12 @@ select{min-height:44px}
    reads a word of it, or the words are doing all the work at arm's length in daylight. */
 #stormBar.off{background:rgba(30,41,59,.92)}
 #stormBar .mbtn{background:rgba(0,0,0,.32);min-height:38px;padding:0 12px;white-space:nowrap}
-#stormBar #stormTxt{flex:1;min-width:0;line-height:1.35;font-size:11.5px;font-weight:700;color:#e2e8f0}
+/* WRAPS, because the bar now carries a second button. On a wide screen the words stay on
+   the same line as the buttons; on his phone the sentence takes its own line rather than
+   being squeezed into eighty pixels. `min-width` is what makes that decision, not a
+   media query, so it is right at every width rather than at three of them. */
+#stormBar{flex-wrap:wrap}
+#stormBar #stormTxt{flex:1;min-width:190px;line-height:1.35;font-size:11.5px;font-weight:700;color:#e2e8f0}
 #eraseBar .mbtn{margin-left:auto;background:rgba(0,0,0,.35)}
 .mewrap{position:relative;width:0;height:0}
 .mecone{position:absolute;left:0;top:0;width:96px;height:96px;transform-origin:50% 50%;
@@ -995,6 +1012,11 @@ select{min-height:44px}
        so the small map follows the big one. -->
   <div id="stormBar" class="off">
     <button class="mbtn" id="stormCycle">⛈ Storms off</button>
+    <!-- THE SECOND DOOR INTO THE PICKER. Words on it, not an icon, and it only appears
+         once the layer is on — a button that opens a list of storms while the storm layer
+         is switched off is a button with nothing behind it. -->
+    <button class="mbtn hide" id="stormPick">Pick two days</button>
+    <button class="mbtn hide" id="stormPairClear">Clear</button>
     <span id="stormTxt"></span>
   </div>
   <div id="eraseBar" class="hide">
@@ -1375,6 +1397,26 @@ select{min-height:44px}
       <button class="ghost" id="mxShowMe">👁 Show me what is in the map file</button>
       <button class="ghost" id="mxPage">📄 Page to hand out</button>
       <div class="small" style="margin-top:6px">The spreadsheet opens in Excel or Google Sheets. The map file opens in Google My Maps. The page opens in any browser, and prints to PDF through Share → Print.</div>
+    </div>
+  </div>
+</div>
+
+<!-- ============ pick two storm days ============
+     A `.sheet`, not a FULL_VIEW. The full views are the three working screens and they
+     close the menu on the way in; this is a list you pick from and come straight back out
+     of, which is what `.sheet` is for and what `#mxSheet` already is.
+     Every row is built in code from the manifest. Writing 224 days into the markup would
+     be a second copy of the library, and the library grows every week. -->
+<div id="spSheet" class="sheet hide">
+  <div class="sheetBody">
+    <div class="sheetHead"><h2 id="spTitle">Pick the first day</h2><button class="x" data-close="spSheet">Close</button></div>
+    <div class="sheetScroll">
+      <div class="small" id="spWhere" style="margin-bottom:10px"></div>
+      <!-- Amber, and the same shape as #mxTicked: the one line on this screen that says
+           the screen has changed under him. -->
+      <div class="small hide" id="spFirst" style="margin-bottom:10px;color:#f59e0b"></div>
+      <div id="spList"></div>
+      <div class="small hide" id="spNone" style="margin-top:10px"></div>
     </div>
   </div>
 </div>
@@ -6472,13 +6514,23 @@ async function openMap() {
     m.getPane('storm').style.pointerEvents = 'none';
     m.on('dragstart', () => { mapOpts.follow = false; syncMapBtns(); });
     m.on('moveend', () => { refreshMapLayers(); loadForView(); renderMapDataNote(); });
-    m.on('zoomend', renderMapDataNote);
+    /* `zoomend`, NOT `moveend`. Panning must not touch the storm layer at all — that is
+       the whole reason it is added straight to the map rather than to one of the four
+       groups. Zooming is a different event and fires only when the zoom really changed,
+       and even then stormZoomWatch does nothing unless the level has crossed the line the
+       fill drops at. */
+    m.on('zoomend', () => { renderMapDataNote(); stormZoomWatch(); });
   }
   setTimeout(() => { window._map.invalidateSize(); if (state.pos && mapOpts.follow) window._map.setView([state.pos.lat,state.pos.lon]); refreshMapLayers(); }, 60);
   syncMapBtns();
   /* Read from storage on every open rather than once at boot: the map can be opened from
      seven places and a restore can rewrite the key underneath any of them. */
-  stormShowLoad();
+  /* NOT WHILE A PAIR IS UP. `stormShowLoad` reads the saved chip setting back off the
+     phone, and if that says off it takes `stormState.show` to 0 — which sends
+     refreshStormLayer down its off branch and throws away a pair he has just built,
+     download and all. That is exactly what happened when the picker was opened from a
+     house panel with storms switched off. The pair owns the layer while it is up. */
+  if (!stormState.pair) stormShowLoad();
   syncStormBar();
   refreshStormLayer(true);
 }
@@ -7290,6 +7342,18 @@ const stormState = {
   active: [],         // the dates currently drawn
   onPhone: 0,         // how many day files are actually here, for the honesty line
   indexFailed: false,
+  /* THE PICKED PAIR. null, or { a, b, km2, geo, grid } — the two dates newest first, the
+     overlap in square kilometres, the shape to draw and the grid to ask "am I in it?".
+     Deliberately NOT saved and deliberately NOT in BACKUP_LOCAL: his ruling is that the
+     app opens cleared, because a pair is a conversation at one door and not a setting. */
+  pair: null,
+  pick: null,         // the first day chosen while the sheet is open, before a second
+  /* Set when the picker was opened from a house panel rather than from the bar. It holds
+     that house's position, so the list offers the days that reach THAT ADDRESS rather
+     than the days that reach whatever the map happens to be showing behind the sheet —
+     which, with a sheet covering the screen, is not what he is looking at at all. */
+  pickAt: null,
+  pickFromPanel: false,
 };
 
 /* A storm file that is not on the phone and cannot be fetched comes back from the worker
@@ -7440,13 +7504,72 @@ function stormCoverage() {
    changing, and his position moving far enough that a different set of storms covers him.
    Never on a pan. */
 function clearStormLayer() {
-  if (window._stormLayer && window._map) window._map.removeLayer(window._stormLayer);
+  if (window._map) {
+    if (window._stormLayer) window._map.removeLayer(window._stormLayer);
+    if (window._stormFillLayer) window._map.removeLayer(window._stormFillLayer);
+  }
   window._stormLayer = null;
+  window._stormFillLayer = null;
+}
+
+/* HIS RULING, MADE FROM A PHOTOGRAPH: the fill drops above about zoom 15, because once he
+   is standing inside an area even a light fill covers the whole screen — the area is
+   bigger than the phone. Above 15 both outlines stay and the answer moves into the one
+   line of words on the bar, which is what he chose when asked. */
+const STORM_ZOOM_FILL_MAX = 15;
+const stormFillOn = () => !window._map || window._map.getZoom() <= STORM_ZOOM_FILL_MAX;
+
+/* ONE fill, not ten, so this is not the stacked wash and does not take the wash's quarter
+   strength. Photographed over real aerial imagery before he was asked to rule on it. */
+const STORM_PAIR_FILL = 0.34;
+
+/* THE PICKED PAIR ON THE BIG MAP. Both days as thin outlines and NO fill of their own,
+   the overlap as the only fill on the screen — his rule, in his order: outlines
+   everywhere, fill only where the fill IS the answer. */
+function drawStormPair() {
+  const p = stormState.pair;
+  if (!p) return;
+  const feats = [];
+  for (const d of [p.a, p.b]) {
+    const day = stormState.days.get(d);
+    if (!day || !day.features) continue;
+    for (const f of day.features) feats.push(f);
+  }
+  if (feats.length) {
+    window._stormLayer = L.geoJSON({ type: 'FeatureCollection', features: feats }, {
+      pane: 'storm', interactive: false,
+      style: () => ({ pane: 'storm', color: STORM_HUE, weight: 1.4, opacity: 0.8,
+                      fill: false, interactive: false }),
+    }).addTo(window._map);
+  }
+  if (!p.geo) return;
+  /* No stroke on the fill. Every point of its edge already lies on one of the two
+     outlines above, so an outline here would only draw a second line on top of a line. */
+  window._stormFillLayer = L.geoJSON(p.geo, {
+    pane: 'storm', interactive: false,
+    style: () => ({ pane: 'storm', stroke: false, fillColor: STORM_HUE,
+                    fillOpacity: stormFillOn() ? STORM_PAIR_FILL : 0, interactive: false }),
+  }).addTo(window._map);
+}
+
+/* Zoom is not a pan. The layer is still never rebuilt while he drags the map; this only
+   re-styles the one fill, and only when the zoom has actually crossed the line. */
+let stormFillWas = null;
+function stormZoomWatch() {
+  const now = stormFillOn();
+  if (now === stormFillWas) return;
+  stormFillWas = now;
+  if (window._stormFillLayer) {
+    window._stormFillLayer.setStyle({ fillOpacity: now ? STORM_PAIR_FILL : 0 });
+  }
+  syncStormBar();
 }
 
 async function drawStormLayer() {
   if (!window.L || !window._map) return;
   clearStormLayer();
+  stormFillWas = stormFillOn();
+  if (stormState.pair) { drawStormPair(); return; }
   if (!stormState.show || !stormState.active.length) return;
   const feats = [];
   for (const d of stormState.active) {
@@ -7468,6 +7591,300 @@ async function drawStormLayer() {
       interactive: false,
     }),
   }).addTo(window._map);
+}
+
+/* ============================================================ THE STORM PICKER ====
+   Pick one past day, add a second, and fill ONLY where the two cross. His ask, twice.
+   It answers a different question from the wash above: the wash says how often this
+   ground has taken hail, the picker says where these TWO days both reached.
+
+   WHY THERE IS NO CLIPPING LIBRARY IN THIS FILE.
+   The obvious way to intersect two shapes is to paste in a polygon-boolean library —
+   fifteen to thirty kilobytes of minified code, inside a file one person reads by hand,
+   in an app that has already lost every lot line on the map to a library global called
+   `L`. And it would buy precision this data does not have: every polygon here is a radar
+   detection buffered FOUR KILOMETRES and then dissolved, so the true edge is soft by
+   kilometres. An exact answer to a soft question is a false answer that looks certain.
+
+   So the overlap is sampled on a grid instead, using this app's OWN ring test — the same
+   `pointInRings` the lot lookup and `stormClassAt` already use, so a point on a boundary
+   is decided the same way everywhere. Measured against arithmetic on two rectangles it
+   is 0.06% out; against the same pair run at 62.5 m it is 0.05% out, so 250 m has
+   converged and going finer buys nothing but time. `.test/validate.mjs` is that check and
+   it can be re-run against a bigger library next year.
+
+   TWO GRIDS, and that is the whole trick. One kilometre everywhere to find WHERE the
+   answer is, then 250 m only along its edge. A kilometre cell whose eight neighbours are
+   also inside cannot contain any boundary, so its sixteen fine cells are filled in
+   without a single test. The widest pair in the library takes 63 ms here, so about
+   250 ms on his phone, against a 600 ms budget. Worked out ONCE per pair and cached —
+   never on a pan, never per frame. */
+
+const STORM_COARSE_M = 1000;
+const STORM_FINE_PER = 4;                       /* 250 m */
+
+/* Every polygon in a day file, each carrying its own box, so the ring test only ever runs
+   on a polygon that could contain the point. The worst day is 71 rings and 1,462
+   vertices; without this the coarse pass would walk all of them for every cell. */
+function stormPolysOf(day) {
+  const out = [];
+  if (!day || !day.features) return out;
+  for (const f of day.features) {
+    const g = f.geometry; if (!g) continue;
+    const list = g.type === 'MultiPolygon' ? g.coordinates : [g.coordinates];
+    for (const poly of list) {
+      if (!poly || !poly[0] || poly[0].length < 4) continue;
+      let x0 = Infinity, y0 = Infinity, x1 = -Infinity, y1 = -Infinity;
+      for (const pt of poly[0]) {
+        if (pt[0] < x0) x0 = pt[0];
+        if (pt[0] > x1) x1 = pt[0];
+        if (pt[1] < y0) y0 = pt[1];
+        if (pt[1] > y1) y1 = pt[1];
+      }
+      out.push({ rings: poly, bbox: [x0, y0, x1, y1] });
+    }
+  }
+  return out;
+}
+
+function stormInPolys(polys, lon, lat) {
+  for (const p of polys) {
+    const b = p.bbox;
+    if (lon < b[0] || lon > b[2] || lat < b[1] || lat > b[3]) continue;
+    if (pointInRings(lon, lat, p.rings)) return true;
+  }
+  return false;
+}
+
+/* COULD ANY PART OF THIS STORM BE INSIDE THIS BOX. Bounding boxes only, no ring maths,
+   so it costs almost nothing — and it is what makes the coarse pass's skip SAFE. */
+function stormBoxHits(polys, x0, y0, x1, y1) {
+  for (const p of polys) {
+    const b = p.bbox;
+    if (b[0] <= x1 && b[2] >= x0 && b[1] <= y1 && b[3] >= y0) return true;
+  }
+  return false;
+}
+
+function stormPolysBox(polys) {
+  let x0 = Infinity, y0 = Infinity, x1 = -Infinity, y1 = -Infinity;
+  for (const p of polys) {
+    if (p.bbox[0] < x0) x0 = p.bbox[0];
+    if (p.bbox[1] < y0) y0 = p.bbox[1];
+    if (p.bbox[2] > x1) x1 = p.bbox[2];
+    if (p.bbox[3] > y1) y1 = p.bbox[3];
+  }
+  return [x0, y0, x1, y1];
+}
+
+/* THE ANSWER. `grid` is kept so that "am I standing in it?" is a lookup rather than
+   another ring test, which is what lets drawMini ask it every frame for nothing.
+   `opts` exists for the tests, which run the same code at four resolutions; the app
+   never passes it. */
+function stormIntersect(dayA, dayB, opts) {
+  const COARSE_M = (opts && opts.coarseM) || STORM_COARSE_M;
+  const FINE_PER = (opts && opts.finePer) || STORM_FINE_PER;
+  const A = stormPolysOf(dayA), B = stormPolysOf(dayB);
+  const empty = { km2: 0, cells: 0, geo: null, grid: null };
+  if (!A.length || !B.length) return empty;
+
+  const ba = stormPolysBox(A), bb = stormPolysBox(B);
+  const box = [Math.max(ba[0], bb[0]), Math.max(ba[1], bb[1]),
+               Math.min(ba[2], bb[2]), Math.min(ba[3], bb[3])];
+  if (box[0] >= box[2] || box[1] >= box[3]) return empty;      /* the boxes miss entirely */
+
+  const midLat = (box[1] + box[3]) / 2;
+  const dLatC = COARSE_M / mPerDegLat;
+  const dLonC = COARSE_M / mPerDegLon(midLat);
+  const nx = Math.ceil((box[2] - box[0]) / dLonC);
+  const ny = Math.ceil((box[3] - box[1]) / dLatC);
+  if (nx < 1 || ny < 1) return empty;
+
+  const coarse = new Uint8Array(nx * ny);
+  for (let j = 0; j < ny; j++) {
+    const lat = box[1] + (j + 0.5) * dLatC;
+    for (let i = 0; i < nx; i++) {
+      const lon = box[0] + (i + 0.5) * dLonC;
+      if (stormInPolys(A, lon, lat) && stormInPolys(B, lon, lat)) coarse[j * nx + i] = 1;
+    }
+  }
+
+  const F = FINE_PER;
+  const fx = nx * F, fy = ny * F;
+  const dLatF = dLatC / F, dLonF = dLonC / F;
+  const fine = new Uint8Array(fx * fy);
+  const at = (i, j) => (i < 0 || j < 0 || i >= nx || j >= ny) ? 0 : coarse[j * nx + i];
+  for (let j = 0; j < ny; j++) {
+    for (let i = 0; i < nx; i++) {
+      const me = at(i, j);
+      let uniform = true;
+      for (let dj = -1; dj <= 1 && uniform; dj++)
+        for (let di = -1; di <= 1; di++)
+          if (at(i + di, j + dj) !== me) { uniform = false; break; }
+      /* SOLIDLY INSIDE: no test needed. A kilometre cell whose eight neighbours are also
+         inside cannot contain a boundary, so its sixteen fine cells are filled in. */
+      if (uniform && me) {
+        for (let b = 0; b < F; b++)
+          for (let a = 0; a < F; a++) fine[(j * F + b) * fx + (i * F + a)] = 1;
+        continue;
+      }
+      /* SOLIDLY OUTSIDE IS NOT THE SAME STATEMENT, and treating it as one was a real
+         fault found in review before this shipped. The coarse pass samples cell CENTRES,
+         so a crossing that contains no centre is invisible to it — and the first row of
+         centres sits 449 m above the bottom of the shared box, so a strip 300 m wide can
+         miss every centre in the grid. Two storms that graze rather than cross make
+         exactly that shape. The app said "they do not cross anywhere" while both outlines
+         visibly overlapped on the screen; `.test/validate.mjs` case 6 measures it, and
+         against the old code that case returns 0.0 km² instead of 8.5.
+         So a cell whose centre said no is only skipped when its BOX cannot reach either
+         storm — bounding boxes, per polygon, no ring maths, which still prunes the far
+         field hard. The widest pair in the library went from 63 ms to 94 ms for it. */
+      if (uniform && !me) {
+        const x0 = box[0] + i * dLonC, y0 = box[1] + j * dLatC;
+        if (!(stormBoxHits(A, x0, y0, x0 + dLonC, y0 + dLatC)
+           && stormBoxHits(B, x0, y0, x0 + dLonC, y0 + dLatC))) continue;
+      }
+      for (let b = 0; b < F; b++) {
+        const lat = box[1] + j * dLatC + (b + 0.5) * dLatF;
+        for (let a = 0; a < F; a++) {
+          const lon = box[0] + i * dLonC + (a + 0.5) * dLonF;
+          if (stormInPolys(A, lon, lat) && stormInPolys(B, lon, lat)) fine[(j * F + b) * fx + (i * F + a)] = 1;
+        }
+      }
+    }
+  }
+
+  /* Summed row by row, because a degree of longitude is shorter in the north of the seven
+     counties than in the south and one midpoint would quietly bias the number he says. */
+  let km2 = 0, cells = 0;
+  for (let j = 0; j < fy; j++) {
+    let n = 0;
+    for (let i = 0; i < fx; i++) if (fine[j * fx + i]) n++;
+    if (!n) continue;
+    cells += n;
+    const lat = box[1] + (j + 0.5) * dLatF;
+    km2 += n * (dLatF * mPerDegLat) * (dLonF * mPerDegLon(lat)) / 1e6;
+  }
+  if (!cells) return empty;
+
+  const grid = { box, dLon: dLonF, dLat: dLatF, nx: fx, ny: fy, on: fine };
+  return { km2, cells, geo: stormTraceGrid(grid), grid };
+}
+
+/* IS HE STANDING IN IT — a lookup, so the small map can ask on every frame for nothing. */
+function stormInIntersect(grid, lon, lat) {
+  if (!grid) return false;
+  const i = Math.floor((lon - grid.box[0]) / grid.dLon);
+  const j = Math.floor((lat - grid.box[1]) / grid.dLat);
+  if (i < 0 || j < 0 || i >= grid.nx || j >= grid.ny) return false;
+  return !!grid.on[j * grid.nx + i];
+}
+
+/* THE GRID TURNED BACK INTO SHAPES.
+   Every inside cell lays down its own edge wherever its neighbour is outside, walked
+   anticlockwise. Chained up, that gives outer boundaries anticlockwise and holes
+   clockwise for free — which is the thing that tells the two apart afterwards, and a
+   hole drawn as an outer boundary would fill in ground the storms never both reached. */
+function stormTraceGrid(grid) {
+  const { nx, ny, on } = grid;
+  const val = (i, j) => (i < 0 || j < 0 || i >= nx || j >= ny) ? 0 : on[j * nx + i];
+  const key = (i, j) => i * (ny + 2) + j;
+  const starts = new Map();
+  const push = (ax, ay, bx, by) => {
+    const k = key(ax, ay);
+    if (!starts.has(k)) starts.set(k, []);
+    starts.get(k).push([bx, by]);
+  };
+  let edges = 0;
+  for (let j = 0; j < ny; j++) {
+    for (let i = 0; i < nx; i++) {
+      if (!val(i, j)) continue;
+      if (!val(i, j - 1)) { push(i, j, i + 1, j); edges++; }
+      if (!val(i + 1, j)) { push(i + 1, j, i + 1, j + 1); edges++; }
+      if (!val(i, j + 1)) { push(i + 1, j + 1, i, j + 1); edges++; }
+      if (!val(i - 1, j)) { push(i, j + 1, i, j); edges++; }
+    }
+  }
+
+  const loops = [];
+  const cap = edges + 4;                    /* every edge is walked once; this cannot spin */
+  while (starts.size) {
+    const firstKey = starts.keys().next().value;
+    const i0 = Math.floor(firstKey / (ny + 2)), j0 = firstKey % (ny + 2);
+    let cur = [i0, j0];
+    const loop = [cur];
+    let guard = 0;
+    while (guard++ < cap) {
+      const k = key(cur[0], cur[1]);
+      const outs = starts.get(k);
+      if (!outs || !outs.length) break;
+      const next = outs.pop();
+      if (!outs.length) starts.delete(k);
+      loop.push(next);
+      cur = next;
+      if (next[0] === i0 && next[1] === j0) break;
+    }
+    /* NOTHING IS DELETED HERE. An earlier version deleted whatever out-edges were left at
+       the starting corner once the loop closed. Where two cells touch only at a corner
+       that corner has TWO out-edges, so that delete could throw one away, and the later
+       walk that needed it would end in an open chain — closed afterwards by a straight
+       line across ground neither storm reached. Termination does not need it: every outer
+       pass pops at least one edge from a non-empty entry, so the edge count always falls. */
+    if (loop.length > 3) loops.push(loop);
+  }
+
+  const rings = loops.map(l => stormSmooth(stormDropRuns(l)).map(([i, j]) => [
+    +(grid.box[0] + i * grid.dLon).toFixed(6),
+    +(grid.box[1] + j * grid.dLat).toFixed(6),
+  ]));
+
+  const outers = [], holes = [];
+  for (const r of rings) (stormArea2(r) > 0 ? outers : holes).push(r);
+  if (!outers.length) return null;
+  const polys = outers.map(r => ({ r, a: Math.abs(stormArea2(r)), out: [r] }))
+                      .sort((p, q) => p.a - q.a);
+  for (const h of holes) {
+    const owner = polys.find(p => pointInRings(h[0][0], h[0][1], [p.r]));
+    if (owner) owner.out.push(h);
+  }
+  return { type: 'MultiPolygon', coordinates: polys.map(p => p.out.map(stormCloseRing)) };
+}
+
+const stormCloseRing = r => {
+  const a = r[0], b = r[r.length - 1];
+  return (a[0] === b[0] && a[1] === b[1]) ? r : r.concat([[a[0], a[1]]]);
+};
+
+function stormArea2(r) {
+  let s = 0;
+  for (let i = 0, j = r.length - 1; i < r.length; j = i++) s += (r[j][0] * r[i][1] - r[i][0] * r[j][1]);
+  return s;
+}
+
+function stormDropRuns(l) {
+  const out = [];
+  for (let i = 0; i < l.length; i++) {
+    const a = l[(i - 1 + l.length) % l.length], b = l[i], c = l[(i + 1) % l.length];
+    const ax = b[0] - a[0], ay = b[1] - a[1], bx = c[0] - b[0], by = c[1] - b[1];
+    if (ax * by - ay * bx === 0 && ax * bx + ay * by > 0) continue;      /* straight through */
+    out.push(b);
+  }
+  return out.length > 2 ? out : l;
+}
+
+/* ONE CORNER CUT, not a curve. Each corner becomes the two points a quarter of the way
+   back along its arms, which turns a one-cell step into a 45° chamfer and leaves long
+   straight runs alone. Photographed before it went in: the fill lands on the two outlines
+   that are already drawn, and there is no staircase to see. */
+function stormSmooth(l) {
+  if (l.length < 4) return l;
+  const out = [];
+  for (let i = 0; i < l.length; i++) {
+    const a = l[(i - 1 + l.length) % l.length], b = l[i], c = l[(i + 1) % l.length];
+    out.push([b[0] + (a[0] - b[0]) * 0.25, b[1] + (a[1] - b[1]) * 0.25]);
+    out.push([b[0] + (c[0] - b[0]) * 0.25, b[1] + (c[1] - b[1]) * 0.25]);
+  }
+  return out;
 }
 
 /* --------------------------------------------------------------- the storm chip */
@@ -7498,9 +7915,64 @@ function syncStormBar() {
   const btn = $('stormCycle');
   if (btn) btn.textContent = STORM_SHOW_WORDS[stormState.show] || STORM_SHOW_WORDS[0];
   const txt = $('stormTxt'); if (!txt) return;
+  const pick = $('stormPick'), clr = $('stormPairClear');
+  const p = stormState.pair;
+  /* The two buttons are never both offered. Off, neither; on with no pair, "Pick two
+     days"; with a pair, "Clear". One control on screen means one thing to decide. */
+  if (pick) pick.classList.toggle('hide', !stormState.show || !stormState.index || !!p);
+  if (clr) clr.classList.toggle('hide', !p);
   if (!stormState.show) { txt.textContent = ''; return; }
   if (stormState.indexFailed) { txt.textContent = 'The storm library is not on this phone yet and cannot be fetched right now.'; return; }
   if (!stormState.index) { txt.textContent = 'Loading the storm library…'; return; }
+
+  if (p) {
+    if (p.failed) {
+      txt.textContent = `${stormNiceDate(p.a)} and ${stormNiceDate(p.b)} — one of those two days is not on this phone `
+        + `and could not be fetched, so they cannot be compared yet.`;
+      return;
+    }
+    /* NEWER FIRST, and each with how long ago it was. */
+    let s = `${stormNiceDate(p.a)} (${stormAgo(p.a)}) and ${stormNiceDate(p.b)} (${stormAgo(p.b)}) — `;
+    if (p.km2 <= 0) {
+      /* The approved two-storm sentence is NOT printed here. It says hail was estimated
+         over both areas on both days, and when the two never cross there is no such
+         area — printing it anyway would be the app making a claim the data denies. */
+      txt.textContent = s + `they do not cross anywhere. Both days are outlined on the map.`;
+      return;
+    }
+    /* NO FLOOR OF TEN. Rounding up to "about 10 square kilometres" was the app stating a
+       number it cannot resolve: the smallest answer the grid can give is one 250 m cell,
+       which is 0.06 km², and that was being read out as ten. Below fifteen it says what it
+       honestly knows — less than fifteen — and above it the sampled figure is rounded to
+       the nearest ten and hedged. Review found the old line. */
+    s += p.km2 < 15
+      ? `they cross over less than 15 square kilometres. `
+      : `they cross over about ${(Math.round(p.km2 / 10) * 10).toLocaleString()} square kilometres. `;
+    /* WHEN THE FILL HAS DROPPED, THE ANSWER MOVES INTO WORDS. His choice, asked and
+       answered: words alone above zoom 15, no extra line drawn. */
+    const pos = state.pos;
+    let stand = '';
+    if (p.km2 > 0 && !stormFillOn() && pos) {
+      const inA = !!stormClassAt(stormState.days.get(p.a), pos.lon, pos.lat);
+      const inB = !!stormClassAt(stormState.days.get(p.b), pos.lon, pos.lat);
+      stand = (inA && inB) ? 'Radar estimated hail over this area on both days. '
+            : (inA || inB) ? 'Radar estimated hail over this area on one of the two days. '
+            : 'Radar estimated hail over this area on neither day. ';
+    }
+    /* THE TWO SENTENCES MUST NEVER BOTH BE PRINTED, and until review caught it they were.
+       Zoomed in and standing outside the crossing, the bar read "Radar estimated hail over
+       this area on neither day. Radar estimated hail over both areas on both days." — the
+       app contradicting itself in consecutive sentences, handed across a threshold. The
+       standing line is the more specific of the two and wins wherever it applies.
+       FIXED WORDING, approved, and deliberately not in the label registry: a line that
+       holds a compliance boundary cannot be a line he can edit later. */
+    s += stand
+      ? stand + 'This describes storms over areas.'
+      : 'Radar estimated hail over both areas on both days. This describes storms over areas.';
+    txt.textContent = s;
+    return;
+  }
+
   const n = stormState.active.length;
   /* The coverage line goes on the SAME line as the answer, every time. A count built from
      eleven day files looks identical to one built from all of them. */
@@ -7516,8 +7988,26 @@ function syncStormBar() {
    touch it. */
 async function refreshStormLayer(force) {
   if (!stormState.show) {
+    /* Switching the layer off takes the pair with it. A pair that is still picked but
+       cannot be seen is hidden state, and the next tap of the chip would bring back two
+       days he had forgotten choosing. */
     clearStormLayer(); stormState.active = []; stormLastAt = null; stormState.miniAlpha = 0;
+    stormState.pair = null; stormState.pick = null;
     syncStormBar(); try { drawMini(); } catch (e) {}
+    return;
+  }
+  /* WITH A PAIR PICKED, POSITION CHANGES NOTHING ON THE BIG MAP. The two days are chosen,
+     not found, so walking does not alter what is drawn — only the small map's tint and the
+     line of words can change, and both are grid lookups. */
+  if (stormState.pair) {
+    /* DRAW IT IF IT IS NOT DRAWN. A pair can be built while the big map has never been
+       opened — from a house panel — in which case `drawStormLayer` returned at its first
+       line because there was no map to draw on. This is the moment the map exists, and
+       without this the pair would sit in memory, correct and invisible, for ever. */
+    if (!window._stormLayer && !window._stormFillLayer && window._map) await drawStormLayer();
+    stormMiniFromPair();
+    syncStormBar();
+    try { drawMini(); } catch (e) {}
     return;
   }
   syncStormBar();
@@ -7533,6 +8023,251 @@ async function refreshStormLayer(force) {
   await drawStormLayer();
   syncStormBar();
   try { drawMini(); } catch (e) {}
+}
+
+/* ------------------------------------------------------- picking the two days ---- */
+
+/* HIS RULED CUTS, on the count of detections at one and a quarter inch or more. That
+   count is the strongest single predictor of hail reports actually filed on the ground
+   (r = +0.69, against +0.24 for median size), which is why the level is not read off the
+   biggest stone or the area covered. 25 days in the library are Major, 46 Moderate. */
+function stormLevelWord(n) { return n >= 18 ? 'Major' : (n >= 4 ? 'Moderate' : 'Marginal'); }
+
+const STORM_MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+function stormNiceDate(d) {
+  const p = String(d).split('-');
+  return `${Number(p[2])} ${STORM_MONTHS[Number(p[1]) - 1]} ${p[0]}`;
+}
+
+/* HOW LONG AGO, and it is on every row for a reason that is not decoration.
+   Two dates over one area is not a doubled argument, it is a date-of-loss question, and
+   the gap between them is the part that decides it. The app says the elapsed time and
+   stops there — it draws no conclusion about any claim, any policy or any roof. */
+function stormAgo(d) {
+  const p = String(d).split('-').map(Number);
+  const then = new Date(p[0], p[1] - 1, p[2]), now = new Date();
+  let m = (now.getFullYear() - then.getFullYear()) * 12 + (now.getMonth() - then.getMonth());
+  if (now.getDate() < then.getDate()) m--;
+  if (m < 1) return 'this month';
+  if (m < 12) return `${m} month${m === 1 ? '' : 's'} ago`;
+  const y = Math.floor(m / 12), r = m % 12;
+  return `${y} year${y === 1 ? '' : 's'}${r ? ` ${r} month${r === 1 ? '' : 's'}` : ''} ago`;
+}
+
+const stormKb = b => b >= 1024 * 1024 ? (b / 1024 / 1024).toFixed(1) + ' MB'
+                                      : Math.max(1, Math.round(b / 1024)) + ' KB';
+const stormBoxesMeet = (a, b) =>
+  !!a && !!b && !(a[2] < b[0] || b[2] < a[0] || a[3] < b[1] || b[3] < a[1]);
+
+/* WHERE "HERE" IS. His ruling: only days that can reach the part of the map he is looking
+   at. The map's own bounds are the honest answer to that, and they cost nothing to ask.
+   With no map open yet, a box about ten kilometres around him. With neither, null, and
+   the list then offers everything rather than offering nothing. */
+function stormPickBox() {
+  /* Opened from a house panel: the box is that one point, which is exactly the test
+     `stormCandidates` uses. A sheet is covering the map, so the map's own bounds are not
+     what he is looking at and would be the wrong answer. */
+  const at = stormState.pickAt;
+  if (at) return [at.lon, at.lat, at.lon, at.lat];
+  try {
+    if (window._map && window._map.getBounds) {
+      const b = window._map.getBounds();
+      return [b.getWest(), b.getSouth(), b.getEast(), b.getNorth()];
+    }
+  } catch (err) {}
+  const p = state.pos;
+  if (p) { const d = 0.09; return [p.lon - d, p.lat - d, p.lon + d, p.lat + d]; }
+  return null;
+}
+
+/* Nothing downloads to build this list. The manifest carries a box, the large-hail count,
+   the report count and the file size per day, so every word on every row is answerable
+   from the 72 KB already held. */
+function stormPickRows() {
+  const ix = stormState.index;
+  if (!ix || !Array.isArray(ix.storms)) return [];
+  const box = stormPickBox();
+  const first = stormState.pick ? ix.storms.find(s => s.date === stormState.pick) : null;
+  return ix.storms
+    .filter(s => s.bbox)
+    .filter(s => !box || stormBoxesMeet(s.bbox, box))
+    .filter(s => !first || (s.date !== first.date && stormBoxesMeet(s.bbox, first.bbox)))
+    .sort((a, b) => (a.date < b.date ? 1 : -1));
+}
+
+function renderStormPick() {
+  const list = $('spList'); if (!list) return;
+  const rows = stormPickRows();
+  const picking2 = !!stormState.pick;
+  $('spTitle').textContent = picking2 ? 'Pick the second day' : 'Pick the first day';
+
+  const box = stormPickBox();
+  const total = stormState.index ? stormState.index.storms.length : 0;
+  /* "COULD HAVE REACHED", and about an AREA rather than an address. Two faults in one
+     line, both found in review. The old wording named the address, which no other storm
+     sentence in this app does and which the compliance line exists to prevent. And it
+     stated a bounding-box result as an answer: the box round a storm day can be thirty
+     times the ground it actually covered, so "34 days reach this address" could be read
+     off the screen when the true number was three. The list is a list of candidates and
+     now says so. */
+  $('spWhere').textContent = stormState.pickAt
+    ? `${rows.length} of the ${total} storm days in the library could have reached this area.`
+    : box
+      ? `${rows.length} of the ${total} storm days in the library could have reached the part of the map you are looking at.`
+      : `All ${total} storm days in the library.`;
+
+  const fst = $('spFirst');
+  if (picking2) {
+    fst.classList.remove('hide');
+    fst.textContent = `First day: ${stormNiceDate(stormState.pick)}, ${stormAgo(stormState.pick)}.`
+      + ` Now pick the second. Only days that can cross it are shown.`;
+  } else fst.classList.add('hide');
+
+  const none = $('spNone');
+  if (!rows.length) {
+    none.classList.remove('hide');
+    none.textContent = picking2
+      ? 'No other storm day in the library can cross that one over this part of the map. Move the map, or start again with a different first day.'
+      : 'No storm day in the library reaches this part of the map. Move the map and open this again.';
+  } else none.classList.add('hide');
+
+  let html = '', year = '';
+  for (const s of rows) {
+    const y = s.date.slice(0, 4);
+    if (y !== year) { year = y; html += `<div class="rhead" style="margin-top:12px;margin-bottom:2px">${esc(y)}</div>`; }
+    const here = stormState.days.has(s.date);
+    const bits = [stormLevelWord(s.n125 || 0)];
+    if (s.peak_in) bits.push(`largest ${esc(STORM_SIZE_WORD[s.peak_in >= 1.75 ? '1.75in' : (s.peak_in >= 1 ? '1.00in' : '0.75in')] || '')}`);
+    if (s.hailReportsClean > 0) bits.push('a report was filed that day');
+    if (!here) bits.push(`not on this phone · ${esc(stormKb(s.gzip || s.bytes || 0))}`);
+    html += `<button class="ghost spRow" data-date="${esc(s.date)}" style="text-align:left;width:100%;margin-top:6px">`
+      + `<b>${esc(stormNiceDate(s.date))}</b> · ${esc(stormAgo(s.date))}<br>`
+      + `<span style="font-weight:600;opacity:.8">${esc(bits.join(' · '))}</span></button>`;
+  }
+  list.innerHTML = html;
+  list.querySelectorAll('.spRow').forEach(b => {
+    b.onclick = () => stormPickChoose(b.dataset.date);
+  });
+}
+
+/* HALF A SECOND BETWEEN TAPS, and it is not a nicety. The first tap rebuilds the whole
+   list in place: the amber line appears and pushes every row down, and the list itself
+   shortens to the days that can cross the first. The scroll position does not move, so
+   the row under his thumb 200 ms later is a DIFFERENT date — and if both files are
+   already on the phone nothing asks him anything, so a fumbled double tap commits a pair
+   he never chose and closes the sheet. Found in review. */
+let stormPickAt = 0;
+async function stormPickChoose(date) {
+  if (!date) return;
+  const now = Date.now();
+  if (now - stormPickAt < 500) return;
+  stormPickAt = now;
+  buzz(8);
+  if (!stormState.pick) { stormState.pick = date; renderStormPick(); return; }
+  const a = stormState.pick, b = date;
+  const fromPanel = stormState.pickFromPanel;
+  stormState.pick = null;
+  closeSheet('spSheet');
+  /* Opened from a house panel, the answer he asked for is on the MAP, and the map is
+     behind a sheet he cannot see past. So that sheet goes too — otherwise he picks two
+     days and nothing appears to happen.
+     AND THE MAP IS OPENED, which review caught and which is the whole difference between
+     this door working and doing nothing at all. The detail sheet is reached from the
+     strip, from the customer list, from Appointments and automatically after a door is
+     marked — in every one of those the big map has never been opened, so `window._map`
+     does not exist, `drawStormLayer` returns at its first line, and the pair he waited
+     for a download to build is thrown away the next time he opens the map. */
+  if (fromPanel) {
+    closeSheet('detailSheet');
+    try { await openMap(); } catch (err) {}
+  }
+  stormState.pickAt = null;
+  stormState.pickFromPanel = false;
+  await stormSetPair(a, b);
+}
+
+/* THE PAIR. Worked out once, here, and then only read.
+   The two dates are held NEWER FIRST, which is not cosmetic: at a door the newer date is
+   the plausible date of loss and the older one is what shows the area takes hail. That is
+   the same order the accumulation ruling already uses. */
+/* ONE SET AT A TIME, AND THE LAST TAP WINS. Downloads are slow in a driveway, and every
+   await below is a place where he can walk on, switch the layer off, or start again with
+   a different pair. `refreshStormLayer` already re-checks its world after awaiting — this
+   did not, and review found three ways through it: an abandoned pair arriving after he
+   switched storms off and switching them back ON, two picks racing so that whichever
+   download finished last won, and declining the download leaving him on a closed sheet
+   with nothing said. */
+let stormPairSeq = 0;
+let stormPairForced = false;
+async function stormSetPair(d1, d2) {
+  const seq = ++stormPairSeq;
+  const ix = stormState.index;
+  const need = [d1, d2].filter(d => !stormState.days.has(d));
+  if (need.length) {
+    const bytes = need.reduce((t, d) => {
+      const s = ix && ix.storms.find(x => x.date === d);
+      return t + (s ? (s.gzip || s.bytes || 0) : 0);
+    }, 0);
+    const okGo = confirm(`Download ${need.length} storm day file${need.length === 1 ? '' : 's'}?\n\n`
+      + `That is about ${stormKb(bytes)} over your data connection. `
+      + `They stay on this phone afterwards and work with no signal.`);
+    if (!okGo) { if (seq === stormPairSeq) syncStormBar(); return; }
+    for (const d of need) { await loadStormDay(d); }
+  }
+  /* He started another pair while these were coming down, so this one is stale. */
+  if (seq !== stormPairSeq) return;
+  const A = stormState.days.get(d1), B = stormState.days.get(d2);
+  const [a, b] = d1 > d2 ? [d1, d2] : [d2, d1];       /* newer first, failure included */
+  if (!A || !B) {
+    /* The map must not keep showing the LAST pair under words about this one. */
+    clearStormLayer();
+    stormState.pair = { a, b, km2: 0, geo: null, grid: null, failed: true };
+    stormState.active = [];
+    syncStormBar();
+    return;
+  }
+  const r = stormIntersect(A, B);
+  if (seq !== stormPairSeq) return;
+  stormState.pair = { a, b, km2: r.km2, geo: r.geo, grid: r.grid, failed: false };
+  /* The pair replaces the wash, so the drawn set is these two days and nothing else. */
+  stormState.active = [a, b];
+  stormLastAt = null;
+  /* Compared from a house panel with the layer switched off, the answer would be drawn on
+     a map that is not showing storms at all. So the layer comes on — IN MEMORY ONLY, and
+     REMEMBERED, so that Clear can put it back. `stormShow` on the phone is deliberately
+     never written by any of this, and that is what makes his ruling true: the app opens
+     again on whatever he last chose, with no pair. */
+  if (!stormState.show) { stormState.show = 1; stormPairForced = true; }
+  await drawStormLayer();
+  stormMiniFromPair();
+  syncStormBar();
+  try { drawMini(); } catch (e) {}
+}
+
+/* Clear destroys nothing, so it asks nothing. */
+async function stormClearPair() {
+  stormPairSeq++;                       /* anything still downloading is now abandoned */
+  stormState.pair = null;
+  stormState.pick = null;
+  stormState.active = [];
+  stormLastAt = null;
+  /* AND THE LAYER GOES BACK OFF IF THE PICKER IS WHAT TURNED IT ON. Without this, Clear
+     left `stormState.show` at 1 and fell straight into the ordinary "ten storms over
+     where you are standing" path — which fetches day files one at a time, with no count
+     and no question, on a map he never switched storms on. Review found it. The next tap
+     of the chip would then have written a setting he never chose to the phone. */
+  if (stormPairForced) { stormPairForced = false; stormShowLoad(); }
+  await refreshStormLayer(true);
+  syncStormBar();
+}
+
+/* THE SMALL MAP IN PAIR MODE. It is clamped to between 60 and 600 metres across, so it is
+   always wholly inside the overlap or wholly outside it — which makes a lookup on the
+   cached grid the whole answer, computed once here rather than on every frame. */
+function stormMiniFromPair() {
+  const p = stormState.pair, pos = state.pos;
+  stormState.miniAlpha = (p && p.grid && pos && stormInIntersect(p.grid, pos.lon, pos.lat))
+    ? STORM_PAIR_FILL : 0;
 }
 
 /* Everything that does NOT live in the database has to be named here by hand, or it
@@ -8487,7 +9222,7 @@ document.querySelectorAll('.dsecHead[data-msec]').forEach(b => {
 /* ---- what version is actually on the phone ----
    Matches the service worker cache name, so "did the update land" is answerable by
    looking rather than guessing. */
-const BUILD_VERSION = 'v31';
+const BUILD_VERSION = 'v32';
 const BUILD_DATE = '2 August 2026';
 function renderVersionStamp() {
   const el = $('versionStamp'); if (!el) return;
@@ -9610,9 +10345,13 @@ function renderStormPanel(v) {
     if (rows.length) {
       body += `<div class="rhead" style="margin-top:12px;margin-bottom:2px">Most recent</div>`;
       for (const r of rows.slice(0, 4)) {
+        /* THE SALES PATH. He is at a door, looking at the days that reached this address,
+           and the next thing he wants is a second date to cross it with. So the way in is
+           here, on the row he is already reading, not only on the map bar. */
         body += `<div class="srow"><b>${esc(niceDate(r.date))}</b>`
           + `<span>radar estimated ${esc(STORM_SIZE_WORD[r.cls] || '')}`
-          + (r.reports ? ' · a report was filed that day' : '') + `</span></div>`;
+          + (r.reports ? ' · a report was filed that day' : '') + `</span>`
+          + `<button class="ghost dsCmp" data-date="${esc(r.date)}">Compare</button></div>`;
       }
     }
 
@@ -9642,6 +10381,21 @@ function renderStormPanel(v) {
   /* FIXED, and deliberately not in the label registry. */
   body += `<div class="pnote">This describes storms over an area. It says nothing about this roof.</div>`;
   el.innerHTML = body;
+
+  /* Opens the picker with THIS day already chosen as the first, and with the list cut to
+     the days that reach THIS address. `v.lon`/`v.lat` are captured here, so walking to
+     the next door before tapping cannot open the list for the wrong house. */
+  el.querySelectorAll('.dsCmp').forEach(btn => {
+    btn.onclick = async () => {
+      buzz(8);
+      await loadStormIndex();
+      stormState.pickAt = { lon: v.lon, lat: v.lat };
+      stormState.pickFromPanel = true;
+      stormState.pick = btn.dataset.date;
+      openSheet('spSheet');
+      renderStormPick();
+    };
+  });
 
   const go = $('dStormGo');
   if (go) go.onclick = async () => {
@@ -10348,6 +11102,27 @@ $('stormCycle').onclick = async () => {
   buzz(10);
   syncStormBar();
   await refreshStormLayer(true);
+};
+$('stormPick').onclick = async () => {
+  buzz(8);
+  await loadStormIndex();
+  stormState.pick = null;
+  stormState.pickAt = null;          /* the bar's door asks about the map, not one house */
+  stormState.pickFromPanel = false;
+  openSheet('spSheet');
+  renderStormPick();
+};
+/* Clear destroys nothing — no count, no question. */
+$('stormPairClear').onclick = async () => { buzz(8); await stormClearPair(); };
+/* CLOSING THE PICKER HALF WAY FORGETS THE HALF PICK. Wired here, AFTER the generic
+   `[data-close]` sweep has already run, so this replaces that handler rather than racing
+   it. Without it, walking away after choosing one day and opening the list again would
+   show "Pick the second day" over a first day he had abandoned two streets back. */
+const spCloseBtn = document.querySelector('[data-close="spSheet"]');
+if (spCloseBtn) spCloseBtn.onclick = () => {
+  closeSheet('spSheet');
+  stormState.pick = null; stormState.pickAt = null; stormState.pickFromPanel = false;
+  const f = $('spFirst'); if (f) { f.classList.add('hide'); f.textContent = ''; }
 };
 /* Sit the panel on top of the button bar wherever the bar actually is, rather than
    at a guessed height. The bar wraps to two rows on a narrow phone. */
