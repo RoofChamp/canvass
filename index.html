@@ -126,6 +126,14 @@ input,textarea,select{font:inherit;color:var(--txt);background:var(--card2);bord
    44px target and started landing on top of it */
 #owner{font-size:15px;color:var(--dim);margin-top:3px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;padding-right:96px}
 #addr.far{color:#fbbf24}
+/* A dead GPS on the house card. Red and NOT dimmed — every other line in this slot is
+   var(--dim) grey, which is exactly why a warning printed in it went unread. It also
+   drops the ellipsis clamp, because the sentence being cut off at "GPS LOST · last read…"
+   is the half that matters least. */
+/* padding-right:0 because the 96px on #owner exists only to clear a button that sits
+   beside line one. Wrapped to three lines it just wasted a third of the width and
+   pushed the status buttons down under his thumb as the card grew. */
+#owner.gpsLost{color:#f87171;white-space:normal;font-weight:600;padding-right:0}
 #propLine{font-size:14px;font-weight:700;color:#7dd3fc;margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;padding-right:6px}
 .warnTri{margin-right:6px;font-size:20px;vertical-align:2px}
 #tagRow{display:flex;gap:6px;flex-wrap:wrap;margin-top:6px}
@@ -551,8 +559,14 @@ select{min-height:44px}
   color:var(--txt);border-radius:14px;padding:12px;margin-bottom:8px;min-height:56px}
 .dlRow .d{font-size:16px;font-weight:800}
 .dlRow .s{font-size:13px;color:var(--dim);margin-top:2px}
-.dlTiles{display:flex;gap:8px;margin:10px 0}
-.dlTile{flex:1;background:var(--card);border:1px solid var(--line);border-radius:14px;padding:10px;text-align:center}
+/* flex-wrap and a min-width because this row went from four tiles to six in v33 and
+   without them all six squeezed onto one line on a 390 px phone. */
+.dlTiles{display:flex;gap:8px;margin:10px 0;flex-wrap:wrap}
+/* Six tiles, not four, from this round on — see the flex-wrap above. The floor that makes
+   them wrap instead of squeezing to 57px is the existing .dlTile min-width further down;
+   a second one was added here and lost to it, which is exactly the kind of dead rule that
+   reads like it is doing something. */
+.dlTile{flex:1;background:var(--card);border:1px solid var(--line);border-radius:14px;padding:10px;text-align:center;min-width:88px}
 .dlTile b{display:block;font-size:22px;font-weight:800}
 .dlTile span{font-size:11px;color:var(--dim);text-transform:uppercase;letter-spacing:.04em}
 .dlDoor{display:flex;gap:10px;align-items:flex-start;background:var(--card);border:1px solid var(--line);
@@ -1177,6 +1191,7 @@ select{min-height:44px}
     <div class="sheetHead"><h2 id="sesTitle">Session</h2><button class="x" data-close="sessionSheet">Close</button></div>
     <div class="sheetScroll">
       <div class="statsbox" id="sesStats"></div>
+      <div class="small hide" id="sesStreets" style="margin-top:10px;color:var(--dim)"></div>
       <div class="small" id="sesMeta" style="margin-top:10px"></div>
       <button class="primary" id="sesExport">⬇︎ Save this session's list</button>
       <button class="ghost" id="sesEnd">■ End session and stop tracking</button>
@@ -2911,6 +2926,14 @@ const state = {
   fixes: [],            // recent raw GPS fixes, for smoothing
   still: false,         // standing rather than walking
   stillSince: 0,
+  /* The walking window, v33. Two fields, and they are NOT the same thing as `still`:
+     `still` needs 3.5 seconds of standing before it arms, which is the whole gap this
+     round is closing. `walkFlag` flips within a fix or two of him actually stopping.
+     `walkStop` is when the walk ended, and it is cleared ONLY by walking again — never by
+     a timer — so the window can finish growing without anything expiring underneath it. */
+  walkFlag: false,      // moving at more than a shuffle, over a fixed five-second look-back
+  walkStop: 0,          // when that last stopped being true
+  walkHits: 0,          // consecutive readings over MOVE_ON — see MOVE_ON_HITS
   anchor: null,         // position the house was locked to while standing
   heldKey: null,        // house frozen while stationary
   switchCand: null,     // candidate waiting to win the hysteresis test
@@ -2986,6 +3009,106 @@ function legSpeed(a, b) {
   return haversine(a.lat, a.lon, b.lat, b.lon) / dt;
 }
 const legDriven = (a, b) => legSpeed(a, b) > LEG_DRIVE_MS;
+/* ---- WALKING VERSUS DRIVING, DECIDED BY RUNS RATHER THAN BY ONE LEG ------------------
+   `legDriven` above judges each leg entirely on its own, and that is the fault. On
+   2026-08-03 it called 75 legs "driven" — but ten of those were a SINGLE fast reading with
+   walking either side, which is a jog between houses or the twelve-second smoother snapping
+   forward, not a truck. Meanwhile the ramp at each end of a real hop, below the line, was
+   filed as walking.
+   HOW HE ACTUALLY WORKS, in his words: "I would scoot my vehicle up a short distance, park,
+   hit one to four houses roughly, then go back to the vehicle, move forward. I might not
+   move very far." So his drives are SHORT — 27 to 196 metres, 10 to 50 seconds, 5 to 12 mph
+   — and the old DRIVE_ON at 20 mph never once fired on that day. Nor did the 400 m / 3 min
+   backstop, in 604 windows. The chip said "on foot" for the whole round.
+
+   THE NUMBERS, all four measured off his own day rather than chosen:
+     WALK_MAX_MS   his own ceiling, given unprompted: "i dont see myself more than 3.5 mph".
+                   Measured, his fastest certainly-on-foot stretch was 3.1 mph, and his
+                   slowest vehicle hop was 5.4. Nothing at all fell between. 4.5 sits in the
+                   middle of that empty gap, a full mph clear on both sides.
+     DRIVE_RUN     a hop lasts 10-50 s, so it is always several readings. One or two is the
+                   smoother catching up. Three is the smallest number that cannot be one
+                   twitch, and it clears all ten of his false positives.
+     DRIVE_LONE_M  the exception that stops this being gameable. A SINGLE fast leg over 60 m
+                   is the signature of crawling a street in the truck — the breadcrumb
+                   spacing stretches while driving, so a real crawl can leave one long leg
+                   and no run at all. Without this, a drive-by knocking spree would read as
+                   a walk, which is the one property the walked/driven split exists to
+                   protect.
+     DRIVE_RAMP_MS his idea, and worth more than I first credited: "It needs to account for
+                   acceleration though so it should rewind the last 5 seconds." Pulling away
+                   and parking both happen below the ceiling. On his day that ramp is 0.18
+                   of 0.83 driven miles — better than a fifth of every hop. Eight seconds
+                   covers his five with margin, and only ever reaches out from a CONFIRMED
+                   run, so it can never manufacture a drive out of a jog.
+   HIS RULING ON THE TIE-BREAK: never undercount walking. So an isolated burst that is
+   neither a run nor 60 m long stays walked. */
+const WALK_MAX_MS   = 2.0;      // m/s = 4.5 mph. Above this, sustained, he is in the truck.
+const DRIVE_RUN     = 3;        // consecutive legs over it before it counts as a drive
+const DRIVE_LONE_M  = 60;       // ...or one leg this long, which only a vehicle produces
+/* ...OR ONE LEG THIS FAST, whatever its length. The run-and-length rules alone had a hole
+   big enough to drive a truck through, and three reviewers drove one through it: his own
+   shortest recorded hop is 27 m in 10 s, which is three or four breadcrumbs with the
+   pull-away and the brake below the ceiling — leaving one or two fast legs, none of them
+   60 m. The whole hop then counted as WALKED, where v32 at least put the middle in driven.
+   Worse, it was gameable in exactly the shape the walked/driven split exists to prevent:
+   drive 25 m, stop, thumb a status out of the window, repeat. Every leg lone, every leg
+   under 60 m, every metre filed as walking.
+   Speed closes it, because speed is the thing a man on foot cannot fake. 3.5 m/s is 7.8
+   mph — more than twice his own stated walking ceiling of 3.5 mph, and far beyond what
+   the twelve-second smoother can manufacture when it catches up (it trails by about eight
+   metres, so a catch-up leg over three seconds is under 3 m/s). Nothing on his 2026-08-03
+   crosses it on foot. */
+const DRIVE_SURE_MS = 3.5;      // m/s = 7.8 mph. One leg at this speed is a vehicle.
+const DRIVE_RAMP_MS = 8000;     // pull-away and parking, either side of a confirmed run
+/* One verdict per leg for a whole segment: out[i] is true when the leg from seg[i] to
+   seg[i+1] was driven. Every consumer of the walked/driven split reads THIS, so the map,
+   the miles and the day report can never disagree with each other. */
+function classifyDriven(seg) {
+  const n = Math.max(0, seg.length - 1);
+  const out = new Array(n).fill(false);
+  if (!n) return out;
+  const fast = [], len = [], spd = [];
+  for (let i = 0; i < n; i++) {
+    spd[i]  = legSpeed(seg[i], seg[i + 1]);
+    fast[i] = spd[i] > WALK_MAX_MS;
+    len[i]  = haversine(seg[i].lat, seg[i].lon, seg[i + 1].lat, seg[i + 1].lon);
+  }
+  for (let i = 0; i < n; i++) {
+    if (!fast[i] || (i && fast[i - 1])) continue;      // only at the start of a fast run
+    let j = i; while (j < n && fast[j]) j++;
+    const isDrive = (j - i) >= DRIVE_RUN
+                 || len.slice(i, j).some(m => m >= DRIVE_LONE_M)
+                 || spd.slice(i, j).some(v => v >= DRIVE_SURE_MS);
+    if (!isDrive) continue;
+    for (let k = i; k < j; k++) out[k] = true;
+    /* the ramp: outward from a CONFIRMED run only, in both directions — he pulls away
+       below the ceiling and he brakes and parks below it too */
+    /* Measured from the FAR end of each ramp leg, not the near end. Written the other way
+       round first, and then `seg[i].ts - seg[i].ts` is zero for the leg touching the run —
+       so the ramp always swallowed one leg whatever its length, including a 31-second walk.
+       The suite's road-speed fixture caught it: 400 walked metres came back as 360. */
+    for (let k = i - 1; k >= 0 && !fast[k] && (seg[i].ts - seg[k].ts) <= DRIVE_RAMP_MS; k--) out[k] = true;
+    for (let k = j; k < n && !fast[k] && (seg[k + 1].ts - seg[j].ts) <= DRIVE_RAMP_MS; k++) out[k] = true;
+  }
+  return out;
+}
+/* Not steps: the GPS wandering while he stands at a door. It is not added to driven
+   either — he did not drive it. Nobody covered it.
+   SLOW IS NOT ENOUGH ON ITS OWN, and a speed test alone was wrong. The suite caught it: a
+   fixture walking 20 m a minute — 0.33 m/s, genuinely slow but genuinely walking — came
+   back as zero miles, because wander and a dawdle look identical to a speedometer.
+   What actually separates them is that WANDER GOES NOWHERE. Noise scatters a metre or two
+   about a fixed point however long you stand there; a slow walk still accumulates distance.
+   So a leg is discarded only when it is slow AND SHORT. On his 2026-08-03 that is 74 legs
+   with a median length of three metres, 166 m in total. The handful of slow legs that DID
+   cover ground — one ran 96 m over nearly four minutes — stay counted, which is his own
+   ruling on the tie-break: never undercount walking. */
+const WANDER_MAX_M = 6;    // the same distance as SWITCH_GAIN, and for the same reason: it
+                           // is this app's idea of how far apart two things must be before
+                           // they are in different places at all
+const legIsSteps = (a, b) =>
+  legSpeed(a, b) >= STILL_SPEED || haversine(a.lat, a.lon, b.lat, b.lon) >= WANDER_MAX_M;
 /* A run of legs at the same pace, so the map draws one line per stretch rather than one
    per breadcrumb. Each run carries whether it was driven and which book it was in. */
 /* Walked and driven, counted apart. Now that driving is recorded, a single total would
@@ -2994,17 +3117,20 @@ const legDriven = (a, b) => legSpeed(a, b) > LEG_DRIVE_MS;
 function splitMetres(pts, from) {
   let walked = 0, driven = 0;
   for (const seg of trackSegments(from ? pts.filter(p => p.ts >= from) : pts)) {
+    const drv = classifyDriven(seg);
     for (let i = 1; i < seg.length; i++) {
       const m = haversine(seg[i-1].lat, seg[i-1].lon, seg[i].lat, seg[i].lon);
-      if (legDriven(seg[i-1], seg[i])) driven += m; else walked += m;
+      if (drv[i-1]) driven += m;
+      else if (legIsSteps(seg[i-1], seg[i])) walked += m;   // wander at a door is neither
     }
   }
   return { walked, driven };
 }
 function paceRuns(seg) {
   const runs = [];
+  const drv = classifyDriven(seg);   // the same verdicts the miles use, so the map agrees
   for (let i = 1; i < seg.length; i++) {
-    const driven = legDriven(seg[i-1], seg[i]);
+    const driven = drv[i-1];
     const last = runs[runs.length - 1];
     if (last && last.driven === driven) last.pts.push(seg[i]);
     else runs.push({ driven, pts: [seg[i-1], seg[i]] });
@@ -3740,7 +3866,19 @@ async function ensureParcels(lat, lon) {
 /* ---------------- candidate resolution ---------------- */
 function recompute() {
   if (!state.pos) return;
-  const {lat, lon} = state.pos;
+  /* THE ONE PLACE THE SHORT WINDOW IS READ. `state.pos` is untouched and stays the careful
+     twelve-second value, so every door record, breadcrumb, mile and map dot is byte for
+     byte what it would have been. Only the question "which house am I at" gets the quick
+     answer — because that is the only question he is asking while walking up a driveway. */
+  /* Stashed, because `mark()` has to write the SAME position that chose the house. Before
+     this the record carried `state.pos` for lat/lon but `dist` measured from the picker
+     position — two points up to eight metres apart on one record, and the day report's
+     "3 m from the lot" was then a distance from somewhere the record does not mention.
+     Four reviewers found it. The picker position is the better of the two while he is
+     walking, and it is the one that named the house he tapped. */
+  const pp = pickerPos() || state.pos;
+  state.pickedFrom = { lat: pp.lat, lon: pp.lon, acc: pp.acc };
+  const {lat, lon} = pp;
   const near = [];
   for (const p of state.parcels.values()) {
     // cheap bbox reject
@@ -3770,7 +3908,19 @@ function recompute() {
     /* While standing still, hold the house you were on. Only give it up when a
        rival is clearly closer on two fixes running, which stops the address
        flickering between neighbours mid-conversation. */
-    if (state.still && state.heldKey) {
+    /* `hold`, not `state.still`. THIS IS THE OTHER HALF OF THE DRIVEWAY FIX and it is
+       worth more than the window on its own. `state.still` needs him under 0.45 m/s for a
+       further 3.5 seconds before it arms, and because recentSpeed reads the whole
+       twelve-second buffer that decay takes about eight seconds more — so the grip that
+       stops a fast tap filing the neighbour did not arrive for roughly ELEVEN AND A HALF
+       SECONDS after he stopped walking. On 2026-08-03, 26 of his 45 doors were tapped
+       inside that unprotected window. The walking flag drops within a fix or two, so this
+       arms at about three seconds instead.
+       AND NOT ON A DEAD FIX. A lock is a decision to stop listening to new evidence; made
+       on a reading half a minute old it would pin whatever the frozen position happened to
+       be pointing at. Werner Way is what that looks like. */
+    const hold = (state.still || (!state.walkFlag && !!state.walkStop)) && !fixDead();
+    if (hold && state.heldKey) {
       const held = state.candidates.findIndex(x => x.p.key === state.heldKey);
       if (held >= 0) {
         const rival = state.candidates[0];
@@ -3783,8 +3933,8 @@ function recompute() {
         } else { state.candIndex = held; state.switchCand = null; state.switchCount = 0; }
       } else state.heldKey = null;
     }
-    if (state.still && !state.heldKey && state.candidates.length) state.heldKey = state.candidates[0].p.key;
-    if (!state.still) { state.heldKey = null; state.switchCand = null; state.switchCount = 0; }
+    if (hold && !state.heldKey && state.candidates.length) state.heldKey = state.candidates[0].p.key;
+    if (!hold) { state.heldKey = null; state.switchCand = null; state.switchCount = 0; }
   }
   renderHouse();
 }
@@ -3838,8 +3988,22 @@ function renderStrip() {
   else if (!state.pos) { d.className='dot'; t.textContent='GPS…'; }
   else {
     const a = Math.round(state.pos.acc);
-    d.className = 'dot ' + (a <= 12 ? 'good' : a <= 30 ? 'ok' : 'bad');
-    t.textContent = `±${a} m` + (state.still ? ' · held' : '');
+    /* The age of the last reading, not the accuracy of it. Accuracy answers "how good was
+       that fix"; this answers "was there a fix at all lately", and until v33 nothing on
+       this screen answered the second question. See FIX_OLD_MS. A ±4 m chip sitting over a
+       reading two minutes old is the most confident thing in the app and the least true. */
+    if (fixDead()) {
+      d.className = 'dot bad';
+      /* "· held" stays on a dead chip when the lock is on: the moment the position is
+         suspect is the moment it matters most that he can see the house is being held. */
+      t.textContent = `no fix · ${fixAgeTxt()}` + (state.still ? ' · held' : '');
+    } else if (isFinite(fixAge()) && fixAge() > FIX_OLD_MS && !state.override) {
+      d.className = 'dot ok';
+      t.textContent = `±${a} m · ${fixAgeTxt()} old` + (state.still ? ' · held' : '');
+    } else {
+      d.className = 'dot ' + (a <= 12 ? 'good' : a <= 30 ? 'ok' : 'bad');
+      t.textContent = `±${a} m` + (state.still ? ' · held' : '');
+    }
   }
   $('gpsPill').classList.toggle('paused', state.paused);
   renderDrivePill();
@@ -3882,6 +4046,7 @@ function renderHouse() {
                            : state.tileRefused ? 'The county turned this lookup down' : '—';
     $('alreadyTag').classList.add('hide'); $('rentTag').classList.add('hide');
     $('staleTag').classList.add('hide'); $('propLine').classList.add('hide');
+    $('owner').classList.remove('gpsLost');   // or the red leaks onto "No lot nearby"
     drawMini(); return;
   }
   const p = c.p;
@@ -3890,7 +4055,17 @@ function renderHouse() {
   $('addr').classList.toggle('far', c.d > state.snapMax);
   const yr = yearBuilt(p);
   fitAddr();
-  $('owner').textContent = (p.owner || 'Owner not listed') + (yr ? ` · built ${yr}` : '') + ` · ${Math.round(c.d)}m`;
+  /* A dead GPS says so HERE, above everything else on the card, because this line is the
+     one he reads before his thumb lands on a status. The address stays on screen — it is
+     still the best guess anyone has, and his ruling is that the app never refuses to file
+     — but it stops being presented as a measurement. The distance goes with it: "· 4m"
+     against a reading half a minute old is a fact about nothing.
+     On Werner Way this line would have read "GPS LOST · last reading 34s ago", and the
+     wrong house would have been obvious before it was filed rather than after. */
+  $('owner').textContent = fixDead()
+    ? `⚠️ GPS LOST · last reading ${fixAgeTxt()} ago`
+    : (p.owner || 'Owner not listed') + (yr ? ` · built ${yr}` : '') + ` · ${Math.round(c.d)}m`;
+  $('owner').classList.toggle('gpsLost', fixDead());
   const sl = statsLine(p);
   $('propLine').textContent = sl;
   $('propLine').classList.toggle('hide', !sl);
@@ -4340,7 +4515,18 @@ async function mark(status) {
   const v = {
     id: 'v' + Date.now() + Math.random().toString(36).slice(2,6),
     key: p.key, county: p.county, pid: p.pid, status, line: state.line,
-    ts: Date.now(), lat: state.pos.lat, lon: state.pos.lon, acc: state.pos.acc,
+    /* The position the HOUSE PICKER used, so `lat`/`lon` and `dist` on this record always
+       describe the same point. Falls back to state.pos when nothing has been picked. */
+    ts: Date.now(),
+    lat: (state.pickedFrom || state.pos).lat, lon: (state.pickedFrom || state.pos).lon,
+    acc: (state.pickedFrom || state.pos).acc,
+    /* HOW OLD THE READING WAS WHEN THIS DOOR WAS FILED, in seconds. Costs one small number
+       on a record he is writing anyway, and it is the only way to find out what the real
+       reading cadence is at a real door — which decided nothing less than whether the app
+       should ever refuse to file. It cannot be measured from a backup any other way,
+       because breadcrumbs are suppressed while he stands still, so a gap in the trail
+       proves nothing. After a day out this field answers it across every door at once. */
+    fixAge: fixAgeS(),
     dist: Math.round(c.d), owner: p.owner, addr: p.addr, extra: p.extra,
     occ: p.occ || null, mail: p.mail || '',
     // carried onto the record so the "that is a mortgage servicer" line still shows
@@ -5638,8 +5824,10 @@ function openDetail(visit, focusName) {
       if (!v) {
         // let them add notes before ever tapping a status
         v = { id:'v'+Date.now()+Math.random().toString(36).slice(2,6), key:c.p.key, county:c.p.county, line:state.line,
-              pid:c.p.pid, status:'talked', ts:Date.now(), lat:state.pos.lat, lon:state.pos.lon,
-              acc:state.pos.acc, dist:Math.round(c.d), owner:c.p.owner, addr:c.p.addr, extra:c.p.extra,
+              pid:c.p.pid, status:'talked', ts:Date.now(),
+              lat:(state.pickedFrom || state.pos).lat, lon:(state.pickedFrom || state.pos).lon,
+              acc:(state.pickedFrom || state.pos).acc, fixAge:fixAgeS(),   // see mark()
+              dist:Math.round(c.d), owner:c.p.owner, addr:c.p.addr, extra:c.p.extra,
               occ:c.p.occ||null, mail:c.p.mail||'',
               val:c.p.val||null, sqft:c.p.sqft||null, saleTs:c.p.saleTs||null, salePrice:c.p.salePrice||null,
               name:'', goesBy:'', nameFromOwner:false, phone:'', email:'', notes:'', tags:[], follow:'', _new:true };
@@ -8474,6 +8662,60 @@ const BREAK_LOCK  = 14;        // metres of real movement that releases the lock
 const SWITCH_GAIN = 6;         // metres a rival must beat the held house by
 const SWITCH_HITS = 2;         // consecutive fixes it must win
 
+/* ---- THE WALKING WINDOW -------------------------------------------------------------
+   The twelve-second average above is RIGHT while you stand at a door — it is what stops a
+   door being filed against next door's lot. Walking, it trails you by about six seconds,
+   which at his measured 1.39 m/s is EIGHT METRES: most of a driveway. His words, after a
+   day out on 2026-08-03: "it took a while to snap to the house. I would walk down the
+   driveway, and sometimes it would take me getting to their door before it selected the
+   right house."
+   Measured on that day: 30 of his 45 doors were tapped within 8 seconds of the position
+   finally settling, a quarter of them within 1 second. That is not a man knocking; that is
+   a man waiting for his phone. Roughly seven to nine seconds a door, six minutes a day.
+   So the HOUSE PICKER, and nothing else, reads a short slice while he is moving. Records,
+   breadcrumbs, miles, the truck pin and home detection all keep the full twelve seconds. */
+const WALK_WINDOW_MS   = 3000;  // what the picker averages while walking: ~3 fixes, about
+                                // two metres behind him instead of eight. Shorter than this
+                                // is mostly GPS shake; longer brings the wait back.
+const MOVE_LOOKBACK_MS = 5000;  // how far back we look to ask "is he walking". FIXED, and
+                                // deliberately NOT tied to the window above — if the speed
+                                // test read the same slice the window controls, the two
+                                // would chase each other's tail and neither would settle.
+const MOVE_ON  = 0.9;           // m/s over that lookback before we call it walking. His
+                                // steady walk is 1.39; standing GPS shake reads about 0.3.
+                                // 0.9 splits them with room on both sides.
+/* ONE READING IS NOT EVIDENCE — the same lesson `DRIVE_ON_HITS` learned, and it cost a
+   round to relearn here. Standing perfectly still at ±4 m accuracy, the two ends of a
+   five-second look-back are independent samples about two metres wide, so their difference
+   scatters around 0.6 m/s and clips 0.9 roughly one reading in twenty. At his ±10 m p90 it
+   clips it constantly. The simulated driveway caught it: twelve seconds after he stopped
+   at the door, the flag flicked back to "walking" on noise alone and the picker dropped
+   from averaging twelve fixes to four — at the exact moment he is standing at the door
+   about to tap, which is the one place the long average is the right answer.
+   Two readings running squares the false rate and costs one second of window on the way
+   in, against six seconds of lag saved. */
+const MOVE_ON_HITS = 2;
+/* AND THE FLOOR HAS TO MOVE WITH THE SIGNAL. Two readings running was not enough on his
+   bad-signal days: at the ±10 m accuracy that covered a quarter of his doors on 2026-08-03
+   the scatter in walkPace is wider than his walking pace itself, so NO fixed threshold can
+   separate standing from walking there — that is physics, not code.
+   The scatter is proportional to the accuracy of the fixes and inversely proportional to
+   how far back we look, so the floor is too. Below that floor the answer is not "probably
+   standing" or "probably walking", it is DON'T KNOW — and the honest response to don't-know
+   is to leave the twelve-second average exactly as it has always been. So the driveway fix
+   helps on the days the signal can carry it and gets out of the way on the days it cannot,
+   which is the only version of this that cannot make a bad day worse.
+   Worth writing down because it is a pre-existing fault this uncovered rather than caused:
+   on a ±10 m day the ORIGINAL dwell lock never arms either — recentSpeed across the full
+   buffer stays above STILL_SPEED on noise alone — so the anti-flicker grip he has always
+   been told he has has never once existed on a bad-signal day. Not this round's job. It
+   should not stay unwritten either. */
+const MOVE_NOISE_K = 1.0;      // metres of fix accuracy per second of look-back
+const MOVE_OFF = 0.5;           // m/s that ends the walk. The gap between ON and OFF is
+                                // what stops the flag flapping when he slows at a mailbox.
+                                // Sits just above STILL_SPEED so the two agree about
+                                // standing rather than arguing one fix apart.
+
 /* ---- three ways a forgotten session stops following you around all evening ----
    The harm being fixed is battery and a messy trail, not privacy: nothing ever
    leaves the phone. Each rule has its own guard so none of them can fire wrongly. */
@@ -8755,6 +8997,7 @@ async function offerQuietResume() {
     state.leftHome = false; state.homeHits = 0;
     state.driving = false; state.driveHits = 0; state.calmHits = 0;
     state.moveTrail = []; state.driveOverride = null;
+    state.walkFlag = false; state.walkStop = 0; state.walkHits = 0;   // the walking window judges the new session fresh
     setPaused(false);
     flashToast('Carrying on', `That session started ${dlClock(q.start)}.`, '#22c55e');
   } else if (pick === 'fresh') {
@@ -8779,20 +9022,108 @@ function pushFix(c, ts) {
   const cutoff = ts - 12000;
   while (state.fixes.length > 12 || (state.fixes.length && state.fixes[0].ts < cutoff)) state.fixes.shift();
 }
-/** inverse-variance weighted mean: a tight fix counts for far more than a loose one */
-function smoothed() {
+/** inverse-variance weighted mean: a tight fix counts for far more than a loose one.
+ *  With `windowMs`, only the newest slice of the buffer is averaged — see pickerPos().
+ *  Called with nothing, as every caller but the house picker does, it behaves EXACTLY as
+ *  it always has: same pool, same weights, same answer. That is the point of doing it this
+ *  way round rather than shrinking the buffer in pushFix — breadcrumbs, miles, the truck
+ *  pin, home detection and recentSpeed/recentBearing all keep the full twelve seconds and
+ *  never had to be re-audited. */
+function smoothed(windowMs) {
   const f = state.fixes;
   if (!f.length) return null;
-  const best = Math.min(...f.map(x => x.acc));
-  const use = f.filter(x => x.acc <= Math.max(best * 2.5, best + 15));
+  let pool = f;
+  if (windowMs) {
+    /* Measured from the NEWEST FIX, not from Date.now(). Two reasons and both bite: a test
+       can seed a buffer without freezing the clock, and after a signal gap the newest fix
+       is what "recent" has to mean — against Date.now() a 34-second-old buffer would empty
+       the pool completely and hand back nothing at the exact moment it is needed most. */
+    const cut = f[f.length - 1].ts - windowMs;
+    pool = f.filter(x => x.ts >= cut);
+    if (!pool.length) pool = [f[f.length - 1]];
+  }
+  const best = Math.min(...pool.map(x => x.acc));
+  const use = pool.filter(x => x.acc <= Math.max(best * 2.5, best + 15));
   let wl = 0, wo = 0, w = 0;
   for (const x of use) { const k = 1 / (x.acc * x.acc); wl += x.lat * k; wo += x.lon * k; w += k; }
   return { lat: wl / w, lon: wo / w, acc: Math.min(...use.map(x => x.acc)), n: use.length };
 }
+/* Speed over a FIXED five-second slice of the buffer. The point of it being fixed is in
+   the MOVE_LOOKBACK_MS comment: this decides the picker's window, so it must never be
+   decided BY the picker's window. Nothing downstream of the window feeds back into here,
+   which is what makes the whole arrangement settle instead of oscillate. */
+/* Returns the two endpoints AND their elapsed time, so the floor below can be computed
+   from the very fixes the speed was measured between. Keeping these apart was a real
+   fault: paceFloor used the BEST accuracy in the whole buffer while walkPace measured
+   between two arbitrary raw fixes, so one tight fix among eleven loose ones dropped the
+   floor to 0.9 while the endpoints actually used scattered several metres per second.
+   The flag then armed on noise while he stood at a door — the exact failure S2 is meant
+   to prevent, on the exact days it claims to protect. Three reviewers found it. */
+function paceEnds() {
+  const f = state.fixes;
+  if (f.length < 2) return null;
+  const cut = f[f.length - 1].ts - MOVE_LOOKBACK_MS;
+  let i = 0;
+  while (i < f.length - 1 && f[i].ts < cut) i++;
+  const a = f[i], b = f[f.length - 1], dt = (b.ts - a.ts) / 1000;
+  if (dt < 2) return null;      // under two seconds of data is shake, not speed
+  return { a, b, dt };
+}
+function walkPace() {
+  const e = paceEnds();
+  return e ? haversine(e.a.lat, e.a.lon, e.b.lat, e.b.lon) / e.dt : null;
+}
+/** The speed below which walkPace cannot be believed on this signal. See MOVE_NOISE_K.
+ *  Measured on the WORSE of the two endpoints, because the scatter between two fixes is
+ *  set by the looser of them, not by the tighter. */
+function paceFloor() {
+  const e = paceEnds();
+  if (!e) return MOVE_ON;
+  const acc = Math.max(e.a.acc, e.b.acc);
+  return Math.max(MOVE_ON, MOVE_NOISE_K * acc / e.dt);
+}
+/* WHAT THE HOUSE PICKER READS, and only the house picker.
+   Walking: a three-second average that keeps up with him down the driveway.
+   Stopped: the window GROWS a second per second back to the full twelve. It does not snap
+   back — and that is the part worth understanding, because snapping is the obvious design
+   and it is wrong. At the instant he stops, the twelve-second mean is still biased four to
+   eight metres BACK UP THE DRIVEWAY; jumping to it at the doorstep would resurrect the
+   exact wait this is fixing. Growing means the average only ever contains fixes taken AT
+   THIS DOOR — or nearly so: for the first three seconds after he stops the pool still holds
+   the tail of the approach, which ages out as the window grows. The comment used to claim
+   "only ever", which was not true and would have been believed by whoever read it next.
+   After about nine seconds it has quietly become the careful old number again, with no jump
+   and no flick back to the previous house.
+   `null` means "use the ordinary steady value": before he has walked at all, and whenever
+   a hand-placed pin is in charge, which outranks everything. */
+function pickerPos() {
+  if (state.override) return null;
+  /* THE BUFFER MUST BE THE THING `state.pos` CAME FROM, or this hands the picker a
+     position from somewhere else entirely. `state.pos` is not always written by a GPS fix:
+     a hand-placed pin, a restore, or a test harness can set it directly, and then the fix
+     buffer still holds whatever was last real — a different street, an hour ago. Averaging
+     three seconds of THAT and picking a house from it is worse than doing nothing.
+     Caught by four suite checks about statewide parcel copies, which set a position by
+     hand and were quietly handed the tail of an unrelated buffer. The stamp comparison is
+     the whole guard: every fix writes state.pos.ts to its own arrival time, so a state.pos
+     NEWER than the newest fix can only have come from somewhere that is not the GPS. */
+  const f = state.fixes;
+  if (!f.length) return null;
+  if (state.pos && state.pos.ts && f[f.length - 1].ts < state.pos.ts) return null;
+  /* And never off a dead reading. Past the dead line the short window is averaging the
+     same frozen fixes as the long one, so it can only add noise to an answer already known
+     to be untrustworthy — the chip and the house card are saying exactly that. */
+  if (fixDead()) return null;
+  if (state.walkFlag) return smoothed(WALK_WINDOW_MS);
+  if (state.walkStop) return smoothed(Math.min(12000, WALK_WINDOW_MS + (Date.now() - state.walkStop)));
+  return null;
+}
 /* ---- where the truck actually is, right now ----
-   `smoothed()` above is a weighted mean of a twelve-second buffer, so it sits roughly six
-   seconds behind. Walking, that is about eight metres and it is the RIGHT answer — the
-   averaging is what stops a door being filed against next door's lot. At thirty miles an
+   `smoothed()` with no window is a weighted mean of the whole twelve-second buffer, so it
+   sits roughly six seconds behind. Walking, that is about eight metres — which is why the
+   HOUSE PICKER no longer uses it while moving (see pickerPos above). For everything else
+   the averaging is still the right answer, because it is what stops a door being filed
+   against next door's lot once he is standing. At thirty miles an
    hour it is EIGHTY metres: four lots back. Worse, the error grows and shrinks with his
    speed, so it is not an offset he could ever learn to allow for.
    For a mark taken from a moving truck, take the newest raw fix and carry it forward by
@@ -8832,10 +9163,61 @@ const MARK_REACTION_S = 1.0;
    every mark after it. */
 const FIX_STALE_MS = 8000;
 const fixAge = () => state.fixes.length ? Date.now() - state.fixes[state.fixes.length-1].ts : Infinity;
+/* ---- WHEN THE PHONE GOES DEAF, SAY SO ----------------------------------------
+   2026-08-03, Werner Way. His phone lost the sky for a hundred and three seconds. The
+   position froze at the last reading — byte for byte identical, 40.0967890/-83.0399960 —
+   and 853 and 854 were both filed against it, thirty-four seconds apart, one of them the
+   wrong house. His words: "the gps indicated the wrong home the first time and when i hit
+   the neighbors house i had to mark that one."
+   Nothing on the screen was different. A dead position and a live one drew the same chip,
+   the same address, the same confident distance. That is the whole defect: not that the
+   app was wrong, but that it had no way of saying it did not know.
+   IT STILL FILES THE DOOR. His ruling, and the right one — an earlier round already put a
+   comment at the top of `mark()` explaining that watchPosition fires on CHANGE, so a man
+   stood still on a porch can legitimately go half a minute with no new reading, and
+   refusing on age would block the very doors he is knocking. So this warns. It never
+   blocks. The age goes onto the record instead (`fixAge` on the visit), so a backup can
+   one day tell us what the real cadence at a real door is, and any threshold after this
+   gets set from his phone rather than guessed at.
+   TWO TIERS, because a chip that cries wolf gets ignored and then it is worse than
+   nothing. His measured dwell at a door is seven to fifteen seconds, so eight seconds only
+   makes the chip *speak* — it shows the age, quietly. Twenty is where it goes red and the
+   house card stops naming a house, because that is past any ordinary pause and Werner Way
+   was thirty-four. */
+const FIX_OLD_MS  = FIX_STALE_MS;   // 8 s — start showing the age on the chip, quietly
+const FIX_DEAD_MS = 20000;          // 20 s — red, and the house card admits it cannot know
+/* NOT dead merely because the buffer is empty. `dropFixes()` empties it on BOTH edges of
+   a pause, and `state.pos` is never cleared — so between tapping resume and the first fix
+   landing, fixAge() is Infinity. The first version of this shipped `no fix · Infinitys` to
+   the chip and `last reading Infinitys ago` to the house card on every single resume,
+   which is the one thing S1 exists to stop: garbage in the two lines he reads before his
+   thumb lands. Four reviewers found it independently.
+   A hand-placed pin is excluded for the same reason in reverse: he set that position on
+   purpose, so calling it lost and hiding the owner name is simply wrong. */
+const fixDead = () => !state.override && isFinite(fixAge()) && fixAge() > FIX_DEAD_MS;
+/* "34s", then "2m 05s". Raw seconds past a minute reads as noise on a chip this small. */
+function fixAgeTxt() {
+  const a = fixAge();
+  if (!isFinite(a)) return 'waiting';
+  const s = Math.round(a / 1000);
+  return s < 60 ? `${s}s` : `${Math.floor(s / 60)}m ${String(s % 60).padStart(2, '0')}s`;
+}
+/* Seconds, for writing onto a record. `null` rather than Infinity when there is no buffer
+   at all, so a door filed off a hand-placed pin does not carry a nonsense number and JSON
+   does not turn it into `null` behind our backs anyway. */
+const fixAgeS = () => { const a = fixAge(); return isFinite(a) ? Math.round(a / 1000) : null; };
 /* Anything that stops the watch throws the buffer away, so a stale position can never be
    mistaken for a live one. Without this, a session ending at home mid-scout left the
    driveway in the buffer and every mark afterwards landed on his own house. */
-function dropFixes() { state.fixes = []; refreshScoutIfOpen(); }
+/* The walk state goes with the buffer. Without this, `walkStop` survived a pause and the
+   hold gate armed on the very first fix after resuming — off one raw reading, with no
+   buffer behind it. */
+function dropFixes() {
+  state.fixes = [];
+  state.walkFlag = false; state.walkStop = 0; state.walkHits = 0;
+  state.pickedFrom = null;
+  refreshScoutIfOpen();
+}
 function liveFix() {
   const f = state.fixes;
   if (!f.length) return null;
@@ -8871,6 +9253,33 @@ function recentSpeed() {
 }
 
 let watchId = null, lastTrack = 0;
+/* ---- the heartbeat, and it is the whole point of the freeze fix -------------------
+   Everything in this app happens on a GPS reading arriving. That is fine until the
+   readings stop, and then NOTHING RUNS AT ALL — which is precisely the moment he needs to
+   be told something. On Werner Way the next reading was a hundred and three seconds away;
+   without a clock of its own the app would have gone on drawing a confident house for all
+   of it, which is exactly what it did.
+   So: one tick a second, and it does one thing — redraw the chip and the house card so the
+   age on them is true. It never touches the fix buffer, never picks a house, never writes.
+   Against a GPS radio the battery cost of a timer that reads two numbers is not
+   measurable. Started with the watch and cleared with it, so a paused session leaves
+   nothing ticking. */
+let staleTick = null;
+/* STARTED ONCE, AT BOOT, AND NEVER STOPPED — deliberately. The first version started it in
+   startGps() and cleared it in setPaused(), which is tidier and was wrong: it made the one
+   thing that notices a dead GPS depend on a chain of calls that a boot path, a resume or a
+   restore could miss, and a heartbeat that silently is not beating is worse than none. It
+   costs one timer for the life of the app, and the two guards below mean a tick does
+   nothing at all unless there is something new to say. */
+function startStaleTick() {
+  if (staleTick != null) return;
+  staleTick = setInterval(() => {
+    if (state.paused || !state.pos) return;
+    /* Only when it would CHANGE something. Past the dead line the seconds are counting up
+       on screen so it has to run every tick; before it, there is nothing new to say. */
+    if (fixAge() > FIX_OLD_MS) { renderStrip(); renderHouse(); }
+  }, 1000);
+}
 function startGps() {
   if (!navigator.geolocation) { flashToast('No GPS','This browser cannot get location','#ef4444'); return; }
   if (watchId != null) navigator.geolocation.clearWatch(watchId);
@@ -8890,6 +9299,25 @@ function startGps() {
        where the map is looking — panning to check a street two miles away must not change
        what the layer says is over him. */
     if (stormState.show) refreshStormLayer(false);
+
+    /* --- the walking flag, ahead of the dwell lock because the picker reads it --- */
+    const pace = walkPace();
+    if (pace !== null) {
+      /* Both thresholds ride the floor. MOVE_OFF was fixed at 0.5 while the arming floor
+         scaled with accuracy, so on a bad-signal day the flag could arm on noise well
+         above 0.5 and then never fall below it — latching "walking" while he stood at a
+         door, which is the worst state this machine has. Two reviewers found it. */
+      const floor = paceFloor();
+      /* 0.55 of the floor, and nothing else. The first version of this line also took a
+         Math.min against MOVE_OFF, which is provably inert — paceFloor() never returns less
+         than MOVE_ON, so that term was always exactly MOVE_OFF and never bound. Dead
+         arithmetic in a hysteresis gate is worse than none: it reads like a second
+         safeguard. The ratio is what matters, and it is the same 0.55 gap between arming
+         and clearing that MOVE_OFF/MOVE_ON expresses at the floor's minimum. */
+      state.walkHits = pace > floor ? state.walkHits + 1 : 0;
+      if (!state.walkFlag && state.walkHits >= MOVE_ON_HITS) { state.walkFlag = true;  state.walkStop = 0; }
+      else if (state.walkFlag && pace < floor * 0.55) { state.walkFlag = false; state.walkStop = now; }
+    }
 
     /* --- dwell lock --- */
     const speed = recentSpeed();
@@ -9222,7 +9650,7 @@ document.querySelectorAll('.dsecHead[data-msec]').forEach(b => {
 /* ---- what version is actually on the phone ----
    Matches the service worker cache name, so "did the update land" is answerable by
    looking rather than guessing. */
-const BUILD_VERSION = 'v32';
+const BUILD_VERSION = 'v33';
 const BUILD_DATE = '2 August 2026';
 function renderVersionStamp() {
   const el = $('versionStamp'); if (!el) return;
@@ -12985,10 +13413,12 @@ function areaHistory(a) {
   // miles walked inside the area, per day, following the trail rather than the crow
   for (const d of state.days.values()) {
     for (const seg of trackSegments(d.pts)) {
+      const drv = classifyDriven(seg);   // the same verdicts the miles and the map use
       for (let i = 1; i < seg.length; i++) {
         if (!areaContains(a, seg[i].lat, seg[i].lon)) continue;
         // driving through a patch is not working it, and this number says "walked"
-        if (legDriven(seg[i-1], seg[i])) continue;
+        if (drv[i-1]) continue;
+        if (!legIsSteps(seg[i-1], seg[i])) continue;   // wander at a door is not steps
         const rec = byDay.get(dayKey(seg[i].ts));
         if (rec) rec.metres += haversine(seg[i-1].lat, seg[i-1].lon, seg[i].lat, seg[i].lon);
       }
@@ -14648,12 +15078,179 @@ async function dayFacts(key) {
      day used to count as "has a track" — which printed 0.0 miles as a measurement and
      suppressed the note saying nothing had been recorded. */
   const usableTrack = pts.length > 2 && (metres + drivenMetres) > 50;
+  const stopInfo = dayStops(pts, doors);   // once, not twice — it walks the whole trail
   return { key, doors: checked, count: doors.length, metres, drivenMetres, first, last,
            mins: (first != null && last != null) ? Math.round((last - first) / 60000) : 0,
+           workedMins: workedMinutes(pts, doors),
+           stops: stopInfo.stops, hops: stopInfo.hops,
+           byStreet: doorsByStreet(doors),
            books, byStatus, pts, hasTrack: usableTrack, readFailed,
            notMeasured: checked.filter(c => !c.measured).length,
            noTrackCount: checked.filter(c => c.noTrack).length,
            flagged: checked.filter(c => c.far || c.moving).length };
+}
+/* ---- HOW LONG HE ACTUALLY WORKED ----------------------------------------------------
+   The tile used to read "8h 58m first to last", and on 2026-08-03 he had worked SIXTY-NINE
+   MINUTES. His words: "i thought it might be important to clarify... it thought my
+   canvassing was 8 hrs when it was a little more than 1 hr."
+   First-to-last was never a lie — a caption underneath had been admitting for rounds that
+   it "spans the whole day, quiet stretch included". But the caption was doing the job the
+   headline number should have been doing, and the headline is what he reads and what
+   whoever is paying for the hours reads. That day it spanned two stray fixes at 09:57, four
+   and a half hours of nothing, the real canvass from 14:40 to 15:49, and a tail to 18:55.
+
+   THE RULE, and each clause is there to kill one of those contaminants:
+     - build one interval per stretch of movement, plus each door padded either side
+     - merge anything separated by less than WORK_MERGE_MS
+     - COUNT ONLY BLOCKS WITH A DOOR IN THEM. This is the clause that does the work: the
+       morning strays and the evening tail have no doors, so they simply do not count.
+       Merging alone would not have saved us — the tail is a real stretch of movement.
+     - unless the day has NO doors at all, in which case count every movement block, so a
+       pure scouting day still shows its hours instead of a dash.
+
+   Retroactive over his whole history: every breadcrumb and every door already carries a
+   timestamp, so nothing new is stored and every past day gains an honest figure. */
+const WORK_MERGE_MS = 10 * 60 * 1000;   // longer than any amble between his doors (his own
+                                        // longest was 5 min), far shorter than lunch or the
+                                        // four-hour hole that started this
+const WORK_DRIVE_MS = 30 * 1000;        // a drive longer than this ends the working block —
+                                        // his hops between houses run 10-50 s and stay in
+const WORK_DOOR_PAD = 90 * 1000;        // a door he walked to and from, with no breadcrumb
+                                        // either side, is still a minute or two of work
+function workedMinutes(pts, doors) {
+  const iv = [], whole = [];
+  /* SPLIT EACH SEGMENT AT ITS REAL DRIVES. A segment is only broken by a 120-second hole in
+     the trail, so a drive home with tracking still on never opens one — it stayed joined to
+     the last door's block and got billed as work. On his 2026-08-03 that is the difference
+     between 1h 10m and about 1h 34m, and the day the backup was taken happened to end with
+     a parked gap, which is the only reason the proof script did not catch it. Three
+     reviewers flagged it and Fable blocked the ship on it.
+     Only drives over WORK_DRIVE_MS count as a break: his short hops between houses are
+     ten to fifty seconds and are part of the round, and anything shorter re-merges through
+     WORK_MERGE_MS anyway. */
+  for (const seg of trackSegments(pts || [])) {
+    if (seg.length < 2) continue;
+    whole.push({ a: seg[0].ts, b: seg[seg.length - 1].ts, door: false });
+    const drv = classifyDriven(seg);
+    let a = seg[0].ts;
+    for (let i = 0; i < drv.length; i++) {
+      if (!drv[i] || (i && drv[i - 1])) continue;
+      let j = i; while (j < drv.length && drv[j]) j++;
+      if (seg[j].ts - seg[i].ts >= WORK_DRIVE_MS) {
+        if (seg[i].ts > a) iv.push({ a, b: seg[i].ts, door: false });
+        a = seg[j].ts;
+      }
+    }
+    if (seg[seg.length - 1].ts > a) iv.push({ a, b: seg[seg.length - 1].ts, door: false });
+  }
+  /* Only doors MEASURED AT A DOOR. A record filed by tapping the map or searching an
+     address carries acc:0 and was never anywhere — padding it by three minutes bills desk
+     work as canvassing. `measuredAtDoor` already exists for exactly this distinction and
+     the day report already uses it to shade those rows. */
+  for (const v of doors || []) {
+    if (!measuredAtDoor(v)) continue;
+    iv.push({ a: v.ts - WORK_DOOR_PAD, b: v.ts + WORK_DOOR_PAD, door: true });
+  }
+  /* A DAY OF NOTHING BUT DRIVING IS STILL A DAY'S WORK. Splitting at drives removes them
+     from the count, which is right when there are doors to count instead — and wrong on a
+     pure scouting run, where the driving IS the work. So on a day with no doors at all the
+     whole segments come back, un-split. The suite's scouting fixture caught this the moment
+     the drive-splitting went in: it moves at 2.2 m/s, which is now a drive, and the day
+     came out at zero minutes. */
+  const use = iv.some(x => x.door) ? iv : whole;
+  if (!use.length) return 0;
+  use.sort((x, y) => x.a - y.a);
+  const merged = [];
+  for (const cur of use) {
+    const last = merged[merged.length - 1];
+    if (last && cur.a - last.b <= WORK_MERGE_MS) {
+      last.b = Math.max(last.b, cur.b);
+      last.door = last.door || cur.door;
+    } else merged.push({ ...cur });
+  }
+  const anyDoor = merged.some(m => m.door);
+  const count = anyDoor ? merged.filter(m => m.door) : merged;
+  return Math.round(count.reduce((s, m) => s + (m.b - m.a), 0) / 60000);
+}
+/* ---- STOPS, HOPS, AND DOORS PER STOP ------------------------------------------------
+   His idea, after seeing them measured off his own day: "i actually like the vehicle hop,
+   and average door metrics! we should adopt that." And they cost almost nothing, because
+   classifyDriven already knows where every hop is — a STOP is simply the ground between
+   two of them.
+   It reads like how he works because it is how he works: on 2026-08-03 this finds 16 stops
+   and 2.9 doors per stop, against his own unprompted description of "park, hit one to four
+   houses roughly, then go back to the vehicle". Nothing was fitted to make that come out.
+   DOORS PER STREET is counted here too, because a street is the unit he thinks in — "I did
+   Werner" — and the log had no way of saying it. */
+const STOP_MERGE_MS = 30000;   // a brake or a give-way mid-hop splits the drive in two and
+                               // would otherwise invent a door-less "stop" between them.
+                               // Anything shorter than this with no doors in it is not a
+                               // stop, it is a pause in the driving.
+/* `streetOf` already exists at the top of the CRM list code and does exactly this — takes
+   a visit, strips the house number, upper-cases it. A second copy was written here and the
+   file would not parse, which is the cheapest possible way to be told. Use the one that
+   already ships; `stName` only adds the fallback for a record with no address at all. */
+const stName = v => streetOf(v) || '(no street)';
+function dayStops(pts, doors) {
+  const list = (pts || []).slice().sort((a, b) => a.ts - b.ts);
+  const hops = [];
+  for (const seg of trackSegments(list)) {
+    const drv = classifyDriven(seg);
+    for (let i = 0; i < drv.length; i++) {
+      if (!drv[i] || (i && drv[i - 1])) continue;
+      let j = i; while (j < drv.length && drv[j]) j++;
+      /* A ONE-LEG HOP UNDER 60 m IS NOT A STOP BOUNDARY. Nobody reviewed the lone-fast-leg
+         rule, because it was added after the reviews; Fable found what it costs here.
+         `smoothed()` DISCARDS loose fixes rather than blending them, so when a tight fix
+         lands after a stretch under a porch the position can jump fifteen metres in one
+         breadcrumb — over DRIVE_SURE_MS, needing no run, and therefore a confirmed drive.
+         In the miles that is harmless and matches v32, which called such a leg driven too.
+         Here it would split one real stop into two: stops up, doors-per-stop down, phantom
+         "vehicle hops" on the tiles, at the routine moment the signal recovers as he walks
+         away from a porch. So the stop boundaries want the stricter evidence. */
+      const oneLeg = (j - i) === 1
+        && haversine(seg[i].lat, seg[i].lon, seg[j].lat, seg[j].lon) < DRIVE_LONE_M;
+      if (!oneLeg) hops.push({ a: seg[i].ts, b: seg[j].ts });
+    }
+  }
+  /* the ground BETWEEN the hops — plus the stretch before the first and after the last */
+  const bounds = [];
+  let cursor = list.length ? list[0].ts : null;
+  if (cursor === null) return { stops: [], hops: [] };
+  for (const h of hops) { if (h.a > cursor) bounds.push({ a: cursor, b: h.a }); cursor = h.b; }
+  bounds.push({ a: cursor, b: list[list.length - 1].ts });
+  /* A STOP IS SOMEWHERE HE KNOCKED. The first version kept any stretch over thirty
+     seconds, doors or not — so the four-and-a-half-hour hole in the middle of 2026-08-03
+     counted as a "stop", and so did the phone sitting on the seat between neighbourhoods.
+     Both numbers he asked for, stops and doors-per-stop, were wrong on essentially every
+     day. Four reviewers found it. Same rule as workedMinutes for the same reason, and the
+     same fallback: a day with no doors at all keeps its movement stretches so a pure
+     scouting run still shows something. */
+  const scored = bounds.map(s => {
+    const d = (doors || []).filter(v => v.ts >= s.a && v.ts <= s.b);
+    const streets = [];
+    for (const v of d) { const st = stName(v); if (!streets.includes(st)) streets.push(st); }
+    return { ...s, mins: Math.round((s.b - s.a) / 60000), doors: d.length, streets };
+  });
+  const anyDoor = scored.some(x => x.doors > 0);
+  const stops = anyDoor ? scored.filter(x => x.doors > 0)
+                        : scored.filter(x => (x.b - x.a) >= STOP_MERGE_MS);
+  return { stops, hops };
+}
+/** doors per street, most first — the unit he actually thinks in.
+ *  Clamped, because a long day across a dozen streets printed a line that ran off every
+ *  card it was on. The tail is summed rather than dropped, so the numbers still add up to
+ *  the door count and nothing disappears silently. */
+const STREET_LINE_MAX = 6;
+function doorsByStreet(doors) {
+  const m = new Map();
+  for (const v of doors || []) { const st = stName(v); m.set(st, (m.get(st) || 0) + 1); }
+  const all = [...m.entries()].map(([street, n]) => ({ street, n })).sort((a, b) => b.n - a.n);
+  if (all.length <= STREET_LINE_MAX) return all;
+  const head = all.slice(0, STREET_LINE_MAX);
+  const rest = all.slice(STREET_LINE_MAX);
+  head.push({ street: `+${rest.length} more`, n: rest.reduce((t, x) => t + x.n, 0) });
+  return head;
 }
 const dlMiles = m => (m / 1609.34).toFixed(1);
 function hoursMins(mins) {
@@ -14770,8 +15367,25 @@ async function renderOneDay(key) {
   tiles.innerHTML = tile(f.count, 'doors')
     + tile(f.hasTrack ? dlMiles(f.metres) : '—', 'miles walked')
     + tile(f.hasTrack ? dlMiles(f.drivenMetres) : '—', 'miles driven')
-    + tile(hoursMins(f.mins), 'first to last');
+    /* WORKED, not first-to-last. See workedMinutes(). First and last have not been lost:
+       they are in the line above this, which is where a span belongs. */
+    + tile(hoursMins(f.workedMins), 'worked')
+    /* His ask, and they read like his round: park, hit a few, move up. */
+    /* Beside miles printed as "—" for want of a track, a confident stop count was the
+       screen contradicting itself. Same gate as the miles. */
+    + tile(f.hasTrack && f.stops.length ? f.stops.length : '—', 'stops')
+    + tile(f.hasTrack && f.stops.length ? (f.count / f.stops.length).toFixed(1) : '—', 'doors per stop');
   host.appendChild(tiles);
+  /* Doors per street, and the stops that made them. A street is the unit he thinks in —
+     "I did Werner" — and until now nothing on this screen could say it. */
+  if (f.byStreet.length) {
+    const line = document.createElement('div');
+    line.className = 'small';
+    line.style.marginBottom = '8px';
+    line.textContent = f.byStreet.map(x => `${x.street} ${x.n}`).join(' · ')
+      + (f.hops.length ? ` — ${f.hops.length} vehicle hop${f.hops.length === 1 ? '' : 's'} between them` : '');
+    host.appendChild(line);
+  }
 
   /* Both times, which is what he asked for. Stated as two facts and nothing more. The
      first version added "and that is where the hours above stop", which is not true: "first
@@ -14785,7 +15399,7 @@ async function renderOneDay(key) {
     line.style.marginBottom = '8px';
     line.textContent = `Tracking closed itself at ${dlClock(r.closedTs)}: ${mins} minutes `
       + `with no doors and no movement. The last thing recorded before that was `
-      + `${dlClock(r.lastTs)}. "First to last" above spans the whole day, quiet stretch included.`;
+      + `${dlClock(r.lastTs)}. That gap is not in "worked" above — worked counts only the stretches with a door in them.`;
     host.appendChild(line);
   });
 
@@ -14933,7 +15547,7 @@ async function dayReportHtml(key) {
    + `body{font:14px/1.5 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;margin:0;padding:18px;color:#111}`
    + `h1{font-size:20px;margin:0 0 2px}h2{font-size:15px;margin:18px 0 6px}`
    + `.sub{color:#555;margin:0 0 14px}`
-   + `.tiles{display:flex;gap:10px;margin:0 0 14px}`
+   + `.tiles{display:flex;gap:10px;margin:0 0 14px;flex-wrap:wrap}`
    + `.tile{flex:1;border:1px solid #ccc;border-radius:10px;padding:10px;text-align:center}`
    + `.tile b{display:block;font-size:22px}.tile span{font-size:11px;color:#555;text-transform:uppercase}`
    + `table{border-collapse:collapse;width:100%;font-size:13px}`
@@ -14948,7 +15562,14 @@ async function dayReportHtml(key) {
    + `<div class="tiles"><div class="tile"><b>${f.count}</b><span>doors</span></div>`
    + `<div class="tile"><b>${f.hasTrack ? dlMiles(f.metres) : '—'}</b><span>miles walked</span></div>`
    + `<div class="tile"><b>${f.hasTrack ? dlMiles(f.drivenMetres) : '—'}</b><span>miles driven</span></div>`
-   + `<div class="tile"><b>${esc(hoursMins(f.mins))}</b><span>first to last</span></div></div>`
+   + `<div class="tile"><b>${esc(hoursMins(f.workedMins))}</b><span>worked</span></div>`
+   + `<div class="tile"><b>${f.hasTrack && f.stops.length ? f.stops.length : '&mdash;'}</b><span>stops</span></div>`
+   + `<div class="tile"><b>${f.hasTrack && f.stops.length ? (f.count / f.stops.length).toFixed(1) : '&mdash;'}</b><span>doors per stop</span></div></div>`
+   + (f.byStreet.length
+       ? `<p class="sub">${f.byStreet.map(x => esc(x.street) + ' ' + x.n).join(' &middot; ')}`
+         + (f.hops.length ? ` &mdash; ${f.hops.length} vehicle hop${f.hops.length === 1 ? '' : 's'} between them` : '')
+         + `</p>`
+       : '')
    + (counts ? `<p class="sub">${counts}</p>` : '')
    + (bookLine ? `<p class="sub">${bookLine}</p>` : '')
    /* On the report as well as on the screen. This is the file he hands to someone who is
@@ -14958,8 +15579,8 @@ async function dayReportHtml(key) {
         const mins = Math.max(0, Math.round((r.closedTs - r.lastTs) / 60000));
         return `<p class="sub">Tracking closed itself at ${esc(dlClock(r.closedTs))}: `
           + `${mins} minutes with no doors and no movement. The last thing recorded before `
-          + `that was ${esc(dlClock(r.lastTs))}. "First to last" above spans the whole day, `
-          + `quiet stretch included.</p>`;
+          + `that was ${esc(dlClock(r.lastTs))}. That gap is not counted in "worked" above — `
+          + `worked adds up only the stretches with at least one door in them.</p>`;
       }).join('')
    + (f.doors.length ? `<h2>Every door, in order</h2><table><tr><th>Time</th><th>Address</th><th>Owner</th><th>Marked</th><th>Book</th><th>From the lot</th><th>Worth a look</th></tr>`
         + f.doors.map(row).join('') + `</table>` : `<p>No doors marked on this day.</p>`)
@@ -14975,10 +15596,22 @@ async function dayReportHtml(key) {
    + `shaded row. `
    + (f.hasTrack ? '' : 'No usable walking track was recorded for this whole day, so none of the movement checks could be made. ')
    + (f.readFailed ? 'The walking track for this day would not read back off the phone, which is not the same as there being none. ' : '')
-   + `Walking and driving are counted apart: a leg covered faster than about six miles an `
-   + `hour is counted as driven, and driven ground is drawn grey and dotted on the map. `
-   + `The miles come from raw GPS, which undercounts when the signal is poor and can `
-   + `overcount when the phone is sitting still.<br><br>`
+   + `Walking and driving are counted apart, and driven ground is drawn grey and dotted on `
+   + `the map. A stretch counts as driven when it runs above 4.5 mph for three readings `
+   + `together, or covers more than 60 metres in one, or passes 7.8 mph in one — plus the `
+   + `eight seconds either side, which is pulling away and parking. A single fast reading `
+   + `with walking on both sides is not a drive. Ground covered slower than walking pace `
+   + `AND shorter than six metres is counted as neither: that is the phone drifting while `
+   + `standing at a door, not steps taken. "Worked" adds up the stretches with at least one `
+   + `door in them, so a quiet hour does not run the clock.<br><br>`
+   /* THE METHOD AND THE BUILD THAT APPLIED IT. These rules changed in v33, so the same day
+      exported before and after WILL disagree — and without a stamp there is no way for a
+      reader holding both to tell which is which, or that the difference is a method change
+      rather than the record being altered. On the one document he might hand to somebody
+      paying for the hours, that is worth two words. */
+   + `<b>Counted under CanvassEaze ${esc(BUILD_VERSION)}.</b> The rules above changed in `
+   + `v33; the same day exported under an earlier build shows different miles and hours for `
+   + `the same recorded track.<br><br>`
    + `<b>This file can be edited.</b> It is an ordinary web page produced on the phone, with `
    + `nothing in it to prove it was not changed afterwards. Treat it as a record kept in good `
    + `faith, not as proof. What is hard to fake is the whole of it agreeing with itself — the `
@@ -15013,6 +15646,7 @@ function startSession() {
   state.lastDoorTs = Date.now();
   state.driving = false; state.driveHits = 0; state.calmHits = 0;
   state.moveTrail = []; state.driveOverride = null;   // a fresh day judges for itself
+  state.walkFlag = false; state.walkStop = 0; state.walkHits = 0;
   localStorage.setItem('session', JSON.stringify(state.session));
 }
 /* The clock starts at the first door marked, not when the app was opened. Opening it
@@ -15035,8 +15669,18 @@ function sessionStats() {
     }
     // distance still counts from the session, because walking to the first door is
     // real walking. Only the clock moves.
+    /* `worked` on the live branch too, and it is worth saying why it is not just
+       "now minus when he started". A session left running through lunch, or one he
+       carried on from the morning, would bill the gap — which is the same fault the day
+       report had, one screen along. workedMinutes counts stretches with doors in them, so
+       an hour parked at a builders' merchant does not become an hour canvassed. */
+    let wpts = [];
+    for (const d of state.days.values()) wpts = wpts.concat((d.pts || []).filter(p => p.ts >= from));
+    wpts.sort((a, b) => a.ts - b.ts);
     return { live: true, rows, metres, drivenM, since, last: null,
-             mins: since ? Math.round((Date.now() - since)/60000) : 0 };
+             mins: since ? Math.round((Date.now() - since)/60000) : 0,
+             workedMins: workedMinutes(wpts, rows),
+             stops: dayStops(wpts, rows).stops, byStreet: doorsByStreet(rows) };
   }
   /* No session running — which is how it stands every morning before he taps Start and
      all evening after he finishes, and it is also the state this screen is in when he
@@ -15060,6 +15704,8 @@ function sessionStats() {
   pts.forEach(p => see(p.ts));
   rows.forEach(v => see(v.ts));
   return { live: false, rows, metres: sp.walked, drivenM: sp.driven, since, last,
+           workedMins: workedMinutes(pts, rows),
+           stops: dayStops(pts, rows).stops, byStreet: doorsByStreet(rows),
            /* First thing recorded today to the last, NOT to now. He stopped at four;
               a clock still running at seven would report three hours he did not work. */
            mins: (since !== null && last !== null) ? Math.round((last - since)/60000) : 0 };
@@ -15077,9 +15723,18 @@ function openSession() {
     <div class="stat"><b style="color:${STATUS.dnr.color}">${by('dnr')}</b>${esc(STATUS.dnr.label.toLowerCase())}</div>
     <div class="stat"><b>${(s.metres/1609).toFixed(2)}</b>miles walked</div>
     <div class="stat"><b>${(s.drivenM/1609).toFixed(2)}</b>miles driven</div>
-    <div class="stat"><b>${s.mins}</b>minutes out</div>`;
+    <div class="stat"><b>${esc(hoursMins(s.workedMins))}</b>worked</div>
+    <div class="stat"><b>${s.stops.length || '—'}</b>stops</div>
+    <div class="stat"><b>${s.stops.length ? (s.rows.length / s.stops.length).toFixed(1) : '—'}</b>doors per stop</div>`;
   // the tiles that used to fill the top of the menu live here now, which is where
   // anyone would look to ask how the day went
+  /* Doors per street on the session sheet too, right under the tiles — the same sentence
+     the day report prints, on the screen he taps mid-round rather than at the end of it. */
+  const stLine = $('sesStreets');
+  if (stLine) {
+    stLine.textContent = s.byStreet.length ? s.byStreet.map(x => `${x.street} ${x.n}`).join(' · ') : '';
+    stLine.classList.toggle('hide', !s.byStreet.length);
+  }
   const allTime = l => state.visitLog.filter(v => (v.line||'roof') === l).length;
   const clock = t => new Date(t).toLocaleTimeString([], {hour:'numeric', minute:'2-digit'});
   $('sesMeta').textContent = (state.session
@@ -15088,7 +15743,7 @@ function openSession() {
         : `Nothing marked yet. The clock starts at your first door, not now. `)
       + `${LINES.roof.label} ${byLine('roof')}, ${LINES.appraisal.label} ${byLine('appraisal')} this session. Ending a session stops tracking and saves the battery. Your records stay.`
     : (s.since !== null
-        ? `Today so far, ${clock(s.since)} to ${clock(s.last)} — the minutes span first to last, quiet stretches included. `
+        ? `Today so far, ${clock(s.since)} to ${clock(s.last)}. "Worked" counts only the stretches with a door in them, so a quiet afternoon does not run the clock. `
           + `${LINES.roof.label} ${byLine('roof')}, ${LINES.appraisal.label} ${byLine('appraisal')} today. `
         : 'Nothing recorded today yet. ')
       + 'Tracking is stopped. Tap Keep canvassing to start a session.')
@@ -15453,6 +16108,7 @@ window.addEventListener('resize', drawMini);
      is why a restore could write them to disk and leave the app running the old ones. */
   loadSwitches();
   renderSwitchUi();
+  startStaleTick();   // the dead-GPS heartbeat. Before the gate, before anything.
   try { const ses = localStorage.getItem('session'); if (ses) state.session = JSON.parse(ses); } catch(e){}
   lockIfNeeded();
   await purgeStaleTiles();
