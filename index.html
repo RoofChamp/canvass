@@ -341,12 +341,26 @@ label.f.hasq{display:inline-block;margin:12px 0 5px;vertical-align:middle}
 #dWrong .hint{font-size:11.5px;color:var(--dim);font-weight:700;margin-top:5px;line-height:1.45}
 .crmRow{display:flex;align-items:flex-start;gap:10px;padding:11px 12px;border:1px solid var(--line);
   border-radius:14px;background:var(--card);margin-bottom:8px}
+/* A faint blue wash so a door carrying his own words is findable at a glance. It goes ABOVE
+   the overdue rule that follows on purpose: both selectors are (0,2,0), so the later one
+   wins and an overdue callback keeps its red even when there is a note on it. */
+.crmRow.hasNote{border-color:rgba(59,130,246,.45);background:rgba(59,130,246,.10)}
 .crmRow.late{border-color:rgba(239,68,68,.55);background:rgba(239,68,68,.08)}
 .crmRow .sw{width:5px;align-self:stretch;border-radius:4px;flex:0 0 auto}
 .crmRow .t{flex:1;min-width:0}
 .crmRow .a{font-weight:800;font-size:15px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .crmRow .o{font-size:12px;color:var(--dim);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .crmRow .m{display:flex;gap:7px;align-items:center;margin-top:5px;flex-wrap:wrap}
+/* What he typed, shown whole: no clamp, no max height. He ruled "show all of it", and a note
+   cut off mid-sentence is a note he has to open the record to trust.
+   Scoped under .crmRow so it cannot reach .lsRow .note (386) or either generated document. */
+.crmRow .note{font-size:13px;line-height:1.45;font-weight:600;color:#eaf1f9;margin-top:6px;
+  white-space:pre-wrap;word-break:break-word}
+/* The date prefix is a stamp, not what he was told, so it is dimmer than the note. One rule
+   serves both screens, and it beats the note colour on specificity, not on order. */
+.crmRow .note .noteDay,.dlNote .noteDay{color:var(--dim);font-weight:700}
+/* "N notes at this door". History's count line reuses .dlDoor .n (581). */
+.crmRow .n{font-size:11.5px;color:var(--dim);font-weight:700;margin-top:3px}
 .dchip{font-size:11px;font-weight:800;border:1px solid;border-radius:999px;padding:2px 8px}
 .dimTxt{font-size:11px;color:var(--dim);font-weight:700}
 .lateTxt{font-size:11px;color:#fca5a5;font-weight:800}
@@ -571,6 +585,9 @@ select{min-height:44px}
 .dlTile span{font-size:11px;color:var(--dim);text-transform:uppercase;letter-spacing:.04em}
 .dlDoor{display:flex;gap:10px;align-items:flex-start;background:var(--card);border:1px solid var(--line);
   border-radius:12px;padding:10px;margin-bottom:6px}
+/* The same wash as the Customers row. The tap rules below are (0,3,0) against this (0,2,0)
+   and come later in the sheet, so the press-darken still reads on a row that has a note. */
+.dlDoor.hasNote{border-color:rgba(59,130,246,.45);background:rgba(59,130,246,.10)}
 /* A row that opens something has to look like it does, or it stays unfound. */
 .dlDoor.tap::after{content:'\203A';align-self:center;margin-left:4px;color:var(--dim);font-size:22px;font-weight:800;line-height:1}
 .dlDoor.tap:active{background:var(--card2)}
@@ -580,6 +597,10 @@ select{min-height:44px}
 .dlDoor .a{font-size:15px;font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .dlDoor .n{font-size:12px;color:var(--dim);margin-top:2px}
 .dlFlag{color:#fcd34d;font-size:12px;font-weight:700;margin-top:3px}
+/* Same treatment as .crmRow .note — whole, wrapped, no clamp and no max height. Declared
+   after .dlFlag because that is where it sits in the row: below the accuracy warning. */
+.dlNote{font-size:13px;line-height:1.45;font-weight:600;color:#eaf1f9;margin-top:4px;
+  white-space:pre-wrap;word-break:break-word}
 #sortFoot{padding:6px 12px 12px}
 .markRow{display:flex;align-items:center;gap:10px;width:100%;text-align:left;background:var(--card);
   border:1px solid var(--line);color:var(--txt);border-radius:14px;padding:12px;margin-bottom:8px;min-height:56px}
@@ -4477,6 +4498,91 @@ function logOf(v) {
   if (v.notes) out.push({ id:newId(), ts:v.ts, kind:'note', text:v.notes });
   return out;
 }
+
+/* The app writes sentences of its own into the log. From v34 they carry auto:true, which is
+   exact. Older entries carry nothing, so the wording is all there is — and wording is a guess,
+   which is why it may only DEMOTE and may never HIDE. His ruling, 4 August.
+
+   `[^.\n]+`, NOT `.+`. Greedy `.+` crosses a full stop, so the pattern matched any note that
+   merely BEGAN like one of ours and happened to end in one. Measured: a door carrying
+   `no answer, dog in the yard` from 12 July, he knocks again on the 19th and types
+   `Appointment booked for Thursday at 3. Wife makes the call.` — the week-old note led the
+   row, because his new one was demoted. Ruling 1's symptom one degree softer: not invisible,
+   but not on the row, which is the whole promise. It takes a note of more than one sentence
+   to show at all, which is why nothing caught it. The class cannot cross a sentence boundary.
+
+   What the narrowing gives up, so nobody re-widens it: a machine sentence whose interpolated
+   part contains a full stop stops being demoted. `Stage set to X.` CANNOT — line 5958 writes
+   the label DEFAULT, one of seven fixed words, and a rename never reaches the log text; that
+   is exactly what the comment at 5949-5957 is for. The date in `booked for` / `moved to` can,
+   under a locale that abbreviates with a stop ("6. Aug., 16:00"); en-US, which is his phone,
+   does not. Only PRE-v34 entries are exposed either way — from v34 they carry auto:true,
+   which is exact — and the failure direction is "the row shows one of the app's sentences",
+   never "the row hides one of his". That is the direction the ruling permits. */
+const AUTO_NOTE_RE = /^(?:Stage set to [^.\n]+\.|Follow-up completed\.|Follow-up cleared from the schedule\.|Appointment booked for [^.\n]+\.|Appointment moved to [^.\n]+\.|Follow-up moved to [^.\n]+\.)$/;
+
+/* A restored record can carry a non-string `notes` blob, which line 4477 migrates straight
+   into `text`. `(42 || '').trim()` THROWS, and one throw blanks the whole row render on the
+   screen he just restored onto. But `String(e.text)` overshoots the other way — it RENDERS
+   the garbage: 42 becomes "42", {} becomes "[object Object]", and either can then out-rank a
+   note he really typed and inflate the count. A note is text or it is not a note. It stays
+   in the log either way; the row simply does not lead with it. U2 found both directions. */
+const noteTextOf = e => (typeof e.text === 'string' ? e.text : '');
+const rowNotesOf = v => logOf(v).filter(e => e.kind === 'note' && noteTextOf(e).trim() && !e.auto);
+
+/* Prefer the newest note that does not read like one of ours. If every note on the door reads
+   like one of ours, show the newest anyway — a wording guess must never make his own words
+   invisible. `Reason: …` is absent from the pattern on purpose: his ruling, it is his note.
+   `(e.ts || 0)`, not `e.ts`: an entry with no ts compares false against everything, so seen
+   first it beats every newer real note and sticks for ever. Found by U2 against this spec. */
+function rowNoteOf(v) {
+  const notes = rowNotesOf(v);
+  if (!notes.length) return null;
+  const newest = list => list.reduce((a, e) => (!a || (e.ts || 0) > (a.ts || 0)) ? e : a, null);
+  const mine = notes.filter(e => !AUTO_NOTE_RE.test(noteTextOf(e).trim()));
+  return newest(mine.length ? mine : notes);
+}
+
+/* Count is per-record and counts everything in this record's log, so it agrees with the log the
+   row opens onto and with the "N entries" fold. The note SHOWN is ranked; the count is honest. */
+const rowNoteCount = v => logOf(v).filter(e => e.kind === 'note' && noteTextOf(e).trim()).length;
+
+/* "12 Jul". Never "Today" — the prefix only renders when the days differ, so today never arises.
+
+   Built ONCE, and reused. `toLocaleDateString` constructs a fresh Intl.DateTimeFormat on every
+   single call, and renderCrm is bound to `oninput` over an uncapped list — so the cost lands on
+   the first character he types into the Customers search box. The dated case is the common one,
+   because mark() copies the log forward and a record's newest note is usually older than the
+   record's own ts. Measured on the spliced row build, median of 7 runs:
+
+       rows / case            per keystroke, before   after
+       500 rows, undated              3.6 ms          1.8 ms
+       500 rows, dated               44.9 ms          2.4 ms
+       2000 rows, dated             173.2 ms          7.6 ms
+
+   Output is byte-identical — verified across the sample rows. U3 measured it; U2 owns this
+   line, because the spec block is U2's region. NOTE for whoever carries it: format() on a
+   ts-less note would print TODAY's date rather than "Invalid Date", which is a worse lie —
+   noteDayFor below is what stops that, and it must keep its typeof/isFinite guard. */
+const NOTE_DAY_FMT = new Intl.DateTimeFormat([], { day:'numeric', month:'short' });
+const noteDayStamp = ts => NOTE_DAY_FMT.format(ts);
+
+/* The ONE place that decides whether a note gets a date in front of it. Returns the stamp, or
+   '' for no stamp. It lives here, beside the ranking, so the two screens and the checks cannot
+   drift apart on it.
+
+   Guarded on BOTH sides, because a ts-less note is returnable by rowNoteOf and raw
+   dayKey(undefined) is "NaN-NaN-NaN" — which differs from every real key, so the span would
+   render and print "Invalid Date" ahead of his words. v33 line 15277 already learned this and
+   built dayKeyOf for it; going round dayKeyOf is how it comes back. U2 found it. */
+function noteDayFor(note, v) {
+  const t = note && note.ts;
+  if (typeof t !== 'number' || !isFinite(t)) return '';   // no date we can stand behind
+  const vk = dayKeyOf(v);                                 // dayKeyOf guards the record's own ts
+  if (!vk || dayKey(t) === vk) return '';                 // same day he knocked, or no day at all
+  return noteDayStamp(t);
+}
+
 const histOf = v => logOf(v).filter(e => e.kind === 'status').map(e => ({status:e.status, ts:e.ts}));
 const noteText = v => logOf(v).filter(e => e.kind === 'note')
   .map(e => `[${new Date(e.ts).toLocaleDateString()} ${new Date(e.ts).toLocaleTimeString([], {hour:'numeric', minute:'2-digit'})}] ${e.text}`)
@@ -5783,6 +5889,10 @@ function renderReasonChips() {
         ? logOf(editing).filter(e => !(e.kind === 'note' && e.text === reasonText(r)))
         : [...logOf(editing), { id:newId(), ts:Date.now(), kind:'note', text:reasonText(r) }];
       const ok = await persistEditing();
+      /* Only on a write that landed. The History row behind this sheet carries his last
+         note now, and this chip writes one — painting it onto that row over a write the
+         phone refused would show it in the same blue as a note that is really saved. */
+      if (ok) repaintHistoryIfOpen();
       buzz(12);
       /* Its whole job is to stop the next person knocking, so it must not say "saved"
          over a write that was refused. On a house not yet filed there is nothing on disk
@@ -5956,7 +6066,7 @@ function openDetail(visit, focusName) {
            means a new log kind, and record formats do not change without his go — so
            the stable word goes in instead, and the rename reaches every other place. */
         const stageWord = (LABELS['lbl.stage.' + k] || {}).def || k;
-        editing.log = [...logOf(editing), { id:newId(), ts:Date.now(), kind:'note',
+        editing.log = [...logOf(editing), { id:newId(), ts:Date.now(), kind:'note', auto:true,
           text:`Stage set to ${stageWord}.` }];
       }
       openDetail(editing);
@@ -6144,7 +6254,11 @@ function renderLog() {
            the panel without tapping Save used to bring every one of them back. */
         const ok = await persistEditing();
         renderLog();
-        if (ok) buzz(20);
+        /* Not inside renderLog(), ever: openDetail calls that, and a full day recompute
+           on every door he opens is a freeze he would feel. Gated, because a refused
+           delete leaves the line on the phone and the row behind must not be redrawn as
+           though it had gone. */
+        if (ok) { buzz(20); repaintHistoryIfOpen(); }
         else flashToast('That is still on the phone', 'The line is off the screen but the phone refused the write. Free some space and try again.', '#ef4444');
         return;
       }
@@ -6183,7 +6297,10 @@ function renderLog() {
         editing.log = [];
         const ok = await persistEditing();
         renderLog();
-        if (ok) buzz(20);
+        /* Gated. Emptying the log takes the note off the row behind, and doing that over a
+           write the phone refused would show him a clean row with the notes still on the
+           phone — the same lie the toast underneath exists to stop. */
+        if (ok) { buzz(20); repaintHistoryIfOpen(); }
         else flashToast('That is still on the phone', 'The log is clear on screen but the phone refused the write. Free some space and try again.', '#ef4444');
       }
       else if (pick === 'wipe') await wipeHouse();
@@ -6271,7 +6388,11 @@ function startEditEntry(e) {
       return;
     }
     editing.log = cleaned;
-    persistEditing();          // an edit that looks committed has to be committed
+    /* An edit that looks committed has to be committed — and the row behind History is
+       showing the very text he has just changed, so it has to be redrawn with it. Gated on
+       the result rather than fired alongside: persistEditing never rejects, it hands back
+       false, so this reads the answer instead of assuming one. */
+    persistEditing().then(ok => { if (ok) repaintHistoryIfOpen(); });
     renderLog();
   };
   /* Throw the editor away without writing anything — for the paths that are discarding
@@ -6293,8 +6414,12 @@ function addLogNote() {
      editing and removing a line already do. A house that has never been filed is left
      alone by persistEditing itself, so there is no guard needed here. */
   persistEditing().then(ok => {
-    if (!ok) flashToast('That note is not on the phone yet',
+    if (!ok) return flashToast('That note is not on the phone yet',
       'The phone refused the write. Free some space and take a full backup.', '#ef4444');
+    /* Add reaches disk on its own, so it has to reach the row behind on its own too — tap
+       Add, then close the panel with the X, and the day list would otherwise still be
+       showing the note before this one. The `return` above is what gates it. */
+    repaintHistoryIfOpen();
   });
   renderLog(); buzz(15);
 }
@@ -6335,6 +6460,34 @@ async function persistEditing(opts) {
       + 'Close this and open the house again if you want it back.', '#ef4444');
     return false;
   }
+  /* The flat notes blob is what the GeoJSON export ships (geoFeatures writes notes: v.notes),
+     and it was only ever rebuilt by Save and the three schedule writers. The do-not-return
+     reason chip, the Add button and the in-place note edit all write straight to disk and
+     skip Save on purpose, so un-picking a reason cleared it off the screen instantly while
+     the export went on carrying it. Rebuilt here instead: this is the one choke point every
+     one of those paths already comes through, and it runs before the record reaches either
+     the slot or the disk, so claimSlot and saveVisit below both see the rebuilt string. The
+     ' | ' shape is written exactly as the four sites that already rebuild it write it, since
+     that shape is what the export and the older records on his phone already contain.
+
+     noteTextOf, never a raw e.text. This is the one line in this round that puts derived text
+     on disk, so it must not be the one place that skips the guard: a restored record can carry
+     a note whose text is not a string — 4477 migrates a corrupted blob straight into it — and
+     a raw join writes [object Object] into the exported notes field while every screen, which
+     reads notes through noteTextOf, looks perfectly fine and never mentions it. Blank texts go
+     with it, so the join cannot gain a stray separator either.
+
+     It overwrites, deliberately, even when that empties the field. A log holding no note
+     entries beside a non-empty notes string is NOT an import-only shape: v33 makes it every
+     time he un-picks the only reason on a door, deletes his last note, or empties one — all
+     three remove the entry and none of them rebuild the blob. A guard that refused to write
+     the empty string could not tell that stale copy from an older file's orphan, so it would
+     go on exporting a reason he had taken off. That is the defect this entry exists to close,
+     in its commonest case. Nothing he can look at reads this field — every screen and the CSV
+     read noteText(v) off the log — so the log is the truth and the export now agrees with it.
+     A genuine orphan is protectable only where the ambiguity is resolvable: folding notes into
+     the log as a record comes in from a restore, which is not this function. */
+  editing.notes = logOf(editing).filter(e => e.kind === 'note').map(e => noteTextOf(e)).filter(t => t.trim()).join(' | ');
   /* claimSlot, not a bare set. The slot holds the NEWEST record for a house in a book,
      and Wrong house can now hand the detail sheet an OLD record filed against a house he
      has knocked again since. Saving a note on it then set the slot to the old one, and
@@ -6442,6 +6595,11 @@ async function saveDetail() {
   if (landed) {
     closeSheet('detailSheet');
     flashToast('Saved', editing.addr || '', STATUS[editing.status].color);
+    /* The sheet has just come off the History list, so the row underneath is the very
+       thing he is looking at next. Inside the landed branch on purpose: the else branch
+       leaves the panel standing over a write the phone refused, and the row behind it must
+       go on showing the note that is actually on the phone. */
+    repaintHistoryIfOpen();
   } else {
     flashToast('NOT saved — the phone refused it',
       `${editing.addr || 'This door'} is still on screen but is not on the phone. This nearly always `
@@ -6498,10 +6656,51 @@ async function wipeHouse() {
    house should put him back on the same day in the same place. The cost is that anything
    which removes a record has to repaint it, or it goes on showing rows for doors that no
    longer exist and every one of them is still tappable. */
+/* Kept SYNCHRONOUS on purpose so the eight callers stay exactly as they are: it returns at
+   once, the redraw runs on behind it, and no caller can leave a rejection loose by
+   forgetting to await one. */
+let dlRepaintBusy = false, dlRepaintAgain = false;
 function repaintHistoryIfOpen() {
   const view = $('daysLogView');
   if (!view || view.classList.contains('hide')) return;
-  renderDaysLog();
+  /* THE DOUBLE REPAINT. Tapping Add and then Save is two taps a moment apart and both come
+     through here, and the first redraw — an await on loadDay and then a whole renderOneDay
+     — is still in the air when the second arrives. Two of those racing over the same
+     #dlBody is two full day recomputes and a coin toss over which one writes the node
+     last. So: one at a time, and exactly one more at the end if anything asked while it
+     was running, which is the one that sees the saved state. When the taps are far enough
+     apart not to overlap, the day cache below means the second is no longer a full
+     recompute either — the track, the miles and the speeds are reused and only the doors
+     are worked out again. */
+  if (dlRepaintBusy) { dlRepaintAgain = true; return; }
+  dlRepaintBusy = true;
+  /* #dlBody is the scroller and renderOneDay empties that very node, which zeroes
+     scrollTop — so saving a note halfway down a long day threw him back to the top of it.
+     Caught here and put back after, but ONLY if he is still on the same day and the view
+     is still up: he may have tapped Back or Done while this was being worked out, and
+     scrolling a list he has already left is a bug of its own. `dlOpenKey` is the only day
+     variable there is and it is read straight, not copied into a second one. */
+  const host = $('dlBody');
+  const wasKey = dlOpenKey;
+  const top = host ? host.scrollTop : 0;
+  renderDaysLog().then(() => {
+    if (host && top && dlOpenKey === wasKey && !view.classList.contains('hide')) host.scrollTop = top;
+  }).catch(() => {
+    /* This call is deliberately never awaited — the caller is a save that has already told
+       him what happened — and there is no window.onunhandledrejection and no window.onerror
+       anywhere in this file, so a throw in here would reach the console and nothing else.
+       WHAT IT IS ALLOWED TO SAY. Eight things call this and four of them are destructions:
+       binning a log line, emptying a log, wiping a house, clearing a door. Every one of
+       them has ALREADY said what became of the write. So this claims nothing whatever
+       about what was or was not written. It names the only thing that actually failed —
+       the redraw of the screen behind — and gives the one remedy that is true on all
+       eight, because backing out of a day and opening it again rebuilds it from scratch. */
+    flashToast('History did not redraw',
+      'The History screen may be out of date or blank. Back out of the day and open it again.', '#f59e0b');
+  }).then(() => {
+    dlRepaintBusy = false;
+    if (dlRepaintAgain) { dlRepaintAgain = false; repaintHistoryIfOpen(); }
+  });
 }
 /** keep the door marks, throw away everything typed */
 async function clearDetailContent() {
@@ -6519,6 +6718,13 @@ async function clearDetailContent() {
   buzz(25);
   flashToast('Notes and tags cleared', 'The door marks are still there', '#f59e0b');
   openDetail(editing);
+  /* The one repaint here that CANNOT be gated on the write. The loop above blanks every
+     record for this house in memory and swallows each write with `.catch(()=>{})`, so
+     there is no result to gate on — and the records are cleared in memory either way,
+     which is exactly what the strip and the map on the line below are already showing. A
+     History row still carrying the note would then be the only screen in the app
+     disagreeing with the rest, and it is the one he trusts most. */
+  repaintHistoryIfOpen();
   renderStrip(); if (window._map) refreshMapLayers();
 }
 
@@ -9650,8 +9856,8 @@ document.querySelectorAll('.dsecHead[data-msec]').forEach(b => {
 /* ---- what version is actually on the phone ----
    Matches the service worker cache name, so "did the update land" is answerable by
    looking rather than guessing. */
-const BUILD_VERSION = 'v33';
-const BUILD_DATE = '2 August 2026';
+const BUILD_VERSION = 'v34';
+const BUILD_DATE = '4 August 2026';
 function renderVersionStamp() {
   const el = $('versionStamp'); if (!el) return;
   el.className = 'small';
@@ -12324,8 +12530,20 @@ function renderCrm() {
     const live = v.followAt && !v.followDone;
     const late = live && v.followAt <= Date.now();
     const booked = apptForVisit(v);
+    const note = rowNoteOf(v);
+    const noteN = rowNoteCount(v);
+    /* One call, and the row renders whatever it hands back. noteDayFor (the spec block, near
+       4483) is the single place that decides whether a note carries a date: it returns the
+       stamp, or '' for none. Every knock copies the whole log forward, so an undated note
+       from 12 July reappears on the 19 and 26 July rows and reads as something he was told
+       that day — that is what the stamp is for. The condition is deliberately NOT re-derived
+       here: doing it twice is how the two screens drift, and how a note with no ts printed
+       "Invalid Date". Never dayLabel (13454) either: that says "Today", and "Today" must
+       never print here. */
+    const noteDay = noteDayFor(note, v);
     const el = document.createElement('div');
     el.className = 'crmRow' + (late ? ' late' : '');
+    if (note) el.classList.add('hasNote');
     const under = [goesByOf(v) && contactOf(v) && contactOf(v) !== goesByOf(v) ? contactOf(v) : '',
                    v.addr || '', v.phone || ''].filter(Boolean).join(' · ');
     const far = sortNow === 'near' && state.pos && v.lat != null
@@ -12341,6 +12559,8 @@ function renderCrm() {
           ${far ? `<span class="dimTxt">📍 ${esc(far)}</span>` : ''}
           <span class="dimTxt">${esc(LINES[v.line||'roof'].short)}</span>
           <span class="dimTxt">🕘 ${esc(touchedText(lastTouched(v)))}</span></div>
+        ${note ? `<div class="note">${noteDay ? `<span class="noteDay">${esc(noteDay)}</span> ` : ''}${esc(note.text)}</div>` : ''}
+        ${note && noteN > 1 ? `<div class="n">${noteN} notes at this door</div>` : ''}
       </div>`;
     const acts = document.createElement('div'); acts.className = 'crmActs';
     if (live) {
@@ -12353,7 +12573,7 @@ function renderCrm() {
       const done = document.createElement('button'); done.textContent = '✓';
       done.onclick = async e => { e.stopPropagation();
         v.followDone = true;
-        v.log = [...logOf(v), { id:newId(), ts:Date.now(), kind:'note', text:'Follow-up completed.' }];
+        v.log = [...logOf(v), { id:newId(), ts:Date.now(), kind:'note', auto:true, text:'Follow-up completed.' }];
         await DB.put('visits', v).catch(()=>{}); renderCrm(); renderStrip(); buzz(20); };
       acts.append(snooze, done);
     }
@@ -12500,7 +12720,7 @@ function apDayLabel(ts) {
 async function setScheduleTime(it, at) {
   const when = new Date(at).toLocaleString([], { month:'short', day:'numeric', hour:'numeric', minute:'2-digit' });
   const logInto = rec => {
-    rec.log = [...logOf(rec), { id:newId(), ts:Date.now(), kind:'note',
+    rec.log = [...logOf(rec), { id:newId(), ts:Date.now(), kind:'note', auto:true,
       text:`${it.kind === 'appt' ? 'Appointment' : 'Follow-up'} moved to ${when}.` }];
     rec.notes = logOf(rec).filter(e => e.kind === 'note').map(e => e.text).join(' | ');
     state.visits.set(vKey(rec.key, rec.line), rec);
@@ -12573,7 +12793,7 @@ async function deleteSelectedSchedule() {
   for (const f of follows) {
     const v = f.ref;
     v.followAt = null; v.followDone = false;
-    v.log = [...logOf(v), { id:newId(), ts:Date.now(), kind:'note', text:'Follow-up cleared from the schedule.' }];
+    v.log = [...logOf(v), { id:newId(), ts:Date.now(), kind:'note', auto:true, text:'Follow-up cleared from the schedule.' }];
     v.notes = logOf(v).filter(e => e.kind === 'note').map(e => e.text).join(' | ');
     state.visits.set(vKey(v.key, v.line), v);
     await DB.put('visits', v).catch(()=>{});
@@ -12876,7 +13096,7 @@ $('apSave').onclick = () => {
     // only ever move a customer forward. Booking a site visit for someone
     // already Quoted or Signed must not knock them back down the pipeline.
     if (now >= 0 && now < appt) { linked.dispo = 'appt'; staged = true; }
-    linked.log = [...logOf(linked), { id:newId(), ts:Date.now(), kind:'note',
+    linked.log = [...logOf(linked), { id:newId(), ts:Date.now(), kind:'note', auto:true,
       text:`Appointment booked for ${new Date(at).toLocaleString([], {month:'short', day:'numeric', hour:'numeric', minute:'2-digit'})}.` }];
     linked.notes = logOf(linked).filter(e => e.kind === 'note').map(e => e.text).join(' | ');
     // written unconditionally: the pre-fill path edits this record in memory and
@@ -14984,7 +15204,19 @@ function renderRoute() {
 /** How fast he was moving when a door was marked, from the breadcrumbs either side of it.
     Null when the track has nothing near that moment, and null is NOT the same as slow —
     the screen says "no track" rather than guessing. */
-function speedAtTs(pts, ts) {
+function speedAtTs(pts, ts, memo) {
+  /* `memo` is one day's `ts -> speed` map. dayFacts hands it in and it is thrown away with
+     that day's track cache, so it can never outlive the points it was worked out from. The
+     answer is a pure function of the points and the moment, and the scan below walks every
+     breadcrumb of the day for one door — 619 points times 40 doors on his worst real day,
+     every time History repaints behind the sheet. With the map it is once per door per
+     day. The recursion is that raw scan, called once, with the memo left off. */
+  if (memo) {
+    if (memo.has(ts)) return memo.get(ts);
+    const hit = speedAtTs(pts, ts);
+    memo.set(ts, hit);
+    return hit;
+  }
   if (!pts || pts.length < 2) return null;
   let pair = null, bestGap = Infinity;
   for (let i = 1; i < pts.length; i++) {
@@ -15040,6 +15272,71 @@ const measuredAtDoor = v => typeof v.acc === 'number' && v.acc > 0;
 function doorsOnDay(key) {
   return state.visitLog.filter(v => dayKeyOf(v) === key).sort((a, b) => a.ts - b.ts);
 }
+/* THE DAY CACHE, and what throws it away.
+   The track half of a day cannot change because a note was saved — and a note being saved
+   is now the commonest reason any of this runs, because every repaint of History behind
+   the door sheet comes through here. So the track half is worked out once per day and
+   kept. The doors and the checks stay LIVE and are worked out every single time.
+
+   A stale entry here would be far worse than the work it removes: this is the miles, the
+   hours and the speed checks on the report he hands to whoever is paying him.
+
+   THE HOLE THIS RULE EXISTS TO CLOSE. Nothing tells this cache when the points change —
+   the entry is only ever looked at on the next read, and a lot can happen in between. So
+   a guard of "same array, same LENGTH" can be walked straight past:
+     1. He opens History on today. The entry is kept at N points.
+     2. He drags the box on the map over one stray breadcrumb and taps Clear. That rewrites
+        the SAME array one shorter. Nothing reads the cache, so the entry still says N.
+     3. He keeps walking and one fix lands. pushTrackPoint pushes onto that same array and
+        the length is N again.
+     4. He opens History on today — same array, same length, and every mile, every minute
+        and every door speed handed back was worked out from the points before the clear.
+
+   So the guard is a STAMP read off the points themselves: how many, the first `ts`, the
+   last `ts`, and the sum of every `ts`. A clear followed by a fix cannot forge it, because
+   a pushed fix always carries a later `ts` than everything already in the array, so both
+   the last stamp and the sum move even when the count comes back to where it was.
+   Read off the array rather than bumped by whoever changed it, on purpose. A counter would
+   have to be bumped in four places that are nowhere near this one — pushTrackPoint, both
+   merges, and the box clear on the map — and on the day a fifth writer is added and
+   forgets it, this cache goes on handing out last week's miles and never says a word. A
+   stamp cannot be forgotten by a writer that does not know it exists. It costs one pass
+   over the day's points: 619 additions on his worst real day against the ~25,000
+   iterations the cache removes, so it is paid for many times over, and it over-invalidates
+   rather than under-invalidates — today's day is dropped on every single fix, which is
+   right, because today's day really is changing, while the past days History is mostly for
+   sit still and keep hitting.
+
+   `readFailed` is in the guard too: a day the phone would not hand back gives an empty
+   array, and a day that genuinely holds no points gives an empty array as well. Without it
+   one refused read would be remembered as an honest empty day for the whole run — 0.0
+   miles printed as a measurement on a day he walked. */
+const dayTrackCache = new Map();
+function ptsStamp(pts) {
+  let sum = 0;
+  for (let i = 0; i < pts.length; i++) sum += pts[i].ts;
+  return pts.length + '|' + (pts.length ? pts[0].ts + '|' + pts[pts.length - 1].ts : '') + '|' + sum;
+}
+function dayTrack(key, pts, readFailed) {
+  const stamp = ptsStamp(pts);
+  const hit = dayTrackCache.get(key);
+  if (hit && hit.pts === pts && hit.stamp === stamp && hit.readFailed === readFailed) return hit;
+  const split = splitMetres(pts);
+  const fresh = { pts, stamp, readFailed,
+    segs: trackSegments(pts),
+    metres: split.walked,              // "miles walked" means walked
+    drivenMetres: split.driven,
+    /* Two stray breadcrumbs are not a walking track. The first fix after the start gate is
+       written unconditionally, so opening the app in the drive and then losing GPS for the
+       day used to count as "has a track" — which printed 0.0 miles as a measurement and
+       suppressed the note saying nothing had been recorded. */
+    usableTrack: pts.length > 2 && (split.walked + split.driven) > 50,
+    /* One `ts -> speed` map per day, handed to speedAtTs and thrown away with this entry,
+       so a speed can never outlive the points it was worked out from. */
+    speeds: new Map() };
+  dayTrackCache.set(key, fresh);
+  return fresh;
+}
 async function dayFacts(key) {
   let d = state.days.get(key);
   /* `readFailed` means the phone would not hand that day back — NOT that he walked
@@ -15049,10 +15346,12 @@ async function dayFacts(key) {
   if (!d || d.readFailed) { try { d = await loadDay(key) || d; } catch (e) { /* keep what we have */ } }
   const readFailed = !!(d && d.readFailed);
   const pts = (d && !d.readFailed && d.pts) || [];
-  const segs = trackSegments(pts);
-  const split = splitMetres(pts);
-  const metres = split.walked;              // "miles walked" means walked
-  const drivenMetres = split.driven;
+  /* AFTER the load, never before it — the load is what fills or replaces the array the
+     stamp is about to be taken from. */
+  const t = dayTrack(key, pts, readFailed);
+  const segs = t.segs;
+  const metres = t.metres;
+  const drivenMetres = t.drivenMetres;
   const doors = doorsOnDay(key);
   const stamps = pts.map(p => p.ts).concat(doors.map(v => v.ts));
   const first = stamps.length ? Math.min(...stamps) : null;
@@ -15062,8 +15361,10 @@ async function dayFacts(key) {
   doors.forEach(v => { byStatus[v.status] = (byStatus[v.status] || 0) + 1; });
   /* The checks, per door. Stated as facts with numbers, not as verdicts — the screen
      shows what was recorded and lets whoever is reading it decide. */
+  /* Worked out fresh every single time on purpose. A door can be added, wiped or re-marked
+     between one repaint and the next, and this is the half that would show it. */
   const checked = doors.map(v => {
-    const sp = speedAtTs(pts, v.ts);
+    const sp = speedAtTs(pts, v.ts, t.speeds);
     const measured = measuredAtDoor(v);
     return { v,
       measured,
@@ -15073,11 +15374,7 @@ async function dayFacts(key) {
       moving: sp != null && sp > DOOR_MOVING_MS,
       noTrack: sp == null };
   });
-  /* Two stray breadcrumbs are not a walking track. The first fix after the start gate is
-     written unconditionally, so opening the app in the drive and then losing GPS for the
-     day used to count as "has a track" — which printed 0.0 miles as a measurement and
-     suppressed the note saying nothing had been recorded. */
-  const usableTrack = pts.length > 2 && (metres + drivenMetres) > 50;
+  const usableTrack = t.usableTrack;
   const stopInfo = dayStops(pts, doors);   // once, not twice — it walks the whole trail
   return { key, doors: checked, count: doors.length, metres, drivenMetres, first, last,
            mins: (first != null && last != null) ? Math.round((last - first) / 60000) : 0,
@@ -15445,6 +15742,12 @@ async function renderOneDay(key) {
   }
   f.doors.forEach(c => {
     const v = c.v, st = STATUS[v.status] || { label: v.status, color: '#94a3b8' };
+    const note = rowNoteOf(v);
+    const noteN = rowNoteCount(v);
+    /* The same single call as Customers. noteDayFor decides; this row renders only what it
+       hands back, and renders no span at all when it hands back ''. Nothing is re-derived
+       here, so the two screens cannot drift apart on the date. */
+    const noteDay = noteDayFor(note, v);
     const row = document.createElement('div');
     row.className = 'dlDoor';
     const dot = document.createElement('i'); dot.style.background = st.color;
@@ -15464,6 +15767,21 @@ async function renderOneDay(key) {
       + (where ? `<div class="n">${esc(where)}</div>` : '')
       + (c.noTrack && c.measured ? `<div class="n">No walking track at this moment</div>` : '')
       + (flag ? `<div class="dlFlag">⚠️ ${esc(flag)}</div>` : '');
+    /* BELOW the flag, never above. The accuracy warning is what four rounds of work were
+       for, and an unbounded note stacked above it pushes it down the row and out of the
+       eye. Appended after the innerHTML statement instead of folded into it so that line
+       stays byte-for-byte the line it was. Child order in .w now ends: … noTrack, dlFlag,
+       dlNote, count.
+       The count is gated on `note &&` too, not on the number alone: rowNoteCount counts the
+       app's own auto sentences and rowNoteOf excludes them, so a door he only moved through
+       two stages would otherwise carry a bare "2 notes at this door" with no note above it
+       and no wash under it, on a row that was clean in v33. */
+    const noteHtml = (note ? `<div class="dlNote">${noteDay ? `<span class="noteDay">${esc(noteDay)}</span> ` : ''}${esc(note.text)}</div>` : '')
+      + (note && noteN > 1 ? `<div class="n">${noteN} notes at this door</div>` : '');
+    if (noteHtml) w.insertAdjacentHTML('beforeend', noteHtml);
+    /* classList.add, never a className reassignment: 'dlDoor' is already on the row and
+       'tap' is added a few lines below, and a reassignment would clobber the press-darken. */
+    if (note) row.classList.add('hasNote');
     row.appendChild(dot); row.appendChild(w);
     /* The list was read-only, so finding a house in History meant reading its address,
        backing all the way out and hunting for it again. Tapping a row opens that door's
