@@ -138,6 +138,11 @@ input,textarea,select{font:inherit;color:var(--txt);background:var(--card2);bord
 .warnTri{margin-right:6px;font-size:20px;vertical-align:2px}
 #tagRow{display:flex;gap:6px;flex-wrap:wrap;margin-top:6px}
 #rentTag{font-size:12px;font-weight:800;padding:3px 9px;border-radius:999px;color:#fbbf24;background:rgba(251,191,36,.15);border:1px solid rgba(251,191,36,.5);white-space:nowrap}
+/* The same shape as the rental tag so the row reads as one thing, but red and solid rather
+   than a wash, because "you may be at the wrong house" outranks "this is probably a rental".
+   white-space:normal, not nowrap: on a narrow phone the sentence wraps rather than being cut
+   off, and the half that would be cut is the half that matters. */
+#stuckTag{font-size:12px;font-weight:800;padding:3px 9px;border-radius:999px;color:#fecaca;background:#3f1d1d;border:1px solid #ef4444;white-space:normal}
 #staleTag{font-size:12px;font-weight:800;padding:3px 9px;border-radius:999px;color:#93a6bb;background:rgba(147,166,187,.14);border:1px solid rgba(147,166,187,.45);white-space:nowrap}
 #swapWrap{position:absolute;right:8px;top:8px;display:flex;gap:6px}
 .mini-btn{background:var(--card2);border:1px solid var(--line);border-radius:10px;padding:7px 10px;font-size:12px;color:var(--dim);font-weight:600}
@@ -817,6 +822,14 @@ select{min-height:44px}
     <div id="owner">—</div>
     <div id="propLine" class="hide"></div>
     <div id="tagRow">
+      <!-- THE WARNING SITS HERE AND NOT ON THE OWNER LINE, and that was his call after looking at
+           two photographs of it. The first build replaced the owner name. Then his own days were
+           counted: 11 of 35, 9 of 46, and 14 of 38 on 4 August were on the reading this fires on,
+           and inside one of those spells nothing clears it but pausing and resuming — so the name
+           would have been gone for the rest of an afternoon. He greets people by that name, and
+           the distance beside it is how he judges the warning for himself. So the name and the
+           distance stay, and the warning goes in the row that already carries "likely rental". -->
+      <span id="stuckTag" class="hide">⚠️ GPS STUCK · may be the wrong house</span>
       <span id="rentTag" class="hide">⚠️ likely rental</span>
       <span id="staleTag" class="hide"></span>
       <span id="alreadyTag" class="hide"></span>
@@ -2995,6 +3008,15 @@ const state = {
   quietAnchor: null,   // where you were when you last actually moved
   quietAskedAt: 0,
   quietPrompt: true,   // close the session after a long quiet spell
+  /* ---- the stuck-position guard, v35 ----
+     Its OWN state, because the fix buffer holds twelve seconds and twelve entries while a
+     freeze runs for minutes. Measured on the RAW coordinate and never the smoothed one:
+     smoothed() is a weighted MEAN, and a mean over a pool holding one repeated coordinate is
+     that coordinate — so the smoother is exactly what hides this. */
+  lastRaw: null,        // last RAW coordinate that moved more than FIX_FROZEN_M, and when
+  coarse: null,         // the coarse LATCH · null means BEFORE ANY FIX, and only that
+  coarseCleanRun: 0,    // consecutive clean fixes since the latch was last set
+  replayMs: null,       // now minus pos.timestamp of the latest fix · null before any fix
 };
 window.state = state;   // exposed for the diagnostics panel and automated tests
 
@@ -4066,6 +4088,7 @@ function renderHouse() {
     $('owner').textContent = state.netErr ? 'No signal — parcels unavailable here'
                            : state.tileRefused ? 'The county turned this lookup down' : '—';
     $('alreadyTag').classList.add('hide'); $('rentTag').classList.add('hide');
+    $('stuckTag').classList.add('hide');   // or it strands over "No lot nearby"
     $('staleTag').classList.add('hide'); $('propLine').classList.add('hide');
     $('owner').classList.remove('gpsLost');   // or the red leaks onto "No lot nearby"
     drawMini(); return;
@@ -4087,6 +4110,14 @@ function renderHouse() {
     ? `⚠️ GPS LOST · last reading ${fixAgeTxt()} ago`
     : (p.owner || 'Owner not listed') + (yr ? ` · built ${yr}` : '') + ` · ${Math.round(c.d)}m`;
   $('owner').classList.toggle('gpsLost', fixDead());
+  /* TWO DIFFERENT FAULTS, TWO DIFFERENT PLACES, and that is deliberate. GPS LOST means no
+     readings at all: it takes the owner line, because there is nothing trustworthy to put
+     there and it counts an age upward. GPS STUCK means readings that keep arriving and do not
+     move — the owner name is still the best guess anyone has and the distance is how he checks
+     the claim himself, so both stay and the warning goes beside them.
+     No `!fixDead() &&` here: gpsStuck() already contains it. A second copy of a precedence
+     rule in a second place is how precedence drifts. */
+  $('stuckTag').classList.toggle('hide', !gpsStuck());
   const sl = statsLine(p);
   $('propLine').textContent = sl;
   $('propLine').classList.toggle('hide', !sl);
@@ -4633,6 +4664,20 @@ async function mark(status) {
        because breadcrumbs are suppressed while he stands still, so a gap in the trail
        proves nothing. After a day out this field answers it across every door at once. */
     fixAge: fixAgeS(),
+    /* THE SIX INSTRUMENTS. frozenMs and cleanRun go on EVERY door, fired or not: they are the
+       data FIX_FROZEN_MS and COARSE_CLEAR_FIXES get set from after a real day, and v33 shipped
+       a threshold with nothing to tune it from, which is why it caught nothing on the day that
+       mattered. `raw` is the unsmoothed accuracy, already captured into state.pos and until
+       now thrown away — one number that settles which regime a door was filed in.
+       `picked` kills an ambiguity that weakened three separate findings: state.manualKey is
+       cleared immediately after the save, so no backup before v35 could tell a hand-picked
+       house from an auto-picked one. Read here, before that clear. */
+    frozenMs: frozenMs() == null ? null : Math.round(frozenMs()),
+    raw: (state.pos && Number.isFinite(state.pos.raw)) ? state.pos.raw : null,
+    coarse: state.coarse,
+    cleanRun: state.coarseCleanRun,
+    replayMs: state.replayMs == null ? null : Math.round(state.replayMs),
+    picked: state.manualKey ? 'manual' : (state.override ? 'override' : 'auto'),
     dist: Math.round(c.d), owner: p.owner, addr: p.addr, extra: p.extra,
     occ: p.occ || null, mail: p.mail || '',
     // carried onto the record so the "that is a mortgage servicer" line still shows
@@ -5937,6 +5982,19 @@ function openDetail(visit, focusName) {
               pid:c.p.pid, status:'talked', ts:Date.now(),
               lat:(state.pickedFrom || state.pos).lat, lon:(state.pickedFrom || state.pos).lon,
               acc:(state.pickedFrom || state.pos).acc, fixAge:fixAgeS(),   // see mark()
+              /* The six instruments, see mark(). DERIVED, never hard-set: this constructor
+                 builds from current(), which is the AUTO-picked candidate unless he has
+                 pinned one — so hard-setting 'manual' here would make every Details-first
+                 record claim a hand pick and poison the very distribution FIX_FROZEN_MS gets
+                 tuned from. One difference from mark() worth knowing when reading a backup:
+                 these are sampled when the panel OPENS, not when Save is tapped, so on this
+                 record they describe the moment the house was chosen. On a mark() record the
+                 two instants are the same. */
+              frozenMs: frozenMs() == null ? null : Math.round(frozenMs()),
+              raw: (state.pos && Number.isFinite(state.pos.raw)) ? state.pos.raw : null,
+              coarse: state.coarse, cleanRun: state.coarseCleanRun,
+              replayMs: state.replayMs == null ? null : Math.round(state.replayMs),
+              picked: state.manualKey ? 'manual' : (state.override ? 'override' : 'auto'),
               dist:Math.round(c.d), owner:c.p.owner, addr:c.p.addr, extra:c.p.extra,
               occ:c.p.occ||null, mail:c.p.mail||'',
               val:c.p.val||null, sqft:c.p.sqft||null, saleTs:c.p.saleTs||null, salePrice:c.p.salePrice||null,
@@ -9400,7 +9458,73 @@ const FIX_DEAD_MS = 20000;          // 20 s — red, and the house card admits i
    thumb lands. Four reviewers found it independently.
    A hand-placed pin is excluded for the same reason in reverse: he set that position on
    purpose, so calling it lost and hiding the owner name is simply wrong. */
+
+/* ---- WHEN THE PHONE KEEPS TALKING BUT STOPS MOVING -------------------------------
+   A DIFFERENT FAULT FROM A DEAD FIX, and reading the two as one thing is what cost this
+   project a round. Dead means no readings at all. Stuck means readings that keep arriving
+   and do not move — so every age test above stays inert, fixAge() sits at one second, and
+   v33's whole trust layer sees a healthy phone.
+
+   Werner Way, 2026-08-03: the position froze at 40.0967890/-83.0399960 for 103 seconds and
+   two doors were filed against it 34 seconds apart. One was the wrong house.
+
+   THE MEASUREMENT THAT DECIDES THE DESIGN. That frozen coordinate sits exactly on the
+   six-decimal grid. A live full-precision fix does not. A coarse or cached platform location
+   arrives rounded; a real one is a long messy double. Across three of his days, 30 of 34
+   doors at accuracy exactly 10.0 sat on a 6dp grid against 0 of 85 for everything else.
+   So the coarse test is the PRIMARY detector, and it is primary because it is the only one
+   that can fire on the FIRST bad reading — and the first of those two doors is the one he
+   filed on the wrong house.
+
+   The forty-five second test cannot be primary and it is worth writing down why. His own
+   trail holds a GENUINE byte-identical still-run of 31 seconds, on his own driveway. The two
+   bad doors were 34 seconds apart. No threshold fits in a three-second window built from one
+   measurement each. So the time test is the backstop for a freeze that is not coarse — a
+   regime not yet observed and not ruled out — and it is the instrument that writes frozenMs
+   onto every record so the number gets set from his phone instead of guessed at.
+
+   DO NOT WRITE `if (recentSpeed() === 0)`. It returns a literal 0 for THREE reasons —
+   f.length < 2, dt < 1, and genuinely not moving — so a guard on it fires on the first fix
+   after every dropFixes(): every resume, every pause edge, every session start. That is the
+   `no fix · Infinity` family four reviewers caught last round. */
+const FIX_FROZEN_MS = 45000;   // raw coordinate unmoved this long counts as stuck
+const FIX_FROZEN_M  = 1.0;     // raw movement under this does not count as movement
+
+/* THE LATCH, and it is asymmetric on purpose: ONE bad reading is proof the stream cannot be
+   trusted, THREE good ones in a row are what it takes to prove it has recovered. Fire-on-one
+   clear-on-one treats those as equal claims and they are not.
+   It is not only about a warning that blinks. Four of the 34 measured coarse doors were
+   themselves off-grid, so a single clean-looking fix can land INSIDE a real freeze — and a
+   symmetric detector would put a confident owner name back on the card at the exact moment
+   it is most wrong.
+   A time-based clear was considered and rejected: time passes while the radio is silent, so
+   it could declare the phone healthy over a stale screen. Only a fresh reading can earn it.
+   If the fixes stop instead of turning clean the latch simply holds, which is honest, and at
+   twenty seconds fixDead() takes the screen because dead outranks stuck. */
+const COARSE_CLEAR_FIXES = 3;
+
 const fixDead = () => !state.override && isFinite(fixAge()) && fixAge() > FIX_DEAD_MS;
+/* Six decimals exactly. A weighted mean of full-precision doubles lands on a 6dp value with
+   probability around 4e-12, so this is a statement about the platform, not about arithmetic. */
+const onGrid6 = v => Math.abs(v - Number(v.toFixed(6))) < 1e-12;
+const frozenMs = () => state.lastRaw ? Date.now() - state.lastRaw.ts : null;
+/* Warn, never refuse — his ruling, and the data says why: refusing on age would have refused
+   nothing all day, and refusing on a frozen position would have blocked him at exactly the
+   moment he was working around it by hand.
+   Override is excluded for fixDead()'s own stated reason: he put that position there on
+   purpose, so calling it stuck is simply wrong. Dead is excluded because dead outranks stuck,
+   and encoding that HERE rather than in branch order means the precedence cannot be got wrong
+   by someone later reordering the callers.
+   A HAND-PICKED HOUSE STANDS IT DOWN TOO, and that is Travis's ruling, 5 August: "you have
+   just told it the answer, so it should stop arguing." Same reasoning as the override, one
+   step further in — a hand-placed position is him correcting WHERE he is, a hand-picked house
+   is him correcting WHICH HOUSE, which is the only thing this warning is about. It expires the
+   way every manual pick expires, after he walks 25 m or after two minutes, so the next door
+   is judged on its own. Nothing about the RECORD changes: the six fields read state.coarse
+   directly and never this function, so a door filed under a hand pick still carries every
+   reading, and picked:manual says how it was chosen. */
+const gpsStuck = () => !state.override && !state.manualKey && !fixDead()
+  && (state.coarse === true || (frozenMs() !== null && frozenMs() > FIX_FROZEN_MS));
 /* "34s", then "2m 05s". Raw seconds past a minute reads as noise on a chip this small. */
 function fixAgeTxt() {
   const a = fixAge();
@@ -9422,6 +9546,11 @@ function dropFixes() {
   state.fixes = [];
   state.walkFlag = false; state.walkStop = 0; state.walkHits = 0;
   state.pickedFrom = null;
+  /* All four go with the buffer, for the same reason the walk state does: a pause left a
+     stale anchor behind and the guard armed on the first fix after resuming, off one raw
+     reading with no buffer behind it. The latch is the newest member of that family and the
+     most dangerous, because a latch that outlives a pause is a warning nothing can clear. */
+  state.lastRaw = null; state.coarse = null; state.coarseCleanRun = 0; state.replayMs = null;
   refreshScoutIfOpen();
 }
 function liveFix() {
@@ -9483,7 +9612,13 @@ function startStaleTick() {
     if (state.paused || !state.pos) return;
     /* Only when it would CHANGE something. Past the dead line the seconds are counting up
        on screen so it has to run every tick; before it, there is nothing new to say. */
-    if (fixAge() > FIX_OLD_MS) { renderStrip(); renderHouse(); }
+    /* `|| gpsStuck()` IS LOAD-BEARING AND IT IS NOT OBVIOUS. A stuck position keeps its own
+       callbacks arriving, so fixAge() stays near zero and the old condition would never have
+       repainted the warning either in or out. The per-fix render covers the measured fault on
+       its own; this is what guarantees the warning APPEARS within a second and, more
+       importantly, CLEARS within a second if the callback cadence stutters — and it is what
+       carries the stuck-to-dead handover. Do not optimise it back to the age test. */
+    if (fixAge() > FIX_OLD_MS || gpsStuck()) { renderStrip(); renderHouse(); }
   }, 1000);
 }
 function startGps() {
@@ -9492,7 +9627,50 @@ function startGps() {
   watchId = navigator.geolocation.watchPosition(async pos => {
     if (state.paused) return;
     const now = Date.now();
+    /* READ BEFORE pushFix, because pushFix is what resets it. This is how long the radio was
+       silent before this fix landed, and the anchor below needs it — see the re-anchor. */
+    const gapMs = fixAge();
     pushFix(pos.coords, now);
+    /* RAW, not smoothed, and before the `if (!sm) return` below — the raw stream is true
+       whether or not the pool happens to yield a position this tick. See the block at
+       FIX_FROZEN_MS for why the smoother cannot see this fault at all. */
+    const rlat = pos.coords.latitude, rlon = pos.coords.longitude;
+    if (onGrid6(rlat) && onGrid6(rlon)) { state.coarse = true; state.coarseCleanRun = 0; }
+    /* Two jobs in one line, and they are separable in the reading but not worth separating in
+       the code. `>= COARSE_CLEAR_FIXES` is the latch clearing after three clean fixes in a
+       row. `|| state.coarse !== true` settles the field on the FIRST clean fix when the latch
+       has never been set — going from null to false is initialisation, not clearing, so the
+       three-in-a-row rule must not apply to it, or `coarse: null` would mean two different
+       things on a record and a door filed in the first seconds of a session would be
+       indistinguishable from one filed before any fix arrived at all.
+       THE COUNTER IS NOT CLIPPED, deliberately. An earlier draft zeroed it in this branch,
+       which capped the recorded value at three — and then `cleanRun` on a record could never
+       answer the one question it exists to answer, which is whether three was the right
+       number. It counts on, so a real day can say. */
+    else if (++state.coarseCleanRun >= COARSE_CLEAR_FIXES || state.coarse !== true) state.coarse = false;
+    /* The fix's OWN clock. The app has never read it — maximumAge:0 is asked for below and
+       the platform is not obliged to honour it, so without this there is no way to tell a
+       fresh fix from a cached one replayed on resume. It drives nothing this round; it rides
+       the record so the next backup can say whether it is worth driving anything.
+       Bounded to a day because Number.isFinite is not enough: a platform reporting a
+       monotonic or navigation-relative clock rather than epoch milliseconds would put a
+       plausible-looking 1.78e12 onto every record, and nobody reading a backup later could
+       tell that from a real number. Out of range means we do not know, which is null. */
+    const pts = pos.timestamp;
+    state.replayMs = (Number.isFinite(pts) && Math.abs(now - pts) < 864e5) ? now - pts : null;
+    /* THE ANCHOR, and `gapMs` is the part that is not obvious. frozenMs() is measured from
+       this stamp, so without the gap term it counts wall-clock straight through a stretch in
+       which NO READINGS WERE TAKEN AT ALL — a screen lock, a phone call, a backgrounded tab,
+       any of which stop the callbacks. A fresh, accurate, off-grid fix landing after a
+       sixty-second silence would then be called stuck merely because he had not moved a metre
+       while the radio was off, and every door filed in that window would carry a frozenMs of
+       sixty thousand — poisoning the exact distribution FIX_FROZEN_MS is meant to be tuned
+       from. This is the same fault that got a time-based CLEAR rejected in the latch above,
+       arriving on the setting side, and it has to be guarded in both directions: only an
+       interval we actually observed is allowed to count. */
+    if (!state.lastRaw || !isFinite(gapMs) || gapMs > FIX_DEAD_MS
+        || haversine(rlat, rlon, state.lastRaw.lat, state.lastRaw.lon) > FIX_FROZEN_M)
+      state.lastRaw = { lat: rlat, lon: rlon, ts: now };
     const sm = smoothed();
     if (!sm) return;
     // a hand-placed position wins until it is released or goes stale
@@ -9619,7 +9797,18 @@ function setPaused(p) {
      and every scout mark taken afterwards landed on it. */
   if (p) { if (watchId != null) { navigator.geolocation.clearWatch(watchId); watchId = null; } flushDay(); dropFixes(); }
   else { dropFixes(); startGps(); }
-  renderStrip();
+  /* renderHouse ON RESUME ONLY, and both halves of that are deliberate.
+     Why it is needed at all: dropFixes() above clears the guard's state, but nothing repainted
+     the card — so the stuck sentence and its red class sat on screen over cleared state,
+     through the pause and out the other side, until the first fix after resume landed. That is
+     the "garbage in the two lines he reads before his thumb lands" the comment above dropFixes
+     already warns about, arriving by a new road.
+     Why NOT on the pause edge: dropFixes() has just emptied the buffer, so fixAge() is Infinity
+     and fixDead() is deliberately FALSE on an empty buffer — see its comment. Repainting there
+     would take a true, red "GPS LOST · last reading 2m 05s ago" off the card and put a
+     confident owner name and a distance in its place, over a position that has not improved
+     one bit. Pausing must never make the app look MORE sure than it was a second earlier. */
+  renderStrip(); if (!p) renderHouse();
   flashToast(p ? 'Tracking paused' : 'Tracking on',
              p ? 'No position, no breadcrumbs. Tap the GPS chip to resume.' : '', p ? '#64748b' : '#22c55e');
 }
@@ -9856,8 +10045,8 @@ document.querySelectorAll('.dsecHead[data-msec]').forEach(b => {
 /* ---- what version is actually on the phone ----
    Matches the service worker cache name, so "did the update land" is answerable by
    looking rather than guessing. */
-const BUILD_VERSION = 'v34';
-const BUILD_DATE = '4 August 2026';
+const BUILD_VERSION = 'v35';
+const BUILD_DATE = '5 August 2026';
 function renderVersionStamp() {
   const el = $('versionStamp'); if (!el) return;
   el.className = 'small';
