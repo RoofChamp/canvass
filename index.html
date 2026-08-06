@@ -1080,6 +1080,17 @@ select{min-height:44px}
        so the small map follows the big one. -->
   <div id="stormBar" class="off">
     <button class="mbtn" id="stormCycle">⛈ Storms off</button>
+    <!-- WHICH LIBRARY. A second chip rather than more states on the first one, because the
+         two axes are orthogonal — where it is shown, and which instrument drew it — and one
+         button cycling both is nine states nobody can hold. Hidden while the layer is off,
+         exactly like the picker: a control that changes which of two invisible things is
+         invisible is a control with nothing behind it. -->
+    <button class="mbtn hide" id="stormSrcBtn">Detections</button>
+    <!-- THE GROUND REPORTS. A third chip, and it wraps the bar to a second row when the layer
+         is on — photographed, and the cost is accepted rather than hidden, because the
+         alternative was burying a layer he wants to flick on and off at a doorstep inside a
+         sheet he has to open. -->
+    <button class="mbtn hide" id="stormReportBtn">Reports off</button>
     <!-- THE SECOND DOOR INTO THE PICKER. Words on it, not an icon, and it only appears
          once the layer is on — a button that opens a list of storms while the storm layer
          is switched off is a button with nothing behind it. It stays reachable while an
@@ -4336,7 +4347,7 @@ function drawMini() {
   if (stormState.show === 2 && stormState.miniAlpha > 0) {
     g.save();
     g.globalAlpha = stormState.miniAlpha;
-    g.fillStyle = STORM_HUE;
+    g.fillStyle = stormSrcOf(stormState.src).hue;
     g.fillRect(-w, -h, w * 3, h * 3);
     g.restore();
   }
@@ -7032,7 +7043,7 @@ async function openMap() {
      setting he never chose. It also did not fix what it was added for: with storms saved
      off, `show` is already 0, so the off branch empties the set whether this line ran or
      not. Fixed properly by the failed branch below owning the layer. */
-  if (!stormState.count && !stormState.failed.length) stormShowLoad();
+  if (!stormState.count && !stormState.failed.length) { stormShowLoad(); stormSrcLoad(); stormReportsLoad(); }
   syncStormBar();
   refreshStormLayer(true);
 }
@@ -7836,9 +7847,125 @@ const STORM_HUE = '#14b8a6';
    every roof and every door colour still readable. His call, made from the photograph. */
 const STORM_FILL = { '0.75in': 0.025, '1.00in': 0.045, '1.75in': 0.075 };
 
+/* ===================== THE SOURCE SEAM. Added 2026-08-06, v37. =====================
+   Two libraries now. They are NOT interchangeable: different property keys, different band
+   values, different floors. Every per-source fact lives in this one object, so adding a
+   third library is an entry here rather than a hunt through 17,000 lines.
+
+   The radar entry deliberately POINTS AT the existing constants rather than copying their
+   values. Anything that changes STORM_BASE, STORM_CLASSES or STORM_FILL keeps changing the
+   radar layer exactly as it did before, and the seam cannot drift away from them.
+
+   MESH DRAWS 20, 25 AND 32 ONLY, and its floor is 20. That is Travis's ruling of
+   2026-08-06, made from photographs: at 20 mm the five-year view leaves 67.6% of his
+   ground dark, which is the condition under which a repeat count means anything, and the
+   middle band leaves only 12.1% dark — the exact problem the radar layer already has. It
+   is also the lighter of the two on his phone: 84 rings and 512 vertices on the worst day,
+   against radar's 71 and 1,462 today.
+
+   WHAT THE BANDS MAY NEVER SAY. No MESH band carries a size in inches, in any form -
+   range, floor, or single figure. Measured forward against 255 real ground reports, the
+   median report is ONE INCH in every band from 7 mm to 20 mm; the bands sort GROUND, not
+   hail size. See FINDINGS - the forward mapping. Opacity is the only thing that separates
+   them on screen, and darkness is the only claim being made. */
+const STORM_SOURCES = {
+  v2:   { base: STORM_BASE,      prop: 'class',   bands: STORM_CLASSES, fill: STORM_FILL,
+          floor: null, hue: STORM_HUE, word: 'Detections' },
+  mesh: { base: './storms/mesh', prop: 'mesh_mm', bands: [20, 25, 32],
+          fill: { 20: 0.15, 25: 0.20, 32: 0.26 }, floor: 20,
+          hue: '#facc15', word: 'Size estimate' },
+};
+/* YELLOW FOR THE SIZE ESTIMATE, TEAL STAYS WITH DETECTIONS. Travis's ruling, 2026-08-06,
+   and it is the better answer to a problem I had put to him the other way round. Yellow is
+   how MESH is drawn in every hail product he already reads, and keeping radar on the teal he
+   ruled in round twenty-two means nothing he has learned moves. It also retires the slate
+   candidate entirely, which was colliding with the unworked lot and the driven track.
+
+   THE COLLISION THIS ACCEPTS, RECORDED SO NOBODY THINKS IT WAS MISSED. #eab308 at 0.20, or
+   0.36 bold, is already the RENTAL WASH — on the big map (the lot polygon) and on the small
+   one (the canvas). Same colour family and the same treatment: a fill laid over ground.
+   What keeps them apart is zoom, not hue: the storm fill drops above zoom 15
+   (STORM_ZOOM_FILL_MAX) and a single rental lot at zoom 15 is a few pixels across, so the
+   two are rarely legible at the same moment. PROVISIONAL, exactly as the teal was, and
+   photographed at the worst overlapping zoom rather than argued about.
+
+   AND THE YELLOW HAS ITS OWN OPACITIES. Radar's 0.025 / 0.045 / 0.075 were ruled from a
+   photograph of TEAL on the aerial — a dark hue, where 2.5% still reads. Yellow is a light
+   hue and at 2.5% over a street map it is simply not on the screen; the first photograph of
+   this seam showed outlines and no fill at all. Three strengths were photographed in the
+   real app and HE PICKED THE STRONGEST, 2026-08-06, on the argument that settled it: the
+   fill only exists at all below zoom 15, which is the zoom at which he is choosing where to
+   drive — not the zoom at which he is reading lot lines at a door, where it is already
+   dropped. A layer you notice beats a layer you consult, when noticing is its whole job.
+   What makes a stronger fill affordable is the core band itself: at the 20 mm floor only
+   6.4% of his ground has been reached twice in five years and 1.1% three times, so the
+   ten-days-overlapping saturation that killed the first draft of the teal is not the
+   ordinary case here the way it was on the wide radar band. Five days at 0.15 composite to
+   0.56, not the 0.91 that killed the first teal draft — and five days is the DEEPEST stack
+   that exists anywhere on his ground at this floor, covering 5.7 km2 of 23,356.
+
+   STILL TO CHECK ON THE AERIAL. He ruled the teal from a photograph over real roofs and lot
+   lines; this was ruled over a street map, because the container cannot reach the aerial
+   host and that imagery has to come from his machine. Yellow behaves differently over
+   satellite than over grey and green. Reshoot before this ships. */
+const stormFeatureHue = f => stormSrcOf(stormSrcOfFeature(f)).hue;
+
+/* WHICH LIBRARY IS THIS DAY FROM? Asked of the file, never passed in.
+   Threading a source argument through every function that touches a day file is the design
+   that fails silently: one call site left on the default draws the other instrument's
+   geometry and nothing anywhere throws. A day file already says what it is. */
+/* ON ONE LINE, AND THAT IS NOT A STYLE CHOICE. pairparity does not run the app: it LIFTS
+   these declarations out of the source text and runs them standalone, and its slicer ends a
+   const declaration at the first newline at depth zero. Written across two lines this lifted as a
+   declaration with no body, every one of the 24,976 pairs threw, and the gate went red for a
+   reason that had nothing to do with the engines it exists to compare. Keep it on one line,
+   or make it a function declaration, like everything else the gate has to lift. */
+const stormSrcOfFeature = f => (f && f.properties && f.properties.mesh_mm !== undefined) ? 'mesh' : 'v2';
+function stormSrcOfDay(day) {
+  return stormSrcOfFeature(day && day.features && day.features[0]);
+}
+const stormSrcOf = k => STORM_SOURCES[k] || STORM_SOURCES.v2;
+
+/* The band a feature is in, as its own library's key, or null if it is below the floor.
+   Returning null for a below-floor feature is what makes the floor apply everywhere at
+   once rather than at each call site. */
+function stormBandOf(f, S) {
+  const v = f && f.properties ? f.properties[S.prop] : undefined;
+  if (v === undefined) return null;
+  if (S.floor !== null && v < S.floor) return null;
+  return S.bands.indexOf(v) < 0 ? null : v;
+}
+const stormFillOf = (band, S) => (band === null ? 0 : (S.fill[band] || 0.10));
+/* The style callback gets a bare feature with no day around it, so it asks the feature. */
+function stormFeatureFill(f) {
+  const S = stormSrcOf(stormSrcOfFeature(f));
+  return stormFillOf(stormBandOf(f, S), S);
+}
+/* ================================= end of the seam ================================= */
+
 const stormState = {
   index: null,        // the manifest, held once per session
-  days: new Map(),    // date -> parsed day file
+  /* WHICH LIBRARY IS DRAWN: 'v2' radar or 'mesh'. Its own key, its own chip, deliberately
+     NOT folded into stormShow — where-shown and which-instrument are orthogonal, and one
+     button cycling both is nine states. Radar is the first-run default so that v37 is a
+     zero-visual-change ship until he taps, which keeps the existing suite honest. */
+  src: 'v2',
+  /* THE MODE THE CHIP HOLDS: 0 detections · 1 size estimate · 2 both. Kept separate from
+     src because 'both' IS NOT A SOURCE — there is no folder, no property key and no band
+     list called 'both'. The mode derives src, which everything downstream fetches, keys
+     and counts by, and under, which is only ever drawn as outlines. */
+  srcMode: 0,
+  under: null,
+  /* The dates the size estimate has no file for, from its own manifest. null until fetched;
+     an empty Set once fetched and found to have none. Never a hardcoded date — 2021-09-28 is
+     one today and the list can grow. */
+  meshMissing: null,
+  /* 0 off · 1 two years · 2 five years. Its own key, its own chip. */
+  reports: 0,
+  /* KEYED BY SOURCE AND DATE, '<src>|<date>', never by date alone. Both libraries carry the
+     same dates, so a bare date key would serve MESH geometry for a radar day the moment he
+     switched — wrong fills, wrong counts, and NO ERROR ANYWHERE. */
+  days: new Map(),    // '<src>|<date>' -> parsed day file
   show: 0,            // 0 off, 1 big map, 2 big map and mini map
   miniAlpha: 0,       // the small map's wash, worked out on refresh and not per frame
   active: [],         // the dates currently drawn
@@ -7875,28 +8002,56 @@ const stormState = {
    as a 504 carrying {offline:true}. Both the status and the body say so, and this checks
    the status, because a body check alone would be fooled by a real file that happened to
    contain the word. Anything unreadable is treated as absent, never as empty. */
-async function stormFetch(path) {
+async function stormFetch(path, srcKey) {
   try {
-    const res = await fetch(`${STORM_BASE}/${path}`);
+    const res = await fetch(`${stormSrcOf(srcKey || stormState.src).base}/${path}`);
     if (!res.ok) return null;
     const j = await res.json();
     return (j && j.offline) ? null : j;
   } catch (err) { return null; }
 }
 
+/* THE PICKER IS FED BY THE RADAR MANIFEST FOR BOTH SOURCES, and the 'v2' here is not a
+   leftover — it is the ruling. The two libraries carry the same dates (minus the MESH
+   manifest's own `missing` list), and every word on a picker row — the real report sizes, "a
+   report was filed that day" — is a fact about the DAY, true whichever instrument draws it.
+   Without the explicit 'v2' this follows stormState.src, fetches the MESH manifest, finds no
+   `storms` array in it and sets indexFailed: the picker would simply go empty on the size
+   estimate layer. */
+/* THE MESH MANIFEST IS LOADED FOR ONE THING: its `missing` list. The picker is fed by the
+   radar manifest for both sources — that is the ruling, and the dates are the same — but the
+   size estimate genuinely does not have every day, and the app has to be able to say which.
+   Held as a Set, fetched once, and a failure to fetch it is NOT an error: an empty set just
+   means every failed day is reported the ordinary way, which is the safe direction. */
+async function loadMeshMissing() {
+  if (stormState.meshMissing) return stormState.meshMissing;
+  const j = await stormFetch('manifest.json', 'mesh');
+  const list = (j && Array.isArray(j.missing)) ? j.missing : [];
+  stormState.meshMissing = new Set(list.map(m => (m && m.date) || m).filter(Boolean));
+  return stormState.meshMissing;
+}
+
 async function loadStormIndex() {
   if (stormState.index) return stormState.index;
-  const j = await stormFetch('manifest.json');
+  const j = await stormFetch('manifest.json', 'v2');
   if (!j || !Array.isArray(j.storms)) { stormState.indexFailed = true; return null; }
   stormState.index = j;
   stormState.indexFailed = false;
   return j;
 }
 
-async function loadStormDay(date) {
-  if (stormState.days.has(date)) return stormState.days.get(date);
-  const j = await stormFetch(`days/${date}.json`);
-  if (j) { stormState.days.set(date, j); stormState.onPhone++; }
+/* EVERY reader of the memo goes through these three. Nothing outside them may touch
+   stormState.days with a bare date, and the patcher that produced this file proves it by
+   counting: nine call sites were rewritten and the count was asserted, not assumed. */
+function stormDayKey(date, srcKey) { return `${srcKey || stormState.src}|${date}`; }
+const stormDayHeld = (date, srcKey) => stormState.days.get(stormDayKey(date, srcKey));
+const stormDayHas  = (date, srcKey) => stormState.days.has(stormDayKey(date, srcKey));
+
+async function loadStormDay(date, srcKey) {
+  const k = stormDayKey(date, srcKey);
+  if (stormState.days.has(k)) return stormState.days.get(k);
+  const j = await stormFetch(`days/${date}.json`, srcKey);
+  if (j) { stormState.days.set(k, j); stormState.onPhone++; }
   return j;
 }
 
@@ -7920,17 +8075,20 @@ function stormClassAt(day, lon, lat) {
   /* Ranked deliberately rather than taken from whichever feature matched last. The builder
      happens to write the classes smallest first, so "last match wins" would give the right
      answer today and quietly give the wrong one the day somebody reorders them. */
+  const S = stormSrcOf(stormSrcOfDay(day));
   let best = -1;
   for (const f of day.features) {
     const g = f.geometry; if (!g) continue;
-    const rank = STORM_CLASSES.indexOf(f.properties.class);
+    const band = stormBandOf(f, S);
+    if (band === null) continue;                      // below this library's floor
+    const rank = S.bands.indexOf(band);
     if (rank <= best) continue;                       // cannot improve on what we have
     const polys = g.type === 'MultiPolygon' ? g.coordinates : [g.coordinates];
     for (const poly of polys) {
       if (pointInRings(lon, lat, poly)) { best = rank; break; }
     }
   }
-  return best < 0 ? null : STORM_CLASSES[best];
+  return best < 0 ? null : S.bands[best];
 }
 
 /* THE SMALL MAP'S WASH, WORKED OUT ONCE RATHER THAN EVERY FRAME.
@@ -7945,14 +8103,17 @@ function stormClassAt(day, lon, lat) {
 function stormWashAt(lon, lat) {
   let clear = 1;
   for (const d of stormState.active) {
-    const day = stormState.days.get(d);
+    const day = stormDayHeld(d);
     if (!day || !day.features) continue;
+    const S = stormSrcOf(stormSrcOfDay(day));
     for (const f of day.features) {
       const g = f.geometry; if (!g) continue;
+      const band = stormBandOf(f, S);
+      if (band === null) continue;                    // below the floor: not drawn, not washed
       const polys = g.type === 'MultiPolygon' ? g.coordinates : [g.coordinates];
       let inside = false;
       for (const poly of polys) { if (pointInRings(lon, lat, poly)) { inside = true; break; } }
-      if (inside) clear *= (1 - (STORM_FILL[f.properties.class] || 0.10));
+      if (inside) clear *= (1 - stormFillOf(band, S));
     }
   }
   return 1 - clear;
@@ -8003,7 +8164,15 @@ function stormCoverage() {
   const ix = stormState.index;
   if (!ix) return { have: 0, total: 0, whole: false, line: 'Storm library not loaded on this phone yet.' };
   const total = ix.storms.length;
-  const have = stormState.days.size;
+  /* ONE LIBRARY'S WORTH, not the size of the whole memo. The memo now holds both libraries
+     under '<src>|<date>' keys, so `.size` counts radar days and MESH days together. Left alone
+     this sentence said "Checked 12 of 224 storm days on this phone" after six days had been
+     looked at on each layer — a number larger than the truth, printed on the honesty line,
+     which is the one line in the app whose entire job is not to overstate. Caught by
+     photographing the seam rather than by any check, which is the argument for photographing. */
+  const pre = stormState.src + '|';
+  let have = 0;
+  for (const k of stormState.days.keys()) if (k.startsWith(pre)) have++;
   const whole = have >= total;
   return { have, total, whole,
     line: whole ? `Checked all ${total} storm days on this phone.`
@@ -8022,9 +8191,59 @@ function clearStormLayer() {
   if (window._map) {
     if (window._stormLayer) window._map.removeLayer(window._stormLayer);
     if (window._stormFillLayer) window._map.removeLayer(window._stormFillLayer);
+    if (window._stormUnderLayer) window._map.removeLayer(window._stormUnderLayer);
+    if (window._stormReportLayer) window._map.removeLayer(window._stormReportLayer);
   }
   window._stormLayer = null;
   window._stormFillLayer = null;
+  window._stormUnderLayer = null;
+  window._stormReportLayer = null;
+}
+
+/* DRAWN LAST, so it sits over whichever estimate is showing — a report is the only thing on
+   this map that somebody actually witnessed, and it should not be buried under a guess.
+   A CIRCLE, NEVER A MARKER: the radius is the report's own precision. A pin would say "here",
+   and the data only supports "somewhere about here". */
+function drawStormReports() {
+  if (!stormState.reports || !window.L || !window._map) return;
+  const { rows } = stormReportSet();
+  if (!rows.length) return;
+  const g = L.layerGroup();
+  for (const r of rows) {
+    const hue = stormReportHue(r.mag);
+    L.circle([r.lat, r.lon], {
+      pane: 'storm', interactive: false, radius: STORM_REPORT_R,
+      color: hue, weight: r.est ? 1.6 : 2.6, opacity: 0.95,
+      dashArray: r.est ? '4 3' : null,
+      fillColor: hue, fillOpacity: 0.22,
+    }).addTo(g);
+  }
+  window._stormReportLayer = g.addTo(window._map);
+}
+
+/* BOTH LAYERS ON. Ruled from a photograph, 2026-08-06: the detections layer goes underneath
+   as DASHED OUTLINES, not as a pale fill. Two reasons, and the second is the one that
+   decided it. First, radar's own fills are already 0.025 to 0.075, so "radar faint under
+   MESH" cannot mean fainter still and survive a photograph. Second, an outline leaves the
+   ground inside it visible — roofs, lot lines and all four door colours still read — where a
+   second wash over ground that already carries yellow does not.
+   Drawn FIRST so the size estimate sits on top of it, because where the two disagree is the
+   entire reason the mode exists. Outlines only: no fill, ever, whatever the zoom. */
+function drawStormUnder(dates) {
+  if (!stormState.under || !window.L || !window._map) return;
+  const S = stormSrcOf(stormState.under);
+  const feats = [];
+  for (const d of dates) {
+    const day = stormDayHeld(d, stormState.under);
+    if (!day || !day.features) continue;
+    for (const f of day.features) if (stormBandOf(f, S) !== null) feats.push(f);
+  }
+  if (!feats.length) return;
+  window._stormUnderLayer = L.geoJSON({ type: 'FeatureCollection', features: feats }, {
+    pane: 'storm', interactive: false,
+    style: () => ({ pane: 'storm', color: S.hue, weight: 1.4, opacity: 0.9,
+                    dashArray: '5 3', fill: false, interactive: false }),
+  }).addTo(window._map);
 }
 
 /* HIS RULING, MADE FROM A PHOTOGRAPH: the fill drops above about zoom 15, because once he
@@ -8058,16 +8277,17 @@ function drawStormTicked() {
      the shapes underneath it do not support. */
   const c = stormState.count;
   if (!c) return;
+  drawStormUnder(c.dates || []);
   const feats = [];
-  for (const d of c.key.split('|')) {
-    const day = stormState.days.get(d);
+  for (const d of (c.dates || [])) {
+    const day = stormDayHeld(d);
     if (!day || !day.features) continue;
     for (const f of day.features) feats.push(f);
   }
   if (feats.length) {
     window._stormLayer = L.geoJSON({ type: 'FeatureCollection', features: feats }, {
       pane: 'storm', interactive: false,
-      style: () => ({ pane: 'storm', color: STORM_HUE, weight: 1.4, opacity: 0.8,
+      style: f => ({ pane: 'storm', color: stormFeatureHue(f), weight: 1.4, opacity: 0.8,
                       fill: false, interactive: false }),
     }).addTo(window._map);
   }
@@ -8079,9 +8299,10 @@ function drawStormTicked() {
      above, so an outline here would only draw a second line on top of a line. */
   window._stormFillLayer = L.geoJSON(c.geo, {
     pane: 'storm', interactive: false,
-    style: () => ({ pane: 'storm', stroke: false, fillColor: STORM_HUE,
+    style: () => ({ pane: 'storm', stroke: false, fillColor: stormSrcOf(c.src).hue,
                     fillOpacity: stormFillOn() ? STORM_TICK_FILL : 0, interactive: false }),
   }).addTo(window._map);
+  drawStormReports();
 }
 
 /* Zoom is not a pan. The layer is still never rebuilt while he drags the map; this only
@@ -8106,26 +8327,34 @@ async function drawStormLayer() {
   stormFillWas = stormFillOn();
   if (stormState.count) { drawStormTicked(); return; }
   if (!stormState.show || !stormState.active.length) return;
+  drawStormUnder(stormState.active);
+  /* Features from several days land in ONE flat list here, so which day a feature came
+     from is gone by the time the style function runs. That is fine, and it is why the
+     source is derived per FEATURE and not only per day: a feature carrying mesh_mm is a
+     MESH feature wherever it ended up. Below-floor features are dropped rather than styled
+     to zero, so they cost nothing to hand to Leaflet. */
   const feats = [];
   for (const d of stormState.active) {
-    const day = stormState.days.get(d);
+    const day = stormDayHeld(d);
     if (!day || !day.features) continue;
-    for (const f of day.features) feats.push(f);
+    const S = stormSrcOf(stormSrcOfDay(day));
+    for (const f of day.features) if (stormBandOf(f, S) !== null) feats.push(f);
   }
-  if (!feats.length) return;
+  if (!feats.length) { drawStormReports(); return; }
   window._stormLayer = L.geoJSON({ type:'FeatureCollection', features:feats }, {
     pane: 'storm',                 /* creating the pane routes nothing on its own */
     interactive: false,            /* belt as well as the pane's braces */
     style: f => ({
       pane: 'storm',
-      color: STORM_HUE,
+      color: stormFeatureHue(f),
       weight: 1,
       opacity: 0.55,
-      fillColor: STORM_HUE,
-      fillOpacity: STORM_FILL[f.properties.class] || 0.10,
+      fillColor: stormFeatureHue(f),
+      fillOpacity: stormFeatureFill(f),
       interactive: false,
     }),
   }).addTo(window._map);
+  drawStormReports();
 }
 
 /* ============================================================ THE STORM PICKER ====
@@ -8161,10 +8390,70 @@ const STORM_FINE_PER = 4;                       /* 250 m */
 /* Every polygon in a day file, each carrying its own box, so the ring test only ever runs
    on a polygon that could contain the point. The worst day is 71 rings and 1,462
    vertices; without this the coarse pass would walk all of them for every cell. */
+/* WHICH REPORTS, AND FROM WHICH DAYS. Reads only day files ALREADY ON THE PHONE — nothing
+   here downloads. Returns the reports plus the number of days they were drawn from, because
+   a layer built from eleven day files looks identical to one built from all of them and the
+   bar has to be able to say which.
+
+   THE TWO FILTERS, and the ticked one wins. When days are ticked he is working a storm and
+   the reports he wants are that storm's; when nothing is ticked the range applies. Ruled
+   2026-08-06.
+
+   radarWorded reports are EXCLUDED, the same exclusion every measurement in this project has
+   used: a report whose wording came off the radar is not independent evidence about the
+   ground. */
+function stormReportSet() {
+  const out = [];
+  if (!stormState.reports) return { rows: out, days: 0 };
+  const ticked = stormState.count ? (stormState.count.dates || []) : [];
+  let cutoff = null;
+  if (!ticked.length) {
+    const yrs = STORM_REPORT_YEARS[stormState.reports] || 5;
+    const d = new Date();
+    d.setFullYear(d.getFullYear() - yrs);
+    cutoff = d.toISOString().slice(0, 10);
+  }
+  let days = 0;
+  const seen = new Set();
+  for (const key of stormState.days.keys()) {
+    const date = key.slice(key.indexOf('|') + 1);
+    if (seen.has(date)) continue;
+    if (ticked.length ? !ticked.includes(date) : (cutoff && date < cutoff)) continue;
+    /* ALWAYS 'v2', NEVER THE CURRENT SOURCE, and this is not a detail. Ground reports live
+       ONLY in the radar day files — the MESH files carry contours and nothing else. Reading
+       them through stormDayHeld(date) picks up whatever library is showing, so on the size
+       estimate every day came back with no hailReports and the layer silently drew nothing.
+       Caught by photographing it, not by any check: the run said "0 reports drawn from 0
+       days" while the map looked like a working layer that simply had no reports nearby. */
+    const day = stormDayHeld(date, 'v2');
+    if (!day || !Array.isArray(day.hailReports)) continue;
+    seen.add(date);
+    days++;
+    for (const r of day.hailReports) {
+      if (!r || r.kind !== 'hail' || r.radarWorded) continue;
+      if (!Number.isFinite(r.mag) || !Number.isFinite(r.lon) || !Number.isFinite(r.lat)) continue;
+      out.push({ lon: r.lon, lat: r.lat, mag: r.mag, est: !!r.est, date });
+    }
+  }
+  return { rows: out, days };
+}
+
+/* THE FLOOR IS APPLIED HERE, and this is the most consequential line in the seam. Every
+   "did a storm day reach this ground" question runs through these polygons: the
+   at-least-two overlap, stormInPolys, the ticked count, the sentences. Left unfiltered, a
+   MESH day's swath would be its 7 mm outer band — the weakest estimate there is — and every
+   one of those answers would quietly be about that rather than about the core band Travis
+   ruled from photographs on 2026-08-06.
+   It is also where the speed comes from. The note this function used to carry, "the worst
+   day is 71 rings and 1,462 vertices", was a RADAR-ONLY fact and became false the moment a
+   second library arrived: MESH's worst day is 462 rings and 3,922 vertices unfiltered.
+   Filtered to the core band it is 84 and 512 — lighter than radar is today. */
 function stormPolysOf(day) {
   const out = [];
   if (!day || !day.features) return out;
+  const S = stormSrcOf(stormSrcOfDay(day));
   for (const f of day.features) {
+    if (stormBandOf(f, S) === null) continue;         // below this library's floor
     const g = f.geometry; if (!g) continue;
     const list = g.type === 'MultiPolygon' ? g.coordinates : [g.coordinates];
     for (const poly of list) {
@@ -8511,9 +8800,9 @@ function stormInOverlap(grid, lon, lat) {
    nobody would ever write on purpose, printed on a compliance surface at a door. */
 function stormTickedAt(lon, lat) {
   const c = stormState.count;
-  const days = c ? c.key.split('|') : [...stormState.ticked];
+  const days = c ? (c.dates || []) : [...stormState.ticked];
   let k = 0;
-  for (const d of days) if (stormClassAt(stormState.days.get(d), lon, lat)) k++;
+  for (const d of days) if (stormClassAt(stormDayHeld(d), lon, lat)) k++;
   return k;
 }
 
@@ -8629,7 +8918,65 @@ function stormSmooth(l) {
 /* Three states in one control. The words say which, because a coloured pill with no
    words is exactly the kind of thing that has to be learned, and this app's rule is that
    a stranger should be able to use it. */
-const STORM_SHOW_WORDS = ['⛈ Storms off', '⛈ Storms · big map', '⛈ Storms · both maps'];
+/* SHORTENED 2026-08-06 so the bar fits ONE ROW once the source chip sits beside it.
+   Photographed three ways before he ruled: as built the bar took three rows; shortening the
+   SOURCE chip to "Radar / Size / Both" still took three rows and cost clarity for nothing;
+   shortening THIS one put all three buttons on one row and let the source chip keep its full
+   words. The glyph and the bar around it carry the word "storm", so dropping it from the
+   label loses nothing a thumb needs. */
+const STORM_SHOW_WORDS = ['⛈ Storms off', '⛈ Big map', '⛈ Both maps'];
+/* HIS WORDS, RULED 2026-08-06. Both libraries are radar-derived, so "Radar estimated…" no
+   longer tells them apart: the detections layer is what radar SAW, the size estimate is what
+   radar ESTIMATED the size to be. Neither claims anything about the ground, which is the
+   whole reason the pair survives the compliance line.
+   No glyph on this chip. The storms chip carries ⛈ and a second weather glyph beside it
+   would read as decoration on a control whose entire job is to say which of two things is
+   being looked at. */
+const STORM_SRC_WORDS = ['Detections', 'Size estimate', 'Both layers'];
+
+/* THE GROUND REPORTS. A separate layer from either estimate, because it is a different KIND
+   of thing: radar and MESH are instruments guessing at an area, a report is a person saying
+   what they saw at a spot. It rides over whichever estimate is showing, or over neither.
+   Off / 2 years / 5 years, and whenever days are ticked the ticked days win over the range —
+   his ruling: the tick list is what he is working, so it should be what he sees. */
+const STORM_REPORT_WORDS = ['Reports off', 'Reports · 2yr', 'Reports · 5yr'];
+const STORM_REPORT_YEARS = [0, 2, 5];
+/* 550 m of radius: HALF the reports' own 0.01-degree precision, so the circle covers roughly
+   the ground the report could have come from. Never a pin. */
+const STORM_REPORT_R = 550;
+/* Quarter-inch steps, not a continuous ramp. The reports do not carry the precision a ramp
+   would imply, and the sizes he acts on are quarter-inch steps anyway. */
+function stormReportHue(mag) {
+  return mag >= 2 ? '#7f1d1d' : mag >= 1.75 ? '#b91c1c' : mag >= 1.25 ? '#ea580c'
+       : mag >= 1 ? '#d97706' : '#0891b2';
+}
+
+/* THE SENTENCE REGISTER. Travis picked this form from three drafts on 2026-08-06, and what
+   wins it is grammatical rather than stylistic: THE SUBJECT IS THE AREA. Not hail, not
+   radar, not a roof. "This area was inside radar's size estimate" states where a boundary
+   was drawn and nothing at all about what reached the ground, which is the form hardest for
+   a carrier to take apart. The negative keeps the same subject rather than flipping to a
+   denial about hail.
+   NO SIZE MAY APPEAR IN ANY OF THESE. Measured forward against 255 real ground reports, the
+   median report is one inch in EVERY band from 7 mm to 20 mm — the bands sort ground, not
+   size. The radar sentences keep their inch words because a radar class IS a size class.
+   Frozen literals, deliberately not in the label registry: a line holding a compliance
+   boundary must not be one he can edit later by accident. */
+const stormIsMesh = () => stormState.src === 'mesh';
+const STORM_SAY = {
+  overThisArea:  when => stormIsMesh()
+    ? `This area was inside radar's size estimate on ${when}. `
+    : `Radar estimated hail over this area on ${when}. `,
+  notOverThisArea: when => stormIsMesh()
+    ? `This area was not inside radar's size estimate on ${when}. `
+    : `Radar did not estimate hail over this area on ${when}. `,
+  overOutlined:  () => stormIsMesh()
+    ? `The outlined areas were inside radar's size estimate on that day. `
+    : `Radar estimated hail over the outlined areas on that day. `,
+  overShaded:    n => stormIsMesh()
+    ? `The shaded areas were inside radar's size estimate on 2 or more of the ${n} ticked days. `
+    : `Radar estimated hail over the shaded areas on 2 or more of the ${n} ticked days. `,
+};
 /* How far he has to move before the set of storms over him is worked out again. The
    swaths are kilometres across and the active set is ten of them, so recomputing on every
    position fix would be pure waste; 300 m is well inside the smallest feature in the
@@ -8640,6 +8987,32 @@ let stormLastAt = null;
 /* Read where it is used, not in loadSwitches — this is not a settings row, it has three
    states rather than two, and BACKUP_ONDEMAND is the list that says so. Anything that is
    not 1 or 2 is off, so a corrupted value fails to OFF rather than to a drawn layer. */
+/* Anything that is not 1 or 2 is Detections, so a corrupted value fails to the layer that
+   shipped rather than to one he has never seen. Same shape as stormShowLoad below, and for
+   the same reason: three states, not a settings row, named in BACKUP_ONDEMAND. */
+/* Anything that is not 1 or 2 is off, so a corrupted value fails to a layer he cannot be
+   surprised by — the same rule the other two chips follow. */
+function stormReportsLoad() {
+  const raw = Number(localStorage.getItem('stormReports'));
+  stormState.reports = (raw === 1 || raw === 2) ? raw : 0;
+  return stormState.reports;
+}
+
+function stormSrcLoad() {
+  const raw = Number(localStorage.getItem('stormSrc'));
+  stormState.srcMode = (raw === 1 || raw === 2) ? raw : 0;
+  stormSrcApply();
+  return stormState.srcMode;
+}
+/* THE ONLY PLACE THE MODE BECOMES A SOURCE. In 'both', MESH is the one that is fetched,
+   keyed, counted and spoken about, and radar is drawn underneath as an outline and nothing
+   else — so src is 'mesh' in modes 1 AND 2, and only under tells them apart. Putting
+   this in one function is what stops the two from ever being set inconsistently. */
+function stormSrcApply() {
+  stormState.src   = stormState.srcMode === 0 ? 'v2' : 'mesh';
+  stormState.under = stormState.srcMode === 2 ? 'v2' : null;
+}
+
 function stormShowLoad() {
   const raw = Number(localStorage.getItem('stormShow'));
   stormState.show = (raw === 1 || raw === 2) ? raw : 0;
@@ -8651,6 +9024,16 @@ function syncStormBar() {
   bar.classList.toggle('off', !stormState.show);
   const btn = $('stormCycle');
   if (btn) btn.textContent = STORM_SHOW_WORDS[stormState.show] || STORM_SHOW_WORDS[0];
+  const sbtn = $('stormSrcBtn');
+  if (sbtn) {
+    sbtn.textContent = STORM_SRC_WORDS[stormState.srcMode] || STORM_SRC_WORDS[0];
+    sbtn.classList.toggle('hide', !stormState.show);
+  }
+  const rbtn = $('stormReportBtn');
+  if (rbtn) {
+    rbtn.textContent = STORM_REPORT_WORDS[stormState.reports] || STORM_REPORT_WORDS[0];
+    rbtn.classList.toggle('hide', !stormState.show);
+  }
   const txt = $('stormTxt'); if (!txt) return;
   const pick = $('stormPick'), clr = $('stormTickClear');
   /* N IS THE FIGURE THE MAP CAN SUPPORT, WHICH IS NOT ALWAYS THE SIZE OF THE TICKED SET.
@@ -8687,9 +9070,27 @@ function syncStormBar() {
      `failed` is committed state like `count`: it is written only by Done, and emptied by
      Clear, by the last untick and by the layer going off, so no pending tick reaches here. */
   if (stormState.failed.length) {
-    const gone = stormState.failed.map(d => stormNiceDate(d)).join(', ');
-    txt.textContent = `${gone} could not be fetched, so nothing is shaded yet. `
-      + `Untick ${stormState.failed.length === 1 ? 'it' : 'them'} or try again with signal.`;
+    /* A DAY THAT DOES NOT EXIST IS NOT A DAY THAT DID NOT DOWNLOAD, and telling him to "try
+       again with signal" for one that will never exist is a lie the app used to tell. The
+       size estimate has no file for 2021-09-28 by decision, and its manifest says so. */
+    const miss = stormState.meshMissing || new Set();
+    const absent = stormIsMesh() ? stormState.failed.filter(d => miss.has(d)) : [];
+    const unfetched = stormState.failed.filter(d => !absent.includes(d));
+    const parts = [];
+    if (absent.length) {
+      parts.push(`${absent.map(d => stormNiceDate(d)).join(', ')} `
+        + `${absent.length === 1 ? 'has' : 'have'} no size estimate. The weather `
+        + `${absent.length === 1 ? 'file' : 'files'} for that day `
+        + `${absent.length === 1 ? 'is' : 'are'} missing from the archive, so `
+        + `${absent.length === 1 ? 'it' : 'they'} cannot be drawn on this layer. `
+        + `${absent.length === 1 ? 'It is' : 'They are'} still there on Detections.`);
+    }
+    if (unfetched.length) {
+      parts.push(`${unfetched.map(d => stormNiceDate(d)).join(', ')} could not be fetched, `
+        + `so nothing is shaded yet. Untick ${unfetched.length === 1 ? 'it' : 'them'} or `
+        + `try again with signal.`);
+    }
+    txt.textContent = parts.join(' ');
     return;
   }
   if (N) {
@@ -8707,8 +9108,8 @@ function syncStormBar() {
          negation sits on the estimate, so nothing is ever said about the ground, the roof
          or the address. */
       stand = (N === 1 && !k)
-        ? `Radar did not estimate hail over this area on ${when}. `
-        : `Radar estimated hail over this area on ${when}. `;
+        ? STORM_SAY.notOverThisArea(when)
+        : STORM_SAY.overThisArea(when);
     }
     /* THE TWO SENTENCES MUST NEVER BOTH BE PRINTED, and until review caught it they were.
        Zoomed in and standing outside the shaded ground, the bar read a denial and a claim
@@ -8718,7 +9119,7 @@ function syncStormBar() {
        holds a compliance boundary cannot be a line he can edit later. */
     if (stand) { txt.textContent = stand + STORM_TAIL; return; }
     if (N === 1) {
-      txt.textContent = `1 day ticked. Radar estimated hail over the outlined areas on that day. `
+      txt.textContent = `1 day ticked. ` + STORM_SAY.overOutlined()
         + `Tick one more to shade ground under 2 or more of them. ` + STORM_TAIL;
       return;
     }
@@ -8727,7 +9128,7 @@ function syncStormBar() {
        principle the pair engine's "they do not cross anywhere" branch held, carried
        forward. Ruled sentence if and only if there is a traced shape on the map. */
     txt.textContent = (stormState.count && stormState.count.geo)
-      ? `Radar estimated hail over the shaded areas on 2 or more of the ${N} ticked days. ` + STORM_TAIL
+      ? STORM_SAY.overShaded(N) + STORM_TAIL
       : `${N} days ticked. No ground was under 2 or more of them. Each ticked day is outlined on the map. ` + STORM_TAIL;
     return;
   }
@@ -8794,6 +9195,13 @@ async function refreshStormLayer(force) {
   const set = await stormActiveSet(p.lon, p.lat);
   /* He may have switched it off, or walked on, while the day files were coming down. */
   if (!stormState.show) return;
+  /* BOTH-MODE MEANS BOTH FILES. The active set was chosen and downloaded under src; the
+     outlines underneath need the same dates from the other library. Fetched here rather
+     than inside drawStormUnder so that drawing stays synchronous and a slow network cannot
+     leave half an answer on the map. A day the second library does not have is simply not
+     outlined — stormDayHeld returns undefined and the loop skips it — which is the correct
+     behaviour for 2021-09-28, the one date MESH has no file for. */
+  if (stormState.under) for (const d of set) await loadStormDay(d, stormState.under);
   stormState.active = set; stormLastAt = at;
   stormState.miniAlpha = stormWashAt(p.lon, p.lat);
   await drawStormLayer();
@@ -8895,7 +9303,7 @@ function stormPickRowWords(s) {
   }
   if (s.n125 > 0) bits.push(`${s.n125} large`);
   if (s.hailReportsClean > 0) bits.push('a report was filed that day');
-  if (!stormState.days.has(s.date)) bits.push(`not on this phone · ${stormKb(s.gzip || s.bytes || 0)}`);
+  if (!stormDayHas(s.date)) bits.push(`not on this phone · ${stormKb(s.gzip || s.bytes || 0)}`);
   return bits.join(' · ');
 }
 
@@ -9048,7 +9456,8 @@ async function stormApplyTicked() {
   /* ONE DIALOG, AND IT COUNTS ONLY WHAT IS MISSING. Days already on this phone are not
      counted and not mentioned, and with nothing missing there is NO dialog at all — a
      "Download 0 storm day files?" at a door is the absurd version of this. */
-  const need = [...stormState.ticked].filter(d => !stormState.days.has(d));
+  if (stormIsMesh()) await loadMeshMissing();
+  const need = [...stormState.ticked].filter(d => !stormDayHas(d));
   if (need.length) {
     const bytes = need.reduce((t, d) => {
       const s = ix && ix.storms.find(x => x.date === d);
@@ -9070,7 +9479,7 @@ async function stormApplyTicked() {
      function that knows the restore rule. */
   if (!stormState.ticked.size) { await stormAfterTickChange(); return; }
   const dates = [...stormState.ticked].sort((a, b) => (a < b ? 1 : -1));   /* newer first */
-  stormState.failed = dates.filter(d => !stormState.days.get(d));
+  stormState.failed = dates.filter(d => !stormDayHeld(d));
   if (stormState.failed.length) {
     /* The map must not keep showing the LAST answer under words about this one. The set
        itself is NOT emptied: he needs the failed day on the list to untick it. */
@@ -9102,12 +9511,21 @@ async function stormApplyTicked() {
      than rebuilt from an equal one, so nothing downstream can tell a re-press from a
      no-op: same geo handed to Leaflet, same grid read by `stormInOverlap`. The signature is
      the sorted set, so one tick either way misses it and the answer is rebuilt. */
-  const key = [...stormState.ticked].sort().join('|');
+  /* THE SOURCE IS PART OF THE SIGNATURE. Without it, switching library with the same days
+     ticked would HIT this cache and hand back the other instrument's geometry as the new
+     answer — right shape, wrong layer, and no error anywhere. */
+  const key = stormState.src + '#' + [...stormState.ticked].sort().join('|');
   const held = (stormState.count && stormState.count.key === key) ? stormState.count : null;
   if (!held) {
-    const r = stormOverlap(dates.map(d => stormState.days.get(d)));
+    const r = stormOverlap(dates.map(d => stormDayHeld(d)));
     if (seq !== stormTickSeq) return;
-    stormState.count = { key, n: dates.length, km2: r.km2, geo: r.geo, grid: r.grid };
+    /* `dates` AND `src` ARE HELD, NOT RECOVERED FROM THE KEY. Two places used to split the
+       key on '|' to get the dates back. That worked only while the key WAS the dates, and
+       it broke silently the moment the source was prefixed to it: the first date came back
+       as 'v2#2026-07-28', its lookup missed, and one committed day lost its outline and
+       stopped counting toward the sentence on the bar. Nothing threw. Hold the values. */
+    stormState.count = { key, src: stormState.src, dates: dates.slice(),
+                         n: dates.length, km2: r.km2, geo: r.geo, grid: r.grid };
   }
   /* The ticked set replaces the wash, so the drawn set is these days and nothing else. */
   stormState.active = dates;
@@ -10487,8 +10905,8 @@ document.querySelectorAll('.dsecHead[data-msec]').forEach(b => {
 /* ---- what version is actually on the phone ----
    Matches the service worker cache name, so "did the update land" is answerable by
    looking rather than guessing. */
-const BUILD_VERSION = 'v36';
-const BUILD_DATE = '5 August 2026';
+const BUILD_VERSION = 'v37';
+const BUILD_DATE = '6 August 2026';
 function renderVersionStamp() {
   const el = $('versionStamp'); if (!el) return;
   el.className = 'small';
@@ -11488,7 +11906,7 @@ function stormAtPoint(lon, lat) {
     const y = s.date.slice(0, 4);
     const e = byYear[y] || (byYear[y] = { hit: 0, checked: 0, total: 0 });
     e.total++;
-    const day = stormState.days.get(s.date);
+    const day = stormDayHeld(s.date);
     if (!day) { absent.push(s); continue; }
     e.checked++;
     const cls = stormClassAt(day, lon, lat);
@@ -11544,7 +11962,7 @@ function renderStormPanel(v) {
     const cold = stormCandidates(v.lon, v.lat)
       .sort((a, b) => (a.date < b.date ? 1 : -1))
       .slice(0, STORM_PANEL_AUTO)
-      .filter(s => !stormState.days.has(s.date));
+      .filter(s => !stormDayHas(s.date));
     if (cold.length) {
       stormPanelBusy.add(v.id);
       el.innerHTML = `<div class="rhead">Storms over this area</div>`
@@ -12372,6 +12790,37 @@ $('stormCycle').onclick = async () => {
   buzz(10);
   syncStormBar();
   await refreshStormLayer(true);
+};
+/* ONE TAP MOVES IT ON ONE STEP. Written to storage on the tap, like the storms chip, because
+   this control IS the setting and there is nowhere else to recover it from.
+   THE COMMITTED ANSWER IS REBUILT, NOT REUSED. Switching library with days ticked must not
+   leave the old library's shapes on the map under the new library's words, and it must not
+   silently reuse the cached count — which is why stormState.count.key carries the source.
+   count is nulled BEFORE the rebuild so that a rebuild which cannot download leaves
+   NOTHING committed, the same rule a failed Done already follows. stormApplyTicked owns the
+   count-and-ask dialog, so switching cannot download behind his back either. */
+$('stormSrcBtn').onclick = async () => {
+  stormState.srcMode = (stormState.srcMode + 1) % 3;
+  localStorage.setItem('stormSrc', String(stormState.srcMode));
+  stormSrcApply();
+  buzz(10);
+  syncStormBar();
+  if (stormState.ticked.size) {
+    stormState.count = null;
+    await stormApplyTicked();
+  } else {
+    stormLastAt = null;                 /* force the wash to be rebuilt from the new library */
+    await refreshStormLayer(true);
+  }
+};
+/* Redraws only. Nothing downloads: the reports are already inside day files on the phone,
+   which is the whole reason this layer is cheap. */
+$('stormReportBtn').onclick = async () => {
+  stormState.reports = (stormState.reports + 1) % 3;
+  localStorage.setItem('stormReports', String(stormState.reports));
+  buzz(10);
+  syncStormBar();
+  await drawStormLayer();
 };
 $('stormPick').onclick = async () => {
   buzz(8);
@@ -16960,7 +17409,7 @@ function loadSettings() {
 const BACKUP_SWITCHES = ['snapMax','hubSpan','trackDetail','hubSat','headUp','rentalMark','wake'];
 /* Not held in memory at all — read straight from storage at the moment they are used, so
    a restore takes effect without anything having to reload them. */
-const BACKUP_ONDEMAND = ['menuSecs', 'quietCloses', 'stormShow'];
+const BACKUP_ONDEMAND = ['menuSecs', 'quietCloses', 'stormShow', 'stormSrc', 'stormReports'];
 /* Read back by applyLabels(), which renderSwitchUi() runs at boot and again at the end of
    a restore. Neither owned by loadSwitches nor read fresh at the point of use, so it is
    named here — otherwise the check that every backed-up key has something reading it back

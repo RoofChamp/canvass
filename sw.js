@@ -4,7 +4,7 @@
    Parcel queries are network-first with a cache fallback, so a street you
    have already walked still shows its lot lines in a dead zone. */
 
-const SHELL = 'canvass-shell-v36';
+const SHELL = 'canvass-shell-v37';
 const TILES = 'canvass-tiles-v1';
 const DATA  = 'canvass-data-v1';
 /* STORM DAY FILES AND THEIR INDEX. Its own cache, and both reasons are load-bearing.
@@ -336,11 +336,22 @@ const isParcelQuery = u => /\/(MapServer|FeatureServer)\/\d+\/query/i.test(u);
    below, so without it any third-party address that happened to contain the word would be
    pulled into the storm cache and answered from it for ever.
    Matching on the PATH and never on a query string is the whole design, and the note below
-   explains why it has to be. */
+   explains why it has to be.
+
+   THE FOLDER LIST IS NOT A WILDCARD, ON PURPOSE. It reads `v\d+|mesh` rather than
+   `[^/]+` so that a folder nobody has thought about cannot quietly inherit the storm
+   cache's lifecycle. Adding a library means adding its name here, deliberately, once.
+
+   `mesh` was added 2026-08-06. Before it, `storms/mesh/` failed this test, fell through
+   to `isShellScope` — which says yes to anything same-origin — and was written into
+   `canvass-shell-vNN`. That looks fine and works fine right up until the next deploy
+   bumps the shell name, at which point activate deletes the lot. The MESH library is
+   223 files the phone downloads over cell signal; losing it on every deploy would have
+   been invisible and expensive. */
 const isStormFile = u => {
   let url;
   try { url = new URL(u); } catch (err) { return false; }
-  return url.origin === self.location.origin && /\/storms\/v\d+\//.test(url.pathname);
+  return url.origin === self.location.origin && /\/storms\/(v\d+|mesh)\//.test(url.pathname);
 };
 
 /* What a storm file that is not on the phone and cannot be fetched comes back as.
