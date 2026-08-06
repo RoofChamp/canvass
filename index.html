@@ -530,9 +530,29 @@ label.f.hasq{display:inline-block;margin:12px 0 5px;vertical-align:middle}
 .sheetFoot .primary{margin-top:0}
 /* Save has to sit under the thumb, so this sheet is a fixed-height column with a
    scrolling middle rather than one that grows to fit its content. The body drops
-   its own bottom padding because the footer now pays the safe-area inset. */
+   its own bottom padding because the footer now pays the safe-area inset.
+   #spSheet grew a .sheetFoot of its own this round, for the same reason: Done is the
+   only commit in the picker and it must be reachable without scrolling back. It needs
+   no height rule — .sheetBody is already a capped flex column and .sheetScroll is an
+   overflow:auto box, so the list shrinks and the footer keeps its size. */
 #detailSheet .sheetBody{height:92%;padding-bottom:0}
 #detailSheet .sheetScroll{flex:1 1 auto;min-height:0}
+/* ---------- the storm day tick list ----------
+   SCOPED TO #spSheet, EVERY RULE. The shared 44px selector group below is used by three
+   unrelated screens and is not widened to reach this one. The row keeps its `.ghost`
+   class so anything already keying on that still matches; these rules only add.
+   THE MARK IS A REAL BOX THAT FILLS IN, not a shade change on the row. A row that only
+   changes colour is a state a stranger has to be taught, and the tick target is the
+   44px square rather than a press-and-hold anywhere on the row. */
+#spSheet .spRow{display:flex;align-items:center;gap:10px;text-align:left;
+  padding:9px 11px;margin-top:6px;min-height:52px}
+#spSheet .spRow .spTk{width:44px;height:44px;flex:0 0 auto;border-radius:10px;
+  border:1.5px solid var(--line);background:var(--bg);display:flex;align-items:center;
+  justify-content:center;font-size:18px;font-weight:800;color:transparent}
+#spSheet .spRow[aria-checked="true"]{border-color:#2563eb}
+#spSheet .spRow[aria-checked="true"] .spTk{background:#2563eb;border-color:#2563eb;color:#fff}
+#spSheet .spRow .spTx{flex:1;min-width:0;line-height:1.45}
+#spSheet .spRow .spSub{font-weight:600;opacity:.8}
 /* 44px is the size a thumb reliably hits. Everything tappable clears it. */
 .chip,.x,.mini-btn,.mbtn,.tbtn{min-height:44px;display:inline-flex;align-items:center;justify-content:center}
 select{min-height:44px}
@@ -1062,9 +1082,12 @@ select{min-height:44px}
     <button class="mbtn" id="stormCycle">⛈ Storms off</button>
     <!-- THE SECOND DOOR INTO THE PICKER. Words on it, not an icon, and it only appears
          once the layer is on — a button that opens a list of storms while the storm layer
-         is switched off is a button with nothing behind it. -->
-    <button class="mbtn hide" id="stormPick">Pick two days</button>
-    <button class="mbtn hide" id="stormPairClear">Clear</button>
+         is switched off is a button with nothing behind it. It stays reachable while an
+         answer is on the screen: reopening the list to add or remove a day without
+         starting again is the whole point of a tick list, so this and Clear now sit on
+         the bar together whenever anything is ticked. -->
+    <button class="mbtn hide" id="stormPick">Storm days</button>
+    <button class="mbtn hide" id="stormTickClear">Clear</button>
     <span id="stormTxt"></span>
   </div>
   <div id="eraseBar" class="hide">
@@ -1450,23 +1473,28 @@ select{min-height:44px}
   </div>
 </div>
 
-<!-- ============ pick two storm days ============
+<!-- ============ tick the storm days ============
      A `.sheet`, not a FULL_VIEW. The full views are the three working screens and they
-     close the menu on the way in; this is a list you pick from and come straight back out
+     close the menu on the way in; this is a list you tick from and come straight back out
      of, which is what `.sheet` is for and what `#mxSheet` already is.
      Every row is built in code from the manifest. Writing 224 days into the markup would
-     be a second copy of the library, and the library grows every week. -->
+     be a second copy of the library, and the library grows every week.
+     THE FOOTER IS THE COMMIT. Ticking a row changes that row and nothing else; Done is the
+     only thing that asks, downloads, computes or draws. So it sits under the thumb, and it
+     is hidden until at least one day is ticked, because a Done with nothing ticked is a
+     button that either does nothing or throws the map away. -->
 <div id="spSheet" class="sheet hide">
   <div class="sheetBody">
-    <div class="sheetHead"><h2 id="spTitle">Pick the first day</h2><button class="x" data-close="spSheet">Close</button></div>
+    <div class="sheetHead"><h2 id="spTitle">Tick the storm days</h2><button class="x" data-close="spSheet">Close</button></div>
     <div class="sheetScroll">
       <div class="small" id="spWhere" style="margin-bottom:10px"></div>
       <!-- Amber, and the same shape as #mxTicked: the one line on this screen that says
            the screen has changed under him. -->
-      <div class="small hide" id="spFirst" style="margin-bottom:10px;color:#f59e0b"></div>
+      <div class="small hide" id="spTicked" style="margin-bottom:10px;color:#f59e0b"></div>
       <div id="spList"></div>
       <div class="small hide" id="spNone" style="margin-top:10px"></div>
     </div>
+    <div class="sheetFoot hide" id="spFoot"><button class="primary" id="spDone">Done</button></div>
   </div>
 </div>
 
@@ -6977,12 +7005,34 @@ async function openMap() {
   syncMapBtns();
   /* Read from storage on every open rather than once at boot: the map can be opened from
      seven places and a restore can rewrite the key underneath any of them. */
-  /* NOT WHILE A PAIR IS UP. `stormShowLoad` reads the saved chip setting back off the
+  /* NOT WHILE DAYS ARE TICKED. `stormShowLoad` reads the saved chip setting back off the
      phone, and if that says off it takes `stormState.show` to 0 — which sends
-     refreshStormLayer down its off branch and throws away a pair he has just built,
+     refreshStormLayer down its off branch and throws away a set he has just built,
      download and all. That is exactly what happened when the picker was opened from a
-     house panel with storms switched off. The pair owns the layer while it is up. */
-  if (!stormState.pair) stormShowLoad();
+     house panel with storms switched off. The committed answer owns the layer while up.
+     COMMITTED, NOT TICKED. `stormState.ticked` is the pending selection inside the sheet
+     and it changes under his thumb; `stormState.count` is what was actually computed and
+     drawn at Done. Everything on the MAP reads `count`. Reading the pending set here would
+     let a half-made selection he never committed suppress his own saved chip setting.
+     BUT THIS DOOR IS NOT A DRAWING DECISION, AND THAT IS THE DISTINCTION. Everything that
+     DRAWS, and every sentence the bar prints, reads `count` — that is what stops the app
+     naming a figure its own map does not support. This line decides something else: whether
+     to overwrite the layer state in memory from a setting on the phone. v35 asked one
+     question here — "is the picker holding the layer?" — and it answered with one field,
+     because a FAILED pair was still a pair object: the door held, and the failure kept the
+     screen.
+     That splits faithfully into TWO fields here and not one: `count` is a Done that
+     worked, `failed` is a Done that did not. Both are committed outcomes and both must
+     hold this door. `ticked` must NOT — it is a selection still being made, and gating on
+     it was measured to cost a real door: cold start, storms saved to both maps, Add day
+     from a house panel, Close, open the map — the door was suppressed by a pending tick,
+     `stormShowLoad` never ran, `show` stayed at its declared 0, and
+     `refreshStormLayer`'s off branch emptied the set. The chip then read "Storms off"
+     against a phone that said "both maps", and the next tap of it would have written a
+     setting he never chose. It also did not fix what it was added for: with storms saved
+     off, `show` is already 0, so the off branch empties the set whether this line ran or
+     not. Fixed properly by the failed branch below owning the layer. */
+  if (!stormState.count && !stormState.failed.length) stormShowLoad();
   syncStormBar();
   refreshStormLayer(true);
 }
@@ -7794,12 +7844,25 @@ const stormState = {
   active: [],         // the dates currently drawn
   onPhone: 0,         // how many day files are actually here, for the honesty line
   indexFailed: false,
-  /* THE PICKED PAIR. null, or { a, b, km2, geo, grid } — the two dates newest first, the
-     overlap in square kilometres, the shape to draw and the grid to ask "am I in it?".
+  /* THE TICKED DAYS. A Set of date strings with no order, no first and no second. It is
+     NEVER set to null — every `.size` read downstream would throw — so it is emptied with
+     `.clear()`, and every test of "is anything ticked" reads `.size`, because AN EMPTY SET
+     IS TRUTHY and a rename of the old `if (pair)` sites would have made all fourteen of
+     them permanently true: not a crash, a picker stuck for ever.
      Deliberately NOT saved and deliberately NOT in BACKUP_LOCAL: his ruling is that the
-     app opens cleared, because a pair is a conversation at one door and not a setting. */
-  pair: null,
-  pick: null,         // the first day chosen while the sheet is open, before a second
+     app opens cleared, because a ticked set is a conversation at one door, not a setting.
+     `count` null, or { key, n, km2, geo, grid } — see stormApplyTicked. `geo === null`
+             means no ground is under two or more, which is a real state with its own
+             sentence, not an error. `grid` is EXACTLY the shape the pair engine returned,
+             { box, dLon, dLat, nx, ny, on }, so "am I standing in it?" stays one lookup
+             and the small map can ask it on every frame for nothing. There is no second
+             lattice held anywhere: the engine anchors its own on the ticked days, the way
+             v35 anchored one on a pair.
+     `failed` the ticked dates whose day file could not be fetched, as plain strings, so
+             the bar can name them and he can untick them. */
+  ticked: new Set(),
+  count: null,
+  failed: [],
   /* Set when the picker was opened from a house panel rather than from the bar. It holds
      that house's position, so the list offers the days that reach THAT ADDRESS rather
      than the days that reach whatever the map happens to be showing behind the sheet —
@@ -7972,17 +8035,31 @@ const STORM_ZOOM_FILL_MAX = 15;
 const stormFillOn = () => !window._map || window._map.getZoom() <= STORM_ZOOM_FILL_MAX;
 
 /* ONE fill, not ten, so this is not the stacked wash and does not take the wash's quarter
-   strength. Photographed over real aerial imagery before he was asked to rule on it. */
-const STORM_PAIR_FILL = 0.34;
+   strength. Photographed over real aerial imagery before he was asked to rule on it.
+   HIS RULING THIS ROUND: ground under TWO OR MORE ticked days takes this one shade. There
+   are no bands and no second strength. Ground under exactly one ticked day is outlined
+   and not filled, at every N. */
+const STORM_TICK_FILL = 0.34;
 
-/* THE PICKED PAIR ON THE BIG MAP. Both days as thin outlines and NO fill of their own,
-   the overlap as the only fill on the screen — his rule, in his order: outlines
-   everywhere, fill only where the fill IS the answer. */
-function drawStormPair() {
-  const p = stormState.pair;
-  if (!p) return;
+/* THE COMPLIANCE TAIL. ONE constant and ONE copy of the sentence in the whole file: a
+   second, divergent copy of a line that holds a legal boundary is the fault, not the fix.
+   Deliberately not in the label registry — it cannot be a line he can edit later. */
+const STORM_TAIL = 'This describes storms over areas.';
+
+/* THE TICKED DAYS ON THE BIG MAP. Every ticked day as a thin outline and NO fill of its
+   own, the ground under two or more of them as the only fill on the screen — his rule, in
+   his order: outlines everywhere, fill only where the fill IS the answer. */
+function drawStormTicked() {
+  /* THE COMMITTED DAYS, NOT THE TICKED ONES. Ticking is a selection being made inside a
+     sheet; it downloads nothing and draws nothing until he presses Done. So the outlines
+     are the days in `stormState.count`, the same days the fill was computed from, and the
+     two can never describe different sets. Driving this off `stormState.ticked` would draw
+     an outline for a day whose file has not been fetched, and leave the bar naming a count
+     the shapes underneath it do not support. */
+  const c = stormState.count;
+  if (!c) return;
   const feats = [];
-  for (const d of [p.a, p.b]) {
+  for (const d of c.key.split('|')) {
     const day = stormState.days.get(d);
     if (!day || !day.features) continue;
     for (const f of day.features) feats.push(f);
@@ -7994,25 +8071,31 @@ function drawStormPair() {
                       fill: false, interactive: false }),
     }).addTo(window._map);
   }
-  if (!p.geo) return;
-  /* No stroke on the fill. Every point of its edge already lies on one of the two
-     outlines above, so an outline here would only draw a second line on top of a line. */
-  window._stormFillLayer = L.geoJSON(p.geo, {
+  /* NO FILL LAYER AT ALL WHEN NOTHING IS UNDER TWO OR MORE. An empty geometry handed to
+     Leaflet is a layer on the map drawing nothing, which the map cannot tell apart from a
+     shape that failed to trace. */
+  if (!c.geo) return;
+  /* No stroke on the fill. Every point of its edge already lies on one of the outlines
+     above, so an outline here would only draw a second line on top of a line. */
+  window._stormFillLayer = L.geoJSON(c.geo, {
     pane: 'storm', interactive: false,
     style: () => ({ pane: 'storm', stroke: false, fillColor: STORM_HUE,
-                    fillOpacity: stormFillOn() ? STORM_PAIR_FILL : 0, interactive: false }),
+                    fillOpacity: stormFillOn() ? STORM_TICK_FILL : 0, interactive: false }),
   }).addTo(window._map);
 }
 
 /* Zoom is not a pan. The layer is still never rebuilt while he drags the map; this only
-   re-styles the one fill, and only when the zoom has actually crossed the line. */
+   re-styles the one fill, and only when the zoom has actually crossed the line.
+   STILL A SINGLE-VALUE RESTYLE, and only because there is still exactly ONE fill layer on
+   the screen. If bands ever come back this line is the trap: setStyle on a group sets
+   every child to one value and would flatten them all to one strength. */
 let stormFillWas = null;
 function stormZoomWatch() {
   const now = stormFillOn();
   if (now === stormFillWas) return;
   stormFillWas = now;
   if (window._stormFillLayer) {
-    window._stormFillLayer.setStyle({ fillOpacity: now ? STORM_PAIR_FILL : 0 });
+    window._stormFillLayer.setStyle({ fillOpacity: now ? STORM_TICK_FILL : 0 });
   }
   syncStormBar();
 }
@@ -8021,7 +8104,7 @@ async function drawStormLayer() {
   if (!window.L || !window._map) return;
   clearStormLayer();
   stormFillWas = stormFillOn();
-  if (stormState.pair) { drawStormPair(); return; }
+  if (stormState.count) { drawStormTicked(); return; }
   if (!stormState.show || !stormState.active.length) return;
   const feats = [];
   for (const d of stormState.active) {
@@ -8129,8 +8212,29 @@ function stormPolysBox(polys) {
   return [x0, y0, x1, y1];
 }
 
-/* THE ANSWER. `grid` is kept so that "am I standing in it?" is a lookup rather than
-   another ring test, which is what lets drawMini ask it every frame for nothing.
+/* stormIntersect — THE PAIR ENGINE, FROZEN AS v35 SHIPPED IT. DEAD CODE, KEPT
+   DELIBERATELY, NOT TO BE DELETED.
+   Nothing in the app calls this any more. The ticked set is answered by stormOverlap
+   below, which IS this body generalised from a pair to N days on the same adaptive
+   lattice: the box becomes the union of the pairwise box intersections, the point test
+   becomes "how many of the ticked days contain this point, stop at two", and the prune
+   becomes "at least two of the boxes reach this cell". Nothing else moved.
+
+   SO THE GATE IS EQUALITY, NOT A TOLERANCE, and that is the whole reason this copy stays.
+   At exactly two ticked days the generalisation collapses back onto these lines — the
+   same Math.max / Math.min box, so the same floats, so the same lattice, and the same
+   short-circuit order in the same two tests. stormOverlap([A, B]) and stormIntersect(A, B)
+   must therefore agree by `===` on square kilometres, on cell count, on every byte of the
+   grid and on the traced shape, for every day in the library that overlaps another at all.
+   Not close. Identical. ONE FLIPPED BIT REDDENS IT. An earlier design of this round had a
+   second lattice here and could only offer a percentage band; the band was rejected on
+   measurement, and a number that has to be argued about is exactly what a gate must not
+   have. This is also what makes his ruling — ticking two days looks like the app looks
+   now — a measurement rather than a promise.
+   IT IS DELETED ONLY IN A LATER ROUND, TOGETHER WITH THAT CHECK, never on its own.
+   Deleting it alone turns the check into an absence check whose subject is gone — green
+   for ever, and it can never appear in a failure list again.
+   `grid` is kept so that "am I standing in it?" is a lookup rather than another ring test.
    `opts` exists for the tests, which run the same code at four resolutions; the app
    never passes it. */
 function stormIntersect(dayA, dayB, opts) {
@@ -8223,13 +8327,194 @@ function stormIntersect(dayA, dayB, opts) {
   return { km2, cells, geo: stormTraceGrid(grid), grid };
 }
 
-/* IS HE STANDING IN IT — a lookup, so the small map can ask on every frame for nothing. */
-function stormInIntersect(grid, lon, lat) {
+/* ====================================================== THE OVERLAP ENGINE, N DAYS ====
+   Round 25. THIS IS stormIntersect ABOVE, LINE FOR LINE, generalised from a pair of days
+   to N ticked days on the same adaptive lattice. It is not a second engine and it must
+   never be allowed to become one: two lattice conventions answering one question is this
+   project's most expensive fault class, and it is why the shared-grid raster engine was
+   measured, written, and then left in .test/ as an oracle instead of shipped here.
+
+   WHAT CHANGED, AND IT IS EXACTLY THREE THINGS.
+
+   1. THE BOX is the union over pairs (i < j) of (box_i intersected with box_j), skipping
+      any pair whose boxes miss. Ground under two or more days can only lie where some two
+      of them both reach, so this is the tightest box that cannot clip the answer. At two
+      days there is one such pair and it is computed by the same Math.max / Math.min calls
+      the pair engine makes, so the same floats, so the same lattice.
+
+   2. THE POINT TEST counts how many of the days contain the point and marks the cell at
+      TWO OR MORE — stopping the moment it reaches two, and stopping the moment two has
+      become unreachable. At two days that collapses to the pair engine's first test, then
+      its second, with the second skipped when the first says no. Its && , exactly.
+
+   3. THE PRUNE becomes "at least TWO of the days' boxes reach this cell".
+      THIS IS THE LINE THE ROUND DIES ON IF IT IS GOT WRONG. Carried across from the pair
+      engine as "EVERY ticked day's box must reach this cell", it erases 89 to 100% of the
+      live area the moment the ticked days are not all stacked on each other: bare ground
+      drawn over streets that several of the ticked days really did cover, with no error
+      and nothing on the screen to say so. Two is the answer's own threshold and is the
+      only count that belongs here. The suite mutates this line to "all" deliberately, and
+      if that mutation survives, the round does not ship.
+
+   EVERYTHING ELSE IS UNTOUCHED AND IS v35's OWN: the coarse-then-fine two-pass structure,
+   the uniform-interior fill, the grazing fix the pair engine's comment above explains at
+   length (found in review, cost real money, and these are literally those lines), the
+   row-by-row mPerDegLon(lat) summation, and stormTraceGrid.
+
+   THE ACCEPTANCE GATE IS EQUALITY. At two ticked days this returns byte for byte what
+   v35 returned — square kilometres, cell count, grid bytes and traced shape, all by ===,
+   across every overlapping pair in the library and across the nastiest slivers in it. Any
+   edit that breaks that is a defect however well it reads.
+
+   NOTHING IS DUPLICATED. stormPolysOf, stormInPolys, stormBoxHits, stormPolysBox and
+   stormTraceGrid above are reused as they stand, so a point on a boundary is decided the
+   same way by the lot lookup, by stormClassAt, by the pair engine and by this.
+
+   opts exists for the tests, which run the same code at four resolutions, exactly as the
+   pair engine's does. The app never passes it. */
+function stormOverlap(days, opts) {
+  const COARSE_M = (opts && opts.coarseM) || STORM_COARSE_M;
+  const FINE_PER = (opts && opts.finePer) || STORM_FINE_PER;
+  const empty = { km2: 0, cells: 0, geo: null, grid: null };
+  const P = [];
+  for (const d of (days || [])) { const p = stormPolysOf(d); if (p.length) P.push(p); }
+  if (P.length < 2) return empty;                  /* fewer than two days with any shape */
+  const N = P.length;
+
+  const boxes = P.map(stormPolysBox);
+  let box = null;
+  for (let i = 0; i < N; i++) {
+    for (let j = i + 1; j < N; j++) {
+      const ba = boxes[i], bb = boxes[j];
+      const bx = [Math.max(ba[0], bb[0]), Math.max(ba[1], bb[1]),
+                  Math.min(ba[2], bb[2]), Math.min(ba[3], bb[3])];
+      if (bx[0] >= bx[2] || bx[1] >= bx[3]) continue;        /* these two boxes miss */
+      if (!box) box = bx;
+      else {
+        if (bx[0] < box[0]) box[0] = bx[0];
+        if (bx[1] < box[1]) box[1] = bx[1];
+        if (bx[2] > box[2]) box[2] = bx[2];
+        if (bx[3] > box[3]) box[3] = bx[3];
+      }
+    }
+  }
+  if (!box) return empty;                        /* no two of them meet anywhere at all */
+
+  const midLat = (box[1] + box[3]) / 2;
+  const dLatC = COARSE_M / mPerDegLat;
+  const dLonC = COARSE_M / mPerDegLon(midLat);
+  const nx = Math.ceil((box[2] - box[0]) / dLonC);
+  const ny = Math.ceil((box[3] - box[1]) / dLatC);
+  if (nx < 1 || ny < 1) return empty;
+
+  /* DO TWO OF THEM CONTAIN THIS POINT. Stop at two, and stop when two is out of reach. */
+  const twoContain = (lon, lat) => {
+    let c = 0;
+    for (let d = 0; d < N; d++) {
+      if (stormInPolys(P[d], lon, lat)) { c++; if (c >= 2) return true; }
+      else if (c + (N - d - 1) < 2) return false;
+    }
+    return false;
+  };
+  /* CAN TWO OF THEM REACH THIS CELL. Bounding boxes only, no ring maths. TWO, never all
+     of them — change 3 above, and the one place this whole design can be got wrong. */
+  const twoReach = (x0, y0, x1, y1) => {
+    let c = 0;
+    for (let d = 0; d < N; d++) {
+      if (stormBoxHits(P[d], x0, y0, x1, y1)) { c++; if (c >= 2) return true; }
+      else if (c + (N - d - 1) < 2) return false;
+    }
+    return false;
+  };
+
+  const coarse = new Uint8Array(nx * ny);
+  for (let j = 0; j < ny; j++) {
+    const lat = box[1] + (j + 0.5) * dLatC;
+    for (let i = 0; i < nx; i++) {
+      const lon = box[0] + (i + 0.5) * dLonC;
+      if (twoContain(lon, lat)) coarse[j * nx + i] = 1;
+    }
+  }
+
+  const F = FINE_PER;
+  const fx = nx * F, fy = ny * F;
+  const dLatF = dLatC / F, dLonF = dLonC / F;
+  const fine = new Uint8Array(fx * fy);
+  const at = (i, j) => (i < 0 || j < 0 || i >= nx || j >= ny) ? 0 : coarse[j * nx + i];
+  for (let j = 0; j < ny; j++) {
+    for (let i = 0; i < nx; i++) {
+      const me = at(i, j);
+      let uniform = true;
+      for (let dj = -1; dj <= 1 && uniform; dj++)
+        for (let di = -1; di <= 1; di++)
+          if (at(i + di, j + dj) !== me) { uniform = false; break; }
+      /* SOLIDLY INSIDE: no test needed, sixteen fine cells filled in. */
+      if (uniform && me) {
+        for (let b = 0; b < F; b++)
+          for (let a = 0; a < F; a++) fine[(j * F + b) * fx + (i * F + a)] = 1;
+        continue;
+      }
+      /* SOLIDLY OUTSIDE IS NOT THE SAME STATEMENT — the grazing fix, in full above, and
+         these are its lines. A cell whose centre said no is only skipped when its box
+         cannot be reached by two of them. */
+      if (uniform && !me) {
+        const x0 = box[0] + i * dLonC, y0 = box[1] + j * dLatC;
+        if (!twoReach(x0, y0, x0 + dLonC, y0 + dLatC)) continue;
+      }
+      for (let b = 0; b < F; b++) {
+        const lat = box[1] + j * dLatC + (b + 0.5) * dLatF;
+        for (let a = 0; a < F; a++) {
+          const lon = box[0] + i * dLonC + (a + 0.5) * dLonF;
+          if (twoContain(lon, lat)) fine[(j * F + b) * fx + (i * F + a)] = 1;
+        }
+      }
+    }
+  }
+
+  /* Summed row by row, because a degree of longitude is shorter in the north of the seven
+     counties than in the south and one midpoint would quietly bias the number he says. */
+  let km2 = 0, cells = 0;
+  for (let j = 0; j < fy; j++) {
+    let n = 0;
+    for (let i = 0; i < fx; i++) if (fine[j * fx + i]) n++;
+    if (!n) continue;
+    cells += n;
+    const lat = box[1] + (j + 0.5) * dLatF;
+    km2 += n * (dLatF * mPerDegLat) * (dLonF * mPerDegLon(lat)) / 1e6;
+  }
+  if (!cells) return empty;
+
+  const grid = { box, dLon: dLonF, dLat: dLatF, nx: fx, ny: fy, on: fine };
+  return { km2, cells, geo: stormTraceGrid(grid), grid };
+}
+
+/* IS HE STANDING IN IT — a lookup, so the small map can ask on every frame for nothing.
+   Same body and same grid shape as the pair engine's lookup, because it is the same
+   lattice: this is the one question the 250 m grid is the right instrument for. */
+function stormInOverlap(grid, lon, lat) {
   if (!grid) return false;
   const i = Math.floor((lon - grid.box[0]) / grid.dLon);
   const j = Math.floor((lat - grid.box[1]) / grid.dLat);
   if (i < 0 || j < 0 || i >= grid.nx || j >= grid.ny) return false;
   return !!grid.on[j * grid.nx + i];
+}
+
+/* HOW MANY OF THE TICKED DAYS COVERED WHERE HE IS STANDING — 0 to n, counted PER DAY with
+   stormClassAt, which is the same ring test the lot lookup uses and answers a point
+   question exactly. It is deliberately NOT read off the lattice: the lattice answers a
+   250 m cell question and this one is not the map's. One engine per question.
+
+   AND IT COUNTS THE DAYS THE ANSWER ON THE MAP WAS BUILT FROM, not the set he may be part
+   way through editing in the sheet. stormState.ticked changes under his thumb the instant
+   he taps a row; stormState.count changes only at Done. Counting the pending set against
+   the committed figure is how a bar reads "3 of the 2 ticked days" — one line of arithmetic
+   nobody would ever write on purpose, printed on a compliance surface at a door. */
+function stormTickedAt(lon, lat) {
+  const c = stormState.count;
+  const days = c ? c.key.split('|') : [...stormState.ticked];
+  let k = 0;
+  for (const d of days) if (stormClassAt(stormState.days.get(d), lon, lat)) k++;
+  return k;
 }
 
 /* THE GRID TURNED BACK INTO SHAPES.
@@ -8367,61 +8652,83 @@ function syncStormBar() {
   const btn = $('stormCycle');
   if (btn) btn.textContent = STORM_SHOW_WORDS[stormState.show] || STORM_SHOW_WORDS[0];
   const txt = $('stormTxt'); if (!txt) return;
-  const pick = $('stormPick'), clr = $('stormPairClear');
-  const p = stormState.pair;
-  /* The two buttons are never both offered. Off, neither; on with no pair, "Pick two
-     days"; with a pair, "Clear". One control on screen means one thing to decide. */
-  if (pick) pick.classList.toggle('hide', !stormState.show || !stormState.index || !!p);
-  if (clr) clr.classList.toggle('hide', !p);
+  const pick = $('stormPick'), clr = $('stormTickClear');
+  /* N IS THE FIGURE THE MAP CAN SUPPORT, WHICH IS NOT ALWAYS THE SIZE OF THE TICKED SET.
+     stormState.ticked changes the instant he taps a row; stormState.count changes only at
+     Done. Between the two the app knows a new number and is still drawing the old shape —
+     and this function is called on EVERY position fix, so that gap is not theoretical.
+     Reading the set here printed "2 or more of the 3 ticked days" over a mask built from
+     two: tick a third day, close the sheet with Close instead of Done, wait for a fix.
+     A compliance sentence carrying a figure its own map does not support is the fault this
+     whole layer exists to avoid, so the committed answer wins wherever there is one, and
+     stormTickedAt counts over the same committed days so k can never exceed N. */
+  const N = stormState.count ? stormState.count.n : 0;
+  /* BOTH BUTTONS ON SCREEN TOGETHER WHENEVER ANYTHING IS TICKED. Under the forced pair
+     they were never both offered, and the comment that said so has gone with the rule:
+     reopening the list to add or remove a day while an answer is on the map is the whole
+     point of a tick list, so the picker stays reachable and only Clear follows the set. */
+  if (pick) pick.classList.toggle('hide', !stormState.show || !stormState.index);
+  /* Clear is offered whenever there is ANYTHING to clear — a committed answer on the map,
+     or a selection ticked in the sheet and not yet committed. It is the only control that
+     empties both, so hiding it while a pending selection exists would strand it. */
+  if (clr) clr.classList.toggle('hide', !N && !stormState.ticked.size);
   if (!stormState.show) { txt.textContent = ''; return; }
   if (stormState.indexFailed) { txt.textContent = 'The storm library is not on this phone yet and cannot be fetched right now.'; return; }
   if (!stormState.index) { txt.textContent = 'Loading the storm library…'; return; }
 
-  if (p) {
-    if (p.failed) {
-      txt.textContent = `${stormNiceDate(p.a)} and ${stormNiceDate(p.b)} — one of those two days is not on this phone `
-        + `and could not be fetched, so they cannot be compared yet.`;
-      return;
-    }
-    /* NEWER FIRST, and each with how long ago it was. */
-    let s = `${stormNiceDate(p.a)} (${stormAgo(p.a)}) and ${stormNiceDate(p.b)} (${stormAgo(p.b)}) — `;
-    if (p.km2 <= 0) {
-      /* The approved two-storm sentence is NOT printed here. It says hail was estimated
-         over both areas on both days, and when the two never cross there is no such
-         area — printing it anyway would be the app making a claim the data denies. */
-      txt.textContent = s + `they do not cross anywhere. Both days are outlined on the map.`;
-      return;
-    }
-    /* NO FLOOR OF TEN. Rounding up to "about 10 square kilometres" was the app stating a
-       number it cannot resolve: the smallest answer the grid can give is one 250 m cell,
-       which is 0.06 km², and that was being read out as ten. Below fifteen it says what it
-       honestly knows — less than fifteen — and above it the sampled figure is rounded to
-       the nearest ten and hedged. Review found the old line. */
-    s += p.km2 < 15
-      ? `they cross over less than 15 square kilometres. `
-      : `they cross over about ${(Math.round(p.km2 / 10) * 10).toLocaleString()} square kilometres. `;
+  /* A DAY THAT COULD NOT BE FETCHED IS NAMED, and nothing is shaded while one is
+     outstanding. Naming it is what makes the way out obvious: untick that day.
+     THIS SITS ABOVE THE COMMITTED-ANSWER GATE, and it has to. A Done whose download failed
+     deliberately leaves NOTHING committed — the map must not go on showing the last answer
+     under words about this one — so `count` is null and N is 0 on exactly the run where
+     this sentence is the only true thing the bar can say. Inside the gate it was
+     unreachable, and what he got instead was the ordinary wash sentence, counting storm
+     days over where he was standing, seconds after the days he ticked failed to arrive.
+     `failed` is committed state like `count`: it is written only by Done, and emptied by
+     Clear, by the last untick and by the layer going off, so no pending tick reaches here. */
+  if (stormState.failed.length) {
+    const gone = stormState.failed.map(d => stormNiceDate(d)).join(', ');
+    txt.textContent = `${gone} could not be fetched, so nothing is shaded yet. `
+      + `Untick ${stormState.failed.length === 1 ? 'it' : 'them'} or try again with signal.`;
+    return;
+  }
+  if (N) {
     /* WHEN THE FILL HAS DROPPED, THE ANSWER MOVES INTO WORDS. His choice, asked and
-       answered: words alone above zoom 15, no extra line drawn. */
+       answered: words alone above zoom 15, no extra line drawn.
+       k IS COUNTED PER DAY WITH stormClassAt, which is a point question and already
+       answers it exactly. It is deliberately NOT read off the 250 m lattice, which answers
+       a cell question — one engine per question, and this question is not the map's. */
     const pos = state.pos;
     let stand = '';
-    if (p.km2 > 0 && !stormFillOn() && pos) {
-      const inA = !!stormClassAt(stormState.days.get(p.a), pos.lon, pos.lat);
-      const inB = !!stormClassAt(stormState.days.get(p.b), pos.lon, pos.lat);
-      stand = (inA && inB) ? 'Radar estimated hail over this area on both days. '
-            : (inA || inB) ? 'Radar estimated hail over this area on one of the two days. '
-            : 'Radar estimated hail over this area on neither day. ';
+    if (!stormFillOn() && pos) {
+      const k = stormTickedAt(pos.lon, pos.lat);
+      const when = N === 1 ? 'the ticked day' : `${k || 'none'} of the ${N} ticked days`;
+      /* THE ONE NEGATIVE FORM, and it is shaped with care: the subject stays Radar and the
+         negation sits on the estimate, so nothing is ever said about the ground, the roof
+         or the address. */
+      stand = (N === 1 && !k)
+        ? `Radar did not estimate hail over this area on ${when}. `
+        : `Radar estimated hail over this area on ${when}. `;
     }
     /* THE TWO SENTENCES MUST NEVER BOTH BE PRINTED, and until review caught it they were.
-       Zoomed in and standing outside the crossing, the bar read "Radar estimated hail over
-       this area on neither day. Radar estimated hail over both areas on both days." — the
-       app contradicting itself in consecutive sentences, handed across a threshold. The
-       standing line is the more specific of the two and wins wherever it applies.
+       Zoomed in and standing outside the shaded ground, the bar read a denial and a claim
+       in consecutive sentences, handed across a threshold. The standing line is the more
+       specific of the two and wins wherever it applies.
        FIXED WORDING, approved, and deliberately not in the label registry: a line that
        holds a compliance boundary cannot be a line he can edit later. */
-    s += stand
-      ? stand + 'This describes storms over areas.'
-      : 'Radar estimated hail over both areas on both days. This describes storms over areas.';
-    txt.textContent = s;
+    if (stand) { txt.textContent = stand + STORM_TAIL; return; }
+    if (N === 1) {
+      txt.textContent = `1 day ticked. Radar estimated hail over the outlined areas on that day. `
+        + `Tick one more to shade ground under 2 or more of them. ` + STORM_TAIL;
+      return;
+    }
+    /* THE RULED SENTENCE IS NOT PRINTED WHEN NOTHING IS SHADED. "over the shaded areas"
+       with nothing shaded is the app claiming what its own data denies — the same
+       principle the pair engine's "they do not cross anywhere" branch held, carried
+       forward. Ruled sentence if and only if there is a traced shape on the map. */
+    txt.textContent = (stormState.count && stormState.count.geo)
+      ? `Radar estimated hail over the shaded areas on 2 or more of the ${N} ticked days. ` + STORM_TAIL
+      : `${N} days ticked. No ground was under 2 or more of them. Each ticked day is outlined on the map. ` + STORM_TAIL;
     return;
   }
 
@@ -8440,24 +8747,41 @@ function syncStormBar() {
    touch it. */
 async function refreshStormLayer(force) {
   if (!stormState.show) {
-    /* Switching the layer off takes the pair with it. A pair that is still picked but
-       cannot be seen is hidden state, and the next tap of the chip would bring back two
-       days he had forgotten choosing. */
+    /* Switching the layer off takes the ticked days with it. A set that is still ticked
+       but cannot be seen is hidden state, and the next tap of the chip would bring back
+       days he had forgotten choosing. The Set is EMPTIED, never set to null — every
+       `.size` read downstream would throw on a null. */
     clearStormLayer(); stormState.active = []; stormLastAt = null; stormState.miniAlpha = 0;
-    stormState.pair = null; stormState.pick = null;
+    stormState.ticked.clear(); stormState.count = null; stormState.failed = [];
     syncStormBar(); try { drawMini(); } catch (e) {}
     return;
   }
-  /* WITH A PAIR PICKED, POSITION CHANGES NOTHING ON THE BIG MAP. The two days are chosen,
-     not found, so walking does not alter what is drawn — only the small map's tint and the
+  /* WITH DAYS TICKED, POSITION CHANGES NOTHING ON THE BIG MAP. The days are chosen, not
+     found, so walking does not alter what is drawn — only the small map's tint and the
      line of words can change, and both are grid lookups. */
-  if (stormState.pair) {
-    /* DRAW IT IF IT IS NOT DRAWN. A pair can be built while the big map has never been
-       opened — from a house panel — in which case `drawStormLayer` returned at its first
-       line because there was no map to draw on. This is the moment the map exists, and
-       without this the pair would sit in memory, correct and invisible, for ever. */
+  /* A FAILED DONE OWNS THE LAYER TOO, AND THIS IS THE HONESTY GUARD. Without it, `count`
+     is null after a failed Done so this function falls straight through to the ordinary
+     wash — which draws fills — while the bar goes on printing "…could not be fetched, so
+     nothing is shaded yet". The map and the compliance sentence would contradict each
+     other in front of a homeowner, and it needs no walking to get there: the next GPS fix
+     is enough, because a previous commit nulled `stormLastAt`. Worse, the wash path
+     fetches up to ten day files one at a time, with no count and no question, on a phone
+     that has just proved it has no signal.
+     v35 could not reach this state: its failed pair was still a pair object, so its own
+     short-circuit held. Restoring that property is restoring an honesty guarantee, not
+     adding one. */
+  if (stormState.failed.length) {
+    clearStormLayer(); stormState.active = []; stormState.miniAlpha = 0;
+    syncStormBar(); try { drawMini(); } catch (e) {}
+    return;
+  }
+  if (stormState.count) {
+    /* DRAW IT IF IT IS NOT DRAWN. A ticked set can be built while the big map has never
+       been opened — from a house panel — in which case `drawStormLayer` returned at its
+       first line because there was no map to draw on. This is the moment the map exists,
+       and without this the answer would sit in memory, correct and invisible, for ever. */
     if (!window._stormLayer && !window._stormFillLayer && window._map) await drawStormLayer();
-    stormMiniFromPair();
+    stormMiniFromTicked();
     syncStormBar();
     try { drawMini(); } catch (e) {}
     return;
@@ -8477,13 +8801,7 @@ async function refreshStormLayer(force) {
   try { drawMini(); } catch (e) {}
 }
 
-/* ------------------------------------------------------- picking the two days ---- */
-
-/* HIS RULED CUTS, on the count of detections at one and a quarter inch or more. That
-   count is the strongest single predictor of hail reports actually filed on the ground
-   (r = +0.69, against +0.24 for median size), which is why the level is not read off the
-   biggest stone or the area covered. 25 days in the library are Major, 46 Moderate. */
-function stormLevelWord(n) { return n >= 18 ? 'Major' : (n >= 4 ? 'Moderate' : 'Marginal'); }
+/* ------------------------------------------------------ ticking the storm days ---- */
 
 const STORM_MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
 function stormNiceDate(d) {
@@ -8532,26 +8850,76 @@ function stormPickBox() {
   return null;
 }
 
-/* Nothing downloads to build this list. The manifest carries a box, the large-hail count,
-   the report count and the file size per day, so every word on every row is answerable
-   from the 72 KB already held. */
+/* Nothing downloads to build this list. The manifest carries a box, the real hail-size
+   spread, the large-hail count, the report count and the file size per day, so every word
+   on every row is answerable from the manifest already held.
+
+   THE LIST NEVER SHRINKS, AND A TICKED DAY IS NEVER FILTERED OUT. Under the forced pair
+   the second list was cut to the days that could cross the first; under a tick list there
+   is nothing to cross and nothing to cut. The escape hatch on the box filter is not
+   cosmetic: without it a day ticked at one address and then a map pan vanishes from the
+   list while it is still shading the map — ticked, and impossible to untick. */
 function stormPickRows() {
   const ix = stormState.index;
   if (!ix || !Array.isArray(ix.storms)) return [];
   const box = stormPickBox();
-  const first = stormState.pick ? ix.storms.find(s => s.date === stormState.pick) : null;
   return ix.storms
     .filter(s => s.bbox)
-    .filter(s => !box || stormBoxesMeet(s.bbox, box))
-    .filter(s => !first || (s.date !== first.date && stormBoxesMeet(s.bbox, first.bbox)))
+    .filter(s => stormState.ticked.has(s.date) || !box || stormBoxesMeet(s.bbox, box))
     .sort((a, b) => (a.date < b.date ? 1 : -1));
+}
+
+/* THE SECOND LINE OF A ROW, IN FIGURES RATHER THAN WORDS. His ruling this round: the
+   three severity words go, and the row carries what the radar actually estimated.
+
+   THE SPREAD COMES FROM s.size AND FROM NOTHING ELSE. `peak_in` and the `areas_km2` keys
+   are the DRAWING buckets — three quarters of an inch, one inch, one and three quarters —
+   and they understate the real peak on 84 of the 224 days: 4 April 2025 really peaked at
+   4.00" and peak_in calls it 1.75". `size` is still read defensively, because a phone
+   holding an older cached manifest will not have it; that phone gets the peak figure alone
+   and no spread, which is honest about what it knows.
+
+   THE LARGE COUNT IS OMITTED ENTIRELY WHEN IT IS ZERO. Measured across all 224 days,
+   n125 is 0 if and only if the maximum is under 1.25 inches — so the spread already says
+   it, and "0 large" would be noise on 120 of the rows.
+
+   Sizes are decimals with an inch mark, never spelled out. His ruling. */
+function stormPickRowWords(s) {
+  const bits = [];
+  if (s.size && typeof s.size.min === 'number' && typeof s.size.max === 'number') {
+    bits.push(s.size.min === s.size.max
+      ? `${s.size.min.toFixed(2)}"`
+      : `${s.size.min.toFixed(2)}"–${s.size.max.toFixed(2)}"`);
+  } else if (s.peak_in) {
+    bits.push(`${Number(s.peak_in).toFixed(2)}"`);
+  }
+  if (s.n125 > 0) bits.push(`${s.n125} large`);
+  if (s.hailReportsClean > 0) bits.push('a report was filed that day');
+  if (!stormState.days.has(s.date)) bits.push(`not on this phone · ${stormKb(s.gzip || s.bytes || 0)}`);
+  return bits.join(' · ');
+}
+
+/* THE TICKED COUNT AND THE COMMIT, REPAINTED TOGETHER AND WITHOUT REBUILDING THE LIST.
+   This is the only thing stormToggleDay calls, which is what keeps a tick from moving the
+   rows out from under his thumb. Done is hidden at nothing-ticked, on the button and on
+   its footer both, so a check can read either the class or the rendered box and get the
+   same answer. */
+function stormSyncPickFoot() {
+  const N = stormState.ticked.size;
+  const tk = $('spTicked');
+  if (tk) {
+    tk.classList.toggle('hide', !N);
+    tk.textContent = N ? `${N} day${N === 1 ? '' : 's'} ticked.` : '';
+  }
+  const done = $('spDone'), foot = $('spFoot');
+  if (done) done.classList.toggle('hide', !N);
+  if (foot) foot.classList.toggle('hide', !N);
 }
 
 function renderStormPick() {
   const list = $('spList'); if (!list) return;
   const rows = stormPickRows();
-  const picking2 = !!stormState.pick;
-  $('spTitle').textContent = picking2 ? 'Pick the second day' : 'Pick the first day';
+  $('spTitle').textContent = 'Tick the storm days';
 
   const box = stormPickBox();
   const total = stormState.index ? stormState.index.storms.length : 0;
@@ -8568,93 +8936,119 @@ function renderStormPick() {
       ? `${rows.length} of the ${total} storm days in the library could have reached the part of the map you are looking at.`
       : `All ${total} storm days in the library.`;
 
-  const fst = $('spFirst');
-  if (picking2) {
-    fst.classList.remove('hide');
-    fst.textContent = `First day: ${stormNiceDate(stormState.pick)}, ${stormAgo(stormState.pick)}.`
-      + ` Now pick the second. Only days that can cross it are shown.`;
-  } else fst.classList.add('hide');
-
   const none = $('spNone');
   if (!rows.length) {
     none.classList.remove('hide');
-    none.textContent = picking2
-      ? 'No other storm day in the library can cross that one over this part of the map. Move the map, or start again with a different first day.'
-      : 'No storm day in the library reaches this part of the map. Move the map and open this again.';
+    none.textContent = 'No storm day in the library reaches this part of the map. Move the map and open this again.';
   } else none.classList.add('hide');
 
+  /* THE TICK STATE IS READ FROM THE SET ON EVERY RENDER, never held on the row, so
+     closing the sheet and opening it again shows exactly the days that are ticked. */
   let html = '', year = '';
   for (const s of rows) {
     const y = s.date.slice(0, 4);
     if (y !== year) { year = y; html += `<div class="rhead" style="margin-top:12px;margin-bottom:2px">${esc(y)}</div>`; }
-    const here = stormState.days.has(s.date);
-    const bits = [stormLevelWord(s.n125 || 0)];
-    if (s.peak_in) bits.push(`largest ${esc(STORM_SIZE_WORD[s.peak_in >= 1.75 ? '1.75in' : (s.peak_in >= 1 ? '1.00in' : '0.75in')] || '')}`);
-    if (s.hailReportsClean > 0) bits.push('a report was filed that day');
-    if (!here) bits.push(`not on this phone · ${esc(stormKb(s.gzip || s.bytes || 0))}`);
-    html += `<button class="ghost spRow" data-date="${esc(s.date)}" style="text-align:left;width:100%;margin-top:6px">`
-      + `<b>${esc(stormNiceDate(s.date))}</b> · ${esc(stormAgo(s.date))}<br>`
-      + `<span style="font-weight:600;opacity:.8">${esc(bits.join(' · '))}</span></button>`;
+    html += `<button class="ghost spRow" role="checkbox" aria-checked="${stormState.ticked.has(s.date) ? 'true' : 'false'}" data-date="${esc(s.date)}">`
+      + `<span class="spTk" aria-hidden="true">✓</span>`
+      + `<span class="spTx"><b>${esc(stormNiceDate(s.date))}</b> · ${esc(stormAgo(s.date))}<br>`
+      + `<span class="spSub">${esc(stormPickRowWords(s))}</span></span></button>`;
   }
   list.innerHTML = html;
   list.querySelectorAll('.spRow').forEach(b => {
-    b.onclick = () => stormPickChoose(b.dataset.date);
+    b.onclick = () => stormToggleDay(b.dataset.date);
   });
+  stormSyncPickFoot();
 }
 
-/* HALF A SECOND BETWEEN TAPS, and it is not a nicety. The first tap rebuilds the whole
-   list in place: the amber line appears and pushes every row down, and the list itself
-   shortens to the days that can cross the first. The scroll position does not move, so
-   the row under his thumb 200 ms later is a DIFFERENT date — and if both files are
-   already on the phone nothing asks him anything, so a fumbled double tap commits a pair
-   he never chose and closes the sheet. Found in review. */
-let stormPickAt = 0;
-async function stormPickChoose(date) {
+/* TICKING DOWNLOADS NOTHING AND DRAWS NOTHING. It adds or removes one date, repaints that
+   one row and the count line, and returns. It does not rebuild the list, does not fetch,
+   does not close the sheet, and `stormState.days` is the same size after any number of
+   ticks as it was before them.
+
+   THE HALF-SECOND DEBOUNCE IS DELETED WITH ITS SUBJECT. It existed because the first tap
+   rebuilt the whole list in place: the amber line appeared, every row moved down, and the
+   list shortened to the days that could cross the first, so the row under his thumb 200 ms
+   later was a different date. The list does not rebuild any more, so the debounce is pure
+   tap-eating — half a second between ticks when he is ticking five days at a door. */
+function stormToggleDay(date) {
   if (!date) return;
-  const now = Date.now();
-  if (now - stormPickAt < 500) return;
-  stormPickAt = now;
   buzz(8);
-  if (!stormState.pick) { stormState.pick = date; renderStormPick(); return; }
-  const a = stormState.pick, b = date;
-  const fromPanel = stormState.pickFromPanel;
-  stormState.pick = null;
-  closeSheet('spSheet');
-  /* Opened from a house panel, the answer he asked for is on the MAP, and the map is
-     behind a sheet he cannot see past. So that sheet goes too — otherwise he picks two
-     days and nothing appears to happen.
-     AND THE MAP IS OPENED, which review caught and which is the whole difference between
-     this door working and doing nothing at all. The detail sheet is reached from the
-     strip, from the customer list, from Appointments and automatically after a door is
-     marked — in every one of those the big map has never been opened, so `window._map`
-     does not exist, `drawStormLayer` returns at its first line, and the pair he waited
-     for a download to build is thrown away the next time he opens the map. */
+  const on = !stormState.ticked.has(date);
+  if (on) stormState.ticked.add(date); else stormState.ticked.delete(date);
+  const list = $('spList');
+  if (list) list.querySelectorAll('.spRow').forEach(b => {
+    if (b.dataset.date === date) b.setAttribute('aria-checked', on ? 'true' : 'false');
+  });
+  stormSyncPickFoot();
+}
+
+/* THE TICKED SET, WORKED OUT ONCE, HERE, AND THEN ONLY READ.
+   The dates are held NEWER FIRST, which is not cosmetic: at a door the newest date is the
+   plausible date of loss and the older ones are what show the area takes hail. That is the
+   same order the accumulation ruling already uses.
+
+   DONE IS THE ONLY COMMIT. Ticking changes a Set and one row; this is the only thing in
+   the whole feature that asks, downloads, computes, draws or closes the sheet.
+
+   ONE SET AT A TIME, AND THE LAST DONE WINS. Downloads are slow in a driveway and every
+   await below is a place where he can walk on, switch the layer off, or reopen the list
+   and press Done again. There is exactly ONE sequence counter, and every path that applies
+   shares it — including Add day from a house panel, which comes through this same
+   function rather than running a commit of its own. Two counters would race each other and
+   draw the abandoned set. */
+let stormTickSeq = 0;
+let stormTickForced = false;
+/* WHAT BOTH OUTCOMES OF DONE OWE HIM, IN ONE PLACE. A Done that worked and a Done that
+   could not fetch its files are different answers, but they need the same two things done
+   before either can be seen, and writing them twice is how the two drift apart.
+
+   THE LAYER COMES ON IN MEMORY. Ticked from a house panel with storms switched off, the
+   answer — or the sentence saying it failed — would land on a map that is not showing
+   storms at all. It is remembered in `stormTickForced` so Clear and the last untick can put
+   it back. `stormShow` on the phone is deliberately never written by any of this, and that
+   is what makes his ruling true: the app opens again on whatever he last chose, with
+   nothing ticked.
+
+   THE HOUSE-PANEL DOOR OPENS ONLY ONCE THERE IS SOMETHING TO OPEN IT ON. This used to sit
+   at the top of `stormApplyTicked`, and with the map opened BEFORE the commit the door did
+   nothing at all: `openMap` re-reads the saved chip setting whenever the picker holds
+   nothing, and with storms saved off — exactly the state the door exists for — that took
+   `stormState.show` to 0, sent `refreshStormLayer` down its off branch and EMPTIED THE
+   TICKED SET while the commit that ticked it was still running. Called from here, after the
+   outcome is settled, `openMap`'s guard holds on `count` or on `failed` and the force
+   survives.
+
+   Returns false when another Done has overtaken this one while the map was opening. */
+async function stormShowResult(seq, fromPanel) {
+  if (!stormState.show) { stormState.show = 1; stormTickForced = true; }
   if (fromPanel) {
     closeSheet('detailSheet');
     try { await openMap(); } catch (err) {}
   }
-  stormState.pickAt = null;
-  stormState.pickFromPanel = false;
-  await stormSetPair(a, b);
+  return seq === stormTickSeq;
 }
 
-/* THE PAIR. Worked out once, here, and then only read.
-   The two dates are held NEWER FIRST, which is not cosmetic: at a door the newer date is
-   the plausible date of loss and the older one is what shows the area takes hail. That is
-   the same order the accumulation ruling already uses. */
-/* ONE SET AT A TIME, AND THE LAST TAP WINS. Downloads are slow in a driveway, and every
-   await below is a place where he can walk on, switch the layer off, or start again with
-   a different pair. `refreshStormLayer` already re-checks its world after awaiting — this
-   did not, and review found three ways through it: an abandoned pair arriving after he
-   switched storms off and switching them back ON, two picks racing so that whichever
-   download finished last won, and declining the download leaving him on a closed sheet
-   with nothing said. */
-let stormPairSeq = 0;
-let stormPairForced = false;
-async function stormSetPair(d1, d2) {
-  const seq = ++stormPairSeq;
+async function stormApplyTicked() {
+  const seq = ++stormTickSeq;
   const ix = stormState.index;
-  const need = [d1, d2].filter(d => !stormState.days.has(d));
+  /* Opened from a house panel, the answer he asked for is on the MAP, and the map is
+     behind a sheet he cannot see past. So that sheet goes too — otherwise he ticks days
+     and nothing appears to happen. AND THE MAP IS OPENED, which review caught and which is
+     the whole difference between this door working and doing nothing at all: the detail
+     sheet is reached from the strip, from the customer list, from Appointments and
+     automatically after a door is marked, and in every one of those the big map has never
+     been opened, so `window._map` does not exist and `drawStormLayer` returns at its first
+     line. BOTH OF THOSE HAPPEN AT THE BOTTOM OF THIS FUNCTION, NOT AT THE TOP, and where
+     they sit is load-bearing — see the note above the call. */
+  const fromPanel = stormState.pickFromPanel;
+  closeSheet('spSheet');
+  stormState.pickAt = null;
+  stormState.pickFromPanel = false;
+  if (seq !== stormTickSeq) return;
+  /* ONE DIALOG, AND IT COUNTS ONLY WHAT IS MISSING. Days already on this phone are not
+     counted and not mentioned, and with nothing missing there is NO dialog at all — a
+     "Download 0 storm day files?" at a door is the absurd version of this. */
+  const need = [...stormState.ticked].filter(d => !stormState.days.has(d));
   if (need.length) {
     const bytes = need.reduce((t, d) => {
       const s = ix && ix.storms.find(x => x.date === d);
@@ -8663,63 +9057,111 @@ async function stormSetPair(d1, d2) {
     const okGo = confirm(`Download ${need.length} storm day file${need.length === 1 ? '' : 's'}?\n\n`
       + `That is about ${stormKb(bytes)} over your data connection. `
       + `They stay on this phone afterwards and work with no signal.`);
-    if (!okGo) { if (seq === stormPairSeq) syncStormBar(); return; }
-    for (const d of need) { await loadStormDay(d); }
+    /* DECLINING UNTICKS ONLY THE DAYS THAT NEEDED FETCHING and leaves the rest of the set
+       alone, so what is drawn afterwards is exactly what he still has and the bar never
+       describes a day that never arrived. It is not a silent no-op: he pressed Done, and
+       the days he already holds are still answered. */
+    if (!okGo) { for (const d of need) stormState.ticked.delete(d); }
+    else await Promise.all(need.map(d => loadStormDay(d)));
   }
-  /* He started another pair while these were coming down, so this one is stale. */
-  if (seq !== stormPairSeq) return;
-  const A = stormState.days.get(d1), B = stormState.days.get(d2);
-  const [a, b] = d1 > d2 ? [d1, d2] : [d2, d1];       /* newer first, failure included */
-  if (!A || !B) {
-    /* The map must not keep showing the LAST pair under words about this one. */
+  if (seq !== stormTickSeq) return;
+  /* NOTHING TICKED IS A REAL OUTCOME and it is reached from two places — here, by
+     unticking the last day or by declining, and from Clear. Both go through the one
+     function that knows the restore rule. */
+  if (!stormState.ticked.size) { await stormAfterTickChange(); return; }
+  const dates = [...stormState.ticked].sort((a, b) => (a < b ? 1 : -1));   /* newer first */
+  stormState.failed = dates.filter(d => !stormState.days.get(d));
+  if (stormState.failed.length) {
+    /* The map must not keep showing the LAST answer under words about this one. The set
+       itself is NOT emptied: he needs the failed day on the list to untick it. */
     clearStormLayer();
-    stormState.pair = { a, b, km2: 0, geo: null, grid: null, failed: true };
+    stormState.count = null;
     stormState.active = [];
+    stormState.miniAlpha = 0;
+    /* AND IT HAS TO BE SEEN. A Done that fails is the one outcome where the bar is the only
+       thing with anything to say, so it gets the same two courtesies the successful path
+       gets. Without them a failed Done from a house panel is completely silent — he presses
+       Done in a driveway, the download dies, and the app shows him nothing at all. */
+    if (!await stormShowResult(seq, fromPanel)) return;
     syncStormBar();
+    try { drawMini(); } catch (e) {}
     return;
   }
-  const r = stormIntersect(A, B);
-  if (seq !== stormPairSeq) return;
-  stormState.pair = { a, b, km2: r.km2, geo: r.geo, grid: r.grid, failed: false };
-  /* The pair replaces the wash, so the drawn set is these two days and nothing else. */
-  stormState.active = [a, b];
+  /* THE ONE PLACE ANY GEOMETRY IS TOUCHED, and the only thing on the whole Done path that
+     costs real time. stormOverlap is v35's pair engine generalised to N days on the same
+     adaptive lattice, so at two ticked days it returns byte for byte what v35 drew, and
+     there is nothing to hold between presses: the lattice is anchored on the ticked days
+     themselves, exactly the way v35 anchored one on a pair, so no session-long grid and no
+     raster cache exist to be built once, keyed wrongly, or served for the wrong lattice.
+     km2 is worked out and kept but is NOT printed this round.
+
+     AND THE CACHE SIGNATURE IS CONSULTED, WHICH IS THE WHOLE REASON `key` EXISTS. He opens
+     the list to check what is ticked, changes nothing and presses Done again — the commonest
+     second press there is — and on the widest sets that is half a second of arithmetic on
+     his phone for an answer already on the screen. The committed object is REUSED rather
+     than rebuilt from an equal one, so nothing downstream can tell a re-press from a
+     no-op: same geo handed to Leaflet, same grid read by `stormInOverlap`. The signature is
+     the sorted set, so one tick either way misses it and the answer is rebuilt. */
+  const key = [...stormState.ticked].sort().join('|');
+  const held = (stormState.count && stormState.count.key === key) ? stormState.count : null;
+  if (!held) {
+    const r = stormOverlap(dates.map(d => stormState.days.get(d)));
+    if (seq !== stormTickSeq) return;
+    stormState.count = { key, n: dates.length, km2: r.km2, geo: r.geo, grid: r.grid };
+  }
+  /* The ticked set replaces the wash, so the drawn set is these days and nothing else. */
+  stormState.active = dates;
   stormLastAt = null;
-  /* Compared from a house panel with the layer switched off, the answer would be drawn on
-     a map that is not showing storms at all. So the layer comes on — IN MEMORY ONLY, and
-     REMEMBERED, so that Clear can put it back. `stormShow` on the phone is deliberately
-     never written by any of this, and that is what makes his ruling true: the app opens
-     again on whatever he last chose, with no pair. */
-  if (!stormState.show) { stormState.show = 1; stormPairForced = true; }
+  /* Ticked from a house panel with the layer switched off, the answer would be drawn on a
+     map that is not showing storms at all. So the layer comes on — IN MEMORY ONLY, and
+     REMEMBERED, so that Clear and the last untick can put it back. `stormShow` on the
+     phone is deliberately never written by any of this, and that is what makes his ruling
+     true: the app opens again on whatever he last chose, with nothing ticked. */
+  if (!await stormShowResult(seq, fromPanel)) return;
   await drawStormLayer();
-  stormMiniFromPair();
+  stormMiniFromTicked();
   syncStormBar();
   try { drawMini(); } catch (e) {}
 }
 
 /* Clear destroys nothing, so it asks nothing. */
-async function stormClearPair() {
-  stormPairSeq++;                       /* anything still downloading is now abandoned */
-  stormState.pair = null;
-  stormState.pick = null;
+async function stormClearTicked() {
+  stormTickSeq++;                       /* anything still downloading is now abandoned */
+  stormState.ticked.clear();
+  await stormAfterTickChange();
+}
+
+/* THE ONE PLACE THAT KNOWS THE RESTORE RULE, and it exists because there are now TWO
+   routes to nothing-ticked: Clear, and unticking the last day and pressing Done. Both come
+   here, so neither can be the one that forgets.
+
+   THE LAYER GOES BACK OFF IF THE PICKER IS WHAT TURNED IT ON. Without this the layer sits
+   forced on with nothing ticked and falls straight into the ordinary "ten storms over
+   where you are standing" path — which fetches day files one at a time, with no count and
+   no question, on a map he never switched storms on. Review found that under the pair
+   design. The next tap of the chip would then have written to the phone a setting he never
+   chose, which is the stored-word rule broken by an accident of state. */
+async function stormAfterTickChange() {
+  if (stormState.ticked.size) return;
+  stormState.count = null;
+  stormState.failed = [];
   stormState.active = [];
   stormLastAt = null;
-  /* AND THE LAYER GOES BACK OFF IF THE PICKER IS WHAT TURNED IT ON. Without this, Clear
-     left `stormState.show` at 1 and fell straight into the ordinary "ten storms over
-     where you are standing" path — which fetches day files one at a time, with no count
-     and no question, on a map he never switched storms on. Review found it. The next tap
-     of the chip would then have written a setting he never chose to the phone. */
-  if (stormPairForced) { stormPairForced = false; stormShowLoad(); }
+  if (stormTickForced) { stormTickForced = false; stormShowLoad(); }
   await refreshStormLayer(true);
   syncStormBar();
 }
 
-/* THE SMALL MAP IN PAIR MODE. It is clamped to between 60 and 600 metres across, so it is
-   always wholly inside the overlap or wholly outside it — which makes a lookup on the
-   cached grid the whole answer, computed once here rather than on every frame. */
-function stormMiniFromPair() {
-  const p = stormState.pair, pos = state.pos;
-  stormState.miniAlpha = (p && p.grid && pos && stormInIntersect(p.grid, pos.lon, pos.lat))
-    ? STORM_PAIR_FILL : 0;
+/* THE SMALL MAP WITH DAYS TICKED. It is clamped to between 60 and 600 metres across, so it
+   is always wholly inside the shaded ground or wholly outside it — which makes one lookup
+   on the cached grid the whole answer, computed once here rather than on every frame.
+   Two or more ticked days is the one shade there is; one ticked day is outline only, and
+   outlines are not drawn on the small map at all, so its tint is 0 — which falls out of
+   this on its own, because at one ticked day there is no grid to look in. */
+function stormMiniFromTicked() {
+  const c = stormState.count, pos = state.pos;
+  stormState.miniAlpha = (c && c.grid && pos && stormInOverlap(c.grid, pos.lon, pos.lat))
+    ? STORM_TICK_FILL : 0;
 }
 
 /* Everything that does NOT live in the database has to be named here by hand, or it
@@ -10045,7 +10487,7 @@ document.querySelectorAll('.dsecHead[data-msec]').forEach(b => {
 /* ---- what version is actually on the phone ----
    Matches the service worker cache name, so "did the update land" is answerable by
    looking rather than guessing. */
-const BUILD_VERSION = 'v35';
+const BUILD_VERSION = 'v36';
 const BUILD_DATE = '5 August 2026';
 function renderVersionStamp() {
   const el = $('versionStamp'); if (!el) return;
@@ -11169,12 +11611,14 @@ function renderStormPanel(v) {
       body += `<div class="rhead" style="margin-top:12px;margin-bottom:2px">Most recent</div>`;
       for (const r of rows.slice(0, 4)) {
         /* THE SALES PATH. He is at a door, looking at the days that reached this address,
-           and the next thing he wants is a second date to cross it with. So the way in is
-           here, on the row he is already reading, not only on the map bar. */
+           and the next thing he wants is another date over the same ground. So the way in
+           is here, on the row he is already reading, not only on the map bar. It ADDS the
+           day to the ticked set and opens the list — it downloads nothing and commits
+           nothing on its own; Done does that, exactly as it does from the bar. */
         body += `<div class="srow"><b>${esc(niceDate(r.date))}</b>`
           + `<span>radar estimated ${esc(STORM_SIZE_WORD[r.cls] || '')}`
           + (r.reports ? ' · a report was filed that day' : '') + `</span>`
-          + `<button class="ghost dsCmp" data-date="${esc(r.date)}">Compare</button></div>`;
+          + `<button class="ghost dsCmp" data-date="${esc(r.date)}">Add day</button></div>`;
       }
     }
 
@@ -11205,16 +11649,19 @@ function renderStormPanel(v) {
   body += `<div class="pnote">This describes storms over an area. It says nothing about this roof.</div>`;
   el.innerHTML = body;
 
-  /* Opens the picker with THIS day already chosen as the first, and with the list cut to
-     the days that reach THIS address. `v.lon`/`v.lat` are captured here, so walking to
-     the next door before tapping cannot open the list for the wrong house. */
+  /* Opens the picker with THIS day added to the ticked set, and with the list scoped to
+     the days that reach THIS address. `v.lon`/`v.lat` are captured here, so walking to the
+     next door before tapping cannot open the list for the wrong house.
+     IT ADDS. The ticked set is a standing list now, so a day tapped here joins whatever is
+     already ticked rather than replacing it — and it does not clear the set, does not
+     download and does not commit. Done is the only commit, from here as from the bar. */
   el.querySelectorAll('.dsCmp').forEach(btn => {
     btn.onclick = async () => {
       buzz(8);
       await loadStormIndex();
       stormState.pickAt = { lon: v.lon, lat: v.lat };
       stormState.pickFromPanel = true;
-      stormState.pick = btn.dataset.date;
+      stormState.ticked.add(btn.dataset.date);
       openSheet('spSheet');
       renderStormPick();
     };
@@ -11929,23 +12376,25 @@ $('stormCycle').onclick = async () => {
 $('stormPick').onclick = async () => {
   buzz(8);
   await loadStormIndex();
-  stormState.pick = null;
   stormState.pickAt = null;          /* the bar's door asks about the map, not one house */
   stormState.pickFromPanel = false;
   openSheet('spSheet');
   renderStormPick();
 };
 /* Clear destroys nothing — no count, no question. */
-$('stormPairClear').onclick = async () => { buzz(8); await stormClearPair(); };
-/* CLOSING THE PICKER HALF WAY FORGETS THE HALF PICK. Wired here, AFTER the generic
-   `[data-close]` sweep has already run, so this replaces that handler rather than racing
-   it. Without it, walking away after choosing one day and opening the list again would
-   show "Pick the second day" over a first day he had abandoned two streets back. */
+$('stormTickClear').onclick = async () => { buzz(8); await stormClearTicked(); };
+/* DONE IS THE ONLY COMMIT, and it is wired once here rather than on every render of the
+   list, so a repaint cannot leave two handlers racing on one button. */
+$('spDone').onclick = async () => { buzz(8); await stormApplyTicked(); };
+/* CLOSING THE PICKER DOES NOT EMPTY THE SET. Wired here, AFTER the generic `[data-close]`
+   sweep has already run, so this replaces that handler rather than racing it. What it
+   clears is where the list was scoped to, not what he ticked: reopening the list to add or
+   remove a day is the whole point of a tick list, and a close that emptied the set would
+   throw away five ticks because he wanted a look at the map behind the sheet. */
 const spCloseBtn = document.querySelector('[data-close="spSheet"]');
 if (spCloseBtn) spCloseBtn.onclick = () => {
   closeSheet('spSheet');
-  stormState.pick = null; stormState.pickAt = null; stormState.pickFromPanel = false;
-  const f = $('spFirst'); if (f) { f.classList.add('hide'); f.textContent = ''; }
+  stormState.pickAt = null; stormState.pickFromPanel = false;
 };
 /* Sit the panel on top of the button bar wherever the bar actually is, rather than
    at a guessed height. The bar wraps to two rows on a narrow phone. */
