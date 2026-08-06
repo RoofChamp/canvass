@@ -1505,6 +1505,10 @@ select{min-height:44px}
       <div id="spList"></div>
       <div class="small hide" id="spNone" style="margin-top:10px"></div>
     </div>
+    <!-- EVERYTHING, ONCE. There was no way to say "get me all of it", which is why the bar
+         kept reading "Checked 97 of 224". It sits above Done rather than beside it: Done is
+         the commit and must not be crowded by a button that commits nothing. -->
+    <button class="ghost hide" id="spAll" style="width:100%;margin-top:10px">Download every storm day</button>
     <div class="sheetFoot hide" id="spFoot"><button class="primary" id="spDone">Done</button></div>
   </div>
 </div>
@@ -8264,6 +8268,25 @@ const STORM_TICK_FILL = 0.34;
    second, divergent copy of a line that holds a legal boundary is the fault, not the fix.
    Deliberately not in the label registry — it cannot be a line he can edit later. */
 const STORM_TAIL = 'This describes storms over areas.';
+/* Injected rather than added to the stylesheet block so this patcher touches one region.
+   Dimmer than the row's own text: a report is supporting detail under the day, not a
+   headline, and it must never out-shout the radar class it sits beneath. */
+(function () {
+  const st = document.createElement('style');
+  /* THE SELECTOR HAS TO WIN, and .srep alone does not. It sits inside a rule that is an
+     id plus a class plus an element, which outranks one class no matter how late this
+     stylesheet is appended, so the first version came out right-aligned and as loud as the
+     day above it. Same weight class here, plus one extra class, so it wins.
+     flex-basis 100% puts each report on its own full-width line rather than letting three
+     of them fight the date for the same flex row. The left rule and the indent are what
+     say SUBORDINATE - a line attached to the day above it, not a second headline. Weight
+     600 against the row summary 700 does the rest; the colour stays readable, because
+     these are the numbers he says out loud at a door. */
+  st.textContent = '#dStorm .srow .srep{flex:1 0 100%;display:block;text-align:left;'
+    + 'font-size:11.5px;font-weight:600;line-height:1.5;color:var(--dim);'
+    + 'margin:4px 0 0 2px;padding-left:9px;border-left:2px solid var(--line)}';
+  document.head.appendChild(st);
+})();
 
 /* THE TICKED DAYS ON THE BIG MAP. Every ticked day as a thin outline and NO fill of its
    own, the ground under two or more of them as the only fill on the screen — his rule, in
@@ -8326,8 +8349,13 @@ async function drawStormLayer() {
   clearStormLayer();
   stormFillWas = stormFillOn();
   if (stormState.count) { drawStormTicked(); return; }
-  if (!stormState.show || !stormState.active.length) return;
-  drawStormUnder(stormState.active);
+  /* NOTHING IS DRAWN UNTIL HE PICKS. Ruled 2026-08-06 after he drove v37: turning the layer
+     on used to stack up to ten days he had not chosen, unnamed, which competed with the tick
+     list for the same job. stormState.active is still filled — the bar needs it to NAME what
+     is there — but no shape reaches the map from it. The reports layer is its own choice and
+     is drawn regardless. */
+  drawStormReports();
+  return;
   /* Features from several days land in ONE flat list here, so which day a feature came
      from is gone by the time the style function runs. That is fine, and it is why the
      source is derived per FEATURE and not only per day: a feature carrying mesh_mm is a
@@ -9029,6 +9057,8 @@ function syncStormBar() {
     sbtn.textContent = STORM_SRC_WORDS[stormState.srcMode] || STORM_SRC_WORDS[0];
     sbtn.classList.toggle('hide', !stormState.show);
   }
+  const allb = $('spAll');
+  if (allb) allb.classList.toggle('hide', !stormState.index);
   const rbtn = $('stormReportBtn');
   if (rbtn) {
     rbtn.textContent = STORM_REPORT_WORDS[stormState.reports] || STORM_REPORT_WORDS[0];
@@ -9136,9 +9166,16 @@ function syncStormBar() {
   const n = stormState.active.length;
   /* The coverage line goes on the SAME line as the answer, every time. A count built from
      eleven day files looks identical to one built from all of them. */
+  /* IT NAMES THEM AND POINTS AT THE CONTROL. "Drawn over where you are standing" was true
+     of a wash he had not asked for; now nothing is drawn, so the sentence says what is
+     AVAILABLE and where to go and choose it. The most recent date is named because that is
+     the one he asks about first at a door. Register unchanged: days and areas, never a roof. */
+  const recent = stormState.active.slice().sort().reverse()[0];
   txt.textContent = (n
-    ? `${n} storm day${n === 1 ? '' : 's'} drawn over where you are standing. `
-    : `No storm day in the library covers where you are standing. `) + stormCoverage().line;
+    ? `${n} storm day${n === 1 ? '' : 's'} reach${n === 1 ? 'es' : ''} where you are standing`
+      + (recent ? `, most recently ${stormNiceDate(recent)}` : '')
+      + `. Tap Storm days to pick. `
+    : `No storm day in the library reaches where you are standing. `) + stormCoverage().line;
 }
 
 /* Rebuilt on exactly three things: the chip being tapped, the map being opened, and him
@@ -9203,7 +9240,10 @@ async function refreshStormLayer(force) {
      behaviour for 2021-09-28, the one date MESH has no file for. */
   if (stormState.under) for (const d of set) await loadStormDay(d, stormState.under);
   stormState.active = set; stormLastAt = at;
-  stormState.miniAlpha = stormWashAt(p.lon, p.lat);
+  /* AND THE SMALL MAP FOLLOWS THE BIG ONE. A tint on the mini map for days he never chose
+     is the same surprise in a smaller box, and the two maps must never disagree about how
+     dark the same ground is. stormMiniFromTicked() sets it when there IS a committed answer. */
+  stormState.miniAlpha = 0;
   await drawStormLayer();
   syncStormBar();
   try { drawMini(); } catch (e) {}
@@ -9302,7 +9342,11 @@ function stormPickRowWords(s) {
     bits.push(`${Number(s.peak_in).toFixed(2)}"`);
   }
   if (s.n125 > 0) bits.push(`${s.n125} large`);
-  if (s.hailReportsClean > 0) bits.push('a report was filed that day');
+  /* THE SAME FACT, SAID THE SAME WAY. "A report was filed that day" is the sentence he
+     complained about by name: it says something was filed and not what. The house panel
+     now prints the count and the picker is one tap away from it, so the two must not
+     disagree about the same day. The number is already in the manifest. */
+  if (s.hailReportsClean > 0) bits.push(`${s.hailReportsClean} report${s.hailReportsClean === 1 ? '' : 's'} filed that day`);
   if (!stormDayHas(s.date)) bits.push(`not on this phone · ${stormKb(s.gzip || s.bytes || 0)}`);
   return bits.join(' · ');
 }
@@ -10905,7 +10949,7 @@ document.querySelectorAll('.dsecHead[data-msec]').forEach(b => {
 /* ---- what version is actually on the phone ----
    Matches the service worker cache name, so "did the update land" is answerable by
    looking rather than guessing. */
-const BUILD_VERSION = 'v37';
+const BUILD_VERSION = 'v38';
 const BUILD_DATE = '6 August 2026';
 function renderVersionStamp() {
   const el = $('versionStamp'); if (!el) return;
@@ -11886,6 +11930,35 @@ function renderRoofPanel(v) {
 /* Sizes as words, never as decimals. His standing rule, and it also happens to be what a
    homeowner reads without stopping. */
 const STORM_SIZE_WORD = { '0.75in':'three quarter inch', '1.00in':'one inch', '1.75in':'one and three quarter inch' };
+
+/* WHAT A REPORT ACTUALLY SAYS, which the panel used to throw away. Every report already on
+   the phone carries four things it never showed: the size, who filed it, whether it was
+   measured or estimated by eye, and the time to the minute.
+
+   THE DISTANCE IS NOT DECORATION. A report is a fact about a FILING — someone stood
+   somewhere and said what they saw — and a report two miles off is not a report about this
+   house. Saying how far away it was is what stops the line being read as a claim about this
+   roof, and it is the first thing a careful reader would ask.
+
+   est is shown, never hidden: 127 of the 255 clean reports in the library are somebody's
+   eye rather than a ruler, and showing the two alike would be a claim the data cannot carry.
+   The source names come from the archive with inconsistent case — Public and PUBLIC, Trained
+   Spotter and TRAINED SPOTTER — so they are folded before they are ever printed. */
+function stormReportWords(r, lon, lat) {
+  const mi = haversine(lat, lon, r.lat, r.lon) / 1609.34;
+  const who = String(r.src || '').toLowerCase()
+    .replace(/\b\w/g, c => c.toUpperCase())
+    .replace(/\bMngr\b/, 'Manager').replace(/\bNws\b/, 'NWS').replace(/\bAsos\b/, 'ASOS');
+  const t = String(r.t || '');
+  const hh = Number(t.slice(8, 10)), mm = t.slice(10, 12);
+  const clock = Number.isFinite(hh) && mm
+    ? `${((hh + 11) % 12) + 1}:${mm}${hh < 12 ? 'am' : 'pm'} UTC`
+    : '';
+  return `${r.mag.toFixed(2).replace(/0$/, '')}" ${r.est ? 'estimated by eye' : 'measured'}`
+    + (who ? `, ${who}` : '')
+    + (clock ? `, ${clock}` : '')
+    + `, ${mi < 1 ? 'under a mile' : mi.toFixed(1) + ' miles'} from here`;
+}
 const STORM_YEARS_SHOWN = 6;
 const STORM_PANEL_AUTO = 12;
 /* Keyed to the record, not a bare boolean. A global would follow him to the next house and
@@ -12033,9 +12106,21 @@ function renderStormPanel(v) {
            is here, on the row he is already reading, not only on the map bar. It ADDS the
            day to the ticked set and opens the list — it downloads nothing and commits
            nothing on its own; Done does that, exactly as it does from the bar. */
+        /* THE REPORTS THEMSELVES, nearest first, three at most. "A report was filed that
+           day" was true and nearly useless; this is the same fact with the four things it
+           was dropping. Only reports already on the phone are listed — nothing here
+           downloads — and the day's own row still carries the radar class it always did. */
+        const dayFile = stormDayHeld(r.date, 'v2');
+        const reps = ((dayFile && dayFile.hailReports) || [])
+          .filter(x => x && x.kind === 'hail' && !x.radarWorded && Number.isFinite(x.mag))
+          .map(x => ({ x, mi: haversine(v.lat, v.lon, x.lat, x.lon) }))
+          .sort((a, b) => a.mi - b.mi)
+          .slice(0, 3);
         body += `<div class="srow"><b>${esc(niceDate(r.date))}</b>`
           + `<span>radar estimated ${esc(STORM_SIZE_WORD[r.cls] || '')}`
-          + (r.reports ? ' · a report was filed that day' : '') + `</span>`
+          + (r.reports ? ` · ${r.reports} report${r.reports === 1 ? '' : 's'} filed that day` : '')
+          + `</span>`
+          + reps.map(o => `<span class="srep">${esc(stormReportWords(o.x, v.lon, v.lat))}</span>`).join('')
           + `<button class="ghost dsCmp" data-date="${esc(r.date)}">Add day</button></div>`;
       }
     }
@@ -12045,9 +12130,18 @@ function renderStormPanel(v) {
       + (rows.length
           ? `Radar estimated hail of three quarter inch or larger over this area on ${rows.length} day${rows.length === 1 ? '' : 's'}`
             + ` out of the ${checked} checked. `
-            + (withRep.length
-                ? `${withRep.length} of those day${withRep.length === 1 ? '' : 's'} also had a hail report filed on the ground somewhere in the seven counties.`
-                : `None of those days had a hail report filed on the ground anywhere in the seven counties.`)
+            /* THOSE IS PLURAL WHATEVER FOLLOWS IT. The plural was hung off the wrong noun
+               and printed "1 of those day also had". And when only one storm day reached
+               this area at all, counting a subset of it is the wrong shape of sentence
+               entirely - there is one day, so name it as one. Register unchanged: the
+               subject is a day, never a roof. */
+            + (rows.length === 1
+                ? (withRep.length
+                    ? `That day also had a hail report filed on the ground somewhere in the seven counties.`
+                    : `That day had no hail report filed on the ground anywhere in the seven counties.`)
+                : (withRep.length
+                    ? `${withRep.length} of those days also had a hail report filed on the ground somewhere in the seven counties.`
+                    : `None of those days had a hail report filed on the ground anywhere in the seven counties.`))
           : `None of the ${checked} storm day${checked === 1 ? '' : 's'} checked reached this area.`)
       + `</div>`;
 
@@ -12821,6 +12915,44 @@ $('stormReportBtn').onclick = async () => {
   buzz(10);
   syncStormBar();
   await drawStormLayer();
+};
+/* ALL OF IT, WITH THE COUNT AND THE SIZE SAID FIRST. The existing one-dialog rule applies:
+   nothing downloads until he has seen how many files and how many megabytes, and declining
+   leaves everything exactly as it was. It reports progress on the bar because 224 files over
+   cell signal is not instant and a silent minute reads as a hang.
+   ONE LIBRARY, THE ONE HE IS LOOKING AT. Fetching both would double the wait for a layer he
+   may not be on, and the chip is one tap away if he wants the other. */
+$('spAll').onclick = async () => {
+  buzz(8);
+  const ix = await loadStormIndex();
+  if (!ix) return;
+  const miss = stormIsMesh() ? await loadMeshMissing() : new Set();
+  const need = ix.storms.map(s => s.date)
+    .filter(d => !stormDayHas(d) && !miss.has(d));
+  const txt = $('stormTxt');
+  if (!need.length) {
+    if (txt) txt.textContent = `Every storm day is already on this phone.`;
+    return;
+  }
+  const bytes = ix.storms.filter(s => need.includes(s.date))
+    .reduce((a, s) => a + (s.gzip || s.bytes || 0), 0);
+  if (!confirm(`Download ${need.length} storm day${need.length === 1 ? '' : 's'}, about ${stormKb(bytes)}?`)) return;
+  let got = 0, failed = 0;
+  for (const d of need) {
+    /* Sequential on purpose. Twenty parallel fetches on one bar of signal is how a phone
+       ends up with half a library and no way to tell which half. */
+    if (await loadStormDay(d)) got++; else failed++;
+    if (txt && (got + failed) % 5 === 0) {
+      txt.textContent = `Downloading storm days… ${got + failed} of ${need.length}.`;
+    }
+  }
+  if (txt) {
+    txt.textContent = failed
+      ? `${got} storm day${got === 1 ? '' : 's'} downloaded. ${failed} could not be fetched — try again with signal.`
+      : `All ${got} remaining storm day${got === 1 ? '' : 's'} are now on this phone.`;
+  }
+  renderStormPick();
+  syncStormBar();
 };
 $('stormPick').onclick = async () => {
   buzz(8);
