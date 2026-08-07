@@ -8031,8 +8031,27 @@ async function loadMeshMissing() {
   if (stormState.meshMissing) return stormState.meshMissing;
   const j = await stormFetch('manifest.json', 'mesh');
   const list = (j && Array.isArray(j.missing)) ? j.missing : [];
+  /* THE WHOLE MANIFEST IS KEPT NOW. It was fetched, one field was read out of it and the
+     rest was dropped — including the per-day byte figures, which is why the download
+     button could only ever quote the other library's. Same fetch, same call, nothing new
+     over the wire. */
+  stormState.meshIndex = j || null;
+  stormState.meshBytes = new Map();
+  for (const d of ((j && Array.isArray(j.days)) ? j.days : [])) {
+    if (d && d.date) stormState.meshBytes.set(d.date, d.bytes || 0);
+  }
   stormState.meshMissing = new Set(list.map(m => (m && m.date) || m).filter(Boolean));
   return stormState.meshMissing;
+}
+
+/* THE DAYS THIS POINT NEEDS FROM THE SIZE-ESTIMATE LIBRARY AND DOES NOT HAVE.
+   The twin of stormAtPoint's `absent`, which only ever spoke for the detections library.
+   Excludes the dates the archive does not hold, for the same reason stormMeshAtPoint does:
+   offering a download that can only 404 is worse than saying nothing. */
+function stormMeshAbsentAt(lon, lat) {
+  const miss = stormState.meshMissing || new Set();
+  return stormCandidates(lon, lat)
+    .filter(s => !miss.has(s.date) && !stormDayHas(s.date, 'mesh'));
 }
 
 async function loadStormIndex() {
@@ -10949,7 +10968,7 @@ document.querySelectorAll('.dsecHead[data-msec]').forEach(b => {
 /* ---- what version is actually on the phone ----
    Matches the service worker cache name, so "did the update land" is answerable by
    looking rather than guessing. */
-const BUILD_VERSION = 'v38';
+const BUILD_VERSION = 'v39';
 const BUILD_DATE = '6 August 2026';
 function renderVersionStamp() {
   const el = $('versionStamp'); if (!el) return;
@@ -11930,6 +11949,9 @@ function renderRoofPanel(v) {
 /* Sizes as words, never as decimals. His standing rule, and it also happens to be what a
    homeowner reads without stopping. */
 const STORM_SIZE_WORD = { '0.75in':'three quarter inch', '1.00in':'one inch', '1.75in':'one and three quarter inch' };
+/* Smallest first. The one place in the file that says which radar class outranks which,
+   so a fourth class can never be added in one place and silently ignored in another. */
+const STORM_CLS_ORDER = ['0.75in', '1.00in', '1.75in'];
 
 /* WHAT A REPORT ACTUALLY SAYS, which the panel used to throw away. Every report already on
    the phone carries four things it never showed: the size, who filed it, whether it was
@@ -11944,27 +11966,78 @@ const STORM_SIZE_WORD = { '0.75in':'three quarter inch', '1.00in':'one inch', '1
    eye rather than a ruler, and showing the two alike would be a claim the data cannot carry.
    The source names come from the archive with inconsistent case — Public and PUBLIC, Trained
    Spotter and TRAINED SPOTTER — so they are folded before they are ever printed. */
+/* THE FURTHEST A REPORT MAY BE AND STILL BE LISTED UNDER THIS ADDRESS. Miles. One place.
+   See the measured argument for 25 at the cap edit — the band 18.6 to 44.9 is empty at every
+   real address, so this sits in the middle of a gap rather than on top of live data. */
+const STORM_REPORT_MAX_MI = 25;
+
 function stormReportWords(r, lon, lat) {
   const mi = haversine(lat, lon, r.lat, r.lon) / 1609.34;
   const who = String(r.src || '').toLowerCase()
     .replace(/\b\w/g, c => c.toUpperCase())
     .replace(/\bMngr\b/, 'Manager').replace(/\bNws\b/, 'NWS').replace(/\bAsos\b/, 'ASOS');
+  /* `t` is UTC, in YYYYMMDDHHMM. Proven rather than assumed: 54 of the 255 clean reports
+     carry a UTC date one day ahead of the file they are stored in, and 0 carry an Ohio date
+     that differs from it — which is only consistent with UTC stamps filed under local days. */
   const t = String(r.t || '');
-  const hh = Number(t.slice(8, 10)), mm = t.slice(10, 12);
-  const clock = Number.isFinite(hh) && mm
-    ? `${((hh + 11) % 12) + 1}:${mm}${hh < 12 ? 'am' : 'pm'} UTC`
-    : '';
+  let clock = '';
+  if (t.length === 12 && Number.isFinite(Number(t))) {
+    const utc = new Date(Date.UTC(+t.slice(0, 4), +t.slice(4, 6) - 1, +t.slice(6, 8),
+                                  +t.slice(8, 10), +t.slice(10, 12)));
+    try {
+      const parts = {};
+      for (const q of new Intl.DateTimeFormat('en-US', {
+        timeZone: 'America/New_York', hour: 'numeric', minute: '2-digit',
+        hour12: true, timeZoneName: 'short',
+      }).formatToParts(utc)) parts[q.type] = q.value;
+      /* Engines differ on the am/pm token — case, and a narrow no-break space in some. */
+      const ap = String(parts.dayPeriod || '').toLowerCase().replace(/[^apm]/g, '');
+      if (parts.hour && parts.minute && ap && parts.timeZoneName) {
+        clock = `${parts.hour}:${parts.minute}${ap} ${parts.timeZoneName}`;
+      }
+    } catch (e) { clock = ''; }
+    /* An engine with no zone database still prints the fact, labelled, rather than dropping
+       it: a missing time loses something the archive holds, and UTC is not untrue. */
+    if (!clock) {
+      const hh = +t.slice(8, 10), mm = t.slice(10, 12);
+      clock = `${((hh + 11) % 12) + 1}:${mm}${hh < 12 ? 'am' : 'pm'} UTC`;
+    }
+  }
   return `${r.mag.toFixed(2).replace(/0$/, '')}" ${r.est ? 'estimated by eye' : 'measured'}`
     + (who ? `, ${who}` : '')
     + (clock ? `, ${clock}` : '')
     + `, ${mi < 1 ? 'under a mile' : mi.toFixed(1) + ' miles'} from here`;
 }
+/* ONE PLACE COUNTS THE COST, because the button and the confirmation box must never be
+   able to disagree — they were two copies of the same arithmetic and both were wrong the
+   same way, which is exactly how nobody noticed. */
+function stormNeedSize(absent, meshAbsent) {
+  const bytes = stormState.meshBytes || new Map();
+  const days = new Set([...absent.map(s => s.date), ...meshAbsent.map(s => s.date)]);
+  return {
+    days: days.size,
+    files: absent.length + meshAbsent.length,
+    /* v2 quotes gzip where it has it; the size-estimate manifest carries raw bytes only,
+       so this figure is honest-to-slightly-high rather than the 3.20x low it was. */
+    bytes: absent.reduce((a, s) => a + (s.gzip || s.bytes || 0), 0)
+         + meshAbsent.reduce((a, s) => a + (bytes.get(s.date) || 0), 0),
+  };
+}
+const stormSizeWords = b => b >= 1024 * 1024
+  ? (b / 1024 / 1024).toFixed(1) + ' MB'
+  : Math.max(1, Math.round(b / 1024)) + ' KB';
+
 const STORM_YEARS_SHOWN = 6;
 const STORM_PANEL_AUTO = 12;
 /* Keyed to the record, not a bare boolean. A global would follow him to the next house and
    latch the "Checking…" state on a panel whose downloads finished two doors ago — the same
    fault `roofBusy` was changed from a boolean to a Set to fix. */
 const stormPanelBusy = new Set();
+/* Keyed '<src>|<date>', session only, never persisted — see the loop it closes above. */
+const stormColdFailed = new Set();
+/* One fetch per session, whether it succeeds or not: a failure leaves an empty set, which
+   is the safe direction — every day is then reported the ordinary way. */
+let stormMissAsked = false;
 
 /* WHAT THIS PHONE CAN SAY ABOUT ONE POINT, FROM THE DAYS IT ALREADY HOLDS.
    Deliberately does not fetch anything. `stormCandidates` answers from the manifest alone
@@ -11979,7 +12052,13 @@ function stormAtPoint(lon, lat) {
     const y = s.date.slice(0, 4);
     const e = byYear[y] || (byYear[y] = { hit: 0, checked: 0, total: 0 });
     e.total++;
-    const day = stormDayHeld(s.date);
+    /* 'v2' IS NOT OPTIONAL AND IS NOT A DEFAULT. Bare, this followed stormState.src, and
+       on the size estimate chip the panel silently counted MESH days and printed radar's
+       sentences over the top of them — including "Radar estimated hail of three quarter
+       inch or larger", which names the wrong instrument and asserts a size the MESH bands
+       are forbidden to carry. The chip belongs to the map. This panel is one canonical
+       record per address. Ruled 2026-08-07. */
+    const day = stormDayHeld(s.date, 'v2');
     if (!day) { absent.push(s); continue; }
     e.checked++;
     const cls = stormClassAt(day, lon, lat);
@@ -11987,6 +12066,52 @@ function stormAtPoint(lon, lat) {
   }
   return { rows, absent, byYear, checked: cands.length - absent.length, candidates: cands.length };
 }
+
+/* THE SAME QUESTION, ASKED OF THE SIZE ESTIMATE. A separate reader rather than a flag on
+   the one above, because the two libraries answer different questions and must never be
+   able to blend: this one has no size class, no ground reports and one date the archive
+   simply does not hold. Fetches nothing, exactly like its twin.
+
+   THE MISSING DATE IS EXCLUDED FROM THE DENOMINATOR, not counted as unchecked. 2021-09-28
+   has no MESH file and never will — the source grib2 for that valid time was never
+   archived. Counting it as "not checked yet" would promise a download that can only 404. */
+function stormMeshAtPoint(lon, lat) {
+  const miss = stormState.meshMissing || new Set();
+  const cands = stormCandidates(lon, lat).filter(s => !miss.has(s.date));
+  let n = 0, checked = 0;
+  for (const s of cands) {
+    const day = stormDayHeld(s.date, 'mesh');
+    if (!day) continue;
+    checked++;
+    if (stormClassAt(day, lon, lat)) n++;
+  }
+  return { n, checked, candidates: cands.length };
+}
+
+/* THE SIZE-ESTIMATE SENTENCE. Frozen literals, deliberately not in the label registry.
+   NO INCH WORD APPEARS HERE AND NONE MAY BE ADDED. Measured forward against 255 real
+   ground reports, the median report is one inch in every band from 7 mm to 20 mm — the
+   bands sort ground, not size. The subject is the area in every branch.
+
+   NO PARTIAL COUNT IS EVER PRINTED. A sentence that changes under his thumb while files
+   are still arriving is a sentence the homeowner saw two versions of. Until every
+   candidate is here it says only that it has not been checked. */
+function stormMeshWords(m) {
+  if (!m.candidates) return `This area was not inside radar's size estimate on any of the days on file.`;
+  if (m.checked < m.candidates) return `The size estimate has not been checked on this phone yet.`;
+  if (m.checked === 1) return m.n
+    ? `This area was inside radar's size estimate on the one day checked.`
+    : `This area was not inside radar's size estimate on the one day checked.`;
+  return m.n
+    ? `This area was inside radar's size estimate on ${m.n} of the ${m.checked} days checked.`
+    : `This area was inside radar's size estimate on none of the ${m.checked} days checked.`;
+}
+
+/* THE ONE SENTENCE THAT SAYS HOW THE TWO RADAR LAYERS RELATE. Fixed, frozen, and printed in
+   the same block as the sentence it introduces so a layout change cannot separate them.
+   It is not conditional on anything: a preface that appears only when the number below it
+   is unflattering is the same selection bias the line itself exists to avoid. */
+const STORM_MESH_PREFACE = "Radar also draws a second layer that covers much less ground: the size estimate.";
 
 /* THE PANEL HE HANDS TO A HOMEOWNER.
    Three rules hold this together and none of them is decoration:
@@ -12008,6 +12133,12 @@ function renderStormPanel(v) {
      Without this the panel would simply never appear for anybody who taps a house before
      switching storms on, which is most people most of the time. It is fetched once per
      session; `loadStormIndex` returns the held copy afterwards. */
+  /* THE MISSING LIST, FETCHED ONCE. Without it the panel counts a day the size-estimate
+     archive does not hold as "not checked yet", and offers a download that can only 404. */
+  if (!stormState.meshMissing && !stormMissAsked) {
+    stormMissAsked = true;
+    loadMeshMissing().then(() => { if (roofOnScreen(v)) renderStormPanel(v); });
+  }
   if (!stormState.index) {
     el.classList.add('hide'); el.innerHTML = '';
     if (!stormState.indexFailed) {
@@ -12032,16 +12163,35 @@ function renderStormPanel(v) {
      stay on the phone, so the cost is paid once per area and never again. Anything beyond
      that states its file count and its megabytes and waits for a tap. */
   if (!stormPanelBusy.has(v.id)) {
-    const cold = stormCandidates(v.lon, v.lat)
+    /* BOTH LIBRARIES, THE SAME TWELVE DATES. The panel states one fact from each, so it
+       must have checked the same ground in each; twelve of one and none of the other is
+       how a count and a sentence end up describing different worlds.
+       EXPLICIT 'v2' / 'mesh' EVERYWHERE — nothing here may follow the chip. */
+    const miss0 = stormState.meshMissing || new Set();
+    const recent = stormCandidates(v.lon, v.lat)
       .sort((a, b) => (a.date < b.date ? 1 : -1))
-      .slice(0, STORM_PANEL_AUTO)
-      .filter(s => !stormDayHas(s.date));
+      .slice(0, STORM_PANEL_AUTO);
+    const cold = [];
+    for (const s of recent) {
+      if (!stormDayHas(s.date, 'v2') && !stormColdFailed.has('v2|' + s.date)) cold.push({ date: s.date, src: 'v2' });
+      if (!miss0.has(s.date) && !stormDayHas(s.date, 'mesh') && !stormColdFailed.has('mesh|' + s.date)) cold.push({ date: s.date, src: 'mesh' });
+    }
     if (cold.length) {
       stormPanelBusy.add(v.id);
+      const dayCount = new Set(cold.map(c => c.date)).size;
       el.innerHTML = `<div class="rhead">Storms over this area</div>`
-        + `<div class="pmeta">Checking the ${cold.length} most recent storm day${cold.length === 1 ? '' : 's'}…</div>`;
+        + `<div class="pmeta">Checking the ${dayCount} most recent storm day${dayCount === 1 ? '' : 's'}…</div>`;
       (async () => {
-        for (const s of cold) { await loadStormDay(s.date); }
+        /* A FAILED FETCH IS REMEMBERED. It was not, and that is a loop: only successes are
+           cached, the busy flag was cleared before the re-render, so the re-render
+           recomputed the same list and fetched it again, for ever. Standing in a driveway
+           with no signal, that is a phone firing twelve requests a round until the sheet
+           is closed. Remembered for this session only, so walking back into signal and
+           reopening the sheet still tries again. */
+        for (const c of cold) {
+          const got = await loadStormDay(c.date, c.src);
+          if (!got) stormColdFailed.add(c.src + '|' + c.date);
+        }
         stormPanelBusy.delete(v.id);
         if (roofOnScreen(v)) renderStormPanel(v);
       })();
@@ -12050,6 +12200,7 @@ function renderStormPanel(v) {
   }
 
   const { rows, absent, byYear, checked, candidates } = stormAtPoint(v.lon, v.lat);
+  const mesh = stormMeshAtPoint(v.lon, v.lat);
   const big = rows.filter(r => r.cls === '1.00in' || r.cls === '1.75in');
   const withRep = rows.filter(r => r.reports > 0);
   const cov = stormCoverage();
@@ -12073,7 +12224,12 @@ function renderStormPanel(v) {
       + `<div class="pc"><span>Storm days here</span><b>${rows.length}</b>`
       + `<em>of ${checked} day${checked === 1 ? '' : 's'} checked</em></div>`
       + `<div class="pc"><span>At one inch or more</span><b>${big.length}</b>`
-      + (big.length ? `<em>largest ${esc(STORM_SIZE_WORD[big[0].cls] || '')}</em>` : `<em>none of them</em>`)
+      /* THE LARGEST, NOT THE NEWEST. rows comes out of stormAtPoint sorted by DATE
+         descending and is never re-sorted, so big[0] was simply the most recent day at or
+         above one inch. Measured over the real library on a 0.05 degree grid: 219 of the
+         1,018 ground points that have such a day printed an UNDERSTATED size — 21.5%, and
+         understating is the direction that matters least to us and most to a homeowner. */
+      + (big.length ? `<em>largest ${esc(STORM_SIZE_WORD[STORM_CLS_ORDER.reduce((a, c) => big.some(r => r.cls === c) ? c : a, big[0].cls)] || '')}</em>` : `<em>none of them</em>`)
       + `</div></div>`;
 
     /* A YEAR THAT WAS NOT CHECKED PRINTS A DASH, NEVER A ZERO.
@@ -12082,17 +12238,31 @@ function renderStormPanel(v) {
        which a homeowner holding the phone would read as "no storms here until last year".
        That is a false statement made by a layout. A year with nothing checked is unknown,
        and unknown is a dash. */
+    /* THREE STATES, NOT TWO. The shipped code had one mark for two different facts: a
+       year the phone has not looked at, and a year the library holds no storm day for at
+       all. The second is not unknown — it is checked, and the answer is zero. Ruled by
+       Travis 2026-08-07: 0 for checked-and-empty, the dash strictly for not-checked. */
+    let anyDash = false, anyPlus = false;
     body += `<div class="yrs">` + years.map(y => {
       const e = byYear[y];
-      const known = !!e && e.checked > 0;
-      const n = known ? e.hit : 0;
-      const partial = known && e.checked < e.total;
+      const noCands = !e || e.total === 0;
+      const known = noCands || e.checked > 0;
+      if (!known) anyDash = true;
+      const n = (e && e.checked > 0) ? e.hit : 0;
+      const partial = !noCands && e.checked > 0 && e.checked < e.total;
+      if (partial) anyPlus = true;
       return `<div class="yr"><div class="bar" style="height:${known ? 6 + (n / maxYear) * 40 : 4}px;`
         + `opacity:${known ? (n ? 1 : .18) : .10}"></div>`
         + `<div class="n">${known ? n + (partial ? '+' : '') : '–'}</div>`
         + `<div class="y">${String(y).slice(2)}</div></div>`;
     }).join('') + `</div>`;
-    if (absent.length) {
+    /* EMITTED ON THE MARK IT EXPLAINS — EITHER MARK. It was gated on absent.length, so
+       with every file already here a dash could appear with nothing explaining it. The
+       first fix of that gated it on the DASH alone, which silently dropped the plus: a
+       strip can be all numbers-with-a-plus and no dash at all, and then "4+" ships
+       unexplained beside a storm count, where it reads as "four or more storms". Caught by
+       the wording review, not by any check I had written. */
+    if (anyDash || anyPlus) {
       body += `<div class="pnote" style="margin-top:6px">A dash means that year has not been checked on this phone yet.`
         + (years.some(y => byYear[y] && byYear[y].checked > 0 && byYear[y].checked < byYear[y].total)
             ? ` A plus means part of that year is still unchecked.` : ``) + `</div>`;
@@ -12111,10 +12281,16 @@ function renderStormPanel(v) {
            was dropping. Only reports already on the phone are listed — nothing here
            downloads — and the day's own row still carries the radar class it always did. */
         const dayFile = stormDayHeld(r.date, 'v2');
+        /* `m` IS METRES. The field this replaced was called `mi` and held metres, which is
+           exactly the sort of thing that survives three reviews and then divides by 1609
+           twice. haversine returns metres; the constant is stated in miles because that is
+           what the cap means; the conversion happens once, here. */
+        const capM = STORM_REPORT_MAX_MI * 1609.34;
         const reps = ((dayFile && dayFile.hailReports) || [])
           .filter(x => x && x.kind === 'hail' && !x.radarWorded && Number.isFinite(x.mag))
-          .map(x => ({ x, mi: haversine(v.lat, v.lon, x.lat, x.lon) }))
-          .sort((a, b) => a.mi - b.mi)
+          .map(x => ({ x, m: haversine(v.lat, v.lon, x.lat, x.lon) }))
+          .filter(o => o.m <= capM)
+          .sort((a, b) => a.m - b.m)
           .slice(0, 3);
         body += `<div class="srow"><b>${esc(niceDate(r.date))}</b>`
           + `<span>radar estimated ${esc(STORM_SIZE_WORD[r.cls] || '')}`
@@ -12123,6 +12299,9 @@ function renderStormPanel(v) {
           + reps.map(o => `<span class="srep">${esc(stormReportWords(o.x, v.lon, v.lat))}</span>`).join('')
           + `<button class="ghost dsCmp" data-date="${esc(r.date)}">Add day</button></div>`;
       }
+      /* Subject is the reports and the area. No banned word, no inch word, no roof. */
+      body += `<div class="pnote">Only reports filed within ${STORM_REPORT_MAX_MI} miles of `
+        + `this area are listed under a day.</div>`;
     }
 
     /* The sentence a hostile reader gets to see. Every noun in it is an area or a day. */
@@ -12135,25 +12314,49 @@ function renderStormPanel(v) {
                this area at all, counting a subset of it is the wrong shape of sentence
                entirely - there is one day, so name it as one. Register unchanged: the
                subject is a day, never a roof. */
+            /* A PERSON ON THE GROUND, AND IN EVERY BRANCH. Ruled by Travis 2026-08-07.
+               The old absolute was LITERALLY FALSE on three days - 2022-07-06, 2023-06-15
+               and 2023-07-18 - where hail reports exist but every one of them repeats
+               radar rather than a person saying what they saw, and so is excluded from the
+               clean count these sentences are built on. Excluding them is right; saying no
+               report was filed anywhere was not.
+               "Filed by a person on the ground" is true of exactly the set being counted,
+               and it names WHY the others do not count without making the homeowner do the
+               arithmetic. All four branches moved together: one phrase for one thing, or
+               two lines describe the same 255 filings in two different ways on one screen.
+               "Somewhere" stays in the positive only, where it is doing real work - it says
+               the report is not necessarily anywhere near this house. */
             + (rows.length === 1
                 ? (withRep.length
-                    ? `That day also had a hail report filed on the ground somewhere in the seven counties.`
-                    : `That day had no hail report filed on the ground anywhere in the seven counties.`)
+                    ? `That day also had a report filed by a person on the ground somewhere in the seven counties.`
+                    : `That day had no report filed by a person on the ground in the seven counties.`)
                 : (withRep.length
-                    ? `${withRep.length} of those days also had a hail report filed on the ground somewhere in the seven counties.`
-                    : `None of those days had a hail report filed on the ground anywhere in the seven counties.`))
+                    ? `${withRep.length} of those days also had a report filed by a person on the ground somewhere in the seven counties.`
+                    : `None of those days had a report filed by a person on the ground in the seven counties.`))
           : `None of the ${checked} storm day${checked === 1 ? '' : 's'} checked reached this area.`)
       + `</div>`;
+
+    /* THE SIZE ESTIMATE, ALWAYS, AT EVERY ADDRESS. Never gated on the chip, and never
+       gated on the count being flattering: printing it only when it helps is precisely the
+       selection bias this panel exists to be defensible against. Four of six real
+       residential addresses have zero size-estimate days in five years, and they are told
+       so in the same words as the three-day address. */
+    body += `<div class="pmeta">${esc(STORM_MESH_PREFACE + ' ' + stormMeshWords(mesh))}</div>`;
 
     /* The honesty line, on the same screen as the answer rather than in settings. */
     body += `<div class="pnote">${esc(cov.line)}</div>`;
 
-    if (absent.length) {
-      const kb = absent.reduce((a, s) => a + (s.gzip || s.bytes || 0), 0);
+    /* DAYS AND FILES ARE DIFFERENT NUMBERS NOW, and the sentence already said so. One
+       storm day can owe this phone two files, one from each library, so "3 more storm
+       days" can honestly be "5 files". Counting days by the union is what makes the
+       button's promise match the panel's own denominators. */
+    const meshAbsent = stormMeshAbsentAt(v.lon, v.lat);
+    if (absent.length || meshAbsent.length) {
+      const need = stormNeedSize(absent, meshAbsent);
       body += `<button class="ghost" id="dStormGo" style="margin-top:9px">`
-        + `Check ${absent.length} more storm day${absent.length === 1 ? '' : 's'} for this address</button>`
-        + `<div class="pnote">That downloads ${absent.length} file${absent.length === 1 ? '' : 's'}, about `
-        + `${kb >= 1024 * 1024 ? (kb / 1024 / 1024).toFixed(1) + ' MB' : Math.max(1, Math.round(kb / 1024)) + ' KB'}.</div>`;
+        + `Check ${need.days} more storm day${need.days === 1 ? '' : 's'} for this address</button>`
+        + `<div class="pnote">That downloads ${need.files} file${need.files === 1 ? '' : 's'}, about `
+        + `${stormSizeWords(need.bytes)}.</div>`;
     }
   }
 
@@ -12181,14 +12384,25 @@ function renderStormPanel(v) {
 
   const go = $('dStormGo');
   if (go) go.onclick = async () => {
-    const kb = absent.reduce((a, s) => a + (s.gzip || s.bytes || 0), 0);
-    const size = kb >= 1024 * 1024 ? (kb / 1024 / 1024).toFixed(1) + ' MB' : Math.max(1, Math.round(kb / 1024)) + ' KB';
-    if (!confirm(`Download ${absent.length} storm day file${absent.length === 1 ? '' : 's'}?\n\n`
-      + `That is about ${size} over your data connection. They stay on this phone afterwards and work with no signal.`)) return;
+    /* RECOMPUTED AT THE TAP, not captured at render. He may have stood here while the
+       auto-prefetch finished, and asking him to consent to files that already arrived is
+       the same class of untruth as asking for the wrong number. */
+    const meshAbsent2 = stormMeshAbsentAt(v.lon, v.lat);
+    const need = stormNeedSize(absent, meshAbsent2);
+    if (!need.files) { renderStormPanel(v); return; }
+    if (!confirm(`Download ${need.files} storm day file${need.files === 1 ? '' : 's'}?\n\n`
+      + `That is about ${stormSizeWords(need.bytes)} over your data connection. They stay on this phone afterwards and work with no signal.`)) return;
     go.disabled = true; go.textContent = 'Checking…';
     /* One at a time on purpose. A hundred parallel requests on a phone in a driveway is
        how a feature that works on a desk stops working on a doorstep. */
-    for (const s of absent) { await loadStormDay(s.date); }
+    /* BOTH LIBRARIES AGAIN, AND BOTH PINNED. The bare call followed the chip: on the size
+       estimate it fetched MESH files while quoting the radar manifest's byte figures, and
+       MESH is 2.20x larger on disk — 2.73 MB against 1.24 MB. */
+    /* THE SIZE-ESTIMATE LIST IS ITS OWN. It was derived from the detections list, so a day
+       already held in v2 but missing from mesh was never fetched by anything — which is
+       the whole reason the size-estimate line could not finish on an upgraded phone. */
+    for (const s of absent) { await loadStormDay(s.date, 'v2'); }
+    for (const s of meshAbsent2) { await loadStormDay(s.date, 'mesh'); }
     /* If he has walked to the next door and the sheet now shows a different house, this
        must not paint that house's panel under the new house's title — the same fault two
        reviews caught on the roof panel before it shipped. */
