@@ -8031,7 +8031,20 @@ async function stormFetch(path, srcKey) {
 async function loadMeshMissing() {
   if (stormState.meshMissing) return stormState.meshMissing;
   const j = await stormFetch('manifest.json', 'mesh');
-  const list = (j && Array.isArray(j.missing)) ? j.missing : [];
+  /* A FAILED FETCH IS NOT AN EMPTY MISSING LIST, AND MUST NOT BE REMEMBERED AS ONE.
+     This used to fall through with `list = []` and cache `new Set()` — which is TRUTHY, so
+     every later caller read it as loaded and it was never retried for the rest of the
+     session. Standing in a driveway with no signal and tapping the chip once was enough to
+     poison it, and the damage landed on a panel rendered minutes later on a phone with
+     five bars. v41 made that worse rather than better: the size-estimate total is now
+     computed FROM this set, so a cached failure silently reinstates the "223 of 224 … the
+     rest are not downloaded" sentence this round exists to delete.
+     Returning an uncached empty set keeps the old safe direction — every day is reported
+     the ordinary way — while leaving the door open for the next attempt. It does not loop:
+     the panel asks once per session behind `stormMissAsked`, and the only other way back in
+     is a deliberate tap on the chip. Found by the v41 review. */
+  if (!j) return new Set();
+  const list = Array.isArray(j.missing) ? j.missing : [];
   /* THE WHOLE MANIFEST IS KEPT NOW. It was fetched, one field was read out of it and the
      rest was dropped — including the per-day byte figures, which is why the download
      button could only ever quote the other library's. Same fetch, same call, nothing new
@@ -8184,23 +8197,62 @@ async function stormActiveSet(lon, lat, n = STORM_OPEN_N) {
    built from a complete one. "No storms over this street" and "no storms in the eleven days
    I happen to have" are different sentences and only one of them is honest.
    So every storm readout carries this, on the same line, not in a note and not in settings. */
-function stormCoverage() {
+function stormCoverage(srcKey) {
   const ix = stormState.index;
   if (!ix) return { have: 0, total: 0, whole: false, line: 'Storm library not loaded on this phone yet.' };
-  const total = ix.storms.length;
-  /* ONE LIBRARY'S WORTH, not the size of the whole memo. The memo now holds both libraries
+  /* THE SOURCE IS AN ARGUMENT NOW, AND THE HOUSE PANEL PASSES 'v2'. Bare, this read
+     stormState.src — the MAP CHIP — and it was the last place the chip reached into the
+     panel after v39 pinned everything else. The audit that found it read every call site
+     of every storm reader and found no second survivor and nothing chip-fed that can reach
+     a stored record. The map readout still passes nothing, because there the chip is the
+     right master: that screen is about what the map is drawing. */
+  const src = srcKey || stormState.src;
+  /* AND THE TOTAL BELONGS TO THAT LIBRARY TOO. It was always the radar manifest's length,
+     so the size estimate was being measured against a denominator one larger than its own
+     archive. Measured on a phone holding EVERY FILE OF BOTH LIBRARIES: "223 of 224 ... The
+     rest are not downloaded", for ever, of a day whose source grib2 was never archived and
+     never will be. Fixing only the panel would have moved that sentence to the map screen
+     rather than deleted it — which is the symmetric version of the v39 miss. */
+  const miss = (src === 'mesh' && stormState.meshMissing) ? stormState.meshMissing : null;
+  const total = miss ? ix.storms.filter(s => !miss.has(s.date)).length : ix.storms.length;
+  /* ONE LIBRARY'S WORTH, not the size of the whole memo. The memo holds both libraries
      under '<src>|<date>' keys, so `.size` counts radar days and MESH days together. Left alone
      this sentence said "Checked 12 of 224 storm days on this phone" after six days had been
      looked at on each layer — a number larger than the truth, printed on the honesty line,
      which is the one line in the app whose entire job is not to overstate. Caught by
      photographing the seam rather than by any check, which is the argument for photographing. */
-  const pre = stormState.src + '|';
+  const pre = src + '|';
   let have = 0;
   for (const k of stormState.days.keys()) if (k.startsWith(pre)) have++;
   const whole = have >= total;
+  /* THIS SENTENCE IS ABOUT READING, NOT ABOUT WHAT IS ON THE DISK, AND IT MUST SAY SO.
+     Two separate faults met on this line, and the second was found by the review AFTER the
+     first had been ruled and built.
+
+     ONE. The word "checked". It is correct four lines above, where it means the phone
+     tested THIS ADDRESS against a day file. Here it meant something else — and the two
+     numbers are never the same: across 1,050 grid points the address number runs 20 to 106
+     and this one is always the size of the library. One word, three printings, two
+     meanings, on a panel handed to a homeowner.
+
+     TWO, AND IT IS THE REASON THIS LINE DOES NOT SAY "HOLDS". `have` counts
+     `stormState.days`, which is a plain in-memory Map: it starts EMPTY every time the app
+     opens and is only ever added to by loadStormDay. Nothing refills it at startup. But the
+     files themselves persist — sw.js keeps every storm day in `canvass-storms-v1`, cache
+     first, deliberately outside the shell cache so a deploy cannot delete them. So on a
+     fully downloaded phone, freshly opened, this counts 12 while the disk holds 224.
+     "This phone holds 12 of the 224" would have been flatly false, and the old tail — "The
+     rest are not downloaded" — HAS BEEN FALSE SINCE THE STORMS CACHE EXISTED, on the one
+     line in this app whose entire job is not to overstate.
+
+     So the sentence now says the only thing that is actually true of `have`: how many of
+     the library's days this app has READ since it was opened. No claim about the disk, and
+     no tail that contradicts it. Counting the disk properly is a real fix and is on the
+     open list; it needs an async read of the cache and cannot be reached from here.
+     Ruled by Travis 2026-08-07 after the review. */
   return { have, total, whole,
-    line: whole ? `Checked all ${total} storm days on this phone.`
-                : `Checked ${have} of ${total} storm days on this phone. The rest are not downloaded.` };
+    line: whole ? `This phone has read all ${total} storm days in the library.`
+                : `This phone has read ${have} of the ${total} storm days in the library since the app was opened.` };
 }
 
 /* DRAWN ONCE, NOT ON EVERY PAN.
@@ -9059,6 +9111,25 @@ function stormSrcLoad() {
 function stormSrcApply() {
   stormState.src   = stormState.srcMode === 0 ? 'v2' : 'mesh';
   stormState.under = stormState.srcMode === 2 ? 'v2' : null;
+  /* THE MISSING LIST IS FETCHED THE MOMENT THE CHIP LANDS ON THE SIZE ESTIMATE, because
+     stormCoverage now measures that library against its OWN archive size and cannot do
+     that without knowing which day is absent. Without this the map readout would say
+     "holds 223 of the 224" on a phone that holds every file there is — the exact sentence
+     this round exists to delete — until something else happened to load the list.
+     ONE FUNNEL: this function is the only place srcMode becomes a source, so putting it
+     here covers the chip button AND a phone that starts up already on the size estimate.
+     Fire and forget, then re-sync the bar. A failure leaves the old denominator, which
+     understates what is held and never overstates it — the safe direction — and
+     loadMeshMissing no longer remembers that failure, so the next tap tries again.
+     NO `typeof` GUARD ON syncStormBar. The first version had one. It was dead code:
+     syncStormBar is a hoisted function declaration ten lines below this one in the same
+     script block, so `typeof` is 'function' before this line can ever run. This project
+     has already lost a diagnosis to an inert guard — `window.roofOnScreen = () => true`
+     was doing nothing in three rigs — so a guard that cannot fire does not get to stay and
+     look like protection. syncStormBar guards its own missing DOM. */
+  if (stormState.src === 'mesh' && !stormState.meshMissing) {
+    loadMeshMissing().then(() => syncStormBar());
+  }
 }
 
 function stormShowLoad() {
@@ -10969,8 +11040,8 @@ document.querySelectorAll('.dsecHead[data-msec]').forEach(b => {
 /* ---- what version is actually on the phone ----
    Matches the service worker cache name, so "did the update land" is answerable by
    looking rather than guessing. */
-const BUILD_VERSION = 'v40';
-const BUILD_DATE = '6 August 2026';
+const BUILD_VERSION = 'v41';
+const BUILD_DATE = '7 August 2026';
 function renderVersionStamp() {
   const el = $('versionStamp'); if (!el) return;
   el.className = 'small';
@@ -12096,16 +12167,27 @@ function stormMeshAtPoint(lon, lat) {
 
    NO PARTIAL COUNT IS EVER PRINTED. A sentence that changes under his thumb while files
    are still arriving is a sentence the homeowner saw two versions of. Until every
-   candidate is here it says only that it has not been checked. */
+   candidate is here it says only that it has not been checked.
+
+   THE DAYS ARE THIS LIBRARY'S OWN, AND THE SENTENCE SAYS SO. It used to end "days
+   checked" — the same two words the summary four lines above it ends with, over a
+   DIFFERENT set of days. 2021-09-28 is a radar day with no size-estimate file, so at
+   18 of 1,050 grid points, a strip through Pickerington and Canal Winchester, the panel
+   printed "out of the 94 checked" and then "of the 93 days checked" with nothing on
+   screen saying why. Excluding that day is right — counting it as unchecked would offer
+   a download that can only 404 — so the fix is to stop the two sentences sharing a word
+   for two different universes. Ruled by Travis 2026-08-07: name the set, do not explain
+   the archive. ALL BRANCHES MOVED TOGETHER: one phrase for one thing, or two lines
+   describe the same days two ways on one screen. */
 function stormMeshWords(m) {
   if (!m.candidates) return `This area was not inside radar's size estimate on any of the days on file.`;
   if (m.checked < m.candidates) return `The size estimate has not been checked on this phone yet.`;
   if (m.checked === 1) return m.n
-    ? `This area was inside radar's size estimate on the one day checked.`
-    : `This area was not inside radar's size estimate on the one day checked.`;
+    ? `This area was inside radar's size estimate on the one day it has for this area.`
+    : `This area was not inside radar's size estimate on the one day it has for this area.`;
   return m.n
-    ? `This area was inside radar's size estimate on ${m.n} of the ${m.checked} days checked.`
-    : `This area was inside radar's size estimate on none of the ${m.checked} days checked.`;
+    ? `This area was inside radar's size estimate on ${m.n} of the ${m.checked} days it has for this area.`
+    : `This area was inside radar's size estimate on none of the ${m.checked} days it has for this area.`;
 }
 
 /* THE ONE SENTENCE THAT SAYS HOW THE TWO RADAR LAYERS RELATE. Fixed, frozen, and printed in
@@ -12204,7 +12286,12 @@ function renderStormPanel(v) {
   const mesh = stormMeshAtPoint(v.lon, v.lat);
   const big = rows.filter(r => r.cls === '1.00in' || r.cls === '1.75in');
   const withRep = rows.filter(r => r.reports > 0);
-  const cov = stormCoverage();
+  /* 'v2' EXPLICITLY, LIKE EVERY OTHER READ IN THIS PANEL. Bare, the honesty line at the
+     bottom followed the map chip while the card and the summary above it counted
+     detections — the panel's one remaining chip leak after v39, and the fault that made
+     this whole round. A record whose contents depend on a toggle on another screen is
+     not a record. */
+  const cov = stormCoverage('v2');
 
   const thisYear = new Date().getFullYear();
   const years = [];
@@ -12271,6 +12358,12 @@ function renderStormPanel(v) {
 
     if (rows.length) {
       body += `<div class="rhead" style="margin-top:12px;margin-bottom:2px">Most recent</div>`;
+      /* THE CAP IS DECLARED BEFORE ANYTHING IS LISTED, not after every row. It sat at the
+         bottom, so a homeowner read "29 reports filed that day", then three reports, and
+         only afterwards learned that the three were the ones within 25 miles. Moving it up
+         costs nothing in height and fixes the reading order. Ruled by Travis 2026-08-07. */
+      body += `<div class="pnote" style="margin-bottom:4px">Only reports filed within ${STORM_REPORT_MAX_MI} miles of `
+        + `this area are listed under a day.</div>`;
       for (const r of rows.slice(0, 4)) {
         /* THE SALES PATH. He is at a door, looking at the days that reached this address,
            and the next thing he wants is another date over the same ground. So the way in
@@ -12299,14 +12392,22 @@ function renderStormPanel(v) {
         body += `<div class="srow"><b>${esc(niceDate(r.date))}</b>`
           + `<button class="ghost dsCmp" data-date="${esc(r.date)}">Pick this day</button>`
           + `<span>radar estimated ${esc(STORM_SIZE_WORD[r.cls] || '')}`
-          + (r.reports ? ` · ${r.reports} report${r.reports === 1 ? '' : 's'} filed that day` : '')
+          /* THE NUMBER AND THE LIST UNDER IT ARE DIFFERENT POPULATIONS, AND THE ROW NOW SAYS
+             SO. This count is `hailReportsClean` from the manifest — every clean report in
+             the seven counties that day. The reports listed underneath are capped at 25
+             miles and at three. Measured at six real addresses over 24 printed rows: seven
+             rows said more than they listed (Dublin said 29 and listed 3) and one said "2
+             reports filed that day" and listed nothing at all. Naming the scope costs four
+             words and keeps a true, persuasive number that the near count would have thrown
+             away. Ruled by Travis 2026-08-07. */
+          + (r.reports ? ` · ${r.reports} report${r.reports === 1 ? '' : 's'} filed across the seven counties that day` : '')
           + `</span>`
           + reps.map(o => `<span class="srep">${esc(stormReportWords(o.x, v.lon, v.lat))}</span>`).join('')
           + `</div>`;
       }
-      /* Subject is the reports and the area. No banned word, no inch word, no roof. */
-      body += `<div class="pnote">Only reports filed within ${STORM_REPORT_MAX_MI} miles of `
-        + `this area are listed under a day.</div>`;
+      /* The 25-mile note used to be emitted HERE, after every row. It is above them now —
+         same words, same one copy, declared before anything it governs. Subject is still
+         the reports and the area. No banned word, no inch word, no roof. */
     }
 
     /* The sentence a hostile reader gets to see. Every noun in it is an area or a day. */
