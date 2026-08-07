@@ -460,6 +460,7 @@ label.f.hasq{display:inline-block;margin:12px 0 5px;vertical-align:middle}
 #dStorm{border:1px solid var(--line);border-radius:14px;background:var(--card);padding:11px 12px;margin:8px 0 4px}
 #dStorm .rhead{font-size:10.5px;color:var(--dim);font-weight:700;letter-spacing:.3px;text-transform:uppercase;margin-bottom:8px}
 #dStorm .pc b{font-size:22px;line-height:1.15}
+#dStorm .pc em{text-wrap:balance}
 /* Years sit on one baseline. Floating bars read as noise rather than as a count — found
    by photographing it before it went in. A zero year keeps a stub so the gap is visibly
    a zero and not a rendering fault. */
@@ -468,21 +469,21 @@ label.f.hasq{display:inline-block;margin:12px 0 5px;vertical-align:middle}
 #dStorm .yr .bar{background:#14b8a6;border-radius:4px 4px 0 0;margin:0 auto;width:70%}
 #dStorm .yr .n{font-size:12px;font-weight:800;color:var(--txt);margin-top:3px}
 #dStorm .yr .y{font-size:10px;color:var(--dim);font-weight:700}
-#dStorm .srow{display:flex;justify-content:space-between;gap:10px;padding:5px 0;border-top:1px solid var(--line);font-size:12px}
+#dStorm .srow{display:flex;justify-content:space-between;column-gap:10px;row-gap:0;padding:7px 0;border-top:1px solid var(--line);font-size:12px}
 #dStorm .srow b{font-weight:800;color:var(--txt);white-space:nowrap}
-#dStorm .srow span{color:var(--dim);font-weight:700;text-align:right}
+#dStorm .srow > span:not(.srep){color:var(--dim);font-weight:700;text-align:left;flex:1 0 100%}
 /* THE SECOND DOOR INTO THE PICKER, one per storm on this address. `.ghost` is 100% wide
    with a 10px top margin, which is right for a stacked button and wrong for one sitting
    at the end of a row, so both are overridden here rather than by inventing a new class.
    The row wraps: on a wide screen the button sits on the same line, on his phone it drops
    under the words instead of squeezing them into eighty pixels. */
-#dStorm .srow{flex-wrap:wrap}
+#dStorm .srow{flex-wrap:wrap;align-items:center}
 /* 44 PIXELS, like every other inline button in this file — `.chip`, `.x`, `.mini-btn`,
    `.mbtn`, `.tbtn` and `select` all carry that floor. The first version of this rule cut
    `.ghost`'s padding down to 5px and produced a 25px target, the smallest in the app, on
    the entry point to the whole feature, tapped with a cold thumb on a doorstep. */
 #dStorm .srow .dsCmp{width:auto;flex:0 0 auto;margin:2px 0 0 auto;padding:0 14px;
-  min-height:44px;font-size:12px;font-weight:800;border-radius:12px;white-space:nowrap}
+  min-height:44px;font-size:12px;font-weight:600;color:var(--dim);border-radius:12px;white-space:nowrap}
 #dLog{display:flex;flex-direction:column;gap:7px}
 .logRow{display:flex;gap:9px;align-items:flex-start;background:var(--card);border:1px solid var(--line);border-radius:12px;padding:9px 11px}
 .logRow i{width:9px;height:9px;border-radius:3px;flex:0 0 auto;margin-top:5px}
@@ -8303,7 +8304,7 @@ const STORM_TAIL = 'This describes storms over areas.';
      these are the numbers he says out loud at a door. */
   st.textContent = '#dStorm .srow .srep{flex:1 0 100%;display:block;text-align:left;'
     + 'font-size:11.5px;font-weight:600;line-height:1.5;color:var(--dim);'
-    + 'margin:4px 0 0 2px;padding-left:9px;border-left:2px solid var(--line)}';
+    + 'margin:8px 0 0 2px;padding-left:9px;border-left:2px solid var(--line)}';
   document.head.appendChild(st);
 })();
 
@@ -10968,7 +10969,7 @@ document.querySelectorAll('.dsecHead[data-msec]').forEach(b => {
 /* ---- what version is actually on the phone ----
    Matches the service worker cache name, so "did the update land" is answerable by
    looking rather than guessing. */
-const BUILD_VERSION = 'v39';
+const BUILD_VERSION = 'v40';
 const BUILD_DATE = '6 August 2026';
 function renderVersionStamp() {
   const el = $('versionStamp'); if (!el) return;
@@ -12292,12 +12293,16 @@ function renderStormPanel(v) {
           .filter(o => o.m <= capM)
           .sort((a, b) => a.m - b.m)
           .slice(0, 3);
+        /* THE ORDER HERE IS THE READING ORDER AND THE TAB ORDER, and it is also what the
+           eye gets, because nothing below reorders it. Date, then the action for that date,
+           then what the day was, then who filed what. */
         body += `<div class="srow"><b>${esc(niceDate(r.date))}</b>`
+          + `<button class="ghost dsCmp" data-date="${esc(r.date)}">Pick this day</button>`
           + `<span>radar estimated ${esc(STORM_SIZE_WORD[r.cls] || '')}`
           + (r.reports ? ` · ${r.reports} report${r.reports === 1 ? '' : 's'} filed that day` : '')
           + `</span>`
           + reps.map(o => `<span class="srep">${esc(stormReportWords(o.x, v.lon, v.lat))}</span>`).join('')
-          + `<button class="ghost dsCmp" data-date="${esc(r.date)}">Add day</button></div>`;
+          + `</div>`;
       }
       /* Subject is the reports and the area. No banned word, no inch word, no roof. */
       body += `<div class="pnote">Only reports filed within ${STORM_REPORT_MAX_MI} miles of `
