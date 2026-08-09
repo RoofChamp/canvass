@@ -10207,31 +10207,67 @@ function stormDirArrowAt(date, near) {
 function drawStormDir() {
   const c = stormState.count;
   if (!c || c.n !== 1 || !window.L || !window._map) return;
-  if (!stormFillOn()) return;          /* his zoom rule: standing inside it, the words carry it */
   const date = (c.dates || [])[0];
   if (!date) return;
   const d = stormDirOf(date);
   if (!d || !d.firm) return;
-  const cen = window._map.getCenter();
-  const at = stormDirArrowAt(date, { lat: cen.lat, lon: cen.lng });
+
+  /* WHERE IT SITS, AND WHY THERE ARE TWO ANSWERS.
+
+     THE FIRST BUILD HID THE ARROW ABOVE ZOOM 15, copying the hail fill's rule without checking
+     what zoom he actually stands at. The map OPENS at zoom 18 (line ~8611) and Follow snaps
+     back to 18 on every position fix (line ~15302), so in ordinary use he was three levels
+     past the gate and the arrow never once appeared. He reported it the day it shipped.
+
+     The gate existed for a real reason and the reason was a lazy length: measured in degrees,
+     the shaft was twenty miles long at zoom 16 and swept the whole screen. That is fixed
+     properly below - the arrow is now a fixed number of SCREEN pixels at every zoom - so the
+     gate is gone.
+
+     ZOOMED OUT, the subject is the storm shapes, and the arrow belongs on the one nearest the
+     middle of the map.
+
+     ZOOMED IN, the nearest shape is usually miles off screen, so the arrow belongs where he is
+     standing - and ONLY if the hail actually reached him. Drawing it at his feet on ground the
+     day did not cover would contradict the bar, which in that exact case says "Radar did not
+     estimate hail over this area". */
+  const wide = stormFillOn();
+  let at;
+  if (wide) {
+    const cen = window._map.getCenter();
+    at = stormDirArrowAt(date, { lat: cen.lat, lon: cen.lng });
+  } else {
+    const g = window._map.getCenter();
+    const p = state.pos ? { lat: state.pos.lat, lon: state.pos.lon } : { lat: g.lat, lon: g.lng };
+    const day = stormDayHeld(date, 'v2');
+    if (!day || !stormClassAt(day, p.lon, p.lat)) return;
+    at = p;
+  }
   if (!at) return;
+
   /* IT CAME FROM d.deg, SO IT WENT THE OTHER WAY. The arrow points the way the storm
      travelled, because an arrowhead means "this way" to everyone who has ever seen one, and
      an arrow pointing back at where the weather started would be read wrong at a glance. */
   const toward = (d.deg + 180) % 360;
   const r = toward * Math.PI / 180;
-  /* SHORTER THAN THE FIRST VERSION, measured off a photograph. At 0.30 the shaft was over
-     twenty miles long and swept most of the phone at zoom 10, which reads as a claim about
-     the whole screen rather than an annotation on one shape. */
-  const half = Math.min(0.14, Math.max(0.04, at.span * 0.40));
-  /* A degree of longitude is shorter than a degree of latitude this far north — about 0.76 of
-     it in central Ohio — so without this the arrow points visibly off its own bearing. */
-  const kx = Math.max(0.2, Math.cos(at.lat * Math.PI / 180));
-  const dy = Math.cos(r) * half, dx = Math.sin(r) * half / kx;
-  const tail = [at.lat - dy, at.lon - dx], head = [at.lat + dy, at.lon + dx];
+
+  /* BUILT IN SCREEN PIXELS AND CONVERTED BACK, not in degrees of latitude.
+     One length that reads the same at zoom 10 and at zoom 18, and no clamps to tune. It also
+     retires the longitude correction the old version carried and got wrong once: the map's own
+     projection already knows a degree of longitude is shorter up here.
+     THE SHORT SIDE OF THE SCREEN sets the size, so it cannot overrun a narrow phone held
+     upright or a wide one turned sideways. */
+  const size = window._map.getSize();
+  const half = Math.max(28, Math.min(size.x, size.y) * 0.17);
+  const p0 = window._map.latLngToContainerPoint([at.lat, at.lon]);
+  /* Screen y runs DOWNWARD, so north is minus y. Getting this backwards mirrors the arrow
+     about the horizontal and it points at the wrong half of the compass. */
+  const vx = Math.sin(r) * half, vy = -Math.cos(r) * half;
+  const pt = (x, y) => window._map.containerPointToLatLng([x, y]);
+  const tail = pt(p0.x - vx, p0.y - vy), head = pt(p0.x + vx, p0.y + vy);
   const wing = off => {
     const r2 = (toward + 180 + off) * Math.PI / 180, L2 = half * 0.34;
-    return [head[0] + Math.cos(r2) * L2, head[1] + Math.sin(r2) * L2 / kx];
+    return pt(p0.x + vx + Math.sin(r2) * L2, p0.y + vy - Math.cos(r2) * L2);
   };
   const shaft = [tail, head], barb = [wing(-26), head, wing(26)];
   const line = (pts, col, w, op) => L.polyline(pts, { pane: 'storm', interactive: false,
@@ -10243,7 +10279,7 @@ function drawStormDir() {
     line(shaft, '#fde047', 4.5, 1), line(barb, '#fde047', 4.5, 1),
     /* THE LABEL SITS ON THE SHAFT, NOT AT THE HEAD. Storms here come from the west on 110
        days of 211, so the head is nearly always pointing at the right edge of the phone, and
-       a label there ran off it — photographed on the first run, not guessed. */
+       a label there ran off it - photographed on the first run, not guessed. */
     L.marker([at.lat, at.lon], { pane: 'storm', interactive: false, keyboard: false,
       icon: L.divIcon({ className: 'sdirLab', iconSize: [190, 24], iconAnchor: [95, 30],
         html: `<span>from the ${esc(d.word)}, ${d.mph} mph</span>` }) }),
@@ -10302,27 +10338,24 @@ function drawStormTicked() {
 let stormFillWas = null;
 function stormZoomWatch() {
   const now = stormFillOn();
+  /* THE ARROW IS REBUILT ON EVERY ZOOM, not only when the fill's line is crossed. Its length is
+     set in screen pixels, so a zoom that does not cross that line still changes what it should
+     look like - and its anchor changes with the zoom too, from the nearest storm shape to
+     wherever he is standing. This is still a ZOOM, not a pan: it cannot fire while he drags the
+     map, which is the discipline this whole layer exists to keep.
+     ABOVE the early return below, because that return fires on every zoom that does NOT cross
+     the fill line, which is most of them. */
+  if (window._map) {
+    if (window._stormDirLayer) {
+      window._map.removeLayer(window._stormDirLayer);
+      window._stormDirLayer = null;
+    }
+    drawStormDir();
+  }
   if (now === stormFillWas) return;
   stormFillWas = now;
   if (window._stormFillLayer) {
     window._stormFillLayer.setStyle({ fillOpacity: now ? STORM_TICK_FILL : 0 });
-  }
-  /* THE ARROW FOLLOWS THE FILL'S OWN ZOOM RULE, for his reason and not a new one: once he is
-     standing inside the area, the shape is bigger than the phone and the answer moves into
-     the words on the bar. An arrow whose length is set in degrees is twenty miles long at
-     zoom 16 — a yellow line across the screen pointing at nothing he can see.
-     BUILT HERE AS WELL AS REMOVED. Ticking a day while already zoomed in leaves no arrow to
-     toggle, so zooming back out has to be able to make one. This is a rebuild on a ZOOM
-     CROSSING, which happens once each way; it is still never a rebuild on a pan. */
-  if (window._map) {
-    if (!now) {
-      if (window._stormDirLayer) {
-        window._map.removeLayer(window._stormDirLayer);
-        window._stormDirLayer = null;
-      }
-    } else if (!window._stormDirLayer) {
-      drawStormDir();
-    }
   }
   syncStormBar();
 }
@@ -12970,7 +13003,7 @@ document.querySelectorAll('.dsecHead[data-msec]').forEach(b => {
 /* ---- what version is actually on the phone ----
    Matches the service worker cache name, so "did the update land" is answerable by
    looking rather than guessing. */
-const BUILD_VERSION = 'v44';
+const BUILD_VERSION = 'v45';
 const BUILD_DATE = '7 August 2026';
 function renderVersionStamp() {
   const el = $('versionStamp'); if (!el) return;
