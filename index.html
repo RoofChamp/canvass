@@ -5814,7 +5814,16 @@ function pockSeatBar() {
   if (!bar) return;
   if (!sb) { bar.style.top = ''; return; }
   const r = sb.getBoundingClientRect();
-  if (!(r.height > 0)) { bar.style.top = ''; return; }
+  /* A HIDDEN MAP MEASURES ZERO, AND ZERO IS NOT AN ANSWER. This used to clear the seat when
+     the storm bar had no height, which happens on every position fix while the map screen is
+     hidden — `display:none` makes the rectangle zero. The seat was then gone when he reopened
+     the map, and the pockets bar fell back to a fixed CSS top that lands UNDER the storm bar,
+     whose z-index is higher, so it swallowed every tap on "Where to knock" and "Clear". That
+     is the same fault this function's own note above records having already cost once.
+     Found by review, after the direction sentence made the storm bar a line taller and turned
+     a latent overlap into a real one. Keeping the last good seat is always better than
+     clearing it: the next time the map is visible this runs again and corrects it. */
+  if (!(r.height > 0)) return;
   bar.style.top = Math.round(r.bottom + 8) + 'px';
 }
 
@@ -9893,11 +9902,13 @@ function clearStormLayer() {
     if (window._stormFillLayer) window._map.removeLayer(window._stormFillLayer);
     if (window._stormUnderLayer) window._map.removeLayer(window._stormUnderLayer);
     if (window._stormReportLayer) window._map.removeLayer(window._stormReportLayer);
+    if (window._stormDirLayer) window._map.removeLayer(window._stormDirLayer);
   }
   window._stormLayer = null;
   window._stormFillLayer = null;
   window._stormUnderLayer = null;
   window._stormReportLayer = null;
+  window._stormDirLayer = null;
 }
 
 /* DRAWN LAST, so it sits over whichever estimate is showing — a report is the only thing on
@@ -9984,6 +9995,261 @@ const STORM_TAIL = 'This describes storms over areas.';
   document.head.appendChild(st);
 })();
 
+/* ---------------- WHICH WAY THE STORM CAME FROM ----------------
+
+   EVERY RADAR DETECTION ALREADY CARRIED THIS, and nothing in this file had ever read it.
+   `detectionPoints` is [lon, lat, size_in, "HHMM", direction_deg, speed_kt] and until this
+   build the fifth and sixth values were never touched — the string `detectionPoints` did not
+   appear anywhere in 19,632 lines. Measured 2026-08-09: 8,330 points across 224 day files,
+   all 8,330 carrying both numbers. There is nothing to fit and nothing to download.
+
+   THE DIRECTION IS THE ONE THE STORM CAME FROM, not the one it moved toward, and that was
+   measured rather than assumed. 2,091 detections were matched to their nearest neighbour in
+   the next radar scan and the bearing they actually travelled was compared with the number in
+   the file. Read as CAME FROM, the median error is 19.6 degrees and 64% land inside 30. Read
+   as MOVED TOWARD, the median error is 160.4 degrees — a 180 flip wearing measurement noise.
+
+   EIGHT POINTS, NEVER SIXTEEN. His ruling, and the measurement agrees with it: a 20-degree
+   error cannot honestly fill a 22.5-degree bucket. Eight buckets are 45 degrees wide.
+
+   A ZERO SPEED IS MISSING DATA WEARING A NUMBER — BUT IT IS NOT A MISSING DIRECTION, AND THE
+   FIRST VERSION OF THIS THREW BOTH AWAY TOGETHER. 397 points across the library carry speed 0.
+   368 of those carry direction 0 as well, which is the radar's way of saying it has no
+   movement estimate at all. The other 29 carry a real direction and no speed. Discarding all
+   397 cost the direction on days where it was perfectly well known, and on 2025-07-09 it
+   INVERTED the answer: seven detections reading 276 to 328 — west to northwest — were all
+   speed 0 and were thrown out, leaving one unrelated cell an hour later reading 353, so the
+   bar said "from the north" and the arrow pointed south. Found by review, not by any check.
+   So the two questions are asked separately: a point counts toward the DIRECTION unless both
+   of its numbers are 0, and toward the SPEED only if its speed is above 0.
+
+   AND THREE POINTS MINIMUM, ON BOTH. One detection agrees with itself perfectly — R is 1.00
+   by arithmetic, not by evidence — and 31 days in this library come down to a single usable
+   point. Without a floor every one of them was certified firm and drew an arrow off one radar
+   pixel. At three, 181 of the 224 days still answer and 43 say nothing, which is the honest
+   split. 2025-07-09 is one of the 43: eight directions agree beautifully and exactly one point
+   carries a speed, and one radar pixel is not a speed. */
+const STORM_DIR_WORDS = ['north', 'northeast', 'east', 'southeast',
+                         'south', 'southwest', 'west', 'northwest'];
+/* Below this the detections disagree with each other too much for one arrow to be true, and
+   his ruling takes over: the words say mixed and no arrow is drawn. Measured over the
+   library, 179 days of 223 sit at 0.90 or better and 12 fall under this line. */
+const STORM_DIR_FIRM = 0.75;
+const STORM_DIR_MIN_N = 3;
+const stormDirWord = deg => STORM_DIR_WORDS[Math.round(((deg % 360) + 360) % 360 / 45) % 8];
+
+/* THIS BELONGS TO THE DETECTIONS LAYER, AND ONLY TO IT.
+
+   The mesh day files have no `detectionPoints` key at all — checked, it does not exist in
+   them — so the direction can only ever come out of the radar library. The first version read
+   v2 no matter which layer was showing, and review found what that costs: the ticked path
+   downloads the CURRENT source only, so on Size estimate the sentence appeared or vanished
+   depending on whether he had happened to visit Detections earlier in the same session. Same
+   day, same screen, three different bars. It also seated the arrow on a radar shape while the
+   map was drawing mesh shapes — measured, 41.5% of radar shape centres fall outside every mesh
+   shape of the same day, so the arrow could sit on bare ground.
+
+   One rule instead: the direction comes with Detections. On Size estimate and on Both layers
+   there is no sentence and no arrow, every time, for everyone.
+
+   AND IT NEVER FETCHES. A day he has not downloaded answers null rather than quietly spending
+   his data at a door. */
+function stormDirOf(date) {
+  if (stormState.src !== 'v2') return null;
+  const day = stormDayHeld(date, 'v2');
+  const pts = day && day.detectionPoints;
+  if (!Array.isArray(pts) || !pts.length) return null;
+  let S = 0, C = 0, n = 0;
+  const kt = [];
+  for (const p of pts) {
+    const d = p && p[4], s = p && p[5];
+    if (typeof d !== 'number' || typeof s !== 'number') continue;
+    /* 0 and 0 together is the radar saying it has no movement estimate for this cell. A real
+       direction with no speed is not that, and still counts toward the direction. */
+    if (d === 0 && s === 0) continue;
+    const r = d * Math.PI / 180;
+    S += Math.sin(r); C += Math.cos(r); n++;
+    if (s > 0) kt.push(s);
+  }
+  if (n < STORM_DIR_MIN_N || kt.length < STORM_DIR_MIN_N) return null;
+  /* THE MIDDLE SPEED, NOT THE AVERAGE. One cell racing away at 90 knots is enough to drag a
+     mean off every other cell on the screen, and the figure he reads has to describe the
+     storm he is standing under rather than its fastest corner. */
+  kt.sort((a, b) => a - b);
+  const med = kt.length % 2 ? kt[(kt.length - 1) / 2]
+                            : (kt[kt.length / 2 - 1] + kt[kt.length / 2]) / 2;
+  /* R is how much the detections agree with one another: 1.00 is every one pointing the same
+     way. It cannot be a plain average of the degrees — 350 and 10 average to 180, the exact
+     opposite of both — so this adds them as directions and measures the length of the sum. */
+  const R = Math.hypot(S, C) / n;
+  const deg = (Math.atan2(S, C) * 180 / Math.PI + 360) % 360;
+  return { deg, R, firm: R >= STORM_DIR_FIRM, word: stormDirWord(deg),
+           mph: Math.round(med * 1.15078), n, nSpeed: kt.length };
+}
+
+/* THE SENTENCE LIVES IN ONE PLACE so the bar and anything added after it cannot word the
+   same fact two ways.
+   REGISTER: it describes the STORM, never the ground, never a roof and never a side of a
+   house. This is the storm cell's own track. It is NOT the wind at ground level that drove
+   hail into a wall — related, not equal — and the wording claims only the first. */
+function stormDirWords(date) {
+  const d = stormDirOf(date);
+  if (!d) return '';
+  return d.firm
+    ? `The storm came from the ${d.word} at ${d.mph} mph. `
+    : `The direction was mixed that day, at about ${d.mph} mph. `;
+}
+
+/* SEVERAL TICKED DAYS ONLY GET A SENTENCE WHEN THEY AGREE. 199 days of 211 in this library
+   are westerly, so they usually will. When they do not, one direction would have to pick a
+   day out of the set and speak for the rest, so the bar says nothing instead of picking. */
+function stormDirWordsMany(dates) {
+  const all = dates.map(d => stormDirOf(d));
+  if (!all.length || !all.every(d => d && d.firm)) return '';
+  const w = all[0].word;
+  if (!all.every(d => d.word === w)) return '';
+  /* "All 2 came from the west" is not a sentence anybody says out loud. Two is "both". */
+  return dates.length === 2
+    ? `Both came from the ${w}. `
+    : `All ${dates.length} came from the ${w}. `;
+}
+
+/* THE ARROW, AND WHY IT IS ONLY EVER DRAWN FOR ONE DAY. With several days ticked, the fill on
+   the map is ground under two or more of them — it belongs to no single day — so an arrow
+   over it would be a claim about a day the shape underneath does not describe. One committed
+   day, one arrow. A day whose direction is mixed gets NO arrow at all: an arrow IS a
+   direction, and there is no honest way to draw "mixed".
+
+   IT IS ANCHORED TO THE GROUND, NOT TO THE SCREEN. Seated at the middle of the screen it
+   would have to be redrawn on every pan, which is the one thing this whole layer exists to
+   avoid. Seated on one of the day's own shapes it is drawn once, pans with the shapes it
+   belongs to, and always sits over ground the storm actually covered.
+
+   ONE ARROW, NOT ONE PER SHAPE. Measured over the library: a day carries a median of 6 shapes
+   and as many as 64, and 38 of them can be large. Sixty-four yellow arrows is not a map. One
+   is enough because the direction is the SAME across the whole day — that is what firm means,
+   and the days where it is not are the ones that get no arrow at all.
+
+   WHICH SHAPE: THE ONE NEAREST THE MIDDLE OF THE MAP, not the biggest one on the day. The
+   first version took the biggest, and the photograph showed the cost immediately — the biggest
+   shape of that day sat at the top of the view, so the arrow ran under the storm bar and its
+   label ran off the right edge of the phone. The biggest shape can also be forty miles from
+   where he is standing, which is an arrow he never sees. Nearest-to-centre is worked out at
+   DRAW time, which is the moment he ticks the day, so it lands where he was already looking.
+   A pan afterwards does not move it and does not rebuild anything.
+
+   NO SIZE FLOOR. The first version had one at 0.06 degrees, on the reasoning that a tiny
+   shape is a single detection. Measured afterwards: the smallest ring in the whole library
+   spans 0.1116, so the floor never once applied and neither did its fallback. Dead code
+   carrying a confident comment is worse than no code, and it is gone.
+
+   NEAREST IS MEASURED IN MILES, NOT IN DEGREES. A degree of longitude is about three quarters
+   of a degree of latitude in central Ohio, so comparing the two raw picked a shape up to 23%
+   farther away than the one it should have — defeating the only reason nearest-to-centre was
+   chosen over biggest.
+
+   ONLY POLYGONS. A day file holding a Point feature would make `poly[0]` a number, whose
+   `.length` is undefined, whose `< 4` is false, and which then throws when iterated — taking
+   the fill layer, the reports layer and the whole bar down with it, because this runs above
+   all three and nothing catches. Every one of the 224 shipped files is clean, but day files
+   are cached separately from the app on purpose and outlive a deploy, so an old or partial one
+   is a real thing to survive rather than a hypothetical.
+
+   LENGTH IS IN DEGREES, so it grows and shrinks with the zoom exactly as the storm outlines
+   do, and never reads as a bigger claim at one zoom than another. */
+function stormDirArrowAt(date, near) {
+  const day = stormDayHeld(date, 'v2');
+  if (!day || !Array.isArray(day.features) || !near) return null;
+  const shapes = [];
+  for (const f of day.features) {
+    const g = f && f.geometry; if (!g) continue;
+    if (g.type !== 'Polygon' && g.type !== 'MultiPolygon') continue;
+    const list = g.type === 'MultiPolygon' ? g.coordinates : [g.coordinates];
+    if (!Array.isArray(list)) continue;
+    for (const poly of list) {
+      const ring = Array.isArray(poly) ? poly[0] : null;
+      if (!Array.isArray(ring) || ring.length < 4) continue;
+      let x0 = Infinity, y0 = Infinity, x1 = -Infinity, y1 = -Infinity, sx = 0, sy = 0;
+      for (const p of ring) {
+        if (!Array.isArray(p)) { sx = NaN; break; }
+        if (p[0] < x0) x0 = p[0];
+        if (p[0] > x1) x1 = p[0];
+        if (p[1] < y0) y0 = p[1];
+        if (p[1] > y1) y1 = p[1];
+        sx += p[0]; sy += p[1];
+      }
+      if (!isFinite(sx) || !isFinite(sy)) continue;
+      /* THE AVERAGE OF THE CORNERS, NOT THE MIDDLE OF THE BOX. A storm shape is often a long
+         curved band, and the middle of its bounding box can fall on ground the band curves
+         around — an arrow floating beside the hail rather than on it. */
+      shapes.push({ lon: sx / ring.length, lat: sy / ring.length,
+                    span: Math.hypot(x1 - x0, y1 - y0) });
+    }
+  }
+  if (!shapes.length) return null;
+  const kx = Math.max(0.2, Math.cos(near.lat * Math.PI / 180));
+  const away = s => Math.hypot(s.lat - near.lat, (s.lon - near.lon) * kx);
+  return shapes.reduce((a, b) => (away(b) < away(a) ? b : a));
+}
+
+(function () {
+  const st = document.createElement('style');
+  /* WHITE-SPACE NOWRAP AND A FIXED ICON SIZE TOGETHER. Leaflet gives a divIcon the size it
+     is told, and "from the northwest" is wider than "from the east", so without nowrap the
+     longest word wraps inside a box sized for the shortest. */
+  st.textContent = '.sdirLab span{display:inline-block;font:800 12.5px system-ui,sans-serif;'
+    + 'color:#0f172a;background:#fde047;border-radius:9px;padding:4px 9px;white-space:nowrap;'
+    + 'box-shadow:0 2px 8px rgba(0,0,0,.4)}'
+    + '.sdirLab{text-align:center;pointer-events:none}';
+  document.head.appendChild(st);
+})();
+
+function drawStormDir() {
+  const c = stormState.count;
+  if (!c || c.n !== 1 || !window.L || !window._map) return;
+  if (!stormFillOn()) return;          /* his zoom rule: standing inside it, the words carry it */
+  const date = (c.dates || [])[0];
+  if (!date) return;
+  const d = stormDirOf(date);
+  if (!d || !d.firm) return;
+  const cen = window._map.getCenter();
+  const at = stormDirArrowAt(date, { lat: cen.lat, lon: cen.lng });
+  if (!at) return;
+  /* IT CAME FROM d.deg, SO IT WENT THE OTHER WAY. The arrow points the way the storm
+     travelled, because an arrowhead means "this way" to everyone who has ever seen one, and
+     an arrow pointing back at where the weather started would be read wrong at a glance. */
+  const toward = (d.deg + 180) % 360;
+  const r = toward * Math.PI / 180;
+  /* SHORTER THAN THE FIRST VERSION, measured off a photograph. At 0.30 the shaft was over
+     twenty miles long and swept most of the phone at zoom 10, which reads as a claim about
+     the whole screen rather than an annotation on one shape. */
+  const half = Math.min(0.14, Math.max(0.04, at.span * 0.40));
+  /* A degree of longitude is shorter than a degree of latitude this far north — about 0.76 of
+     it in central Ohio — so without this the arrow points visibly off its own bearing. */
+  const kx = Math.max(0.2, Math.cos(at.lat * Math.PI / 180));
+  const dy = Math.cos(r) * half, dx = Math.sin(r) * half / kx;
+  const tail = [at.lat - dy, at.lon - dx], head = [at.lat + dy, at.lon + dx];
+  const wing = off => {
+    const r2 = (toward + 180 + off) * Math.PI / 180, L2 = half * 0.34;
+    return [head[0] + Math.cos(r2) * L2, head[1] + Math.sin(r2) * L2 / kx];
+  };
+  const shaft = [tail, head], barb = [wing(-26), head, wing(26)];
+  const line = (pts, col, w, op) => L.polyline(pts, { pane: 'storm', interactive: false,
+    color: col, weight: w, opacity: op, lineCap: 'round', lineJoin: 'round' });
+  window._stormDirLayer = L.layerGroup([
+    /* A DARK LINE UNDER A BRIGHT ONE. This has to read over a satellite photograph, over a
+       pale street map and over the teal fill, and no single colour does all three. */
+    line(shaft, '#0f172a', 9, 0.55), line(barb, '#0f172a', 9, 0.55),
+    line(shaft, '#fde047', 4.5, 1), line(barb, '#fde047', 4.5, 1),
+    /* THE LABEL SITS ON THE SHAFT, NOT AT THE HEAD. Storms here come from the west on 110
+       days of 211, so the head is nearly always pointing at the right edge of the phone, and
+       a label there ran off it — photographed on the first run, not guessed. */
+    L.marker([at.lat, at.lon], { pane: 'storm', interactive: false, keyboard: false,
+      icon: L.divIcon({ className: 'sdirLab', iconSize: [190, 24], iconAnchor: [95, 30],
+        html: `<span>from the ${esc(d.word)}, ${d.mph} mph</span>` }) }),
+  ]).addTo(window._map);
+}
+
 /* THE TICKED DAYS ON THE BIG MAP. Every ticked day as a thin outline and NO fill of its
    own, the ground under two or more of them as the only fill on the screen — his rule, in
    his order: outlines everywhere, fill only where the fill IS the answer. */
@@ -10010,6 +10276,10 @@ function drawStormTicked() {
                       fill: false, interactive: false }),
     }).addTo(window._map);
   }
+  /* ABOVE THE `c.geo` GATE, AND THAT IS THE WHOLE POINT. The arrow is drawn for exactly ONE
+     ticked day, and one ticked day can never have a fill — the fill is ground under two or
+     more. Below this line it would be unreachable in every case it exists for. */
+  drawStormDir();
   /* NO FILL LAYER AT ALL WHEN NOTHING IS UNDER TWO OR MORE. An empty geometry handed to
      Leaflet is a layer on the map drawing nothing, which the map cannot tell apart from a
      shape that failed to trace. */
@@ -10036,6 +10306,23 @@ function stormZoomWatch() {
   stormFillWas = now;
   if (window._stormFillLayer) {
     window._stormFillLayer.setStyle({ fillOpacity: now ? STORM_TICK_FILL : 0 });
+  }
+  /* THE ARROW FOLLOWS THE FILL'S OWN ZOOM RULE, for his reason and not a new one: once he is
+     standing inside the area, the shape is bigger than the phone and the answer moves into
+     the words on the bar. An arrow whose length is set in degrees is twenty miles long at
+     zoom 16 — a yellow line across the screen pointing at nothing he can see.
+     BUILT HERE AS WELL AS REMOVED. Ticking a day while already zoomed in leaves no arrow to
+     toggle, so zooming back out has to be able to make one. This is a rebuild on a ZOOM
+     CROSSING, which happens once each way; it is still never a rebuild on a pan. */
+  if (window._map) {
+    if (!now) {
+      if (window._stormDirLayer) {
+        window._map.removeLayer(window._stormDirLayer);
+        window._stormDirLayer = null;
+      }
+    } else if (!window._stormDirLayer) {
+      drawStormDir();
+    }
   }
   syncStormBar();
 }
@@ -10844,6 +11131,14 @@ function syncStormBar() {
        k IS COUNTED PER DAY WITH stormClassAt, which is a point question and already
        answers it exactly. It is deliberately NOT read off the 250 m lattice, which answers
        a cell question — one engine per question, and this question is not the map's. */
+    /* WHICH WAY IT CAME FROM, WORKED OUT ONCE AND USED ON EVERY BRANCH BELOW. Worked out per
+       branch it would be three copies of one rule, and the branch nobody remembered would be
+       the one that went quiet.
+       IT READS OFF THE COMMITTED DAYS, like everything else on this bar. `ticked` changes the
+       instant he taps a row and `count` changes only at Done, so reading the ticked set here
+       would put a direction on the bar for a day whose file has not arrived. */
+    const dates = (stormState.count && stormState.count.dates) || [];
+    const dirSay = N === 1 ? stormDirWords(dates[0]) : stormDirWordsMany(dates);
     const pos = state.pos;
     let stand = '';
     if (!stormFillOn() && pos) {
@@ -10862,19 +11157,25 @@ function syncStormBar() {
        specific of the two and wins wherever it applies.
        FIXED WORDING, approved, and deliberately not in the label registry: a line that
        holds a compliance boundary cannot be a line he can edit later. */
-    if (stand) { txt.textContent = stand + STORM_TAIL; return; }
+    /* THE DIRECTION GOES AFTER THE RULED SENTENCE AND BEFORE THE TAIL, on every branch. The
+       tail has to be the last thing on the bar and the ruled sentence has to be the first;
+       there is exactly one gap between them and this is it. */
+    if (stand) { txt.textContent = stand + dirSay + STORM_TAIL; pockSeatBar(); return; }
     if (N === 1) {
-      txt.textContent = `1 day ticked. ` + STORM_SAY.overOutlined()
+      txt.textContent = `1 day ticked. ` + STORM_SAY.overOutlined() + dirSay
         + `Tick one more to shade ground under 2 or more of them. ` + STORM_TAIL;
+      pockSeatBar();
       return;
     }
     /* THE RULED SENTENCE IS NOT PRINTED WHEN NOTHING IS SHADED. "over the shaded areas"
        with nothing shaded is the app claiming what its own data denies — the same
        principle the pair engine's "they do not cross anywhere" branch held, carried
        forward. Ruled sentence if and only if there is a traced shape on the map. */
-    txt.textContent = (stormState.count && stormState.count.geo)
-      ? STORM_SAY.overShaded(N) + STORM_TAIL
-      : `${N} days ticked. No ground was under 2 or more of them. Each ticked day is outlined on the map. ` + STORM_TAIL;
+    txt.textContent = ((stormState.count && stormState.count.geo)
+      ? STORM_SAY.overShaded(N)
+      : `${N} days ticked. No ground was under 2 or more of them. Each ticked day is outlined on the map. `)
+      + dirSay + STORM_TAIL;
+    pockSeatBar();
     return;
   }
 
@@ -12669,7 +12970,7 @@ document.querySelectorAll('.dsecHead[data-msec]').forEach(b => {
 /* ---- what version is actually on the phone ----
    Matches the service worker cache name, so "did the update land" is answerable by
    looking rather than guessing. */
-const BUILD_VERSION = 'v43';
+const BUILD_VERSION = 'v44';
 const BUILD_DATE = '7 August 2026';
 function renderVersionStamp() {
   const el = $('versionStamp'); if (!el) return;
