@@ -567,7 +567,7 @@ select{min-height:44px}
   padding-top:var(--safe-t);padding-bottom:var(--safe-b)}
 #scoutTop,.screenTop{display:flex;align-items:flex-start;justify-content:space-between;gap:10px;padding:10px 12px 6px}
 #scoutTitle,#sortTitle,.screenTitle{font-size:17px;font-weight:800}
-#scoutExit,#sortExit,#marksExit,#dlExit,#scoutMarks{background:var(--card);border:1px solid var(--line);color:var(--txt);border-radius:12px;
+#scoutExit,#sortExit,#marksExit,#dlExit,#scoutMarks,#filtExit{background:var(--card);border:1px solid var(--line);color:var(--txt);border-radius:12px;
   padding:12px 18px;font-size:15px;font-weight:700;min-height:48px}
 /* 14px, not the 8px used for chips: these two do different things and one of them
    is the way out. */
@@ -595,6 +595,72 @@ select{min-height:44px}
 #sortBody,#marksBody,#dlBody{flex:1;min-height:0;overflow:auto;padding:0 12px 16px}
 #daysLogView{position:fixed;inset:0;z-index:80;background:var(--bg);display:flex;flex-direction:column;
   padding-top:var(--safe-t);padding-bottom:var(--safe-b)}
+
+/* ---------- where to knock: the filters panel ----------
+   SAME SHELL AS THE OTHER FOUR FULL VIEWS, spelled out rather than added to the line 566
+   selector list, because that rule is titled "full map" and carries the three-equal-buttons
+   reasoning that has nothing to do with this screen. There is no .fullView class in this
+   file to hook into; four ids already repeat this block and this is the fifth.
+   NOT A SHEET. `.sheet` in this app is always a bottom sheet, and `.sheet.top` at line 241
+   is dead CSS applied nowhere. A full-screen panel is the FULL_VIEWS pattern or nothing. */
+#filtView{position:fixed;inset:0;z-index:80;background:var(--bg);display:flex;flex-direction:column;
+  padding-top:var(--safe-t);padding-bottom:var(--safe-b)}
+#filtBody{flex:1;min-height:0;overflow:auto;padding:12px 12px 16px}
+#filtFoot{padding:8px 12px 12px;border-top:1px solid var(--line)}
+#filtFoot .note{font-size:11.5px;color:var(--dim);font-weight:600;margin-bottom:8px;line-height:1.4}
+.filtHd{font-size:12px;color:var(--dim);font-weight:800;text-transform:uppercase;letter-spacing:.6px;
+  margin:2px 0 9px}
+/* A preset is one whole search, so it is one big target - 88px, twice the 44px floor. He is
+   picking these from a truck seat, not a desk. */
+.preBtn{display:block;width:100%;text-align:left;background:var(--card);border:2px solid var(--line);
+  border-radius:18px;padding:15px 16px;margin-bottom:11px;color:var(--txt);min-height:88px}
+.preBtn.on{border-color:#3b82f6;background:#16233a}
+.preBtn .t{font-size:19px;font-weight:800}
+.preBtn .w{font-size:12px;color:var(--dim);font-weight:600;margin-top:4px;line-height:1.4}
+.preBtn .n{font-size:15px;font-weight:800;color:#7dd3fc;margin-top:9px}
+.preBtn .n.un{color:var(--dim);font-weight:700}
+.preBtn .warn{font-size:11.5px;color:#f0b866;font-weight:700;margin-top:6px;line-height:1.35}
+.preBtn.dead{opacity:.55}
+.preOwn{display:flex;align-items:center;justify-content:space-between;gap:10px;background:var(--card2);
+  border:1px solid var(--line);border-radius:14px;padding:14px 16px;margin-top:16px;min-height:56px;
+  width:100%;text-align:left;color:var(--txt)}
+.preOwn .t{font-size:16px;font-weight:800}
+.preOwn .a{font-size:20px;color:var(--dim);font-weight:800}
+/* One row per filter, the pattern learned once and repeated. */
+.fRow{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:11px 12px;margin-bottom:9px}
+.fRow .lab{font-size:15px;font-weight:800}
+.fRow .sub{font-size:11.5px;color:var(--dim);font-weight:600;margin-top:2px;line-height:1.35}
+.fRow .pair{display:flex;align-items:center;gap:8px;margin-top:8px;flex-wrap:wrap}
+/* 44px, the app's own floor, and centred text because these are four-digit numbers he is
+   checking at a glance rather than reading. */
+.fRow .pair input{width:92px;min-height:44px;text-align:center;font-weight:800;font-size:15px;padding:0 8px;
+  background:var(--card2);border:1px solid var(--line);border-radius:10px;color:var(--txt)}
+.fRow .pair .to,.fRow .pair .pre{color:var(--dim);font-weight:800;font-size:15px}
+.fRow .tog{display:flex;align-items:center;justify-content:space-between;gap:10px}
+/* nowrap and a real width. Without them the flex row squeezed the chip to one character and
+   "Off" rendered as "O" over "ff" - photographed. A two-letter word broken across two lines
+   is not a control anyone reads at arm's length. */
+.fRow .tog .chip{flex:0 0 auto;white-space:nowrap;min-width:66px}
+.fRow.dead{opacity:.55}
+/* The blind-county note. Amber, not red: nothing is broken, a county simply cannot be asked,
+   and it must never be mistaken for "none found". */
+.filtBlind{background:#1a1410;border:1px solid #4a3520;border-radius:12px;padding:10px 12px;margin:12px 0 4px}
+.filtBlind b{color:#f0b866;font-size:13px}
+.filtBlind div{font-size:11.5px;color:var(--dim);font-weight:600;margin-top:3px;line-height:1.4}
+.filtCnt{background:#1e3a5f;border:1px solid #3b82f6;color:#dbeafe;border-radius:999px;
+  padding:5px 11px;font-size:12px;font-weight:800;min-height:44px;display:inline-flex;align-items:center}
+/* THE BAR ON THE MAP, in the #stormBar shape and for the stated reason: #mapBottom already
+   wraps onto two lines on his phone, so a ninth button there is not available. Sits under
+   the storm bar, and moves up to take its place when the storm bar is off. */
+#pockBar{position:absolute;top:calc(var(--safe-t) + 166px);left:8px;right:8px;z-index:599;
+  background:rgba(30,41,59,.92);border-radius:14px;padding:9px 11px;display:flex;align-items:center;
+  gap:10px;font-weight:800;font-size:12.5px;box-shadow:0 8px 24px rgba(0,0,0,.5);flex-wrap:wrap}
+#pockBar.on{background:rgba(13,90,148,.94)}
+/* 44px, not the 38px the storm bar uses. That bar squeezes because it carries up to five
+   chips and already wraps to two rows on his phone; this one carries two, so it can afford
+   the app's real floor and there is no reason to make him aim smaller than he has to. */
+#pockBar .mbtn{background:rgba(0,0,0,.32);min-height:44px;padding:0 14px;white-space:nowrap}
+#pockBar #pockTxt{flex:1;min-width:190px;line-height:1.35;font-size:11.5px;font-weight:700;color:#e2e8f0}
 .dlRow{display:block;width:100%;text-align:left;background:var(--card);border:1px solid var(--line);
   color:var(--txt);border-radius:14px;padding:12px;margin-bottom:8px;min-height:56px}
 .dlRow .d{font-size:16px;font-weight:800}
@@ -728,6 +794,20 @@ select{min-height:44px}
 .findRow .tag{font-size:10px;font-weight:800;color:var(--dim);border:1px solid var(--line);border-radius:999px;padding:2px 7px;flex:0 0 auto}
 .findNote{padding:9px 12px;font-size:11.5px;color:var(--dim);font-weight:700}
 .ehandle{width:22px;height:22px;border-radius:50%;background:#dc2626;border:3px solid #fff;box-shadow:0 2px 8px rgba(0,0,0,.6);transform:translate(-11px,-11px)}
+.pockPin{transform:translate(-50%,-50%);background:#04121a;border:2px solid #2dd4bf;border-radius:999px;
+  padding:4px 10px;font:700 12px/1 -apple-system,system-ui,sans-serif;color:#eafffb;white-space:nowrap;
+  box-shadow:0 1px 6px rgba(0,0,0,.5)}
+.pockPin b{display:inline-block;background:#0f766e;color:#eafffb;border-radius:999px;
+  min-width:15px;text-align:center;padding:2px 4px;margin-right:6px}
+/* A BADGE THAT OPENS A SCREEN HAS TO BE BIG ENOUGH TO HIT AND HAVE TO LOOK LIKE IT OPENS
+   something. The plain badge is a label at 12px with 4px of padding - fine to read, far too
+   small to aim a thumb at on a moving map. This one is taller, and the chevron is there
+   because nothing else on the scan layer has ever been tappable, so there is no habit to
+   fall back on. On a drill the badges keep the plain class: they still say the count, and
+   they open nothing. */
+.pockPinTap{padding:10px 12px;cursor:pointer}
+.pockPinTap::after{content:'\203A';margin-left:8px;color:#5eead4;font-size:15px;line-height:1}
+.pockPinTap:active{background:#0f766e}
 .owner-label{font-size:10px;font-weight:700;color:#fff;text-shadow:0 0 3px #000,0 0 3px #000,0 1px 2px #000;white-space:nowrap;pointer-events:none;transform:translate(-50%,-50%);display:inline-block;text-align:center}
 .rentwarn{filter:drop-shadow(0 0 2px #000)}
 .leaflet-container{background:#0b0f14}
@@ -996,6 +1076,32 @@ select{min-height:44px}
   <div id="dlBody"></div>
 </div>
 
+<!-- WHERE TO KNOCK. Chosen by Travis 2026-08-09 from three photographed shapes: presets on
+     top, the full list behind "Set it up myself". The other two were a plain list of eight
+     boxes and a plain-English sentence with the numbers tappable inside it.
+     ITS ID IS IN FULL_VIEWS. Leave it out and anyViewOpen() cannot see it, so the menu
+     reopens itself over the top of this screen.
+     AFTER daysLogView AND BEFORE mapView on purpose: the four full views share z-index 80
+     and stack by document order, and the map is 70, so this covers the map it was opened
+     from without covering anything that might be opened from here. -->
+<div id="filtView" class="hide">
+  <div class="screenTop">
+    <div>
+      <div class="screenTitle" id="filtTitle">Where to knock</div>
+      <div class="small" id="filtSub">Start from one of these, then change it if you want.</div>
+    </div>
+    <div style="display:flex;align-items:center;gap:10px">
+      <span class="filtCnt hide" id="filtSet"></span>
+      <button id="filtExit">&lsaquo; Back</button>
+    </div>
+  </div>
+  <div id="filtBody"></div>
+  <div id="filtFoot">
+    <div class="note" id="filtNote"></div>
+    <button class="primary" id="filtGo">Count them</button>
+  </div>
+</div>
+
 <div id="mapView" class="hide">
   <div id="leaf"></div>
   <div id="findWrap">
@@ -1101,6 +1207,19 @@ select{min-height:44px}
     <button class="mbtn hide" id="stormPick">Storm days</button>
     <button class="mbtn hide" id="stormTickClear">Clear</button>
     <span id="stormTxt"></span>
+  </div>
+  <!-- WHERE TO KNOCK, on the map. The #stormBar shape, and for the reason written on that
+       one: #mapBottom already wraps onto two lines on his phone, so a ninth button there is
+       not available. A scan is a question about the ground he is looking at, so the way in
+       belongs on the map rather than three taps deep in the menu - it is in the menu too,
+       and that route opens the map first.
+       It carries the answer in words once a scan is drawn, so the count he acts on is on the
+       same screen as the squares it describes. -->
+  <div id="pockBar">
+    <button class="mbtn" id="pockOpen">&#128269; Where to knock</button>
+    <button class="mbtn hide" id="pockBack">&lsaquo; All places</button>
+    <button class="mbtn hide" id="pockClear">Clear</button>
+    <span id="pockTxt"></span>
   </div>
   <div id="eraseBar" class="hide">
     <span id="eraseTxt">Drag the box over the track you want gone.</span>
@@ -1569,6 +1688,7 @@ select{min-height:44px}
           <button class="ghost" id="mCrm"><span class="emo">👥</span> <span class="mtxt" data-lbl="lbl.menu.mCrm">Customers and follow-ups</span></button>
           <button class="ghost" id="mAreas"><span class="emo">📍</span> <span class="mtxt" data-lbl="lbl.menu.mAreas">By area — the patches you named, round by round</span></button>
           <button class="ghost" id="mRoute"><span class="emo">🔁</span> <span class="mtxt" data-lbl="lbl.menu.mRoute">Doors to try again</span></button>
+          <button class="ghost" id="mFilters"><span class="emo">🔎</span> <span class="mtxt">Where to knock — find the homes that match</span></button>
           <button class="ghost" id="mScout"><span class="emo">🔭</span> <span class="mtxt" data-lbl="lbl.menu.mScout">Scout</span></button>
           <button class="ghost" id="mMarks"><span class="emo">🔎</span> <span class="mtxt" data-lbl="lbl.menu.mMarks">Scouted houses</span></button>
           <button class="ghost" id="mAppt"><span class="emo">📋</span> <span class="mtxt" data-lbl="lbl.menu.mAppt">Schedule and appointments</span></button>
@@ -1758,9 +1878,14 @@ const COUNTIES = [
   { key:'franklin', name:'Franklin',
     url:'https://gis.franklincountyohio.gov/hosting/rest/services/ParcelFeatures/Parcel_Features/MapServer/0',
     owner:['OWNERNME1','OWNERNME2'], addr:'SITEADDRESS', pid:'PARCELID',
-    extra:['ZIPCD','RESYRBLT','CLASSDSCRP','MAILNME1','MAILNME2','OWNEROCCUPIED','HOMSTD','RENTAL','TOTVALUEBASE','RESFLRAREA','SALEDATE','SALEPRICE'],
+    extra:['ZIPCD','RESYRBLT','CLASSDSCRP','MAILNME1','MAILNME2','OWNEROCCUPIED','HOMSTD','RENTAL','TOTVALUEBASE','RESFLRAREA_AG','SALEDATE','SALEPRICE'],
     cls:a=>a.CLASSDSCRP,
-    stats:{ val:'TOTVALUEBASE', sqft:'RESFLRAREA', saleDate:'SALEDATE', salePrice:'SALEPRICE' },
+    /* RESFLRAREA is published and is empty on all 494,720 Franklin parcels — measured
+       2026-08-08, not assumed. RESFLRAREA_AG (above grade) carries 415,371. Asking for the
+       wrong one left every Franklin house with no floor area on the card, in the tick list
+       and in the CSV. Both this and the `extra` list above have to name it, or the field is
+       never fetched and this line reads an absent key. */
+    stats:{ val:'TOTVALUEBASE', sqft:'RESFLRAREA_AG', saleDate:'SALEDATE', salePrice:'SALEPRICE' },
     where:'1=1', bbox:[-83.25,39.79,-82.76,40.16],
     occ:{ mail:a=>a.MAILNME1, mailCity:a=>a.MAILNME2, mailName:null,
           // OWNEROCCUPIED='N' only means they never filed for the tax credit, so it is
@@ -4216,6 +4341,1505 @@ function timeAgo(ts) {
   if (s < 86400) return Math.round(s/3600)+' hr ago';
   const d = Math.round(s/86400);
   return d===1 ? 'yesterday' : d+' days ago';
+}
+
+/* ============================ THE POCKET SCAN =================================
+   Answers one question: for the ground currently on screen, WHERE are the houses
+   that match what he asked for, and how many are in each patch.
+
+   WHY THIS IS NOT BUILT ON fetchTile. The parcel grid (TILE = 0.006 deg) fetches
+   every lot in a square and caches it for ever, which is right for walking a street
+   and wrong for scanning a county. A metro view is roughly 1,100 of those squares,
+   each costing a county request plus a FEMA building request, with no concurrency
+   cap anywhere in this file. That is a burst of 2,200 requests at a county server
+   that answers a canvasser's phone. It would be slow, it would be rude, and it
+   would still be the wrong shape, because 95% of the lots fetched get thrown away
+   by the filter.
+
+   WHAT IT DOES INSTEAD. It pushes the filter INTO the county query as a where
+   clause, so the county returns only matching lots, and pages through the answer.
+   15,316 matching homes across three counties is about 11 pages per county at
+   1,500 a page - tens of seconds, not tens of minutes. Then it bins the results
+   into 0.03-degree cells (the grid Travis's own measurements were built on, see
+   pockets.json, cells are [lon, lat, homes]) and groups touching cells into pockets.
+
+   WHAT IT DELIBERATELY DOES NOT DO. It does not write to state.parcels and it does
+   not touch the tiles store. A scan is a COUNT of ground, not a load of doors. If a
+   scan seeded state.parcels the map would fill with lots he has not walked to,
+   addParcel is first-write-wins, and a later real fetch of that ground could no
+   longer correct a scanned record. The two paths stay separate on purpose.
+   ============================================================================ */
+
+/* The cell the counts are binned into. 0.03 degrees is not a guess: it is the grid
+   every measured figure in 04 Plans and specs\year-built pockets was built on, so a
+   scan here and a number on those sheets can be compared without re-deriving anything. */
+/* THE FINE CELL, for looking inside one place he has already found. About a quarter of a mile
+   across and a third of a mile up at this latitude - a block or two, which is the scale at
+   which "the biggest ones are on this side of it" stops being a guess.
+   RULED BY TRAVIS 2026-08-09, from photographs. It was built at 0.01 first, he was shown what
+   that looked like on a real place, and he asked to go finer. A sixth of the coarse cell on
+   each side, so a thirty-sixth of the area - which is why the floor has to scale by area and
+   not by side, or a quarter-mile square would be asked for the same 25 homes as a two-mile
+   one and almost nothing would ever be drawn. */
+const POCK_CELL_FINE = 0.005;
+
+/* CELL SIZE IS A PARAMETER NOW, defaulting to POCK_CELL so every existing call site keeps
+   its old behaviour and the existing suite keeps covering the coarse path unchanged.
+   IT IS PASSED, NEVER READ OFF THE CONSTANT, anywhere downstream of a scan - the result
+   carries its own `cell` and the drawing reads it from there. That is not tidiness: the
+   radius fault of 2026-08-09 happened because one number was worked out in two places, and
+   the mutation that broke one half stayed green. Two truths about how big a square is would
+   be the same fault with a worse symptom - squares drawn in the wrong place. */
+const POCK_CELL = 0.03;
+const pockCellOf = (lon, lat, cell = POCK_CELL) => [Math.floor(lon / cell), Math.floor(lat / cell)];
+const pockCellKey = (ix, iy) => ix + ':' + iy;
+
+/* THE FLOOR HAS TO SCALE WITH THE SQUARE, and this is the only place that decides how.
+   25 homes is calibrated against a 0.03-degree square. Reuse it on a square a ninth the
+   area and almost nothing clears it, so a drill-in would answer "nothing here" about ground
+   he is standing on and looking at. Scaling by AREA keeps the density it stands for.
+   The floor of 3 is not arithmetic, it is a judgement: below three homes a square is a
+   house or two, and drawing it the same as a real cluster is what the floor exists to stop. */
+function pockScaledFloor(floor, cell) {
+  const f = floor > 0 ? floor : 25;
+  const c = cell > 0 ? cell : POCK_CELL;
+  return Math.max(3, Math.round(f * (c / POCK_CELL) * (c / POCK_CELL)));
+}
+
+/* How many lots a county will hand over in one page, and how many pages we will ask
+   for before we stop and say so. 1500 matches the resultRecordCount fetchTile already
+   uses, so a county that is happy with one is happy with the other. The page cap is
+   the honesty valve: a filter that matches a whole county is a filter he has not
+   narrowed yet, and the right answer is to tell him, not to spend four minutes
+   proving it. */
+const POCK_PAGE = 1500;
+const POCK_MAX_PAGES = 14;          // 21,000 lots per county before we stop and say so
+const POCK_MAX_INFLIGHT = 3;        // nothing else in this file caps county requests
+
+/* ---------------------------------------------------------------------------
+   WHAT EACH COUNTY CAN ACTUALLY BE ASKED.
+
+   This is not a convenience table, it is the difference between a true answer and a
+   confident wrong one. Measured against the live services on 2026-08-08 with
+   02 Tests\fieldcheck.ps1, not copied from a county's own documentation.
+
+   `yearSql`      null means the county cannot be asked about year built AT ALL.
+   `yearClient`   true means the column is TEXT, so a numeric comparison must not be
+                  sent to the server - it either errors or silently compares strings,
+                  where '98' is greater than '1998'. Filtered on the phone instead.
+   `sqftSql`      null means no floor-area column worth asking.
+   `valSql`       an expression, not a field, because Fairfield keeps land and building
+                  value apart and only their sum is comparable to another county's.
+   --------------------------------------------------------------------------- */
+const POCK_CAPS = {
+  franklin: {
+    /* RESYRBLT 84.7% filled. RESFLRAREA_AG 84.0% - and note this is the ABOVE GRADE
+       column; RESFLRAREA is published and empty on all 494,720 rows, which is the
+       fault fixed in this same build. */
+    yearSql: f => `RESYRBLT >= ${f.yrFrom} AND RESYRBLT <= ${f.yrTo}`,
+    sqftSql: f => `RESFLRAREA_AG >= ${f.sqFrom}` + (f.sqTo ? ` AND RESFLRAREA_AG <= ${f.sqTo}` : ''),
+    valSql:  f => `TOTVALUEBASE >= ${f.valFrom}` + (f.valTo ? ` AND TOTVALUEBASE <= ${f.valTo}` : ''),
+    /* RENTAL='Y' is a real auditor flag and is filled on 99.7% of rows. OWNEROCCUPIED
+       is NOT usable as a positive test: it is filled on 206,918 rows and every single
+       one says N, so "= 'Y'" would return nothing and read as "no owner-occupied homes
+       in Franklin County", which is false. Excluding known rentals is the honest
+       version of the same filter. */
+    ownerSql: () => `RENTAL <> 'Y'`,
+    /* SAMPLED FROM THE LIVE SERVICE 2026-08-08, not from the suite fixture, which is wrong.
+       test-counties.mjs feeds Franklin `CLASSDSCRP: 'R - SINGLE FAMILY'` and no such value
+       exists in the county. The real ones, on houses built 1994-1998, are
+       "SINGLE FAMILY DWELLING, PLATTED LOT", "SINGLE FAMILY, O-9.999 AC" and the acreage
+       variants. The first clause written here was LIKE 'R %', copied from that fixture, and
+       it returned EXACTLY ZERO against the live county - Franklin would have contributed
+       nothing to every scan and the map would simply have had a hole in it. */
+    resSql:  () => `CLASSDSCRP LIKE 'SINGLE FAMILY%'`,
+  },
+  delaware: {
+    /* YRBUILT is 0 on the vacant and the unbuilt, which is why the floor is a real
+       clause and not decoration - without it every empty lot in the county matches
+       "built before 2000". */
+    yearSql: f => `YRBUILT >= ${Math.max(f.yrFrom, 1700)} AND YRBUILT <= ${f.yrTo}`,
+    sqftSql: f => `SQFT >= ${f.sqFrom}` + (f.sqTo ? ` AND SQFT <= ${f.sqTo}` : ''),
+    valSql:  f => `MARKET_TOT >= ${f.valFrom}` + (f.valTo ? ` AND MARKET_TOT <= ${f.valTo}` : ''),
+    /* No auditor flag. Occupancy here is the mailing-address comparison, which cannot be
+       written as SQL - it needs the site address and the owner's name side by side. So it
+       runs on the phone, in pockFilterClient, exactly like Madison's TEXT year does.
+       ownerClient is NOT the same as "no answer": it means the answer is computed later.
+       A county with neither ownerSql nor ownerClient is REFUSED BY NAME. */
+    ownerSql: null, ownerClient: true,
+    /* Ohio land-use codes: 100s agricultural, 300s industrial, 400s COMMERCIAL, 500s
+       residential. The first version of this clause said "LIKE '5%' OR LIKE '4%'" and the
+       400s half was a straight mistake - it invites every shop and office in the county
+       into a list of houses. Sampled 2026-08-08: Delaware's CLASS on houses built 1994-1998
+       is 510, 511, 512, 513 and 550, all 500s. */
+    resSql:  () => `CLASS LIKE '5%'`,
+    /* MEASURED ON THE LIVE SERVICE 2026-08-08 with 02 Tests\ranchcheck.ps1. STORYHGT is the
+       auditor's own storey count, filled on 76,951 of the 90,362 residential parcels (85%).
+       The bands partition exactly: 1 to 1.25 is 22,671 + the 1.5 band 3,923 + two or more
+       50,357 = 76,951. The 13,411 residential parcels with NO storey count are vacant lots
+       and the like; they fail this clause, which is the right answer - a lot with no house
+       on it is not a ranch. */
+    storeySql: f => f.capeToo ? `STORYHGT > 0 AND STORYHGT < 1.9` : `STORYHGT > 0 AND STORYHGT <= 1.25`,
+  },
+  licking: {
+    yearSql: f => `YearBuilt >= ${f.yrFrom} AND YearBuilt <= ${f.yrTo}`,
+    sqftSql: f => `LivingAreaSqFt >= ${f.sqFrom}` + (f.sqTo ? ` AND LivingAreaSqFt <= ${f.sqTo}` : ''),
+    valSql:  f => `MarketTotalValue >= ${f.valFrom}` + (f.valTo ? ` AND MarketTotalValue <= ${f.valTo}` : ''),
+    ownerSql: () => `OwnerOccupied = 'Y'`,
+    /* Dwelling is NOT a yes/no flag, which is what "Dwelling = 'Y'" assumed and why that
+       clause returned exactly zero against the live county. It holds the KIND of dwelling:
+       sampled 2026-08-08 on houses built 1994-1998 it reads "Single Family",
+       "Single Family/MFD Home", "Tri-Level", "Bi-Level", "MFD Home", "Duplex". So the
+       honest test is that it says anything at all. Note this admits manufactured homes and
+       duplexes; if Travis wants those out it is a value list here, not a new field. */
+    resSql:  () => `Dwelling IS NOT NULL AND Dwelling <> ''`,
+  },
+  fairfield: {
+    yearSql: f => `YRBLT >= ${f.yrFrom} AND YRBLT <= ${f.yrTo}`,
+    sqftSql: f => `SFLA >= ${f.sqFrom}` + (f.sqTo ? ` AND SFLA <= ${f.sqTo}` : ''),
+    /* Land and building are separate columns here. Their sum is the figure that
+       compares to Franklin's TOTVALUEBASE; either one alone does not. */
+    valSql:  f => `(APRLAND + APRBLDG) >= ${f.valFrom}` + (f.valTo ? ` AND (APRLAND + APRBLDG) <= ${f.valTo}` : ''),
+    ownerSql: null, ownerClient: true,
+    /* MEASURED ON THE LIVE SERVICE 2026-08-08 with 02 Tests\ranchcheck.ps1. STORIES is the
+       auditor's own storey count and it is filled on every one of the 55,513 parcels that
+       carry a floor area - not 74%, all of them. The bands partition exactly:
+       one storey 27,620 + the 1.5 band 3,066 + two or more 24,827 = 55,513. */
+    storeySql: f => f.capeToo ? `STORIES < 1.9` : `STORIES <= 1.25`,
+    resSql:  () => `SFLA > 0`,
+  },
+  madison: {
+    /* PPYearBuilt and PPLivingArea are TEXT columns. A numeric comparison sent to the
+       server is the trap: on this backend it does not error, it compares as strings,
+       and '98' sorts above '1998'. So Madison's year and size are filtered HERE, on
+       the phone, after the rows come back. Everything Madison returns is therefore a
+       superset that still has to be narrowed - see pockFilterClient. */
+    yearSql: null, yearClient: true,
+    sqftSql: null, sqftClient: true,
+    valSql:  f => `PPTotalValue >= ${f.valFrom}` + (f.valTo ? ` AND PPTotalValue <= ${f.valTo}` : ''),
+    ownerSql: null, ownerClient: true,
+    /* MEASURED ON THE LIVE SERVICE 2026-08-09 with 02 Tests\madcheck.ps1, after the first
+       live scan showed Madison handing over 13,823 lots and 5.4 MB on a bare `1=1`.
+       It had no residential clause at all, which was two faults, not one:
+         COST - everything in the box came down the wire to be thrown away on the phone.
+         CORRECTNESS - farms and commercial that carry a year built were being counted as
+         homes, which quietly breaks his single-family ruling in this county only.
+       Counted: 25,871 parcels, 25,511 with a class. By leading digit - 1xx agricultural
+       4,718 · 3xx industrial 161 · 4xx commercial 2,559 · 5xx RESIDENTIAL 17,986 ·
+       8xx utility 87. Same Ohio land-use scheme Delaware's clause already relies on, and
+       the 500s clause returns 17,986 rather than the zero that three plausible clauses in
+       this project have returned before.
+       PPClassCode is TEXT, so LIKE is the right operator here and no numeric comparison
+       goes anywhere near it. */
+    resSql:  () => `PPClassCode LIKE '5%'`,
+  },
+  /* Union and Pickaway are not omissions. Measured: Union publishes no year built, no
+     living area and no value; Pickaway publishes no year built, no living area, no
+     value and no sale date. They cannot answer any of these questions, and a scan that
+     quietly skipped them would draw an empty map over real ground and let him read it
+     as "nothing here". They are reported as CANNOT ANSWER instead. */
+  union:    { cannot: 'Union County publishes no year built, floor area or value' },
+  pickaway: { cannot: 'Pickaway County publishes no year built, floor area or value' },
+  ohio:     { cannot: 'the statewide layer carries no year built or floor area' },
+};
+
+/* ---------------------------------------------------------------------------
+   HOW FAR FROM HOME.
+
+   A place forty minutes away is worth nothing on a Tuesday evening, so the radius is a
+   real filter and not decoration. Two things about it are worth writing down.
+
+   IT TAKES TWO PARTS, AND BOTH ARE REQUIRED. A county is asked for an ENVELOPE - a
+   rectangle - because that is the only shape an ArcGIS spatial query takes here. The
+   square that contains a 20-mile circle reaches 28 miles into its corners. So the box
+   narrows the ASKING and the row test makes it actually round. Ship the box without the
+   row test and the answer quietly includes ground eight miles further out than he asked
+   for, in four directions, with a confident number on the button.
+
+   IT IS A STRAIGHT LINE, NOT A DRIVE. Twenty miles across Columbus and twenty miles up
+   71 are not the same trip, and the app has no drive times. Every word on the screen
+   says "straight line from home" for that reason - a number that reads as minutes and
+   is not minutes is the kind of thing he only finds out by driving it. */
+const POCK_MILE_M = 1609.344;
+
+/* The envelope that contains the circle. Longitude degrees shrink as you go north, which
+   is why the two axes are worked out separately - one degree of longitude in Columbus is
+   about 53 miles, not 69. */
+function pockHomeBox(miles, home) {
+  const h = home || (typeof state !== 'undefined' ? state.home : null);
+  if (!h || !isFinite(h.lat) || !isFinite(h.lon) || !(miles > 0)) return null;
+  const m = miles * POCK_MILE_M;
+  const dLat = m / mPerDegLat;
+  const dLon = m / Math.max(1, mPerDegLon(h.lat));
+  return [h.lon - dLon, h.lat - dLat, h.lon + dLon, h.lat + dLat];
+}
+
+/* Straight-line miles from home to a point, or null when no home is set. Null is not
+   zero: a house with no home to measure from has no distance, and must never be treated
+   as being on the doorstep. */
+function pockMilesHome(lon, lat, home) {
+  const h = home || (typeof state !== 'undefined' ? state.home : null);
+  if (!h || !isFinite(h.lat) || !isFinite(h.lon)) return null;
+  return haversine(h.lat, h.lon, lat, lon) / POCK_MILE_M;
+}
+
+/* THE FIELDS assessOccupancy WILL REACH FOR, READ OFF THE ACCESSORS THEMSELVES.
+
+   c.occ.mail and its siblings are functions, so a hand-written list of their field names
+   would be a second copy of the truth and would rot the first time a county changed one.
+   Instead the accessor's own source is read for `a.FIELD`, which is the same technique the
+   field-coherence check in test-counties.mjs uses to catch a field that is READ but never
+   ASKED FOR - the fault that let the Franklin floor-area bug survive a green suite.
+
+   c.cls is included because assessOccupancy refuses to judge a shop at all, and it needs
+   the land-use class to know. Leave it out and every business in three counties gets a
+   verdict it should never have been given. */
+function pockOccFields(c) {
+  const out = new Set();
+  const scan = fn => {
+    if (typeof fn !== 'function') return;
+    const src = String(fn);
+    let m; const re = /\ba\.([A-Za-z_][A-Za-z0-9_]*)/g;
+    while ((m = re.exec(src))) out.add(m[1]);
+  };
+  const cfg = c.occ || {};
+  [cfg.mail, cfg.mailCity, cfg.mailName, cfg.flag, c.cls].forEach(scan);
+  return [...out];
+}
+
+/* WHY A COUNTY CANNOT ANSWER, IN WORDS, PER FILTER.
+
+   pockWhere returns null for a refusal and that is all it ever said. Null is enough to
+   drop the county but not enough to TELL him, and "the map is empty here" and "nobody
+   asked this county" look identical on a screen. This function is the sentence that goes
+   beside the count. It returns null when the county CAN be asked.
+
+   It is deliberately the only place the refusal rules are written down. pockWhere calls
+   it rather than repeating the tests, so the clause and the explanation cannot drift
+   apart - the failure mode where a county is silently dropped while the screen still
+   claims it was included. A check asserts the two agree for every county and filter. */
+function pockCannot(c, f) {
+  const cap = POCK_CAPS[c.key];
+  if (!cap) return 'this county is not set up for scanning';
+  if (cap.cannot) return cap.cannot;
+  const n = c.name;
+  if ((f.yrFrom || f.yrTo) && !cap.yearSql && !cap.yearClient) return `${n} County publishes no year built`;
+  if ((f.sqFrom || f.sqTo) && !cap.sqftSql && !cap.sqftClient) return `${n} County publishes no floor area`;
+  if ((f.valFrom || f.valTo) && !cap.valSql) return `${n} County publishes no value`;
+  /* Price per square foot needs BOTH, and it is worked out on the phone, so the test is
+     that the county publishes the two ingredients - not that it can compare them. */
+  if ((f.ppsfFrom || f.ppsfTo) && !((cap.valSql) && (cap.sqftSql || cap.sqftClient)))
+    return `${n} County does not publish both a value and a floor area`;
+  /* THE ONE THAT USED TO BE SILENT. `if (f.ownerOnly && cap.ownerSql)` simply skipped the
+     clause when a county had no flag, so ticking "owner-occupied only" quietly counted
+     every rental in Delaware, Fairfield and Madison into the same total. Three counties,
+     no warning, and the number on the button looked exactly as confident as a true one. */
+  if (f.ownerOnly && !cap.ownerSql && !cap.ownerClient) return `${n} County publishes nothing about who lives there`;
+  if (f.ranchOnly && !cap.storeySql && !cap.storeyFema) return `${n} County publishes no storey count`;
+  return null;
+}
+
+/* Build one county's where clause. Returns null when the county cannot be asked at all
+   for the filter he has set - pockCannot says why in words. */
+function pockWhere(c, f) {
+  const cap = POCK_CAPS[c.key];
+  if (pockCannot(c, f)) return null;
+  const parts = [];
+  if (f.yrFrom || f.yrTo) {
+    if (cap.yearSql) parts.push('(' + cap.yearSql({ yrFrom: f.yrFrom || 1700, yrTo: f.yrTo || 2100 }) + ')');
+  }
+  if (f.sqFrom || f.sqTo) {
+    if (cap.sqftSql) parts.push('(' + cap.sqftSql({ sqFrom: f.sqFrom || 0, sqTo: f.sqTo || 0 }) + ')');
+  }
+  if (f.valFrom || f.valTo) {
+    if (cap.valSql) parts.push('(' + cap.valSql({ valFrom: f.valFrom || 0, valTo: f.valTo || 0 }) + ')');
+  }
+  if (f.ownerOnly && cap.ownerSql) parts.push('(' + cap.ownerSql() + ')');
+  /* Ranches. Delaware and Fairfield carry the auditor's own storey count, so it is one
+     clause. Franklin has no such column - every candidate measured zero filled rows - and
+     its answer comes from a separate pass over the FEMA building layer, so nothing is
+     pushed into SQL here. See pockRanchFranklin. */
+  if (f.ranchOnly && cap.storeySql) parts.push('(' + cap.storeySql(f) + ')');
+  /* Price per square foot is never SQL. It is a division, the two fields disagree on name
+     and units across counties, and Madison keeps both as TEXT. It is applied on the phone
+     against figures already parsed by the app's own reader. */
+  if (cap.resSql) parts.push('(' + cap.resSql() + ')');
+  return parts.length ? parts.join(' AND ') : '1=1';
+}
+
+/* The second half of Madison's answer, and the safety net for every county: whatever
+   could not be pushed into SQL is applied here, to the parsed row. A row that reaches
+   this function has already passed the server's clause; this only ever removes. */
+function pockFilterClient(c, row, f) {
+  const cap = POCK_CAPS[c.key] || {};
+  if ((f.yrFrom || f.yrTo) && (cap.yearClient || !cap.yearSql)) {
+    const y = row.year;
+    if (y == null) return false;
+    if (f.yrFrom && y < f.yrFrom) return false;
+    if (f.yrTo && y > f.yrTo) return false;
+  }
+  if ((f.sqFrom || f.sqTo) && (cap.sqftClient || !cap.sqftSql)) {
+    const s = row.sqft;
+    if (s == null) return false;
+    if (f.sqFrom && s < f.sqFrom) return false;
+    if (f.sqTo && s > f.sqTo) return false;
+  }
+  /* PRICE PER SQUARE FOOT, and the three ways it can lie.
+
+     1. A missing value or a missing floor area is UNKNOWN, not zero and not a match. If
+        the division were allowed to run on a null the answer would be 0, and 0 passes
+        every "under" threshold ever typed - a house with no figures on it would look
+        like the cheapest house in the county.
+     2. A floor area of 0 divides to Infinity, which passes every "over" threshold. Both
+        ends of the same fault.
+     3. Franklin's floor area is the column this build just fixed. If it ever points back
+        at the empty RESFLRAREA, every Franklin price per square foot becomes unknown and
+        Franklin drops out of this filter entirely - which is why the field-coherence
+        check in test-counties.mjs guards the fetch list, not just the config. */
+  if (f.ppsfFrom || f.ppsfTo) {
+    const p = row.ppsf;
+    if (p == null || !isFinite(p) || p <= 0) return false;
+    if (f.ppsfFrom && p < f.ppsfFrom) return false;
+    if (f.ppsfTo && p > f.ppsfTo) return false;
+  }
+  /* OWNER-OCCUPIED where the county publishes no flag. row.occ is the app's own
+     assessOccupancy verdict, computed once at parse time: 'owner', 'rental', or null.
+     NULL MEANS THE QUESTION COULD NOT BE ANSWERED for that house - a PO box, a mortgage
+     servicer, a care-of line, a lot with no house number. Those are removed, because
+     "only owner-occupied" has to mean confirmed, but the number removed is counted and
+     reported so the total cannot quietly shrink without saying why. */
+  if (f.ownerOnly && (cap.ownerClient && !cap.ownerSql)) {
+    if (row.occ !== 'owner') return false;
+  }
+  /* THE HALF THAT MAKES THE CIRCLE ROUND. The box narrowed what was asked for; this drops
+     the corners. Without it a 20-mile radius quietly answers with 28 miles of ground in
+     four directions. A row with no home to measure from is dropped rather than kept - he
+     asked for "within N miles of home" and there is no home, so nothing can satisfy it,
+     and the panel says so in words rather than returning a silent zero. */
+  if (f.homeMiles) {
+    const d = pockMilesHome(row.lon, row.lat, f.home);
+    if (d == null || d > f.homeMiles) return false;
+  }
+  return true;
+}
+
+/* ---------------------------------------------------------------------------
+   ONE COUNTY, PAGED.
+
+   Geometry is asked for, but SIMPLIFIED HARD: maxAllowableOffset flattens each lot to
+   a handful of points, which is all a centroid needs and cuts the payload by roughly
+   an order of magnitude. We are binning to a 0.03-degree cell - about 2.5 km - so lot
+   shape is noise at this scale. The full outline is what fetchTile is for.
+
+   A page that comes back short of POCK_PAGE is the last page. A page that comes back
+   exactly full means there is probably more, so we ask again with resultOffset. This
+   is the standard ArcGIS paging contract and it is why exceededTransferLimit is not
+   relied on - Franklin's MapServer does not always set it.
+   --------------------------------------------------------------------------- */
+async function pockFetchCounty(c, box, f, onPage) {
+  const cannot = pockCannot(c, f);
+  if (cannot) return { key: c.key, name: c.name, cannot, rows: [] };
+  const where = pockWhere(c, f);
+  if (where == null) return { key: c.key, name: c.name, cannot: 'this county cannot answer that filter', rows: [] };
+
+  const [w, s, e, n] = box;
+  const need = new Set([c.pid]);
+  const cap = POCK_CAPS[c.key] || {};
+  /* Only fetch what is actually read. The year and floor-area fields are needed only
+     where the filter could not be pushed into SQL - which is exactly the case
+     test-counties.mjs now guards against getting wrong: a field that is read must be a
+     field that is asked for. */
+  if (cap.yearClient || !cap.yearSql) ['RESYRBLT','YRBUILT','YearBuilt','YRBLT','PPYearBuilt'].forEach(k => { if ((c.extra||[]).includes(k)) need.add(k); });
+  if (cap.sqftClient || !cap.sqftSql) { const sq = c.stats && c.stats.sqft; if (sq) need.add(sq); if ((c.extra||[]).includes('PPLivingArea')) need.add('PPLivingArea'); }
+  /* PRICE PER SQUARE FOOT needs BOTH ingredients on the row, whichever way the value
+     filter itself went. Fairfield keeps land and building apart, so valSum is two fields
+     and both have to be asked for; readStats is the one reader that knows that. */
+  if (f.ppsfFrom || f.ppsfTo) {
+    const st = c.stats || {};
+    if (st.val) need.add(st.val);
+    (st.valSum || []).forEach(k => need.add(k));
+    if (st.sqft) need.add(st.sqft);
+  }
+  /* OWNER-OCCUPIED on a county with no auditor flag. assessOccupancy compares the owner's
+     mailing address against the site address, so the scan has to carry the same fields the
+     single-house path carries: the site address, the owner's name, the mailing lines, and
+     the land-use class (a shop is not asked the question at all). c.occ.mail and friends
+     are accessor FUNCTIONS, so the field names cannot be read off them - they are listed
+     in c.extra, and the field-coherence check in test-counties.mjs is what keeps this list
+     and those accessors from drifting apart. */
+  if (f.ownerOnly && cap.ownerClient && !cap.ownerSql) {
+    if (c.addr) need.add(c.addr);
+    (c.owner || []).forEach(k => need.add(k));
+    pockOccFields(c).forEach(k => need.add(k));
+  }
+
+  /* Worked out ONCE, not per row. These two decide whether a value is parsed and whether
+     an occupancy verdict is reached for every lot the county hands back, and at 21,000
+     lots a county that is a real cost. */
+  const wantPpsf = !!(f.ppsfFrom || f.ppsfTo);
+  const wantOccClient = !!(f.ownerOnly && cap.ownerClient && !cap.ownerSql);
+
+  const rows = [];
+  /* THE OFFSET IS WHAT THE SERVICE HAS ACTUALLY GIVEN, NOT page * POCK_PAGE.
+
+     Found on the FIRST live run, 2026-08-09, and it was two faults stacked on each other.
+     Delaware and Fairfield cap themselves at 1,000 rows a request whatever is asked for.
+     The app asked for 1,500 and both handed back exactly 1,000.
+
+     1. `if (feats.length < POCK_PAGE) break` then read 1,000 as "that was the last page"
+        and stopped. Both counties had been SILENTLY UNDER-REPORTING everything past their
+        first thousand lots.
+     2. And fixing only the stop rule would have been worse than the bug: stepping the
+        offset by 1,500 against a service that only ever returns 1,000 SKIPS 500 LOTS A
+        PAGE, forever, without a symptom.
+
+     So the offset advances by what came back, and the loop stops on an EMPTY page rather
+     than a short one. That costs one extra request per county and is correct against a
+     service of any page size, including one that changes its mind. `exceededTransferLimit`
+     is not relied on - Franklin's MapServer does not always set it.
+
+     NO OFFLINE TEST COULD SEE THIS. A mock hands back exactly what it is asked for. It took
+     the counties themselves to show it. */
+  let refused = null, truncated = false, unreadableOcc = 0, offset = 0;
+  for (let page = 0; page < POCK_MAX_PAGES; page++) {
+    const q = new URLSearchParams({
+      where, geometry: `${w},${s},${e},${n}`, geometryType: 'esriGeometryEnvelope',
+      inSR: '4326', outSR: '4326', spatialRel: 'esriSpatialRelIntersects',
+      outFields: [...need].join(','), returnGeometry: 'true',
+      geometryPrecision: '5', maxAllowableOffset: '0.0004',
+      resultRecordCount: String(POCK_PAGE), resultOffset: String(offset), f: 'geojson',
+    });
+    /* ONE RETRY, AND ONLY ONE. Measured over two live runs on 2026-08-09: a 403 came back
+       from Madison on the first and from Licking on the second, with nothing else changed.
+       It moves around, so it is a service having a moment rather than a clause being
+       wrong - and giving up on the first one costs a whole county's homes out of the
+       answer for no reason. One retry after a short pause fixes that class of thing.
+       NOT MORE THAN ONE. He is standing at a door. A county that is genuinely down should
+       be named and moved past, not waited on, and the scan already reports it by name. */
+    let j = null;
+    for (let tries = 0; tries < 2; tries++) {
+      try {
+        const r = await fetch(`${c.url}/query?${q}`);
+        j = await r.json();
+        refused = null;
+      } catch (err) { refused = err.message || 'network'; j = null; }
+      if (!refused && j && j.error) refused = (j.error.message || 'the county service refused that question');
+      if (!refused) break;
+      if (tries === 0) await new Promise(r => setTimeout(r, 400));
+    }
+    if (refused) break;
+    const feats = (j && Array.isArray(j.features)) ? j.features : null;
+    if (!feats) { refused = 'the county service returned no lot list'; break; }
+    for (const ft of feats) {
+      const a = ft.properties || ft.attributes || {};
+      const rings = esriToRings(ft.geometry);
+      if (!rings || !rings.length) continue;
+      const cen = ringsCentroid(rings);
+      if (!cen || !isFinite(cen[0]) || !isFinite(cen[1])) continue;
+      const yRaw = a.RESYRBLT ?? a.YRBUILT ?? a.YearBuilt ?? a.YRBLT ?? a.PPYearBuilt;
+      const yNum = parseInt(yRaw, 10);
+      const sqRaw = (c.stats && c.stats.sqft) ? a[c.stats.sqft] : (a.PPLivingArea ?? null);
+      const sqNum = Number(String(sqRaw == null ? '' : sqRaw).replace(/[$,]/g, ''));
+      const row = {
+        lon: cen[0], lat: cen[1],
+        year: (isFinite(yNum) && yNum > 1700 && yNum < 2100) ? yNum : null,
+        sqft: (isFinite(sqNum) && sqNum > 0) ? sqNum : null,
+      };
+      /* VALUE AND PRICE PER SQUARE FOOT, through readStats - the app's own reader, not a
+         second parse. It is the only thing that knows Fairfield's value is two columns
+         added together, and that Madison's figures arrive as text with commas in them.
+         The engine used to parse floor area itself and would have got Fairfield wrong. */
+      if (wantPpsf) {
+        const st = readStats(c, a);
+        row.val = st.val != null ? st.val : null;
+        const sq = st.sqft != null ? st.sqft : row.sqft;
+        /* Both ingredients, both real, floor area strictly positive. A null divides to 0
+           and passes every "under"; a zero divides to Infinity and passes every "over".
+           Unknown is its own answer and it is never a match. */
+        row.ppsf = (row.val != null && sq != null && sq > 0) ? row.val / sq : null;
+      }
+      /* WHO LIVES THERE, where the county publishes no flag. Same function the house card
+         uses, so a scan and a tapped house can never disagree about the same address.
+         null is "could not be told" - a PO box, a mortgage servicer, a care-of line - and
+         it is counted here so the screen can say how many were dropped for it rather than
+         letting the total quietly shrink. */
+      if (wantOccClient) {
+        const v = assessOccupancy(c, a, a[c.addr]);
+        row.occ = v ? v.v : null;
+        if (row.occ == null) unreadableOcc++;
+      }
+      if (pockFilterClient(c, row, f)) rows.push(row);
+    }
+    if (onPage) onPage(c, rows.length);
+    /* AN EMPTY PAGE IS THE END. A SHORT ONE IS NOT. See the note on `offset` above: a short
+       page is what a service that caps itself below POCK_PAGE returns on every page it
+       ever sends, and reading it as the end is what hid a thousand-lot ceiling on two
+       counties. Only nothing means nothing. */
+    if (!feats.length) break;
+    offset += feats.length;
+    if (page === POCK_MAX_PAGES - 1) truncated = true;
+  }
+  return { key: c.key, name: c.name, rows, refused, truncated, unreadableOcc };
+}
+
+/* Bin to cells, then walk the cells into pockets. Two cells belong to the same pocket
+   when they touch on an edge OR a corner - eight-way, not four. Four-way splits a
+   diagonal run of neighbourhoods into separate "places", which reads as two small
+   pockets where a canvasser sees one. */
+function pockBinAndGroup(rows, floor, cell = POCK_CELL) {
+  const cells = new Map();
+  for (const r of rows) {
+    const [ix, iy] = pockCellOf(r.lon, r.lat, cell);
+    const k = pockCellKey(ix, iy);
+    const cur = cells.get(k);
+    if (cur) cur.n++;
+    else cells.set(k, { ix, iy, n: 1 });
+  }
+  /* The floor is what keeps a scan honest. One matching house in a square is not a
+     pocket, it is a house, and drawing it the same size as a 1,300-home square invites
+     a wasted drive. Cells under the floor are counted in the total and NOT drawn. */
+  const kept = [...cells.values()].filter(c => c.n >= floor);
+  const keptSet = new Map(kept.map(c => [pockCellKey(c.ix, c.iy), c]));
+  const seen = new Set(), pockets = [];
+  for (const c of kept) {
+    const k0 = pockCellKey(c.ix, c.iy);
+    if (seen.has(k0)) continue;
+    const stack = [c], group = [];
+    seen.add(k0);
+    while (stack.length) {
+      const cur = stack.pop(); group.push(cur);
+      for (let dx = -1; dx <= 1; dx++) for (let dy = -1; dy <= 1; dy++) {
+        if (!dx && !dy) continue;
+        const nk = pockCellKey(cur.ix + dx, cur.iy + dy);
+        if (seen.has(nk)) continue;
+        const nb = keptSet.get(nk);
+        if (nb) { seen.add(nk); stack.push(nb); }
+      }
+    }
+    const homes = group.reduce((t, g) => t + g.n, 0);
+    const cx = group.reduce((t, g) => t + (g.ix + 0.5) * cell, 0) / group.length;
+    const cy = group.reduce((t, g) => t + (g.iy + 0.5) * cell, 0) / group.length;
+    /* FIVE DECIMALS RATHER THAN FOUR, and the honest reason is smaller than it looks.
+       Both sizes actually in use land on three decimals - a 0.03 grid centres on x.xx5 and
+       so does a 0.01 grid - so four was and is enough for BOTH, and the coarse output is
+       unchanged to the digit. This is headroom for a smaller square later: the stored
+       figure has to be finer than the cell, or two neighbouring cells round onto the same
+       coordinate and draw over each other. Cheap now, silent and awful to find later. */
+    pockets.push({ homes, ncells: group.length, cx, cy,
+                   cells: group.map(g => [+((g.ix + 0.5) * cell).toFixed(5), +((g.iy + 0.5) * cell).toFixed(5), g.n]) });
+  }
+  pockets.sort((a, b) => b.homes - a.homes);
+  return { pockets, cellsFound: cells.size, cellsKept: kept.length };
+}
+
+/* The whole scan. Counties run at most POCK_MAX_INFLIGHT at a time, because nothing
+   else in this file limits county requests and a seven-way burst is how a canvasser's
+   phone gets a county server to stop answering. */
+async function pockScan(box, f, onProgress) {
+  /* A RADIUS REPLACES THE VIEW, it does not narrow it. Ruled by Travis 2026-08-09: the
+     point of "within 20 miles of home" is that he never has to frame the map. Overlapping
+     the two instead would mean a radius set while zoomed onto one street answers about one
+     street, which is the opposite of what he asked for and would look like a bug.
+     So the box comes from home, and the row test in pockFilterClient rounds off the
+     corners the box cannot. The panel says which of the two it is doing, in words, above
+     the button - a scan that silently ignored where he was looking would be worse than
+     one that narrowed it. */
+  if (f.homeMiles) {
+    const hb = pockHomeBox(f.homeMiles, f.home);
+    /* No home set is not an empty answer, it is an unanswerable question, and it comes
+       back named so the screen can offer to set one instead of printing a zero. */
+    /* SAME SHAPE AS A REAL ANSWER, including cell and floor. A caller that reads r.cell
+       must not have to know which kind of empty it is holding. */
+    if (!hb) return { pockets: [], total: 0, shown: 0, pctShown: 0, cellsFound: 0, cellsKept: 0,
+                      cannot: [], refused: [], truncated: [], counties: [], unreadableOcc: 0,
+                      cell: f.cell > 0 ? f.cell : POCK_CELL,
+                      floor: pockScaledFloor(f.floor || 25, f.cell > 0 ? f.cell : POCK_CELL),
+                      noHome: true };
+    box = hb;
+  }
+  const cands = COUNTIES.filter(c => !c.fallback && stormBoxesMeet(c.bbox, box));
+  const done = [], queue = cands.slice();
+  async function worker() {
+    for (;;) {
+      const c = queue.shift();
+      if (!c) return;
+      done.push(await pockFetchCounty(c, box, f, onProgress));
+    }
+  }
+  await Promise.all(Array.from({ length: Math.min(POCK_MAX_INFLIGHT, cands.length) }, worker));
+
+  const rows = done.flatMap(d => d.rows);
+  /* ONE PLACE DECIDES THE SQUARE, AND ONE PLACE DECIDES THE FLOOR THAT GOES WITH IT.
+     f.cell is only ever set by pockDrill. Everything else gets the coarse square and the
+     floor it was calibrated against, unchanged. The scaled floor is worked out HERE and
+     handed down, never re-derived, for the same reason the radius is. */
+  const cell = f.cell > 0 ? f.cell : POCK_CELL;
+  const floor = pockScaledFloor(f.floor || 25, cell);
+  const { pockets, cellsFound, cellsKept } = pockBinAndGroup(rows, floor, cell);
+  /* How far each place is from home, in straight-line miles, worked out ONCE here so the
+     panel, the map and the results sheet all read the same figure off the same object
+     instead of each deriving it. Null when no home is set - which is not zero. */
+  pockets.forEach(p => { p.milesHome = pockMilesHome(p.cx, p.cy, f.home); });
+  const shown = pockets.reduce((t, p) => t + p.homes, 0);
+  return {
+    pockets, total: rows.length, shown,
+    pctShown: rows.length ? Math.round(100 * shown / rows.length) : 0,
+    cellsFound, cellsKept,
+    /* THE RESULT CARRIES ITS OWN SQUARE SIZE AND ITS OWN FLOOR. pockDraw reads `cell` from
+       here and never from the constant, so a fine result cannot be drawn at coarse size no
+       matter what any other part of the app believes. `floor` rides along because the
+       screen has to be able to say what it took for a square to be drawn at all. */
+    cell, floor,
+    cannot: done.filter(d => d.cannot).map(d => ({ name: d.name, why: d.cannot })),
+    refused: done.filter(d => d.refused).map(d => ({ name: d.name, why: d.refused })),
+    truncated: done.filter(d => d.truncated).map(d => d.name),
+    counties: done.filter(d => !d.cannot && !d.refused).map(d => ({ name: d.name, n: d.rows.length })),
+    /* Houses that matched everything else and were dropped only because who lives there
+       could not be told - a PO box, a mortgage servicer, a care-of line. Reported so the
+       screen can say so. A filter that removes thousands of houses for a reason nobody is
+       shown is the same fault as a county silently skipped. */
+    unreadableOcc: done.reduce((t, d) => t + (d.unreadableOcc || 0), 0),
+  };
+}
+
+/* ============================================================================
+   LOOKING INSIDE ONE PLACE.
+
+   Asked for by Travis unprompted, 2026-08-09: "say I found a good area of ranches, they
+   were all relatively a good size, and I wanted to find where the biggest ones were."
+
+   IT ASKS THE COUNTY AGAIN. IT DOES NOT SIEVE WHAT IT ALREADY HAS. That was the first
+   answer and it was wrong. The houses a scan is holding are the SURVIVORS of the filter
+   that found them, so sieving them can only ever narrow. Ask for anything wider - a longer
+   year band, or the ranch filter dropped - and the screen would say this place has no such
+   houses, confidently, when the truth is nobody ever looked for them. A wrong answer that
+   looks exactly like a right one is the worst fault this app can carry, and it would have
+   been unfindable from the outside.
+
+   MEASURED BEFORE IT WAS BUILT, on his machine against the real counties, 2026-08-09:
+   a 20-mile scan is 43,241 rows and about 76 seconds; one place with the same filter is
+   1,429 rows and 0.8 to 1.1 seconds; one place with a much WIDER filter is 8,588 rows and
+   3.3 seconds. Asking again costs a second or three. It is affordable, so it is what
+   happens, every time, and the screen says so in words.
+   ============================================================================ */
+
+/* The ground one place covers. Its cells are CENTRES, so each is grown by half a square to
+   reach the edges, and the whole thing by half a square again. That last pad is not
+   decoration: a house sitting just past the edge of a drawn square is part of the
+   neighbourhood he is looking at, and a box drawn tight to the squares would cut the street
+   in half. `cell` is the size those squares were drawn at, which is why it is passed in
+   rather than assumed - a coarse pocket and a fine one need different pads. */
+function pockClusterBox(pocket, cell = POCK_CELL) {
+  if (!pocket || !Array.isArray(pocket.cells) || !pocket.cells.length) return null;
+  const h = (cell > 0 ? cell : POCK_CELL);
+  let w = Infinity, s = Infinity, e = -Infinity, n = -Infinity;
+  for (const c of pocket.cells) {
+    if (c[0] - h < w) w = c[0] - h;
+    if (c[0] + h > e) e = c[0] + h;
+    if (c[1] - h < s) s = c[1] - h;
+    if (c[1] + h > n) n = c[1] + h;
+  }
+  if (!isFinite(w) || !isFinite(s) || !isFinite(e) || !isFinite(n)) return null;
+  return [w, s, e, n];
+}
+
+/* Look inside one place with a new filter.
+   `outerCell` is the square size the place was FOUND at, not the one it will be redrawn at. */
+async function pockDrill(pocket, f, outerCell, onProgress) {
+  const box = pockClusterBox(pocket, outerCell);
+  if (!box) return null;
+
+  /* THE RADIUS HAS TO COME OFF, AND THIS IS THE WHOLE REASON THIS FUNCTION EXISTS RATHER
+     THAN A CALL TO pockScan WITH A BOX. pockScan does not narrow by a radius, it REPLACES
+     the box with a circle around home - ruled that way on purpose so he never has to frame
+     the map. Leave homeMiles on here and the drill would quietly stop being about this
+     place and become a second whole-county scan around his house, with the right words on
+     the screen and the wrong ground underneath them. Deleted, not overwritten, so that
+     nothing downstream can read a leftover zero as a real radius. */
+  const g = Object.assign({}, f);
+  delete g.homeMiles;
+
+  /* The fine square, and the floor that goes with it. The floor is NOT set here - the base
+     figure is passed and pockScan scales it, so there is one place that decides how a floor
+     follows a square. */
+  g.cell = POCK_CELL_FINE;
+
+  const r = await pockScan(box, g, onProgress);
+  if (r) {
+    r.drilled = true;
+    r.box = box;
+    /* What the place held BEFORE this question was asked, carried so the screen can say
+       "your first filters matched 61 homes here" when the new answer is nothing. Without it
+       an empty drill is indistinguishable from an empty place. */
+    r.fromHomes = pocket.homes;
+  }
+  return r;
+}
+
+/* ---------------------------------------------------------------------------
+   DRAWING THE SCAN ON THE BIG MAP.
+
+   The squares are their own Leaflet pane, and that is not decoration. Leaflet
+   stacks tiles at zIndex 200 and its default overlay pane at 400, where the lot
+   polygons, owner labels, tracks and markers live. A pocket wash drawn into the
+   overlay pane would cover the lot lines he walks by. The storm layer already
+   solved this at 350; the pockets sit just under it at 340, so a storm day he has
+   ticked still reads on top of a scan.
+
+   IT IS NEVER REBUILT ON PAN. refreshMapLayers() runs on every moveend and
+   rebuilds the parcel, label, route and me layers. Putting several hundred
+   rectangles in that path would make dragging the map cost a full redraw of a
+   scan he has not changed. Instead this layer is added straight to the map, like
+   _stormLayer, and is only touched when a NEW scan finishes or he clears it.
+   --------------------------------------------------------------------------- */
+
+const POCK_PANE = 'pockets';
+const POCK_PANE_Z = 340;            // tiles 200 < pockets 340 < storm 350 < overlay 400
+
+/* THE BADGES GET THEIR OWN PANE, and that is the whole reason a place can be tapped without
+   breaking the rule that put the squares in a dead pane in the first place. The squares stay
+   exactly as they were - no pointer events, no interaction - so one can never swallow a tap
+   meant for a house underneath it. The numbered badge is a small target he has to aim at, and
+   only it is live. One pane could not do both: pointerEvents is set on the pane, not the
+   shape. */
+const POCK_PIN_PANE = 'pockpins';
+const POCK_PIN_PANE_Z = 341;        // just above the wash, still under the storm layer
+
+/* The cells the scan hands back are CENTRES, because that is the shape
+   pockets.json uses and the shape every measured figure was built on. Leaflet
+   wants corners. One place does the conversion so the two can never drift. */
+function pockCellBounds(lon, lat, cell = POCK_CELL) {
+  const h = (cell > 0 ? cell : POCK_CELL) / 2;
+  return [[lat - h, lon - h], [lat + h, lon + h]];
+}
+
+/* Opacity carries the count, and it is scaled against the BIGGEST CELL IN THIS
+   SCAN rather than a fixed ceiling. A fixed ceiling tuned to Franklin makes every
+   rural scan look empty, and one tuned to rural makes Franklin a solid slab.
+   The floor of 0.18 is so a thin-but-real cell is still visible; a cell that
+   cleared the floor has earned a mark he can see. */
+function pockCellAlpha(n, max) {
+  if (!(max > 0)) return 0.18;
+  /* THE CURVE BENDS THE OTHER WAY NOW, ruled by Travis 2026-08-09 from a photograph of a
+     real place at the fine size: "hard to read, make it stronger".
+     It used to be a square root, which is generous to the thin cells - a cell at a tenth of
+     the busiest still came out at 0.34 against a top of 0.70, so half the map read as much
+     the same shade and the densest square did not announce itself. That was a fair choice
+     when a square was two miles across and every one of them was worth a drive. It is the
+     wrong choice at a quarter of a mile, where the whole question is WHICH of these squares.
+     A power of 1.8 keeps the thin ones near the floor and lets the busiest run away with it:
+     a tenth of the busiest is now 0.19 against a top of 0.82.
+     THE FLOOR OF 0.18 IS UNCHANGED AND STILL LOAD-BEARING - a cell that cleared the floor has
+     earned a mark he can see, however thin it is next to its neighbour. And the top stays
+     short of opaque so the map underneath is never lost. */
+  return 0.18 + 0.64 * Math.pow(Math.min(n, max) / max, 1.8);
+}
+
+let _pockLayer = null, _pockPins = null, _pockShown = null;
+
+function pockEnsurePane(m) {
+  if (!m.getPane(POCK_PANE)) {
+    m.createPane(POCK_PANE);
+    const p = m.getPane(POCK_PANE);
+    p.style.zIndex = String(POCK_PANE_Z);
+    /* No pointer events. A wash that swallows taps would stop him opening a house
+       under it, and the tap target he wants is the lot, not the square. */
+    p.style.pointerEvents = 'none';
+  }
+  if (!m.getPane(POCK_PIN_PANE)) {
+    m.createPane(POCK_PIN_PANE);
+    const q = m.getPane(POCK_PIN_PANE);
+    q.style.zIndex = String(POCK_PIN_PANE_Z);
+    /* THE ONE THING ON THE SCAN LAYER THAT TAKES A TAP. Everything in this pane is a badge
+       and every badge is a place, so nothing here can be sitting over a house he wanted. */
+    q.style.pointerEvents = 'auto';
+  }
+}
+
+function pockClear() {
+  const m = window._map; if (!m) { _pockLayer = _pockPins = _pockShown = null; return; }
+  if (_pockLayer) { m.removeLayer(_pockLayer); _pockLayer = null; }
+  if (_pockPins)  { m.removeLayer(_pockPins);  _pockPins  = null; }
+  _pockShown = null;
+}
+
+/* Draw one finished scan. Returns what it actually put on the map, so a check can
+   assert against the drawing rather than against the intention. */
+function pockDraw(result) {
+  const m = window._map;
+  if (!m || !result || !Array.isArray(result.pockets)) return null;
+  pockEnsurePane(m);
+  pockClear();
+
+  let max = 0;
+  for (const p of result.pockets) for (const c of p.cells) if (c[2] > max) max = c[2];
+
+  /* READ OFF THE RESULT, NEVER OFF THE CONSTANT. This one line is what makes it impossible
+     to draw a fine scan at coarse size. A result that predates the fine cell has no `cell`
+     on it and falls back to the coarse one, which is what it was drawn at. */
+  const cell = result.cell > 0 ? result.cell : POCK_CELL;
+
+  const cells = [];
+  _pockLayer = L.layerGroup([], { pane: POCK_PANE });
+  result.pockets.forEach((p, i) => {
+    p.cells.forEach(c => {
+      const [lon, lat, n] = c;
+      const b = pockCellBounds(lon, lat, cell);
+      L.rectangle(b, {
+        pane: POCK_PANE, interactive: false,
+        color: '#5eead4', weight: 1, opacity: 0.35,
+        fillColor: '#5eead4', fillOpacity: pockCellAlpha(n, max),
+      }).addTo(_pockLayer);
+      cells.push({ rank: i + 1, lon, lat, n });
+    });
+  });
+  _pockLayer.addTo(m);
+
+  /* Pins carry the rank and the count, because a square with no number is a
+     colour and he cannot act on a colour. Ranks run 1..N over the pockets the
+     scan kept, which are already sorted biggest first by pockBinAndGroup. */
+  /* TAPPING A BADGE OPENS THAT PLACE, unless this IS a drill - there is no drilling into a
+     drill. A second level would need its own way back, its own saved outer scan and a floor
+     scaled twice, and none of that has been asked for or measured. The badges on a drill are
+     still drawn, because he needs to see the counts; they simply do not open anything. */
+  _pockPins = L.layerGroup([], { pane: POCK_PIN_PANE });
+  const canOpen = !result.drilled;
+  result.pockets.forEach((p, i) => {
+    const mk = L.marker([p.cy, p.cx], {
+      pane: POCK_PIN_PANE, interactive: canOpen, keyboard: false,
+      icon: L.divIcon({ className: '', iconSize: [0, 0],
+        html: `<div class="pockPin${canOpen ? ' pockPinTap' : ''}"><b>${i + 1}</b>${p.homes.toLocaleString()}</div>` }),
+    });
+    if (canOpen) mk.on('click', (ev) => {
+      /* The tap stops here. Without this Leaflet passes it on to the map underneath and the
+         map opens whatever lot happens to be at that point at the same time. */
+      if (ev && ev.originalEvent && L.DomEvent) L.DomEvent.stopPropagation(ev.originalEvent);
+      openDrill(p, i);
+    });
+    mk.addTo(_pockPins);
+  });
+  _pockPins.addTo(m);
+
+  /* `cell` is reported as part of WHAT WAS DRAWN, not what was intended, so a check can
+     assert the fine view really drew fine squares rather than trusting that it meant to. */
+  _pockShown = { pockets: result.pockets.length, cells: cells.length, max, cell,
+                 homes: result.pockets.reduce((t, p) => t + p.homes, 0) };
+  return _pockShown;
+}
+
+/* What is on the map right now, or null. Read by the checks, and by anything that
+   needs to know whether a scan is currently drawn without re-deriving it. */
+function pockOnMap() { return _pockShown; }
+
+/* ============================================================================
+   WHERE TO KNOCK - THE PANEL.
+
+   Shape chosen by Travis 2026-08-09, shown three photographed options that varied how the
+   SCREEN WORKS rather than how a row is formatted: a plain list of eight boxes, a
+   plain-English sentence with the numbers tappable inside it, and this one - four presets
+   with the full list behind "Set it up myself". He picked this one.
+
+   The rule underneath it: he knocks the same kind of house most days, so the common case
+   should be one tap and the uncommon case should still be reachable.
+
+   NO COUNT IS SHOWN UNTIL A SCAN HAS RUN. A count costs seconds and several county
+   requests, so a preset says "Tap to count" until it has been asked, and the button says
+   "Count them" rather than a number it has not earned. An invented number on a button he
+   drives to is the exact fault this whole feature is written against.
+   ============================================================================ */
+
+/* Ages, not calendar years. "Roofs 28 to 32 years old" is what he means; 1994-1998 is what
+   that meant when it was written, and it stops being true every January. Worked out from
+   today's date each time the panel opens. */
+function pockYearsFromAge(oldest, youngest) {
+  const y = new Date().getFullYear();
+  return { yrFrom: y - oldest, yrTo: y - youngest };
+}
+
+const POCK_PRESETS = [
+  { key: 'roofage', title: 'Roofs 28 to 32 years old',
+    words: () => { const b = pockYearsFromAge(32, 28);
+                    return `Built ${b.yrFrom} to ${b.yrTo} · owner-occupied · over 1,800 sq ft`; },
+    make:  () => Object.assign(pockYearsFromAge(32, 28), { sqFrom: 1800, ownerOnly: true }) },
+
+  { key: 'onestorey', title: 'One-storey homes',
+    words: () => 'Ranches, any age · owner-occupied',
+    /* Named by what the county publishes - a storey count - and nothing more. The record is
+       explicit that hip against gable is in no dataset available, so it is not promised, and
+       nothing here says anything about a roof. */
+    warn:  () => 'Delaware and Fairfield can answer this. The other five cannot, and the '
+               + 'screen names them rather than drawing them empty.',
+    make:  () => ({ ranchOnly: true, ownerOnly: true }) },
+
+  { key: 'bigger', title: 'Big homes, higher value',
+    words: () => 'Over 2,600 sq ft · county value over $400,000',
+    make:  () => ({ sqFrom: 2600, valFrom: 400000 }) },
+
+  { key: 'hail', title: 'Hit recently, and hit hard', dead: true,
+    words: () => 'Comes with the storm crossing',
+    make:  () => ({}) },
+];
+
+/* Twenty straight-line miles. Not a guess about him, a guess about the ground: Franklin
+   County is about 25 miles across, so 20 from a home inside it reaches the whole metro and
+   stops well short of Springfield. He can change it, and it is written into a box he can
+   see - a default that quietly limits an answer is the same fault as a hidden preset. */
+const POCK_HOME_MILES_DEFAULT = 20;
+
+/* `scope` is null for a normal whole-map scan, and an object while he is looking INSIDE one
+   place. It holds the place itself and, just as importantly, everything the outer scan owned
+   before the drill took the screen over - its answer, its filter and its preset. There is one
+   pockUI and one drawn layer, so without that saved copy backing out of a drill would leave
+   him on a map with the drill's squares still on it and the outer answer gone for good. */
+const pockUI = { pane: 'presets', preset: null, f: {}, last: null, scanning: false, scope: null,
+                 /* Filled in once, the first time the panel opens with a home on file.
+                    After that his choice stands, including a deliberate clear - putting
+                    the default back on every open would make the box impossible to empty. */
+                 radiusDefaulted: false };
+
+/* How many filters he has actually set. Counted from the filter object rather than from the
+   boxes on screen, so it is right whether he came through a preset or typed them. */
+function pockSetCount(f) {
+  let n = 0;
+  if (f.yrFrom || f.yrTo) n++;
+  if (f.valFrom || f.valTo) n++;
+  if (f.sqFrom || f.sqTo) n++;
+  if (f.ppsfFrom || f.ppsfTo) n++;
+  if (f.ownerOnly) n++;
+  if (f.ranchOnly) n++;
+  if (f.homeMiles) n++;
+  return n;
+}
+
+/* Is there a home to measure from at all. Asked in one place so the row, the footer and
+   the answer all agree, and so "no home set" can be offered as something he can fix
+   rather than printed as a zero. */
+function pockHaveHome() {
+  const h = (typeof state !== 'undefined') ? state.home : null;
+  return !!(h && isFinite(h.lat) && isFinite(h.lon));
+}
+
+/* The box the scan runs over is THE GROUND HE IS LOOKING AT. Leaflet hands back
+   south-west and north-east corners; the engine wants [w, s, e, n]. */
+function pockBoxNow() {
+  const m = window._map;
+  if (!m) return null;
+  const b = m.getBounds();
+  return [b.getWest(), b.getSouth(), b.getEast(), b.getNorth()];
+}
+
+/* Which counties in view cannot answer what he has asked, and why, in their own words.
+   Worked out BEFORE the scan, so the screen can say it while he is still setting it up
+   rather than after he has waited half a minute for a short answer.
+   Only counties whose ground is actually in view - naming Pickaway while he is looking at
+   Dublin is noise, and the engine already takes the same view. */
+function pockBlindNow(f) {
+  const box = pockBoxNow();
+  if (!box || typeof COUNTIES === 'undefined') return [];
+  return COUNTIES.filter(c => !c.fallback && stormBoxesMeet(c.bbox, box))
+    .map(c => pockCannot(c, f)).filter(Boolean)
+    .filter((w, i, a) => a.indexOf(w) === i);
+}
+
+/* ---- LOOKING INSIDE ONE PLACE, on the screen -------------------------------------------
+   Reached by tapping the numbered badge on the map. NOT by tapping the square: the squares
+   stay transparent to taps, as ruled, so one never steals a tap meant for a house. The badge
+   is a small target he has to aim at, which is the difference. */
+function openDrill(pocket, i) {
+  if (!pocket) return;
+  leaveMenuForView();
+  pockUI.scope = {
+    pocket, rank: i + 1,
+    /* THE WAY BACK. Saved before anything is overwritten, because there is only one of each. */
+    outer: pockUI.last, outerF: pockUI.f, outerPreset: pockUI.preset,
+    outerCell: (pockUI.last && pockUI.last.cell) || POCK_CELL,
+  };
+  /* He starts from the filter that found the place, not from an empty screen - he is
+     narrowing something he can already see. A copy, so editing it cannot reach back and
+     change the outer scan he may return to. */
+  pockUI.f = Object.assign({}, pockUI.f);
+  /* THE RADIUS COMES OFF THE PANEL'S OWN FILTER, not just off the request. pockDrill would
+     strip it anyway, but leaving it here would make the "3 set" badge count a radius that
+     does nothing, and a filter the screen claims is on while the engine ignores it is the
+     silent-county fault wearing different clothes. */
+  delete pockUI.f.homeMiles;
+  pockUI.last = null;
+  pockUI.preset = null;
+  /* Straight to the controls. He came here to change a number, not to pick a starting point
+     over again. */
+  pockUI.pane = 'list';
+  $('filtView').classList.remove('hide');
+  renderFilters();
+  buzz(12);
+}
+
+/* Put the outer scan back exactly as it was, and take the drill off the map. */
+function closeDrill() {
+  const s = pockUI.scope;
+  if (!s) return;
+  pockUI.scope = null;
+  pockUI.f = s.outerF;
+  pockUI.last = s.outer;
+  pockUI.preset = s.outerPreset;
+  pockClear();
+  if (s.outer && s.outer.pockets && s.outer.pockets.length) pockDraw(s.outer);
+  pockBarSync();
+}
+
+function openFilters() {
+  /* Opening the panel the ordinary way ends any drill. Otherwise the screen would say
+     "inside this place" over a scan of the whole map. */
+  if (pockUI.scope) closeDrill();
+  leaveMenuForView();
+  /* The radius is the one filter that starts switched ON, because a scan with no radius is
+     a scan of whatever the map happens to be framing, and the first thing he asked for was
+     not having to frame it. Only if there is a home to measure from, and only once. */
+  if (!pockUI.radiusDefaulted && pockHaveHome() && pockUI.f.homeMiles == null) {
+    pockUI.f.homeMiles = POCK_HOME_MILES_DEFAULT;
+  }
+  pockUI.radiusDefaulted = true;
+  pockUI.pane = 'presets';
+  $('filtView').classList.remove('hide');
+  renderFilters();
+  buzz(12);
+}
+
+/* TWO STAGES, like exitDaysLog. Back out of the full list onto the presets first, and only
+   the second Back closes the screen - otherwise one tap from deep inside the list throws
+   away everything he typed and drops him on the map. Returns true only when the view really
+   closed, which is what backToMenuIfCameFromIt has to be told. */
+/* `keepScope` is set by ONE caller: Show. Everything else that closes this panel while a
+   drill is open is him backing out, and backing out has to put the whole scan back.
+   THIS DISTINCTION IS NOT COSMETIC AND IT WAS A REAL BUG FIRST: Show closes the panel too,
+   so without it Show drew the drill on the map and then immediately wiped it and redrew the
+   outer scan - the one tap that is meant to reveal the answer would have been the tap that
+   threw it away. */
+function exitFilters(keepScope) {
+  if (pockUI.pane === 'list') { pockUI.pane = 'presets'; renderFilters(); return false; }
+  return closeFiltersNow(keepScope);
+}
+
+/* SHOW IS NOT BACK, and it must not behave like it. The two stages above exist so that one
+   Back from deep in the list does not throw away everything he typed - but Show throws
+   nothing away, it is the tap that answers the question. Routing Show through the two-stage
+   rule meant pressing it from the full list flipped to the presets pane and left the panel
+   sitting over the map he had just asked to see. That was already true before the drill and
+   nothing caught it, because the one check for it happened to be on the presets pane. It is
+   worse inside a place, where the list is the pane he always starts on. */
+function closeFiltersNow(keepScope) {
+  $('filtView').classList.add('hide');
+  if (pockUI.scope && !keepScope) closeDrill();
+  return true;
+}
+
+function renderFilters() {
+  const isList = pockUI.pane === 'list';
+  const s = pockUI.scope;
+  /* THE TITLE HAS TO SAY WHICH GROUND, because every control below it is the same as the
+     whole-map panel and the numbers it produces are not. A panel that looks identical while
+     answering about completely different ground is the fault this wording exists to stop. */
+  $('filtTitle').textContent = s ? `Inside place ${s.rank}` : (isList ? 'Set it up yourself' : 'Where to knock');
+  $('filtSub').textContent = s
+    ? `${s.pocket.homes.toLocaleString()} homes here matched your last search. Change anything below and search this place again.`
+    : (isList ? 'Leave a box empty for no limit.'
+              : 'Start from one of these, then change it if you want.');
+  const set = pockSetCount(pockUI.f);
+  const badge = $('filtSet');
+  badge.classList.toggle('hide', set === 0);
+  badge.textContent = set === 1 ? '1 set' : set + ' set';
+  if (isList) renderFiltList(); else renderFiltPresets();
+  /* Back to the top on every pane change. Without it the list opens already scrolled by
+     however far down the presets he was, so the first row is half off the screen and reads
+     as a rendering fault. */
+  $('filtBody').scrollTop = 0;
+  pockFootSync();
+}
+
+/* THE BLIND-COUNTY NOTE, built once and used by both panes. It is amber and it is worded as
+   "not asked", never as a count, because "we did not ask" and "there are none" look
+   identical on a map and only one of them is true. */
+function pockBlindHtml(f) {
+  const why = pockBlindNow(f);
+  if (!why.length) return '';
+  return `<div class="filtBlind"><b>${why.length === 1 ? 'One county was not asked' : why.length + ' counties were not asked'}</b>`
+       + `<div>${why.map(esc).join('. ')}. They are left out of the count, not shown as empty.</div></div>`;
+}
+
+function renderFiltPresets() {
+  const body = $('filtBody');
+  body.innerHTML = '';
+  const hd = document.createElement('div');
+  hd.className = 'filtHd'; hd.textContent = 'Pick a starting point';
+  body.appendChild(hd);
+
+  POCK_PRESETS.forEach(p => {
+    const b = document.createElement('button');
+    b.className = 'preBtn' + (pockUI.preset === p.key ? ' on' : '') + (p.dead ? ' dead' : '');
+    b.id = 'pre_' + p.key;
+    const counted = pockUI.preset === p.key && pockUI.last;
+    const n = p.dead ? 'Not built yet'
+            : counted ? `${pockUI.last.pockets.length} ${pockUI.last.pockets.length === 1 ? 'place' : 'places'} · ${pockUI.last.shown.toLocaleString()} homes`
+            : 'Tap to count';
+    b.innerHTML = `<div class="t">${esc(p.title)}</div><div class="w">${esc(p.words())}</div>`
+                + `<div class="n${counted ? '' : ' un'}">${esc(n)}</div>`
+                + (p.warn ? `<div class="warn">${esc(p.warn())}</div>` : '');
+    if (!p.dead) b.onclick = () => {
+      pockUI.preset = p.key;
+      /* THE RADIUS SURVIVES A PRESET. A preset says what kind of house; how far he is
+         willing to drive is a separate thing and it is his, not the preset's. Wiping it
+         here would silently widen every search the moment he tapped a starting point. */
+      const keepMiles = pockUI.f.homeMiles;
+      pockUI.f = p.make();
+      if (keepMiles) pockUI.f.homeMiles = keepMiles;
+      pockUI.last = null;                 // a new question has not been answered yet
+      renderFilters();
+      buzz(8);
+    };
+    body.appendChild(b);
+  });
+
+  const own = document.createElement('button');
+  own.className = 'preOwn';
+  own.id = 'preOwn';
+  own.innerHTML = '<span class="t">Set it up myself</span><span class="a">›</span>';
+  own.onclick = () => { pockUI.pane = 'list'; renderFilters(); buzz(8); };
+  body.appendChild(own);
+
+  const blind = pockBlindHtml(pockUI.f);
+  if (blind) body.insertAdjacentHTML('beforeend', blind);
+}
+
+/* THE FULL LIST. Built once per entry to this pane and then left alone: re-rendering on
+   every keystroke takes the caret out of the box under his thumb. Typing updates the filter
+   object and the footer, and nothing else. */
+function renderFiltList() {
+  const f = pockUI.f;
+  const body = $('filtBody');
+  const num = v => { const n = parseInt(String(v).replace(/[^0-9]/g, ''), 10); return isFinite(n) && n > 0 ? n : 0; };
+  const box = (key, val) => `<input id="fi_${key}" type="text" inputmode="numeric" value="${val ? esc(String(val)) : ''}">`;
+
+  /* THE RADIUS GOES FIRST, because it is the one that decides what ground the other seven
+     are even asked about. Its wording never says "distance" or "away" on its own - it is a
+     straight line, the app has no drive times, and twenty miles across town and twenty
+     miles up 71 are not the same trip. */
+  /* INSIDE A PLACE THE RADIUS ROW IS NOT SHOWN AT ALL, and this is the one place in the panel
+     where a control is removed rather than greyed. A radius does not narrow a search in this
+     app, it REPLACES the ground - so a radius box sitting on a screen headed "Inside place 2"
+     would be a control that silently throws the place away. pockDrill strips homeMiles for
+     the same reason; this is the same rule said on the screen. */
+  const homeRow = pockUI.scope
+    ? `<div class="fRow dead"><div class="lab">Where it is searching</div>
+         <div class="sub">Only inside this place. The distance from home does not apply here -
+           back out to search wider ground.</div></div>`
+    : pockHaveHome()
+    ? `<div class="fRow"><div class="lab">How far from home</div>
+         <div class="pair">${box('homeMiles', f.homeMiles)}<span class="to">miles</span></div>
+         <div class="sub">Straight line from home, not driving time. Empty this box to search
+           the ground on the screen instead.</div></div>`
+    : `<div class="fRow dead"><div class="lab">How far from home</div>
+         <div class="sub">No home is set on this phone yet. Set one in the menu, under
+           "Set to where I am", and this can limit the search to a circle around it.</div></div>`;
+
+  body.innerHTML = homeRow + `
+    <div class="fRow"><div class="lab">Built</div>
+      <div class="pair">${box('yrFrom', f.yrFrom)}<span class="to">to</span>${box('yrTo', f.yrTo)}</div>
+      <div class="sub" id="fi_agehint"></div></div>
+
+    <div class="fRow"><div class="lab">County value</div>
+      <div class="pair"><span class="pre">$</span>${box('valFrom', f.valFrom)}<span class="to">to</span><span class="pre">$</span>${box('valTo', f.valTo)}</div>
+      <div class="sub">The auditor's figure, not a sale price.</div></div>
+
+    <div class="fRow"><div class="lab">Square feet</div>
+      <div class="pair">${box('sqFrom', f.sqFrom)}<span class="to">to</span>${box('sqTo', f.sqTo)}</div>
+      <div class="sub">Living area.</div></div>
+
+    <div class="fRow"><div class="lab">Price per square foot</div>
+      <div class="pair"><span class="pre">$</span>${box('ppsfFrom', f.ppsfFrom)}<span class="to">to</span><span class="pre">$</span>${box('ppsfTo', f.ppsfTo)}</div>
+      <div class="sub">County value divided by living area. A home missing either figure is left out rather than counted as cheap.</div></div>
+
+    <div class="fRow"><div class="tog"><div>
+        <div class="lab">Owner-occupied only</div>
+        <div class="sub">Leaves out homes whose post goes somewhere else.</div>
+      </div><button class="chip${f.ownerOnly ? ' on' : ''}" id="fi_ownerOnly">${f.ownerOnly ? 'On' : 'Off'}</button></div></div>
+
+    <div class="fRow"><div class="tog"><div>
+        <div class="lab">Ranches only</div>
+        <div class="sub">One storey. Delaware and Fairfield can answer this. The other five cannot.</div>
+      </div><button class="chip${f.ranchOnly ? ' on' : ''}" id="fi_ranchOnly">${f.ranchOnly ? 'On' : 'Off'}</button></div></div>
+
+    <div class="fRow dead"><div class="lab">Hail — how recent</div>
+      <div class="sub">Not built yet. Comes with the storm crossing.</div></div>
+
+    <div class="fRow dead"><div class="lab">Hail — how big</div>
+      <div class="sub">Not built yet. Three sizes when it lands: ¾ inch, 1 inch, 1¾ inch.</div></div>
+
+    <div id="fi_blind"></div>`;
+
+  ['homeMiles','yrFrom','yrTo','valFrom','valTo','sqFrom','sqTo','ppsfFrom','ppsfTo'].forEach(k => {
+    if (!$('fi_' + k)) return;            // the radius row is absent when no home is set
+    $('fi_' + k).oninput = e => {
+      const v = num(e.target.value);
+      if (v) f[k] = v; else delete f[k];
+      /* Any typed change makes the standing answer stale. Leaving it up would put a count
+         on the button that belongs to a question he has already changed. */
+      pockUI.last = null; pockUI.preset = null;
+      pockFootSync();
+    };
+  });
+  ['ownerOnly','ranchOnly'].forEach(k => {
+    $('fi_' + k).onclick = () => {
+      if (f[k]) delete f[k]; else f[k] = true;
+      $('fi_' + k).classList.toggle('on', !!f[k]);
+      $('fi_' + k).textContent = f[k] ? 'On' : 'Off';
+      pockUI.last = null; pockUI.preset = null;
+      pockFootSync(); buzz(8);
+    };
+  });
+}
+
+/* The footer is the only thing that changes while he types, and the age hint under the year
+   row, because "1994 to 1998" and "28 to 32 years old" are the same fact and he thinks in
+   the second one. */
+function pockFootSync() {
+  const f = pockUI.f, r = pockUI.last;
+  const hint = $('fi_agehint');
+  if (hint) {
+    const y = new Date().getFullYear();
+    hint.textContent = (f.yrFrom || f.yrTo)
+      ? `${f.yrTo ? (y - f.yrTo) : 0} to ${f.yrFrom ? (y - f.yrFrom) : '…'} years old.`
+      : 'Leave both empty for any age.';
+  }
+  const blind = $('fi_blind');
+  if (blind) blind.innerHTML = pockBlindHtml(f);
+
+  const set = pockSetCount(f);
+  const badge = $('filtSet');
+  badge.classList.toggle('hide', set === 0);
+  badge.textContent = set === 1 ? '1 set' : set + ' set';
+
+  const go = $('filtGo'), note = $('filtNote');
+  const s = pockUI.scope;
+  if (pockUI.scanning) { go.textContent = s ? 'Searching…' : 'Counting…'; go.disabled = true; return; }
+  go.disabled = false;
+
+  /* ---- INSIDE A PLACE. Its own footer, because every sentence in the whole-map one is
+     about ground this is not searching. It always says it asked again, because it always
+     did, and an empty answer always says what the place held before - otherwise "no homes
+     here" is indistinguishable from "this place was always empty". */
+  if (s) {
+    if (!r) {
+      go.textContent = 'Search this area again';
+      note.textContent = 'Only inside this place. Change anything above, then search again.';
+      return;
+    }
+    go.textContent = r.pockets.length
+      ? `Show ${r.pockets.length} ${r.pockets.length === 1 ? 'spot' : 'spots'} · ${r.shown.toLocaleString()} homes`
+      : 'Nothing to show';
+    const bits = [];
+    if (!r.total) {
+      bits.push('Searched this area again. No homes here match these filters.');
+      bits.push(`Your first filters matched ${(r.fromHomes || s.pocket.homes).toLocaleString()} homes here.`);
+      bits.push('Change a filter and try again.');
+    } else {
+      bits.push(`Searched this area again. ${r.total.toLocaleString()} ${r.total === 1 ? 'home' : 'homes'} here match your new filters.`);
+      if (!r.pockets.length) bits.push('None of them sit close enough together to draw as a spot.');
+      else bits.push(`${r.shown.toLocaleString()} of them sit in ${r.pockets.length} ${r.pockets.length === 1 ? 'spot' : 'spots'} inside this place.`);
+    }
+    /* The refusals, the page cap and the counties that could not be asked matter just as
+       much inside one place as over a whole county - more, because there are fewer homes
+       for a missing one to hide behind. Same words, same function, not a second set. */
+    const extra = pockAnswerExtras(r);
+    if (extra) bits.push(extra);
+    note.textContent = bits.join(' ');
+    return;
+  }
+
+  /* WHICH GROUND IS BEING SEARCHED, said out loud on every state of this footer. A radius
+     REPLACES the map view, so a scan can quietly be about completely different ground from
+     what is on the screen behind the panel. That has to be readable, not inferred. */
+  const where = f.homeMiles
+    ? `Searching within ${f.homeMiles} ${f.homeMiles === 1 ? 'mile' : 'miles'} of home, straight line. Where the map is pointed does not matter.`
+    : 'Searching the ground on the screen. Empty of a radius, so it follows the map.';
+
+  if (!set) {
+    go.textContent = 'Count them';
+    note.textContent = 'Nothing is set, so this would count every home the counties will hand over. ' + where;
+    return;
+  }
+  if (!r) { go.textContent = 'Count them'; note.textContent = where; return; }
+
+  go.textContent = r.pockets.length
+    ? `Show ${r.pockets.length} ${r.pockets.length === 1 ? 'place' : 'places'} · ${r.shown.toLocaleString()} homes`
+    : 'Nothing to show';
+  /* WHICH GROUND stays on the screen NEXT TO the answer, not only before it. The moment he
+     acts on a number is the moment it matters whether that number came from a circle around
+     home or from whatever the map was framing, and those can be completely different
+     ground. The first version dropped this sentence as soon as a count arrived. */
+  note.textContent = r.noHome ? pockAnswerWords(r) : (pockAnswerWords(r) + ' ' + where);
+}
+
+/* THE ANSWER IN WORDS, and every part of it is a number the scan actually produced.
+   Three separate facts, never multiplied together: how many matched, how many are in
+   squares worth drawing, and what was dropped or not asked. */
+function pockAnswerWords(r) {
+  if (!r) return '';
+  /* A question that could not be asked is not an answer of none. Offered as something he
+     can fix, in the app's own words for it, rather than printed as a zero. */
+  if (r.noHome) return 'No home is set on this phone, so there is nothing to measure a '
+                     + 'radius from. Set one in the menu, under "Set to where I am".';
+  const bits = [];
+  if (!r.total) bits.push('No homes matched over this ground.');
+  else if (!r.pockets.length)
+    bits.push(`${r.total.toLocaleString()} homes matched, but none of them sit close enough together to be worth a drive.`);
+  else
+    bits.push(`${r.total.toLocaleString()} homes matched. ${r.shown.toLocaleString()} of them sit in ${r.pockets.length} ${r.pockets.length === 1 ? 'place' : 'places'} big enough to draw.`);
+  const extra = pockAnswerExtras(r);
+  if (extra) bits.push(extra);
+  return bits.join(' ');
+}
+
+/* WHAT WAS DROPPED, CUT SHORT OR NEVER ASKED. Pulled out of pockAnswerWords so the drill
+   footer says it in exactly the same words rather than growing a second set that can drift.
+   These four sentences are the honesty valves: every one of them is the difference between
+   "there are none" and "nobody looked", and inside one place they matter MORE, because
+   there are fewer homes for a missing one to hide behind. */
+function pockAnswerExtras(r) {
+  if (!r) return '';
+  const bits = [];
+  if (r.unreadableOcc)
+    bits.push(`${r.unreadableOcc.toLocaleString()} were left out because who lives there could not be told — a PO box, a care-of line or a mortgage servicer.`);
+  if (r.truncated && r.truncated.length)
+    bits.push(`${r.truncated.join(' and ')} had more than could be counted, so the answer there is a floor and not a total. Narrow it and ask again.`);
+  if (r.refused && r.refused.length)
+    bits.push(`${r.refused.map(x => x.name).join(' and ')} did not answer just now, so nothing from there is in this count.`);
+  if (r.cannot && r.cannot.length)
+    bits.push(r.cannot.map(x => x.why).join('. ') + '.');
+  return bits.join(' ');
+}
+
+/* Count, then show. Two taps on purpose: the first spends the network and answers the
+   question, the second puts it on the map. He can change his mind in between without
+   having drawn anything. */
+async function pockCountNow() {
+  if (pockUI.scanning) return;
+  /* The map is only needed for the VIEW box. With a radius set the scan is about a circle
+     around home and the map is irrelevant to it - but it is still opened, because Show is
+     the next thing he will press and the squares have to land somewhere. */
+  if (!window._map) { await openMap(); }
+  /* ONE PLACE DECIDES WHICH GROUND IS SCANNED, and it is pockScan. This used to work the
+     radius out here as well, which meant the rule lived in two places - and the mutation
+     that broke pockScan's half stayed green, because the panel had already handed it the
+     home box and pockScan's own decision never ran. Two copies of a rule is how the
+     Franklin floor-area fault survived a green suite. The panel hands over the VIEW and
+     nothing else; the radius, if there is one, replaces it inside pockScan. */
+  /* INSIDE A PLACE THERE IS NO VIEW BOX AND NO RADIUS - the ground is the place, and
+     pockDrill is the only thing that works it out. The map's frame is deliberately not
+     consulted: he may well have zoomed in on one street inside the place, and answering
+     about one street while the screen says "inside place 2" is exactly the class of fault
+     the radius wording exists to prevent. */
+  const s = pockUI.scope;
+  const box = s ? null : pockBoxNow();
+  if (!s && !box && !pockUI.f.homeMiles) {
+    flashToast('Open the map first', 'Without a radius a scan counts the ground you are looking at', '#f59e0b');
+    return;
+  }
+  pockUI.scanning = true; pockFootSync();
+  const seen = {};
+  try {
+    const onProgress = (c, n) => {
+      seen[c.name] = n;
+      $('filtNote').textContent = s
+        ? 'Searching this area again with your new filters. Asking ' + Object.keys(seen).join(', ') + '…'
+        : 'Asking ' + Object.keys(seen).join(', ') + '…';
+    };
+    pockUI.last = s
+      ? await pockDrill(s.pocket, pockUI.f, s.outerCell, onProgress)
+      : await pockScan(box, pockUI.f, onProgress);
+  } catch (err) {
+    pockUI.last = null;
+    $('filtNote').textContent = 'That did not finish. ' + (err && err.message ? err.message : 'Try again.');
+  }
+  pockUI.scanning = false;
+  if (pockUI.pane === 'presets') renderFiltPresets();
+  pockFootSync();
+}
+
+function pockShowOnMap() {
+  if (!pockUI.last) return pockCountNow();
+  /* NOTHING TO SHOW IS NOT A REASON TO LEAVE THE SCREEN. Closing the panel on an empty
+     answer drops him on a map with nothing drawn on it and no sentence explaining why -
+     the footer already says why, so he stays where he can read it. */
+  if (!pockUI.last.pockets || !pockUI.last.pockets.length) { pockFootSync(); return; }
+  if (!window._map) return;
+  pockDraw(pockUI.last);
+  /* MOVE THE MAP TO THE ANSWER when the answer had nothing to do with the map. A radius
+     scan is a circle around home, so the squares can easily be nowhere near what was on
+     screen, and drawing them off the edge reads as "it did not work". Only in that case:
+     if he framed the ground himself, the frame is his and it is left alone. */
+  /* A DRILL ALWAYS MOVES THE MAP TO ITS ANSWER, for the same reason a radius scan does: the
+     ground it searched was decided by the place, not by the frame, so the squares can easily
+     be off the edge of what is on screen - and a fine square is small, so "off the edge"
+     and "it did not work" look identical. */
+  if (pockUI.f.homeMiles || pockUI.scope) {
+    const pts = [];
+    pockUI.last.pockets.forEach(p => p.cells.forEach(c => {
+      const b = pockCellBounds(c[0], c[1], pockUI.last.cell);
+      pts.push(b[0], b[1]);
+    }));
+    if (pts.length) { try { window._map.fitBounds(L.latLngBounds(pts), { padding: [28, 28] }); } catch (e) {} }
+  }
+  /* KEEP THE SCOPE. Showing a drill is the opposite of leaving it. And close outright
+     rather than backing out a stage - see closeFiltersNow. */
+  if (closeFiltersNow(true)) backToMenuIfCameFromIt();
+  /* The map may not be up if he came through the menu - openMap is idempotent and puts the
+     screen where the squares are. */
+  openMap();
+  pockBarSync();
+  buzz(12);
+}
+
+/* WHERE THE BAR SITS, MEASURED RATHER THAN GUESSED.
+
+   The first version gave it a fixed top and a class that moved it down only when the storm
+   layer was ON. With the layer off both bars landed on the same pixel and the storm chip
+   sat on top of this one, swallowing every tap - found by the shot script trying to click
+   it and being told, in words, which element was intercepting.
+
+   A fixed offset cannot be right anyway: #stormBar wraps to a second row when its extra
+   chips appear, and its height depends on the phone's width. So this reads the storm bar's
+   real bottom edge and seats itself 8px under it. Correct at every width, and correct on
+   the round where somebody adds a fourth chip to that bar. */
+function pockSeatBar() {
+  const bar = $('pockBar'), sb = $('stormBar');
+  if (!bar) return;
+  if (!sb) { bar.style.top = ''; return; }
+  const r = sb.getBoundingClientRect();
+  if (!(r.height > 0)) { bar.style.top = ''; return; }
+  bar.style.top = Math.round(r.bottom + 8) + 'px';
+}
+
+/* The bar on the map says what is drawn, in the same words the panel used, so the two can
+   never disagree about the same scan. */
+function pockBarSync() {
+  const bar = $('pockBar');
+  if (!bar) return;
+  const shown = pockOnMap();
+  bar.classList.toggle('on', !!shown);
+  $('pockClear').classList.toggle('hide', !shown);
+  /* THE WAY BACK OUT OF A PLACE LIVES ON THE MAP, not only in the panel. Once Show has
+     closed the panel the drill is all he can see, and without this the only route back to
+     the whole scan would be to reopen the filters - which is a screen about setting up a
+     search, not about undoing one. */
+  const inDrill = !!(pockUI.scope && shown);
+  const back = $('pockBack');
+  if (back) back.classList.toggle('hide', !inDrill);
+  $('pockTxt').textContent = !shown ? ''
+    : inDrill
+      /* "spots" inside a place, never "places" - the same word for both would make a drill
+         and a whole-map scan read as the same kind of answer at a glance. */
+      ? `Inside place ${pockUI.scope.rank} · ${shown.pockets} ${shown.pockets === 1 ? 'spot' : 'spots'} · ${shown.homes.toLocaleString()} homes drawn.`
+      : `${shown.pockets} ${shown.pockets === 1 ? 'place' : 'places'} · ${shown.homes.toLocaleString()} homes drawn. Tap a number to look inside it.`;
+  pockSeatBar();
 }
 
 /* ---------------- hub map (canvas, works offline) ----------------
@@ -6859,7 +8483,7 @@ function closeSheet(id){ $(id).classList.add('hide'); }
    stale return would reopen the menu over something he reached from the strip. */
 let menuReturn = null;              // scrollTop to come back to, or null for "don't"
 const menuScroller = () => $('menuSheet').querySelector('.sheetScroll');
-const FULL_VIEWS = ['scoutView', 'marksView', 'daysLogView', 'sortView'];
+const FULL_VIEWS = ['scoutView', 'marksView', 'daysLogView', 'sortView', 'filtView'];
 const anyViewOpen = () => FULL_VIEWS.some(id => { const el = $(id); return el && !el.classList.contains('hide'); });
 function leaveMenuForView() {
   if (!$('menuSheet').classList.contains('hide')) {
@@ -9267,6 +10891,11 @@ function syncStormBar() {
       + (recent ? `, most recently ${stormNiceDate(recent)}` : '')
       + `. Tap Storm days to pick. `
     : `No storm day in the library reaches where you are standing. `) + stormCoverage().line;
+  /* LAST, and after the text is written. This bar wraps to a second row when its extra
+     chips appear and when its sentence is long, so the pockets bar underneath can only be
+     seated once this one has its final height. Seating it before the text is set puts it
+     over the top of the second row. */
+  pockSeatBar();
 }
 
 /* Rebuilt on exactly three things: the chip being tapped, the map being opened, and him
@@ -11040,7 +12669,7 @@ document.querySelectorAll('.dsecHead[data-msec]').forEach(b => {
 /* ---- what version is actually on the phone ----
    Matches the service worker cache name, so "did the update land" is answerable by
    looking rather than guessing. */
-const BUILD_VERSION = 'v41';
+const BUILD_VERSION = 'v43';
 const BUILD_DATE = '7 August 2026';
 function renderVersionStamp() {
   const el = $('versionStamp'); if (!el) return;
@@ -15508,6 +17137,31 @@ $('scoutPill').onclick = openScout;
 /* Same reason as marksExit: exitScout is also how leaveScoutToSort gets him off the
    scout screen on the way into sorting, and that path must not reopen the menu. */
 $('scoutExit').onclick = () => { exitScout(); backToMenuIfCameFromIt(); };
+
+/* ---- where to knock ----
+   THREE WIRES, and each one is load-bearing.
+   `filtExit` goes through exitFilters, which backs out of the full list onto the presets
+   first and only closes on the second tap - and backToMenuIfCameFromIt runs ONLY when it
+   really closed, or one Back from inside the list would reopen the menu over a screen that
+   is still up. Same two-stage shape as exitDaysLog, for the same reason.
+   `mFilters` and `pockOpen` are the two ways in - the menu, and the map itself. The map is
+   the one that matters, because a scan is a question about the ground he is looking at. */
+$('mFilters').onclick = openFilters;
+$('pockOpen').onclick = openFilters;
+$('filtExit').onclick = () => { if (exitFilters()) backToMenuIfCameFromIt(); };
+$('filtGo').onclick = () => { if (pockUI.last) pockShowOnMap(); else pockCountNow(); };
+/* Back out of one place to the whole scan. It restores rather than re-runs: the outer answer
+   was saved when the drill opened, so this costs no network and cannot come back different
+   from what he was looking at a minute ago. */
+$('pockBack').onclick = () => { closeDrill(); buzz(8); };
+$('pockClear').onclick = () => {
+  /* Counts what it will take off before it does it, and says so - the standing rule for
+     anything destructive. Nothing here touches a record, so it does not ask first. */
+  /* Clearing while inside a place clears EVERYTHING, the outer scan included. Leaving the
+     saved outer answer behind would leave a Back button on an empty map. */
+  pockUI.scope = null;
+  pockClear(); pockUI.last = null; pockUI.preset = null; pockBarSync(); buzz(8);
+};
 
 /* ---- sorting, parked ----
    ONE mark on the screen at a time. The first version was a scrolling list of every mark,
