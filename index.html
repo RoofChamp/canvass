@@ -8649,6 +8649,14 @@ async function openMap() {
        and even then stormZoomWatch does nothing unless the level has crossed the line the
        fill drops at. */
     m.on('zoomend', () => { renderMapDataNote(); stormZoomWatch(); });
+    /* A RESIZE IS NOT A ZOOM, AND THE ARROW'S LENGTH IS IN SCREEN PIXELS. Turning a desktop
+       browser window from wide to narrow changes the short side the length is taken from, and
+       before this line the arrow kept whatever length it was built at until the next zoom.
+       It cannot show on a phone — rotating swaps width and height and the rule reads the
+       smaller of the two, which is the same number either way — but it is the same root cause
+       as the walking fault and it is one line. Leaflet fires this on invalidateSize, which is
+       also what a rotation triggers, so the two are covered by one handler. */
+    m.on('resize', () => { stormZoomWatch(); });
   }
   setTimeout(() => { window._map.invalidateSize(); if (state.pos && mapOpts.follow) window._map.setView([state.pos.lat,state.pos.lon]); refreshMapLayers(); }, 60);
   syncMapBtns();
@@ -10155,8 +10163,10 @@ function stormDirWordsMany(dates) {
    are cached separately from the app on purpose and outlive a deploy, so an old or partial one
    is a real thing to survive rather than a hypothetical.
 
-   LENGTH IS IN DEGREES, so it grows and shrinks with the zoom exactly as the storm outlines
-   do, and never reads as a bigger claim at one zoom than another. */
+   LENGTH IS NOT SET HERE AT ALL. This function answers only WHERE the arrow sits. The comment
+   that used to stand here said the length was measured in degrees, and it outlived the code it
+   described by a whole build — v45 moved the length into drawStormDir and made it a fixed
+   number of SCREEN PIXELS. A comment that lies is how the next person gets it wrong. */
 function stormDirArrowAt(date, near) {
   const day = stormDayHeld(date, 'v2');
   if (!day || !Array.isArray(day.features) || !near) return null;
@@ -10190,6 +10200,53 @@ function stormDirArrowAt(date, near) {
   const kx = Math.max(0.2, Math.cos(near.lat * Math.PI / 180));
   const away = s => Math.hypot(s.lat - near.lat, (s.lon - near.lon) * kx);
   return shapes.reduce((a, b) => (away(b) < away(a) ? b : a));
+}
+
+/* THE ARROW FOLLOWS HIM WHILE HE WALKS, AND HERE IS THE FAULT THAT MADE THIS NECESSARY.
+
+   v45 drew the arrow at his feet when zoomed in, and rebuilt it on `zoomend` and on nothing
+   else. Walking fires no zoom. Measured on the bench: he walks 33 m, 67 m, 134 m, 267 m and the
+   arrow does not move once. The screen is 177 m across at zoom 18, so after about ninety metres
+   — two or three houses — the arrow has slid off the edge of the phone and is gone. That is the
+   SAME failure he reported against v44, an arrow he cannot see at the moment he would use it,
+   arriving through a different door.
+
+   The rule it broke was a real one and it is still right for what it was written about:
+   `refreshStormLayer` deliberately does nothing on a position fix once days are ticked,
+   because the ticked days are CHOSEN, not found, so walking cannot change which shapes are
+   drawn. What changed underneath that rule is that v45 put something on the layer that DOES
+   depend on where he is standing, and nobody moved the rule to match.
+
+   TWENTY METRES, and only in the standing branch. Zoomed out the arrow is seated on the storm
+   shape nearest the middle of the map, which is a statement about the map and not about him —
+   following him there would make it slide about under his thumb and would break the older
+   discipline that this layer is never rebuilt while he drags. Twenty metres is about a fifth of
+   the distance at which the drift becomes visible, and it is far enough above GPS jitter that a
+   man standing still at a door does not make the map work. */
+const STORM_DIR_FOLLOW_M = 20;
+/* WHERE THE STANDING BRANCH LAST WORKED THE ANSWER OUT — which is NOT the same as where the
+   arrow was drawn, because the branch can decide to draw nothing at all. Recording only the
+   drawn ones would mean a man standing on ground the day missed is re-tested on every single
+   fix, forever, and would never notice when he walked ONTO covered ground. */
+let stormDirLastAt = null;
+/* `force` is passed by the hand-placed position and by nothing else. See setOverride for why a
+   deliberate placement is not the same event as a jittery fix and does not want the hysteresis. */
+function stormDirFollow(force) {
+  if (!window.L || !window._map || !stormState.count) return;
+  /* ZOOMED OUT IT IS SEATED ON A SHAPE. Leave it alone. */
+  if (stormFillOn()) return;
+  if (!state.pos || !stormDirLastAt) return;
+  if (!force && haversine(state.pos.lat, state.pos.lon, stormDirLastAt.lat, stormDirLastAt.lon)
+      < STORM_DIR_FOLLOW_M) return;
+  /* REMOVE THEN REDRAW, never move the existing layer. drawStormDir decides afresh whether
+     there should be an arrow here at all, so this one path covers all three cases: it moved
+     with him, it appeared because he walked onto covered ground, and it went because he
+     walked off it. */
+  if (window._stormDirLayer) {
+    window._map.removeLayer(window._stormDirLayer);
+    window._stormDirLayer = null;
+  }
+  drawStormDir();
 }
 
 (function () {
@@ -10236,10 +10293,16 @@ function drawStormDir() {
   if (wide) {
     const cen = window._map.getCenter();
     at = stormDirArrowAt(date, { lat: cen.lat, lon: cen.lng });
+    /* NOTHING TO FOLLOW WHILE ZOOMED OUT. Cleared rather than left standing, so that zooming
+       out and back in cannot leave stormDirFollow measuring against a stale doorstep. */
+    stormDirLastAt = null;
   } else {
     const g = window._map.getCenter();
     const p = state.pos ? { lat: state.pos.lat, lon: state.pos.lon } : { lat: g.lat, lon: g.lng };
     const day = stormDayHeld(date, 'v2');
+    /* SET BEFORE THE COVERED TEST, NOT AFTER, and the difference is the whole of the
+       walked-onto-covered-ground case. See the note on stormDirLastAt. */
+    stormDirLastAt = p;
     if (!day || !stormClassAt(day, p.lon, p.lat)) return;
     at = p;
   }
@@ -12641,6 +12704,12 @@ function startGps() {
        where the map is looking — panning to check a street two miles away must not change
        what the layer says is over him. */
     if (stormState.show) refreshStormLayer(false);
+    /* AND THE DIRECTION ARROW, WHICH refreshStormLayer WILL NOT MOVE. That function returns
+       immediately once days are ticked, on purpose — the ticked days are chosen, not found, so
+       walking cannot change which shapes are drawn. The arrow is the one thing on that layer
+       that IS about where he is standing, so it needs its own line here. It costs a distance
+       comparison on every fix and nothing else until he has walked twenty metres. */
+    stormDirFollow();
 
     /* --- the walking flag, ahead of the dwell lock because the picker reads it --- */
     const pace = walkPace();
@@ -13003,7 +13072,7 @@ document.querySelectorAll('.dsecHead[data-msec]').forEach(b => {
 /* ---- what version is actually on the phone ----
    Matches the service worker cache name, so "did the update land" is answerable by
    looking rather than guessing. */
-const BUILD_VERSION = 'v45';
+const BUILD_VERSION = 'v46';
 const BUILD_DATE = '7 August 2026';
 function renderVersionStamp() {
   const el = $('versionStamp'); if (!el) return;
@@ -15442,6 +15511,24 @@ function setOverride(lat, lon) {
   state.still = false; state.heldKey = null; state.anchor = null;
   lastTileCenter = null;
   renderStrip();
+  /* THE DIRECTION ARROW, WHICH NOTHING ELSE IN THIS FUNCTION WILL MOVE, AND FORCED.
+
+     This is the OTHER writer of state.pos — the only one besides the watchPosition handler —
+     and it jumps him wherever he dropped the dot, routinely hundreds of metres. refreshMapLayers
+     below does not touch the storm layer at all, by design, so without this line the arrow stays
+     on the stale GPS doorstep until a fix happens to arrive. watchPosition fires on CHANGE, so a
+     man standing still under the trees that made him drag the dot in the first place may not get
+     one at all.
+
+     Worse, it is the walked-onto-covered-ground case wearing a different hat: GPS puts him on
+     ground the day missed, so no arrow is drawn; he drags the dot to where he actually is, on
+     covered ground; and without this, no arrow appears.
+
+     FORCED, unlike the walking path. Twenty metres of hysteresis is right for a man walking on a
+     jittery fix — it stops the map working while he stands at a door. A hand-place is not
+     jitter. It is a deliberate statement about where he is, often made to correct a GPS error of
+     a few metres, and it should be honoured exactly. */
+  stormDirFollow(true);
   ensureParcels(lat, lon).then(() => { recompute(); drawMini(); if (window._map) refreshMapLayers(); });
   recompute(); drawMini();
   buzz(20);
