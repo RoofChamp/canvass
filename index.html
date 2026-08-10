@@ -603,11 +603,25 @@ select{min-height:44px}
    file to hook into; four ids already repeat this block and this is the fifth.
    NOT A SHEET. `.sheet` in this app is always a bottom sheet, and `.sheet.top` at line 241
    is dead CSS applied nowhere. A full-screen panel is the FULL_VIEWS pattern or nothing. */
-#filtView{position:fixed;inset:0;z-index:80;background:var(--bg);display:flex;flex-direction:column;
+#filtView,#homesView{position:fixed;inset:0;z-index:80;background:var(--bg);display:flex;flex-direction:column;
   padding-top:var(--safe-t);padding-bottom:var(--safe-b)}
-#filtBody{flex:1;min-height:0;overflow:auto;padding:12px 12px 16px}
-#filtFoot{padding:8px 12px 12px;border-top:1px solid var(--line)}
-#filtFoot .note{font-size:11.5px;color:var(--dim);font-weight:600;margin-bottom:8px;line-height:1.4}
+#filtBody,#homesBody{flex:1;min-height:0;overflow:auto;padding:12px 12px 16px}
+#filtFoot,#homesFoot{padding:8px 12px 12px;border-top:1px solid var(--line)}
+#filtFoot .note,#homesFoot .note{font-size:11.5px;color:var(--dim);font-weight:600;margin-bottom:8px;line-height:1.4}
+/* ONE HOME ON ITS OWN. Deliberately NOT the shape of a place row: a place is a shaded square
+   with a rank number on the map, and these have no square and no rank. Same 44px floor as
+   every other target in the app, and a whole row is the target rather than the address text,
+   because he is tapping this from a truck seat. */
+.hmRow{display:block;width:100%;text-align:left;background:var(--card);border:1px solid var(--line);
+  border-radius:12px;padding:11px 12px;margin-bottom:8px;min-height:44px;color:var(--txt)}
+.hmRow:active{background:var(--line)}
+.hmTop{display:flex;justify-content:space-between;gap:10px;align-items:baseline}
+.hmAddr{font-weight:800;font-size:14.5px;line-height:1.25}
+.hmMiles{font-weight:800;font-size:12.5px;color:var(--dim);white-space:nowrap}
+.hmFacts{font-size:12px;color:var(--dim);font-weight:600;margin-top:5px;line-height:1.45}
+/* A fact the county never publishes is greyed and italic so it reads as an absence of data
+   rather than as a fact about the house. */
+.hmNone{font-style:italic;opacity:.75}
 .filtHd{font-size:12px;color:var(--dim);font-weight:800;text-transform:uppercase;letter-spacing:.6px;
   margin:2px 0 9px}
 /* A preset is one whole search, so it is one big target - 88px, twice the 44px floor. He is
@@ -1102,6 +1116,25 @@ select{min-height:44px}
   </div>
 </div>
 
+<!-- HOMES ON THEIR OWN. Its own screen and not a mode of the map, because these have no
+     square to be drawn in - that is the whole reason it exists. ITS ID IS IN FULL_VIEWS;
+     leave it out and anyViewOpen() cannot see it, so the menu bookkeeping breaks. -->
+<div id="homesView" class="hide">
+  <div class="screenTop">
+    <div>
+      <div class="screenTitle" id="homesTitle">Homes on their own</div>
+      <div class="small" id="homesSub"></div>
+    </div>
+    <div style="display:flex;align-items:center;gap:10px">
+      <button id="homesExit">&lsaquo; Back</button>
+    </div>
+  </div>
+  <div id="homesBody"></div>
+  <div id="homesFoot">
+    <div class="note" id="homesNote"></div>
+  </div>
+</div>
+
 <div id="mapView" class="hide">
   <div id="leaf"></div>
   <div id="findWrap">
@@ -1218,6 +1251,7 @@ select{min-height:44px}
   <div id="pockBar">
     <button class="mbtn" id="pockOpen">&#128269; Where to knock</button>
     <button class="mbtn hide" id="pockBack">&lsaquo; All places</button>
+    <button class="mbtn hide" id="pockList">&#9776; See the list</button>
     <button class="mbtn hide" id="pockClear">Clear</button>
     <span id="pockTxt"></span>
   </div>
@@ -4416,6 +4450,24 @@ const POCK_PAGE = 1500;
 const POCK_MAX_PAGES = 14;          // 21,000 lots per county before we stop and say so
 const POCK_MAX_INFLIGHT = 3;        // nothing else in this file caps county requests
 
+/* HOW MANY SCATTERED HOMES ARE WORTH HANDING HIM AS A LIST.
+
+   RULED BY TRAVIS 2026-08-10, and the number is written down here with its reasoning because
+   an unexplained threshold calcifies. The nine-point hail test is the cautionary tale on this
+   project: a cut-off nobody chose, defended for months, and measurement later showed it
+   settled nothing.
+
+   FIFTY IS ABOUT A DAY. It is a set of doors he could actually drive in one outing, which is
+   the only question a list of scattered homes is answering. Above it the honest answer is not
+   a longer list, it is that the filter has not been narrowed yet - and he was offered
+   nearest-fifty-and-say-so and turned it down, for a reason worth keeping: a partial list in
+   the field becomes the whole answer, and an app that knows the real total and quietly shows
+   part of it is the same fault as hiding a county's truncated page.
+
+   It is a CAP ON BEING SHOWN, never a cap on the count. The total is always true and always
+   said. */
+const POCK_LIST_MAX = 50;
+
 /* ---------------------------------------------------------------------------
    WHAT EACH COUNTY CAN ACTUALLY BE ASKED.
 
@@ -4743,7 +4795,15 @@ async function pockFetchCounty(c, box, f, onPage) {
   if (where == null) return { key: c.key, name: c.name, cannot: 'this county cannot answer that filter', rows: [] };
 
   const [w, s, e, n] = box;
-  const need = new Set([c.pid]);
+  /* OBJECTID RIDES ON EVERY SCAN, and it is the one field added to this ask-set that no
+     filter needs. It is here because it is the only safe key to join the scattered-homes
+     list back on - see the note on `row.oid` below for the measurement that ruled out the
+     parcel id. One integer per row against geometry that is already being returned, so the
+     cost is real but small, and it is paid on every scan rather than only on the rare ones
+     because whether a scan will end up scattered cannot be known until after it has run.
+     It is READ in the row build, so the field-coherence audit is satisfied by asking for it
+     here: every field this county reads is a field it asks for. */
+  const need = new Set([c.pid, 'OBJECTID']);
   const cap = POCK_CAPS[c.key] || {};
   /* Only fetch what is actually read. The year and floor-area fields are needed only
      where the filter could not be pushed into SQL - which is exactly the case
@@ -4842,6 +4902,20 @@ async function pockFetchCounty(c, box, f, onPage) {
       const sqNum = Number(String(sqRaw == null ? '' : sqRaw).replace(/[$,]/g, ''));
       const row = {
         lon: cen[0], lat: cen[1],
+        /* THE JOIN KEY FOR THE SCATTERED-HOMES LIST, AND IT IS NOT THE PARCEL ID.
+           The obvious key was `c.pid`, which the scan already asks for. Measured live on
+           2026-08-10 across 500 rows a county, it is not safe: Madison returns 54 REAL
+           duplicate parcel ids in 500, one of them three times; Pickaway 18; Union leaves
+           35 blank and Fairfield 9. A join on that key returns more rows than it asked
+           for and nothing in the answer says which row is which.
+           OBJECTID is unique by definition. Verified on all seven counties by reading
+           `fields[]` for the `esriFieldTypeOID` entry and then running a live query: every
+           one is called OBJECTID, and every one came back distinct. `02 Tests\oidcheck.ps1`.
+           The parcel id still rides along, for display and for the house-card lookup. It
+           just stopped being the thing two datasets are matched on. */
+        oid: a.OBJECTID != null ? a.OBJECTID : null,
+        pid: c.pid ? a[c.pid] : null,
+        county: c.key,
         year: (isFinite(yNum) && yNum > 1700 && yNum < 2100) ? yNum : null,
         sqft: (isFinite(sqNum) && sqNum > 0) ? sqNum : null,
       };
@@ -4929,7 +5003,12 @@ function pockBinAndGroup(rows, floor, cell = POCK_CELL) {
                    cells: group.map(g => [+((g.ix + 0.5) * cell).toFixed(5), +((g.iy + 0.5) * cell).toFixed(5), g.n]) });
   }
   pockets.sort((a, b) => b.homes - a.homes);
-  return { pockets, cellsFound: cells.size, cellsKept: kept.length };
+  /* `keptSet` GOES BACK OUT so the caller can tell which rows fell BELOW the floor without
+     binning them a second time. Two bins of the same rows is two truths about which square
+     a house is in, and this file has already been bitten once by a rule worked out in two
+     places - the radius fault of 2026-08-09, where the mutation that broke one half stayed
+     green because the other half had already answered. */
+  return { pockets, cellsFound: cells.size, cellsKept: kept.length, keptSet };
 }
 
 /* The whole scan. Counties run at most POCK_MAX_INFLIGHT at a time, because nothing
@@ -4975,12 +5054,36 @@ async function pockScan(box, f, onProgress) {
      handed down, never re-derived, for the same reason the radius is. */
   const cell = f.cell > 0 ? f.cell : POCK_CELL;
   const floor = pockScaledFloor(f.floor || 25, cell);
-  const { pockets, cellsFound, cellsKept } = pockBinAndGroup(rows, floor, cell);
+  const { pockets, cellsFound, cellsKept, keptSet } = pockBinAndGroup(rows, floor, cell);
   /* How far each place is from home, in straight-line miles, worked out ONCE here so the
      panel, the map and the results sheet all read the same figure off the same object
      instead of each deriving it. Null when no home is set - which is not zero. */
   pockets.forEach(p => { p.milesHome = pockMilesHome(p.cx, p.cy, f.home); });
   const shown = pockets.reduce((t, p) => t + p.homes, 0);
+
+  /* THE HOMES THAT CLEARED NO SQUARE - "on their own", never "places".
+     He hit this on 2026-08-10: he filtered for deliberately rare homes, they matched, and
+     every one of them landed in a square holding fewer than the floor. The map drew nothing
+     and, until the same day, said nothing either.
+     THE FLOOR IS NOT REVERSED BY THIS. It is a promise about the MAP'S VISUAL LANGUAGE - a
+     drawn square asserts that homes are clustered. A list asserts only that these exist and
+     how far away each one is. Those are different claims, so both can be true at once, and
+     the one thing that would collapse them is drawing these as squares. Nothing does. */
+  const strays = pockStrays(rows, keptSet, cell);
+  /* NEAREST FIRST, and the distance is worked out here for the same reason a place's is:
+     one figure, one origin, read by the list and by nothing that re-derives it. Null when
+     no home is set, which is not zero and must not sort as zero. */
+  strays.forEach(r => { r.milesHome = pockMilesHome(r.lon, r.lat, f.home); });
+  strays.sort((a, b) => {
+    const x = a.milesHome, y = b.milesHome;
+    if (x == null && y == null) return 0;
+    if (x == null) return 1;                       // unknown distance sinks, never leads
+    if (y == null) return -1;
+    return x - y;
+  });
+  /* ONLY WHEN THERE IS A LIST TO SHOW. Over the cap the rows are never enriched, because
+     they are never displayed - the honest answer there is the count and "narrow it". */
+  if (strays.length && strays.length <= POCK_LIST_MAX) await pockEnrich(strays);
   return {
     pockets, total: rows.length, shown,
     pctShown: rows.length ? Math.round(100 * shown / rows.length) : 0,
@@ -4999,6 +5102,130 @@ async function pockScan(box, f, onProgress) {
        screen can say so. A filter that removes thousands of houses for a reason nobody is
        shown is the same fault as a county silently skipped. */
     unreadableOcc: done.reduce((t, d) => t + (d.unreadableOcc || 0), 0),
+    /* THE COUNT IS ALWAYS TRUE EVEN WHEN THE LIST IS REFUSED. `strayCount` is every home
+       that cleared no square; `strays` is the ones actually kept to show, and it is empty
+       when there are more than the cap. Reporting only the shortened set would be the same
+       fault as a county quietly returning a truncated page - the app knowing the real
+       number and printing a smaller one. */
+    strayCount: strays.length,
+    strays: strays.length <= POCK_LIST_MAX ? strays : [],
+  };
+}
+
+/* FILLING IN THE ROWS THE LIST WILL SHOW, AND ONLY THOSE.
+
+   WHY THIS IS A SECOND QUERY RATHER THAN MORE FIELDS ON THE FIRST. The scan asks each county
+   only for what its filters actually read. Adding the address and the sale columns to that
+   ask would put them on the worst case - up to 21,000 rows a county, before any filtering,
+   on a phone on cellular - for the sake of a list that most scans never show. This runs on
+   at most fifty rows, and only when there are at most fifty to show.
+
+   IT IS A SECOND ASK-SITE, which means the field-coherence rule applies to it in its own
+   right: every field read out of `a` below has to appear in `want`. A field named in the
+   renderer and missing from the ask is exactly the PARTIAL mutant that survived on
+   2026-08-08, so `test-counties.mjs` audits this function separately.
+
+   JOINED ON OBJECTID. Not on the parcel id - see the note on `row.oid`. OBJECTID is numeric
+   on all seven counties, so the IN clause takes no quotes; a clause quoted the wrong way
+   round matches exactly nothing, and a clause that matches nothing has shipped here before.
+
+   FAILURE IS NAMED, NEVER SILENT. A county that will not answer leaves its rows with
+   `enriched: false`, and the list says so on the row rather than showing blanks that look
+   like facts about the house. */
+async function pockEnrich(strays) {
+  if (!Array.isArray(strays) || !strays.length) return;
+  const byCounty = new Map();
+  for (const r of strays) {
+    if (r.oid == null) continue;              // nothing to join on; the row stays unenriched
+    if (!byCounty.has(r.county)) byCounty.set(r.county, []);
+    byCounty.get(r.county).push(r);
+  }
+  await Promise.all([...byCounty.entries()].map(async ([key, rows]) => {
+    const c = COUNTIES.find(x => x.key === key);
+    if (!c) return;
+    const st = c.stats || {};
+    const YEARS = ['RESYRBLT', 'YRBUILT', 'YearBuilt', 'YRBLT', 'PPYearBuilt'];
+    const yearField = (c.extra || []).find(k => YEARS.includes(k)) || null;
+    const want = new Set(['OBJECTID']);
+    if (c.addr) want.add(c.addr);
+    if (yearField) want.add(yearField);
+    if (st.val) want.add(st.val);
+    (st.valSum || []).forEach(k => want.add(k));
+    if (st.sqft) want.add(st.sqft);
+    if (st.saleDate) want.add(st.saleDate);
+    if (st.salePrice) want.add(st.salePrice);
+    const ids = rows.map(r => r.oid).filter(v => v != null);
+    if (!ids.length) return;
+    const q = new URLSearchParams({
+      where: `OBJECTID IN (${ids.join(',')})`,
+      outFields: [...want].join(','), returnGeometry: 'false', f: 'json',
+    });
+    let j = null, bad = null;
+    for (let tries = 0; tries < 2; tries++) {
+      try { const r = await fetch(`${c.url}/query?${q}`); j = await r.json(); bad = null; }
+      catch (err) { bad = err.message || 'network'; j = null; }
+      /* A refused ArcGIS query answers 200 with an error object in the body. Reading only
+         the HTTP status is how an empty square was once written to the phone as fact. */
+      if (!bad && j && j.error) bad = j.error.message || 'the county service refused that question';
+      if (!bad) break;
+      if (tries === 0) await new Promise(r => setTimeout(r, 400));
+    }
+    if (bad || !j || !Array.isArray(j.features)) return;
+    const got = new Map();
+    for (const ft of j.features) {
+      const a = ft.attributes || ft.properties || {};
+      if (a.OBJECTID != null) got.set(String(a.OBJECTID), a);
+    }
+    for (const r of rows) {
+      const a = got.get(String(r.oid));
+      if (!a) continue;                        // asked for, not returned: stays unenriched
+      const s = readStats(c, a);
+      r.addr = c.addr ? (a[c.addr] || null) : null;
+      if (yearField) { const n = parseInt(a[yearField], 10); if (isFinite(n) && n > 1700 && n < 2100) r.year = n; }
+      if (s.val != null) r.val = s.val;
+      if (s.sqft != null) r.sqft = s.sqft;
+      r.saleTs = s.saleTs != null ? s.saleTs : null;
+      r.salePrice = s.salePrice != null ? s.salePrice : null;
+      r.enriched = true;
+    }
+  }));
+}
+
+/* WHICH ROWS CLEARED NO SQUARE.
+   Binned against the SAME kept-cell map the pockets were built from, and with the SAME cell
+   size handed in rather than read off the constant. Re-deriving either here would be a
+   second truth about which square a house is in. */
+function pockStrays(rows, keptSet, cell) {
+  if (!keptSet) return [];
+  const out = [];
+  for (const r of rows) {
+    const [ix, iy] = pockCellOf(r.lon, r.lat, cell);
+    if (!keptSet.has(pockCellKey(ix, iy))) out.push(r);
+  }
+  return out;
+}
+
+/* WHAT A COUNTY CAN AND CANNOT FILL IN, read off its own config rather than discovered by
+   finding a blank at the doorstep.
+   Measured 2026-08-10 (`02 Tests\listcheck.ps1`): Pickaway publishes no year built, no
+   value, no floor area and no sale at all; Union publishes only a sale date. In those two a
+   row is an address and a distance and nothing else, and it must SAY so rather than showing
+   an empty space, because a gap reads as a broken app.
+   THIS IS THE "NOT PUBLISHED" HALF ONLY. A field the county does publish and left empty for
+   one house is a different fact - that is "not on file" - and the two must never share a
+   word. This app already refuses to let "there are none" and "nobody looked" share a
+   sentence; this is the same rule one level down. */
+function pockCountyCan(key) {
+  const c = COUNTIES.find(x => x.key === key);
+  if (!c) return { year: false, val: false, sqft: false, saleDate: false, salePrice: false };
+  const st = c.stats || {};
+  const YEARS = ['RESYRBLT', 'YRBUILT', 'YearBuilt', 'YRBLT', 'PPYearBuilt'];
+  return {
+    year: (c.extra || []).some(k => YEARS.includes(k)),
+    val: !!(st.val || (st.valSum && st.valSum.length)),
+    sqft: !!st.sqft,
+    saleDate: !!st.saleDate,
+    salePrice: !!st.salePrice,
   };
 }
 
@@ -5311,6 +5538,42 @@ function pockSetCount(f) {
   return n;
 }
 
+/* THE FILTER, SAID BACK AS PLAIN FACTS, AND THIS IS A COMPLIANCE LINE RATHER THAN A STYLE
+   CHOICE.
+
+   The obvious header for a list of homes is the preset he tapped - "Roofs 28 to 32 years
+   old". Printed above a list of SPECIFIC STREET ADDRESSES that turns a year-built filter
+   into a statement about the roof on each of those houses, which is exactly the claim this
+   app is never allowed to make about a single address. A preset title is a fine name for a
+   SEARCH and an unacceptable name for a RESULT.
+
+   So the header is rebuilt from what was actually asked: years, money, floor area, distance.
+   Facts about county records, which is all the app ever has. */
+function pockFilterFacts(f) {
+  if (!f) return '';
+  const bits = [];
+  if (f.yrFrom && f.yrTo) bits.push(`Built ${f.yrFrom} to ${f.yrTo}`);
+  else if (f.yrFrom) bits.push(`Built ${f.yrFrom} or later`);
+  else if (f.yrTo) bits.push(`Built ${f.yrTo} or earlier`);
+  if (f.valFrom && f.valTo) bits.push(`${money(f.valFrom)} to ${money(f.valTo)}`);
+  else if (f.valFrom) bits.push(`over ${money(f.valFrom)}`);
+  else if (f.valTo) bits.push(`under ${money(f.valTo)}`);
+  if (f.sqFrom && f.sqTo) bits.push(`${f.sqFrom.toLocaleString()} to ${f.sqTo.toLocaleString()} sq ft`);
+  else if (f.sqFrom) bits.push(`over ${f.sqFrom.toLocaleString()} sq ft`);
+  else if (f.sqTo) bits.push(`under ${f.sqTo.toLocaleString()} sq ft`);
+  if (f.ppsfFrom || f.ppsfTo) {
+    if (f.ppsfFrom && f.ppsfTo) bits.push(`$${f.ppsfFrom} to $${f.ppsfTo} a sq ft`);
+    else if (f.ppsfFrom) bits.push(`over $${f.ppsfFrom} a sq ft`);
+    else bits.push(`under $${f.ppsfTo} a sq ft`);
+  }
+  if (f.ownerOnly) bits.push('owner lives there');
+  /* "Single storey" and never "ranch-style" or anything a roof could be read into. The
+     auditor's storey count is a fact about the building; everything else is inference. */
+  if (f.ranchOnly) bits.push('single storey');
+  if (f.homeMiles) bits.push(`within ${f.homeMiles} miles of home`);
+  return bits.length ? bits.join(' · ') : 'No filters set';
+}
+
 /* Is there a home to measure from at all. Asked in one place so the row, the footer and
    the answer all agree, and so "no home set" can be offered as something he can fix
    rather than printed as a zero. */
@@ -5600,6 +5863,21 @@ function renderFiltList() {
 /* The footer is the only thing that changes while he types, and the age hint under the year
    row, because "1994 to 1998" and "28 to 32 years old" are the same fact and he thinks in
    the second one. */
+/* WHAT THE SECOND TAP IS ABOUT TO DO, IN ITS OWN WORDS.
+   "Nothing to show" was true of the old build and is a lie in this one: when squares drew
+   nothing but homes matched, the second tap now opens the list. A button that names the
+   wrong outcome is worse than one that names none, so this is worked out in ONE place and
+   both callers read it - the whole-map footer and the inside-a-place footer, which used to
+   carry two nearly-identical copies of the same expression. */
+function pockGoWords(r, word) {
+  if (!r) return 'Count them';
+  const stray = Array.isArray(r.strays) ? r.strays.length : 0;
+  if (r.pockets.length)
+    return `Show ${r.pockets.length} ${r.pockets.length === 1 ? word : word + 's'} · ${r.shown.toLocaleString()} homes`;
+  if (stray) return `Show the list of ${stray} ${stray === 1 ? 'home' : 'homes'}`;
+  return 'Nothing to show';
+}
+
 function pockFootSync() {
   const f = pockUI.f, r = pockUI.last;
   const hint = $('fi_agehint');
@@ -5632,9 +5910,7 @@ function pockFootSync() {
       note.textContent = 'Only inside this place. Change anything above, then search again.';
       return;
     }
-    go.textContent = r.pockets.length
-      ? `Show ${r.pockets.length} ${r.pockets.length === 1 ? 'spot' : 'spots'} · ${r.shown.toLocaleString()} homes`
-      : 'Nothing to show';
+    go.textContent = pockGoWords(r, 'spot');
     const bits = [];
     if (!r.total) {
       bits.push('Searched this area again. No homes here match these filters.');
@@ -5668,9 +5944,7 @@ function pockFootSync() {
   }
   if (!r) { go.textContent = 'Count them'; note.textContent = where; return; }
 
-  go.textContent = r.pockets.length
-    ? `Show ${r.pockets.length} ${r.pockets.length === 1 ? 'place' : 'places'} · ${r.shown.toLocaleString()} homes`
-    : 'Nothing to show';
+  go.textContent = pockGoWords(r, 'place');
   /* WHICH GROUND stays on the screen NEXT TO the answer, not only before it. The moment he
      acts on a number is the moment it matters whether that number came from a circle around
      home or from whatever the map was framing, and those can be completely different
@@ -5688,11 +5962,29 @@ function pockAnswerWords(r) {
   if (r.noHome) return 'No home is set on this phone, so there is nothing to measure a '
                      + 'radius from. Set one in the menu, under "Set to where I am".';
   const bits = [];
+  /* "WORTH A DRIVE" WAS RETIRED HERE ON 2026-08-10, and the reason is worth keeping.
+     It made his judgement for him - he is the one who decides what is worth driving - and
+     from this build it is also contradicted by the app itself, which now hands him the list
+     and expects him to drive to some of them. The sentence says what the map did and what he
+     can do next, and stops there. */
+  const stray = Array.isArray(r.strays) ? r.strays.length : 0;
+  const strayN = r.strayCount || 0;
   if (!r.total) bits.push('No homes matched over this ground.');
-  else if (!r.pockets.length)
-    bits.push(`${r.total.toLocaleString()} homes matched, but none of them sit close enough together to be worth a drive.`);
-  else
+  else if (!r.pockets.length) {
+    if (stray) bits.push(`${r.total.toLocaleString()} homes matched. None of them sit close enough together to draw a square, so they are single homes. Show gives you the list.`);
+    else bits.push(`${r.total.toLocaleString()} homes matched. None of them sit close enough together to draw a square, and there are more than ${POCK_LIST_MAX} to list one by one. Tighten a filter and ask again.`);
+  } else {
     bits.push(`${r.total.toLocaleString()} homes matched. ${r.shown.toLocaleString()} of them sit in ${r.pockets.length} ${r.pockets.length === 1 ? 'place' : 'places'} big enough to draw.`);
+    /* THE MIXED CASE, RULED BY TRAVIS 2026-08-10: squares drew AND homes were left over.
+       A line after the places, never mixed in among them - a handful of stray houses beside
+       a four-hundred-home place would read as the same kind of answer, which is the exact
+       confusion the floor exists to prevent. */
+    if (strayN) {
+      bits.push(stray
+        ? `And ${strayN.toLocaleString()} more on their own, too spread out to draw. Show gives you those as a list.`
+        : `And ${strayN.toLocaleString()} more on their own, too spread out to draw and more than ${POCK_LIST_MAX} to list one by one.`);
+    }
+  }
   const extra = pockAnswerExtras(r);
   if (extra) bits.push(extra);
   return bits.join(' ');
@@ -5766,10 +6058,22 @@ async function pockCountNow() {
 
 function pockShowOnMap() {
   if (!pockUI.last) return pockCountNow();
-  /* NOTHING TO SHOW IS NOT A REASON TO LEAVE THE SCREEN. Closing the panel on an empty
-     answer drops him on a map with nothing drawn on it and no sentence explaining why -
-     the footer already says why, so he stays where he can read it. */
-  if (!pockUI.last.pockets || !pockUI.last.pockets.length) { pockFootSync(); return; }
+  /* NO SQUARES DREW, BUT THERE MAY STILL BE AN ANSWER, and until 2026-08-10 this line was
+     the dead end. It called pockFootSync and returned - the second tap did nothing at all,
+     on the one search where he most needed it to do something.
+     There is no new button for him to find. The Show button he already knows now leads to
+     the list when the list is what the answer looks like. */
+  if (!pockUI.last.pockets || !pockUI.last.pockets.length) {
+    if (Array.isArray(pockUI.last.strays) && pockUI.last.strays.length) {
+      closeFiltersNow(true);
+      openHomesList();
+      pockBarSync();
+      return;
+    }
+    /* Genuinely nothing to show. Staying put is deliberate: the footer says why, and
+       dropping him on an empty map with no sentence is the fault this branch exists for. */
+    pockFootSync(); return;
+  }
   if (!window._map) return;
   pockDraw(pockUI.last);
   /* MOVE THE MAP TO THE ANSWER when the answer had nothing to do with the map. A radius
@@ -5833,22 +6137,171 @@ function pockBarSync() {
   const bar = $('pockBar');
   if (!bar) return;
   const shown = pockOnMap();
-  bar.classList.toggle('on', !!shown);
-  $('pockClear').classList.toggle('hide', !shown);
+  /* AN ANSWER EXISTS IS NOT THE SAME QUESTION AS SOMETHING IS DRAWN, and reading the second
+     where the first was meant is the whole of the fault he reported on 2026-08-10.
+
+     He filtered for deliberately rare homes. They matched. None of them cleared the 25-home
+     floor, so nothing was drawn - and every line below used to key off `shown`. The map bar
+     emptied itself and took the Clear button with it, so the map said nothing at all and the
+     one control he went looking for was gone. He reported it as two separate complaints,
+     "it didn't show me anything" and "I can't find my hide button", and they were one line.
+
+     `answered` is the honest gate for the bar and for Clear: a search RAN, so there is
+     something to say and something to clear. `shown` stays the gate for the things that are
+     genuinely about drawn squares. */
+  const answered = !!pockUI.last;
+  bar.classList.toggle('on', answered);
+  $('pockClear').classList.toggle('hide', !answered);
+  /* THE WAY INTO THE LIST LIVES ON THE MAP TOO, for the same reason Back does: once Show has
+     closed the panel, the map bar is all he can see. Shown whenever there are rows to show,
+     including the MIXED case where squares DID draw and some homes were left over - which is
+     the case he ruled on 2026-08-10, "a line under the table". */
+  const stray = (pockUI.last && Array.isArray(pockUI.last.strays)) ? pockUI.last.strays.length : 0;
+  $('pockList').classList.toggle('hide', stray === 0);
+  if (stray) $('pockList').textContent = `☰ ${stray} on their own`;
   /* THE WAY BACK OUT OF A PLACE LIVES ON THE MAP, not only in the panel. Once Show has
      closed the panel the drill is all he can see, and without this the only route back to
      the whole scan would be to reopen the filters - which is a screen about setting up a
-     search, not about undoing one. */
-  const inDrill = !!(pockUI.scope && shown);
+     search, not about undoing one.
+     SCOPE ALONE, NOT SCOPE AND DRAWN. The `&& shown` this used to carry hid Back inside any
+     drill whose answer drew nothing, which strands him in a place with no way out. It was
+     latent while a drill could only ever answer with squares; it goes live the moment a drill
+     can answer with a list. Found by reading, before it could be reported. */
+  const inDrill = !!pockUI.scope && answered;
   const back = $('pockBack');
   if (back) back.classList.toggle('hide', !inDrill);
-  $('pockTxt').textContent = !shown ? ''
-    : inDrill
-      /* "spots" inside a place, never "places" - the same word for both would make a drill
-         and a whole-map scan read as the same kind of answer at a glance. */
-      ? `Inside place ${pockUI.scope.rank} · ${shown.pockets} ${shown.pockets === 1 ? 'spot' : 'spots'} · ${shown.homes.toLocaleString()} homes drawn.`
-      : `${shown.pockets} ${shown.pockets === 1 ? 'place' : 'places'} · ${shown.homes.toLocaleString()} homes drawn. Tap a number to look inside it.`;
+  $('pockTxt').textContent = !answered ? ''
+    : !shown
+      /* NOTHING DREW, AND THAT IS AN ANSWER RATHER THAN A SILENCE. It says the count, says
+         plainly why the map is empty, and points at the one thing he can do next. */
+      ? pockThinBarWords(pockUI.last)
+      : inDrill
+        /* "spots" inside a place, never "places" - the same word for both would make a drill
+           and a whole-map scan read as the same kind of answer at a glance. */
+        ? `Inside place ${pockUI.scope.rank} · ${shown.pockets} ${shown.pockets === 1 ? 'spot' : 'spots'} · ${shown.homes.toLocaleString()} homes drawn.`
+        : `${shown.pockets} ${shown.pockets === 1 ? 'place' : 'places'} · ${shown.homes.toLocaleString()} homes drawn. Tap a number to look inside it.`;
   pockSeatBar();
+}
+
+/* WHAT THE MAP BAR SAYS WHEN A SEARCH RAN AND NOTHING DREW.
+   Three different facts, and they must not share a sentence, because the honest answer to
+   each one is different work for him:
+     nothing matched at all      -> the filter is wrong, widen it
+     matched but too scattered   -> the filter is right, the homes are just spread out
+     matched but too many to list-> the filter is too wide, tighten it
+   THE COUNT COMES FIRST in every branch. It is the number he asked for, and burying it
+   behind an explanation is what made the old empty string feel like a broken app. */
+function pockThinBarWords(r) {
+  if (!r) return '';
+  const n = r.total || 0;
+  if (!n) return 'Nothing matched over this ground. Tap Where to knock to widen it.';
+  const homes = `${n.toLocaleString()} ${n === 1 ? 'home' : 'homes'}`;
+  if (n > POCK_LIST_MAX)
+    return `${homes} · too many to list · tighten a filter and ask again.`;
+  return `${homes} · nothing close enough together to draw · See the list.`;
+}
+
+/* ============================================================================
+   HOMES ON THEIR OWN - the list.
+
+   These are the rows that cleared no square. They are never called places, never drawn as
+   squares and never given a rank number, because all three of those are the map's way of
+   saying "these homes are clustered" and the entire fact about these is that they are not.
+   ========================================================================= */
+
+/* ONE FACT PER FIELD, AND THREE DIFFERENT KINDS OF NOTHING.
+     a figure            -> print it
+     county has no such column -> "not published", which is a fact about the COUNTY
+     county has one, empty here -> "not on file", which is a fact about the HOUSE
+   Ruled by Travis 2026-08-10. The two absences must never share a word: this app already
+   refuses to let "there are none" and "nobody looked" share a sentence, and a blank space
+   would be a third thing again - it reads as the app being broken.
+   Measured why it matters (`02 Tests\listcheck.ps1`): sale price is filled on 8.4% of
+   Madison parcels and 23.2% of Fairfield's, and Union and Pickaway publish no such column
+   at all. Without this, most rows in half his counties would be gaps. */
+function pockFactHtml(label, value, published) {
+  if (!published) return `${label} <span class="hmNone">not published</span>`;
+  if (value == null || value === '') return `${label} <span class="hmNone">not on file</span>`;
+  return `${label} ${value}`;
+}
+
+function pockHomeRowHtml(r, i) {
+  const can = pockCountyCan(r.county);
+  const miles = r.milesHome == null ? '' : `${r.milesHome < 10 ? r.milesHome.toFixed(1) : Math.round(r.milesHome)} mi`;
+  /* AN ADDRESS THAT IS ONLY A ROAD NAME IS NOT A HOUSE. Measured on 2026-08-10: Franklin
+     returns "OPOSSUM RUN RD" with no number and Licking "APPLETON RD NW" - vacant roadside
+     parcels. Said plainly rather than printed as if it were somewhere he could knock. */
+  const addrRaw = (r.addr || '').trim();
+  const hasNumber = /\d/.test(addrRaw);
+  const addr = !addrRaw ? '<span class="hmNone">No address on the county record</span>'
+             : !hasNumber ? `${esc(addrRaw)} <span class="hmNone">(no street number)</span>`
+             : esc(addrRaw);
+  const facts = [
+    pockFactHtml('Built', r.year || null, can.year),
+    pockFactHtml('', r.val != null ? money(r.val) : null, can.val),
+    pockFactHtml('', r.sqft != null ? sqftTxt(r.sqft) : null, can.sqft),
+    pockFactHtml('Sold', r.saleTs ? new Date(r.saleTs).toLocaleDateString(undefined, { month: 'short', year: 'numeric' }) : null, can.saleDate),
+    pockFactHtml('for', r.salePrice != null ? money(r.salePrice) : null, can.salePrice),
+  ].map(s => s.trim()).join(' · ');
+  return `<button class="hmRow" data-i="${i}">
+    <div class="hmTop"><span class="hmAddr">${addr}</span><span class="hmMiles">${miles}</span></div>
+    <div class="hmFacts">${facts}</div>
+  </button>`;
+}
+
+function renderHomesList() {
+  const r = pockUI.last;
+  if (!r) return;
+  const rows = r.strays || [];
+  const s = pockUI.scope;
+  $('homesTitle').textContent = s ? `On their own, inside place ${s.rank}` : 'Homes on their own';
+  /* THE HEADER IS THE FILTER, NEVER THE PRESET NAME. See pockFilterFacts. */
+  $('homesSub').textContent = pockFilterFacts(pockUI.f);
+  $('homesBody').innerHTML = rows.map((x, i) => pockHomeRowHtml(x, i)).join('');
+  const n = rows.length;
+  /* THE COUNT LEADS, THEN WHY THE MAP IS EMPTY, THEN WHAT THEY ARE. No advice: he is an
+     experienced operator and the distance on every row already says how scattered they are.
+     "Not worth a drive" was retired from the footer on the same day for the same reason -
+     it made his judgement for him, and it is contradicted by handing him this list. */
+  $('homesNote').textContent = !n ? ''
+    : `${n} ${n === 1 ? 'home' : 'homes'} matched. No square holds enough of them to draw. `
+      + `They are single homes, nearest first.`
+      + (pockHaveHome() ? '' : ' No home is set, so there is no distance to sort by.');
+  $('homesBody').scrollTop = 0;
+}
+
+function openHomesList() {
+  const r = pockUI.last;
+  if (!r || !Array.isArray(r.strays) || !r.strays.length) return;
+  leaveMenuForView();
+  $('homesView').classList.remove('hide');
+  renderHomesList();
+  buzz(12);
+}
+function closeHomesList() { $('homesView').classList.add('hide'); }
+
+/* TAPPING A ROW MOVES THE MAP AND THEN ASKS THE COUNTY PROPERLY. IT DOES NOT DROP A PIN.
+
+   The scan asks for geometry with `maxAllowableOffset: '0.0004'` - about forty metres of
+   flattening - and that is correct for deciding which two-mile square a house sits in and
+   badly wrong for saying which house it is. A pin on that centroid can land on the
+   neighbour's lot, and this app's worst possible fault is a wrong answer that looks exactly
+   like a right one.
+   So the row's own coordinates are used for ONE thing only: deciding where to look.
+   `ensureParcels` then re-asks the county for that ground with `geometryPrecision:'6'` and
+   NO simplification, and the app's ordinary lot lines and house card take it from there -
+   the same path a house he walks up to goes through. Slower by a moment, and it cannot put
+   him at the wrong door. */
+async function homesGoTo(i) {
+  const r = pockUI.last, rows = (r && r.strays) || [];
+  const row = rows[i];
+  if (!row) return;
+  closeHomesList();
+  if (!window._map) await openMap();
+  window._map.setView([row.lat, row.lon], 18);
+  buzz(10);
+  try { await ensureParcels(row.lat, row.lon); } catch (e) {}
+  if (window._map) refreshMapLayers();
 }
 
 /* ---------------- hub map (canvas, works offline) ----------------
@@ -8492,7 +8945,7 @@ function closeSheet(id){ $(id).classList.add('hide'); }
    stale return would reopen the menu over something he reached from the strip. */
 let menuReturn = null;              // scrollTop to come back to, or null for "don't"
 const menuScroller = () => $('menuSheet').querySelector('.sheetScroll');
-const FULL_VIEWS = ['scoutView', 'marksView', 'daysLogView', 'sortView', 'filtView'];
+const FULL_VIEWS = ['scoutView', 'marksView', 'daysLogView', 'sortView', 'filtView', 'homesView'];
 const anyViewOpen = () => FULL_VIEWS.some(id => { const el = $(id); return el && !el.classList.contains('hide'); });
 function leaveMenuForView() {
   if (!$('menuSheet').classList.contains('hide')) {
@@ -13072,7 +13525,7 @@ document.querySelectorAll('.dsecHead[data-msec]').forEach(b => {
 /* ---- what version is actually on the phone ----
    Matches the service worker cache name, so "did the update land" is answerable by
    looking rather than guessing. */
-const BUILD_VERSION = 'v46';
+const BUILD_VERSION = 'v47';
 const BUILD_DATE = '7 August 2026';
 function renderVersionStamp() {
   const el = $('versionStamp'); if (!el) return;
@@ -17575,6 +18028,16 @@ $('filtGo').onclick = () => { if (pockUI.last) pockShowOnMap(); else pockCountNo
    was saved when the drill opened, so this costs no network and cannot come back different
    from what he was looking at a minute ago. */
 $('pockBack').onclick = () => { closeDrill(); buzz(8); };
+$('pockList').onclick = () => openHomesList();
+$('homesExit').onclick = () => { closeHomesList(); backToMenuIfCameFromIt(); };
+/* DELEGATED, so a re-render cannot leave a row wired to a stale index. The whole row is the
+   target, which is why the handler climbs to `.hmRow` rather than reading event.target. */
+$('homesBody').onclick = (e) => {
+  const row = e.target && e.target.closest ? e.target.closest('.hmRow') : null;
+  if (!row) return;
+  const i = parseInt(row.getAttribute('data-i'), 10);
+  if (isFinite(i)) homesGoTo(i);
+};
 $('pockClear').onclick = () => {
   /* Counts what it will take off before it does it, and says so - the standing rule for
      anything destructive. Nothing here touches a record, so it does not ask first. */
