@@ -15492,7 +15492,7 @@ $('sesSendDay').onclick = async () => {
    it arrived only ever gains their new notes, never loses his.
    The team code is a password and stays on this phone: it is NOT in the backup file.
    Nothing new is stored on a door record. Sync's own bookkeeping lives in localStorage. */
-const SYNC_URL = 'https://canvasseaze-sync.SUBDOMAIN.workers.dev';
+const SYNC_URL = 'https://canvasseaze-sync.james-d55.workers.dev';
 const SYNC_BATCH = 35;
 const syncGet = k => { try { return JSON.parse(localStorage.getItem(k) || 'null'); } catch (e) { return null; } };
 const syncSet = (k, v) => { try { localStorage.setItem(k, JSON.stringify(v)); return true; } catch (e) { return false; } };
