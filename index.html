@@ -1777,6 +1777,9 @@ select{min-height:44px}
           <div class="small why" style="margin-top:5px">Every door, note, tag, stage, follow-up, appointment and walking track, in one file. This is the only thing that can rebuild the app if the phone is lost or the icon is deleted. Get it off the phone.</div>
           <button class="ghost" id="mRestore" style="margin-top:12px"><span class="emo">⤴︎</span> <span class="mtxt" data-lbl="lbl.menu.mRestore">Restore from a full backup</span></button>
           <input type="file" id="restoreFile" accept=".json,application/json" class="hide">
+          <button class="ghost" id="mAddTeam" style="margin-top:12px"><span class="emo">👥</span> <span class="mtxt" data-lbl="lbl.menu.mAddTeam">Add a canvasser's doors</span></button>
+          <input type="file" id="teamFile" accept=".json,application/json" multiple class="hide">
+          <div class="small why" style="margin-top:5px">Pick the backup file a canvasser sent you. Their doors and appointments are added to yours. Nothing of yours is changed: not your doors, your settings, your home pin or your walking track. Adding the same file twice adds nothing the second time.</div>
           <button class="ghost" id="mExport" style="margin-top:16px"><span class="emo">⬇︎</span> <span class="mtxt" data-lbl="lbl.menu.mExport">Export…</span></button>
           <div class="small why" style="margin-top:5px">A spreadsheet or a map file, for working at a laptop. Useful, but <b>this is not a backup</b> — it leaves things out and nothing can restore from it.</div>
         </div></div>
@@ -2322,6 +2325,7 @@ const LABELS = {
   'lbl.menu.mBackupShare': { def:'Full backup — send it somewhere safe',           group:'menu', cap:LBL_CAP.menu, note:'Menu button.' },
   'lbl.menu.mBackup':      { def:'Full backup — just download it',                 group:'menu', cap:LBL_CAP.menu, note:'Menu button.' },
   'lbl.menu.mRestore':     { def:'Restore from a full backup',                          group:'menu', cap:LBL_CAP.menu, note:'Menu button.' },
+  'lbl.menu.mAddTeam':     { def:"Add a canvasser's doors",                             group:'menu', cap:LBL_CAP.menu, note:'Menu button.' },
   'lbl.menu.mExport':      { def:'Export…',                                        group:'menu', cap:LBL_CAP.menu, note:'Menu button.' },
   /* The editor's own name. It was written out by hand in TWO places — the Settings
      button and the heading of the screen it opens — and was the only button in the menu
@@ -12326,6 +12330,9 @@ async function buildBackup() {
     // what the "Work" column says in every spreadsheet he exports afterwards
     lineNames: lineNamesSaved(), hubData: state.hubData, mapData: state.mapData,
     visits, days, vehicle: state.vehicle,
+    /* v48: whose phone this came from, so Add a canvasser's doors can say whose they were.
+       A label on the file only; restore ignores it. */
+    madeBy: myName() || undefined,
     /* The top-level fields above are kept as they were so an older build could still
        read this file. `local` is the one that is complete. */
     local };
@@ -15522,6 +15529,79 @@ $('mSound').onclick = () => {
 };
 $('mTest').onclick = testConnections;
 $('mRestore').onclick = () => $('restoreFile').click();
+
+/* ---------------- v48: add a canvasser's doors ----------------
+   The merge tool, built into the app. A canvasser's backup carries THEIR settings, home
+   pin and walking track, and a full Restore would lay those over his. This takes only
+   the two things that belong to the business: door records and appointments. Both are
+   add-only by id, the same rule Restore already uses, so a door he already has is never
+   touched and the same file twice adds nothing. Each new door gets one note saying whose
+   it was. No new fields on any record. */
+const whoFromFile = (d, fname) => {
+  const n = (d && (d.canvasser || d.madeBy)) || '';
+  if (typeof n === 'string' && n.trim()) return n.trim().slice(0, 40);
+  const m = /^([a-z0-9-]+?)-canvass-backup-/i.exec(fname || '');
+  return m ? m[1].replace(/-/g, ' ').replace(/\b\w/g, c => c.toUpperCase()) : '';
+};
+$('mAddTeam').onclick = () => $('teamFile').click();
+$('teamFile').onchange = async e => {
+  const files = [...(e.target.files || [])];
+  try { e.target.value = ''; } catch (err) {}
+  if (!files.length) return;
+  if (visitsReadFailed || wipeHalfDone) {
+    return flashToast('Not adding anything right now', 'The phone will not hand back your own door records. Close the app right down and open it again first.', '#ef4444');
+  }
+  const lines = []; let anyWrote = 0, refused = 0, badFiles = [];
+  await flushDay();
+  for (const f of files) {
+    let d;
+    try { d = JSON.parse(await f.text()); } catch (err) { badFiles.push(f.name); continue; }
+    if (!d || typeof d !== 'object' || !Array.isArray(d.visits)) { badFiles.push(f.name); continue; }
+    const who = whoFromFile(d, f.name);
+    const tag = who ? `From ${who}'s doors.` : "From a canvasser's doors.";
+    let wrote = 0, kept = 0;
+    for (const v of d.visits) {
+      if (!v || typeof v.id !== 'string' || !v.id || typeof v.ts !== 'number') { refused++; continue; }
+      try {
+        if (await DB.get('visits', v.id)) { kept++; continue; }
+        const lg = Array.isArray(v.log) ? v.log.slice() : [];
+        lg.push({ id:newId(), ts:Date.now(), kind:'note', auto:true, text:tag });
+        const rec = Object.assign({}, v, { log: lg,
+          notes: lg.filter(x => x && x.kind === 'note').map(x => x.text).join(' | ') });
+        await DB.put('visits', rec); wrote++;
+      } catch (err) { refused++; }
+    }
+    /* Appointments: a v4 backup carries them as the raw string in local.appts; the merge
+       tool's file and older backups carry an array at the top. */
+    let theirAppts = [];
+    try {
+      if (d.local && typeof d.local.appts === 'string') theirAppts = JSON.parse(d.local.appts);
+      else if (Array.isArray(d.appts)) theirAppts = d.appts;
+    } catch (err) { theirAppts = []; }
+    if (!Array.isArray(theirAppts)) theirAppts = [];
+    const have = new Set(state.appts.map(a => a && a.id));
+    const newAppts = theirAppts.filter(a => a && typeof a.id === 'string' && a.id && typeof a.at === 'number' && !have.has(a.id));
+    if (newAppts.length) {
+      const before = state.appts;
+      state.appts = state.appts.concat(newAppts);
+      try { saveAppts(); } catch (err) { state.appts = before; refused += newAppts.length; newAppts.length = 0; }
+    }
+    anyWrote += wrote + newAppts.length;
+    lines.push(`<b>${esc(who || f.name)}</b>: ${wrote} new door${wrote === 1 ? '' : 's'} added`
+      + (kept ? `, ${kept} already here and left alone` : '')
+      + (newAppts.length ? `, ${newAppts.length} appointment${newAppts.length === 1 ? '' : 's'} added` : '') + '.');
+  }
+  if (anyWrote) {
+    for (const day of state.days.values()) day.readFailed = true;
+    state.days.clear(); allDaysLoaded = false;
+    await loadStored();
+    if (!visitsReadFailed) { renderSwitchUi(); renderStats(); renderAreas(); renderHouse(); drawMini(); if (window._map) refreshMapLayers(); }
+  }
+  if (badFiles.length) lines.push(`Not a CanvassEaze backup, so skipped: ${badFiles.map(esc).join(', ')}. `
+    + `Pick the file that ends in <b>.json</b>, not the day log.`);
+  if (refused) lines.push(`${refused} thing${refused === 1 ? '' : 's'} would not save. Nearly always no room left on the phone. Nothing of yours was removed.`);
+  await askChoice(anyWrote ? 'Added' : 'Nothing new to add', lines.join('<br><br>') || 'That file had nothing in it.', [{ key:'ok', label:'OK' }]);
+};
 $('restoreFile').onchange = async e => {
   const f = e.target.files[0]; if (!f) return;
   try {
