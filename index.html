@@ -784,6 +784,8 @@ select{min-height:44px}
 .medrag{width:26px;height:26px;border-radius:50%;background:#38bdf8;border:4px solid #fff;box-shadow:0 0 0 3px rgba(45,212,191,.8),0 3px 10px rgba(0,0,0,.6);transform:translate(-13px,-13px)}
 /* ---------- address search on the big map ---------- */
 #eraseBar.picking{background:rgba(22,163,74,.95);border-color:rgba(34,197,94,.65)}
+.payT{border-collapse:collapse;width:100%;font-size:13px}.payT th,.payT td{border-bottom:1px solid #334155;padding:5px 3px;text-align:left}.payCard{border:1px solid #334155;border-radius:12px;padding:10px;margin:10px 0}.payRow{font-size:13px;padding:6px 0;border-bottom:1px solid #1e293b}.payRow label{display:inline-flex;align-items:center;gap:6px;margin:6px 14px 0 0;white-space:nowrap}.payRow input[type=checkbox]{width:20px;height:20px;margin:0;flex:none}
+.leaflet-tooltip.stopTip{background:#7c3aed;color:#fff;border:0;font-weight:700;font-size:11px;padding:2px 6px;box-shadow:none}.leaflet-tooltip.stopTip:before{display:none}
 #findWrap{position:absolute;z-index:1002;left:10px;right:10px;top:calc(var(--safe-t) + 52px)}
 #findInput{background:rgba(15,21,29,.96);border:1px solid var(--line);border-radius:12px;padding:11px 38px 11px 13px;
   font-size:14px;font-weight:600;box-shadow:0 6px 20px rgba(0,0,0,.5)}
@@ -1429,11 +1431,18 @@ select{min-height:44px}
 <!-- v48: Travis's live booking calendar. The homeowner picks the time and types their own
      name and phone, the same rule the canvasser program teaches. Loaded fresh on every open
      so the open times are always today's. -->
+<div id="paySheet" class="sheet hide">
+  <div class="sheetBody">
+    <div class="sheetHead"><h2>Pay</h2><button class="x" data-close="paySheet">Close</button></div>
+    <div class="sheetScroll"><div id="payBody"></div></div>
+  </div>
+</div>
 <div id="bookSheet" class="sheet hide">
   <div class="sheetBody">
     <div class="sheetHead"><h2>Travis's open times</h2><button class="x" data-close="bookSheet">Close</button></div>
     <div class="sheetScroll">
       <div class="small" id="bookNote">Hand the phone over. They pick a time and type their own name and phone.</div>
+      <div class="small hide" id="bookNear" style="margin:8px 0 2px;padding:8px 10px;border-radius:10px;background:#2e1065;color:#ede9fe;line-height:1.45"></div>
       <div id="bookWrap" style="height:68vh;min-height:420px;border-radius:12px;overflow:hidden;background:#fff;margin-top:10px"></div>
       <div id="bookActs">
         <button class="primary" id="bookDone" style="margin-top:12px">✓ They booked a time</button>
@@ -1748,6 +1757,7 @@ select{min-height:44px}
           <button class="ghost" id="mMarks"><span class="emo">🔎</span> <span class="mtxt" data-lbl="lbl.menu.mMarks">Scouted houses</span></button>
           <button class="ghost" id="mAppt"><span class="emo">📋</span> <span class="mtxt" data-lbl="lbl.menu.mAppt">Schedule and appointments</span></button>
           <button class="ghost" id="mBookTimes"><span class="emo">📅</span> <span class="mtxt" data-lbl="lbl.menu.mBookTimes">Travis's open times</span></button>
+          <button class="ghost" id="mPay"><span class="emo">💵</span> <span class="mtxt" data-lbl="lbl.menu.mPay">Pay requests</span></button>
           <!-- The truck block moved to Settings at his word. It was four rows and a
                readout sitting between the last thing he taps out here and "How you're
                doing", which is where History lives — and he does not need it: he drops
@@ -1891,6 +1901,12 @@ select{min-height:44px}
           <label class="f">Your name</label>
           <div class="small why" style="margin-bottom:6px">It goes at the top of your day log, so whoever reads it knows whose day it was.</div>
           <input id="mMyName" type="text" autocomplete="off" maxlength="40" placeholder="First name">
+
+          <label class="f">Team sync</label>
+          <div class="small why" style="margin-bottom:6px">Type the team code Travis gave this phone. Doors then go to Travis by themselves whenever there is signal, and wait on the phone when there is not. The code stays on this phone and is not in your backup.</div>
+          <input id="mSyncCode" type="text" autocomplete="off" autocapitalize="characters" spellcheck="false" maxlength="24" placeholder="Team code">
+          <div class="chips" style="margin-top:6px"><button class="chip" id="mSyncSave">Save code</button><button class="chip" id="mSyncNow">Sync now</button><button class="chip" id="mSyncOff">Turn off</button></div>
+          <div class="small" id="syncInfo" style="margin-top:6px"></div>
 
           <!-- One row, not a block. Without a key nothing about the app changes: no button,
                no prompt, no nag. That is the whole degradation strategy. -->
@@ -2325,6 +2341,7 @@ const LABELS = {
   'lbl.menu.mBackupShare': { def:'Full backup — send it somewhere safe',           group:'menu', cap:LBL_CAP.menu, note:'Menu button.' },
   'lbl.menu.mBackup':      { def:'Full backup — just download it',                 group:'menu', cap:LBL_CAP.menu, note:'Menu button.' },
   'lbl.menu.mRestore':     { def:'Restore from a full backup',                          group:'menu', cap:LBL_CAP.menu, note:'Menu button.' },
+  'lbl.menu.mPay':         { def:'Pay requests',                                        group:'menu', cap:LBL_CAP.menu, note:'Menu button.' },
   'lbl.menu.mAddTeam':     { def:"Add a canvasser's doors",                             group:'menu', cap:LBL_CAP.menu, note:'Menu button.' },
   'lbl.menu.mExport':      { def:'Export…',                                        group:'menu', cap:LBL_CAP.menu, note:'Menu button.' },
   /* The editor's own name. It was written out by hand in TWO places — the Settings
@@ -15381,6 +15398,8 @@ let bookFor = null;   // the door record the booking is for, or null when just l
 function openBooking(forDoor) {
   bookFor = forDoor || null;
   $('bookActs').classList.toggle('hide', !bookFor);
+  renderBookNear(bookFor);
+  fetchStops().then(() => renderBookNear(bookFor));
   const wrap = $('bookWrap');
   if (!navigator.onLine) {
     wrap.innerHTML = '<div class="small" style="padding:16px;color:#334155">No signal right now, so the calendar cannot load. '
@@ -15466,6 +15485,413 @@ $('sesSendDay').onclick = async () => {
   markBackedUp();
   flashToast('Downloaded instead', 'This phone would not open the share sheet. Both files are in Downloads.', '#38bdf8');
 };
+/* ---------------- v48: team sync ----------------
+   Canvasser phones send every door they save to a small mailbox on Travis's Cloudflare.
+   Travis's phone picks up whatever is new. Same add-only rules as Add a canvasser's doors:
+   a door of his own is never overwritten, and a door of theirs that he has changed since
+   it arrived only ever gains their new notes, never loses his.
+   The team code is a password and stays on this phone: it is NOT in the backup file.
+   Nothing new is stored on a door record. Sync's own bookkeeping lives in localStorage. */
+const SYNC_URL = 'https://canvasseaze-sync.SUBDOMAIN.workers.dev';
+const SYNC_BATCH = 35;
+const syncGet = k => { try { return JSON.parse(localStorage.getItem(k) || 'null'); } catch (e) { return null; } };
+const syncSet = (k, v) => { try { localStorage.setItem(k, JSON.stringify(v)); return true; } catch (e) { return false; } };
+const syncCode = () => { try { return localStorage.getItem('syncCode') || ''; } catch (e) { return ''; } };
+const syncRole = () => { try { return localStorage.getItem('syncRole') || ''; } catch (e) { return ''; } };
+const syncName = () => { try { return localStorage.getItem('syncName') || ''; } catch (e) { return ''; } };
+const syncHash = o => { const s = JSON.stringify(o); let h = 2166136261;
+  for (let i = 0; i < s.length; i++) { h ^= s.charCodeAt(i); h = Math.imul(h, 16777619); } return (h >>> 0).toString(36) + '.' + s.length; };
+async function syncFetch(path, opts = {}) {
+  const r = await fetch(SYNC_URL + path, Object.assign({}, opts, {
+    headers: Object.assign({ 'x-team-code': syncCode() }, opts.body ? { 'content-type': 'application/json' } : {}),
+    cache: 'no-store' }));
+  let body = null; try { body = await r.json(); } catch (e) {}
+  if (!r.ok) { const err = new Error((body && body.error) || ('HTTP ' + r.status)); err.status = r.status; throw err; }
+  return body;
+}
+function syncSay(text) { syncSet('syncStatus', { text, ts: Date.now() }); renderSyncInfo(); }
+function renderSyncInfo() {
+  const el = $('syncInfo'); if (!el) return;
+  const code = syncCode(), role = syncRole(), st = syncGet('syncStatus');
+  if (!code) { el.textContent = 'Off. Doors stay on this phone until you send them.'; return; }
+  const q = syncGet('syncQ') || {};
+  const waiting = Object.keys(q.p || {}).length + Object.keys(q.g || {}).length;
+  const who = role === 'boss' ? `On as ${syncName() || 'Travis'}: picking up the canvassers' doors.`
+                              : `On as ${syncName() || 'you'}: your doors go to Travis by themselves.`;
+  el.textContent = who + (role === 'canvasser' ? ` ${waiting ? waiting + ' waiting to send.' : 'Nothing waiting.'}` : '')
+    + (st ? ` ${st.text} (${new Date(st.ts).toLocaleTimeString([], { hour:'numeric', minute:'2-digit' })})` : '');
+}
+
+/* Canvasser side: note every write, send in the background. */
+let syncTimer = null, syncBusy = false;
+function syncNote(kind, id) {
+  if (syncRole() !== 'canvasser' || !syncCode()) return;
+  const q = syncGet('syncQ') || { p:{}, g:{}, a:0, n:0 };
+  q.p = q.p || {}; q.g = q.g || {}; q.n = (q.n || 0) + 1;
+  if (kind === 'p') { q.p[id] = q.n; delete q.g[id]; }
+  else if (kind === 'g') { q.g[id] = q.n; delete q.p[id]; }
+  else if (kind === 'a') q.a = q.n;
+  syncSet('syncQ', q);
+  clearTimeout(syncTimer); syncTimer = setTimeout(syncFlush, 2500);
+}
+(() => {
+  const put = DB.put, del = DB.del;
+  DB.put = async (s, v) => { const r = await put(s, v); if (s === 'visits' && v && v.id) syncNote('p', v.id); return r; };
+  DB.del = async (s, k) => { const r = await del(s, k); if (s === 'visits' && k) syncNote('g', k); return r; };
+  const sa = saveAppts;
+  saveAppts = function () { const r = sa.apply(this, arguments); syncNote('a'); return r; };
+})();
+async function syncFlush() {
+  if (syncBusy || syncRole() !== 'canvasser' || !syncCode() || !navigator.onLine) return;
+  syncBusy = true;
+  try {
+    for (let round = 0; round < 50; round++) {
+      const q = syncGet('syncQ') || {};
+      const pIds = Object.keys(q.p || {}), gIds = Object.keys(q.g || {});
+      const wantAppts = !!q.a && (state.appts || []).length < SYNC_BATCH;
+      if (!pIds.length && !gIds.length && !wantAppts) break;
+      const room = SYNC_BATCH - (wantAppts ? (state.appts || []).length + 1 : 0);
+      const doors = [], gone = [], sent = {};
+      for (const id of pIds.slice(0, Math.max(0, room))) {
+        let v = null; try { v = await DB.get('visits', id); } catch (e) { continue; }
+        if (v) doors.push(v); else gone.push(id);
+        sent['p:' + id] = q.p[id];
+      }
+      for (const id of gIds.slice(0, Math.max(0, room - doors.length - gone.length))) { gone.push(id); sent['g:' + id] = q.g[id]; }
+      const body = { doors, gone };
+      if (wantAppts) body.appts = state.appts || [];
+      await syncFetch('/push', { method:'POST', body: JSON.stringify(body) });
+      /* Only clear what was sent AND not touched again while it was on its way. */
+      const now = syncGet('syncQ') || {}; now.p = now.p || {}; now.g = now.g || {};
+      for (const k of Object.keys(sent)) {
+        const [t, id] = [k.slice(0, 1), k.slice(2)];
+        const box = t === 'p' ? now.p : now.g;
+        if (box[id] === sent[k]) delete box[id];
+      }
+      if (wantAppts && now.a === q.a) now.a = 0;
+      syncSet('syncQ', now);
+      syncSay('Sent.');
+    }
+  } catch (e) {
+    syncSay(e.status === 401 ? 'Team code not accepted. Check it with Travis.' : 'Could not reach the mailbox. Will try again.');
+  } finally { syncBusy = false; renderSyncInfo(); }
+}
+
+/* Travis's side: pick up what is new. */
+const syncTagFor = name => `From ${name}'s doors.`;
+function syncWithTag(v, name) {
+  const tag = syncTagFor(name);
+  const lg = Array.isArray(v.log) ? v.log.slice() : [];
+  if (!lg.some(e => e && e.text === tag)) lg.push({ id:'lsync' + v.id, ts: v.ts, kind:'note', auto:true, text: tag });
+  return Object.assign({}, v, { log: lg, notes: lg.filter(x => x && x.kind === 'note').map(x => x.text).join(' | ') });
+}
+let syncPulling = false;
+async function syncPull(quiet) {
+  if (syncPulling || syncRole() !== 'boss' || !syncCode() || !navigator.onLine || visitsReadFailed || wipeHalfDone) return;
+  syncPulling = true;
+  const added = {}; let changed = 0;
+  try {
+    const seen = syncGet('syncSeen') || {};
+    let cur = syncGet('syncCur') || { doors:0, appts:0 };
+    for (let round = 0; round < 20; round++) {
+      const r = await syncFetch(`/pull?doors=${cur.doors}&appts=${cur.appts}`);
+      for (const row of r.doors || []) {
+        let v; try { v = JSON.parse(row.body); } catch (e) { continue; }
+        let mine = null; try { mine = await DB.get('visits', row.id); } catch (e) { continue; }
+        const untouched = mine && seen[row.id] && syncHash(mine) === seen[row.id];
+        if (row.deleted) {
+          if (untouched) { await DB.del('visits', row.id); delete seen[row.id]; changed++; }
+          continue;
+        }
+        const rec = syncWithTag(v, row.canvasser);
+        if (!mine) { await DB.put('visits', rec); seen[row.id] = syncHash(rec); changed++; added[row.canvasser] = (added[row.canvasser] || 0) + 1; }
+        else if (untouched) { await DB.put('visits', rec); seen[row.id] = syncHash(rec); changed++; }
+        else {
+          /* He has changed it since it arrived (or it came in by file first). Keep his copy
+             and add only the notes and status entries he does not have yet. */
+          const have = new Set(logOf(mine).map(e => e && e.id));
+          const extra = (rec.log || []).filter(e => e && e.id && !have.has(e.id) && !logOf(mine).some(m => m && m.text === e.text && m.kind === 'note' && e.kind === 'note'));
+          if (extra.length) {
+            const lg = logOf(mine).concat(extra).sort((a, b) => (a.ts || 0) - (b.ts || 0));
+            await DB.put('visits', Object.assign({}, mine, { log: lg, notes: lg.filter(x => x && x.kind === 'note').map(x => x.text).join(' | ') }));
+            changed++;
+          }
+        }
+      }
+      let apptsChanged = false;
+      for (const row of r.appts || []) {
+        let a; try { a = JSON.parse(row.body); } catch (e) { continue; }
+        const i = state.appts.findIndex(x => x && x.id === row.id);
+        if (row.deleted) { if (i >= 0) { state.appts.splice(i, 1); apptsChanged = true; } continue; }
+        if (i >= 0) state.appts[i] = a; else state.appts.push(a);
+        apptsChanged = true;
+      }
+      if (apptsChanged) { saveAppts(); changed++; }
+      cur = r.cursor || cur;
+      syncSet('syncSeen', seen); syncSet('syncCur', cur);
+      if (!r.more) break;
+    }
+    if (changed) {
+      await flushDay();
+      for (const day of state.days.values()) day.readFailed = true;
+      state.days.clear(); allDaysLoaded = false;
+      await loadStored();
+      if (!visitsReadFailed) { renderSwitchUi(); renderStats(); renderAreas(); renderHouse(); drawMini(); if (window._map) refreshMapLayers(); }
+    }
+    const names = Object.keys(added);
+    if (names.length) {
+      const said = names.map(n => `${added[n]} from ${n}`).join(', ');
+      syncSay(`New doors: ${said}.`);
+      if (!quiet || names.length) flashToast('New doors in', said, '#22c55e');
+    } else syncSay(changed ? 'Updated.' : 'Up to date.');
+  } catch (e) {
+    syncSay(e.status === 401 ? 'Team code not accepted.' : 'Could not reach the mailbox. Will try again.');
+  } finally { syncPulling = false; renderSyncInfo(); }
+}
+function syncTick(quiet) { if (syncRole() === 'boss') syncPull(quiet); else syncFlush(); }
+function syncBoot() {
+  renderSyncInfo();
+  if (!syncCode()) return;
+  setTimeout(() => { syncTick(true); fetchStops(true); }, 1500);
+  setInterval(() => { if (document.visibilityState === 'visible') syncTick(true); }, 120000);
+}
+window.addEventListener('online', () => syncTick(true));
+document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') syncTick(true); });
+
+/* ---------------- v48: Travis's stops ----------------
+   His booked visits for the next three weeks, as a time and a rough spot (rounded to about
+   300 m, street name only, no names). Shown on the big map, and at the top of the booking
+   sheet as "Travis is near here", so a canvasser can offer the times next to a stop he
+   already has and he is not driving across town twice. Needs a team code, like sync. */
+let stopsAt = 0;
+const stopsCached = () => (syncGet('syncStops') || { stops: [] }).stops || [];
+async function fetchStops(force) {
+  if (!syncCode() || !navigator.onLine) return stopsCached();
+  if (!force && Date.now() - stopsAt < 5 * 60000) return stopsCached();
+  try {
+    const r = await syncFetch('/stops');
+    stopsAt = Date.now();
+    syncSet('syncStops', { stops: Array.isArray(r.stops) ? r.stops : [], at: stopsAt });
+    if (window._map) drawStops();
+  } catch (e) {}
+  return stopsCached();
+}
+const stopWhen = s => {
+  const a = new Date(s.start), b = new Date(s.end);
+  const t = d => d.toLocaleTimeString([], { hour:'numeric', minute:'2-digit' });
+  return `${a.toLocaleDateString([], { weekday:'short', month:'short', day:'numeric' })}, ${t(a)} to ${t(b)}`;
+};
+function drawStops() {
+  if (!window._map || typeof L === 'undefined') return;
+  if (window._stopsLayer) { window._stopsLayer.remove(); window._stopsLayer = null; }
+  const now = Date.now();
+  const list = stopsCached().filter(s => s.lat != null && s.lon != null && s.end > now && s.start < now + 8 * 86400000);
+  if (!list.length) return;
+  const g = L.layerGroup();
+  for (const s of list) {
+    L.circleMarker([s.lat, s.lon], { radius: 11, color: '#fff', weight: 2, fillColor: '#7c3aed', fillOpacity: .9 })
+      .bindTooltip(`Travis · ${new Date(s.start).toLocaleDateString([], { weekday:'short' })} ${new Date(s.start).toLocaleTimeString([], { hour:'numeric', minute:'2-digit' })}`,
+        { permanent: true, direction: 'top', offset: [0, -10], className: 'stopTip' })
+      .bindPopup(`<b>Travis is booked here</b><br>${esc(stopWhen(s))}<br>Near ${esc(s.street)}${s.city ? ', ' + esc(s.city) : ''}`)
+      .addTo(g);
+  }
+  window._stopsLayer = g.addTo(window._map);
+}
+(() => {
+  const rml = refreshMapLayers;
+  refreshMapLayers = function () { const r = rml.apply(this, arguments); try { drawStops(); } catch (e) {} return r; };
+})();
+function renderBookNear(forDoor) {
+  const el = $('bookNear'); if (!el) return;
+  const here = forDoor && forDoor.lat != null ? forDoor : (state.pos ? { lat: state.pos.lat, lon: state.pos.lon } : null);
+  const now = Date.now();
+  const list = stopsCached().filter(s => s.end > now);
+  if (!syncCode() || !list.length) { el.innerHTML = ''; el.classList.add('hide'); return; }
+  let rows = list.map(s => ({ s, mi: here && s.lat != null ? haversine(here.lat, here.lon, s.lat, s.lon) / 1609.34 : null }));
+  const near = rows.filter(r => r.mi != null && r.mi <= 6).sort((a, b) => a.s.start - b.s.start).slice(0, 4);
+  el.classList.remove('hide');
+  el.innerHTML = near.length
+    ? `<b>Travis is already near here:</b><br>` + near.map(r => `${esc(stopWhen(r.s))}, ${r.mi < 1 ? 'under a mile' : 'about ' + Math.round(r.mi) + ' mi'} away`).join('<br>')
+      + `<br><span style="opacity:.75">Offer the times right before or after one of these first.</span>`
+    : `No stops booked within 6 miles of here yet. Any open time works.`;
+}
+
+/* ---------------- v48: pay requests ----------------
+   The canvasser sends the week from what the phone recorded. The mailbox adds what it can
+   check by itself (doors that reached it that day, leads on Travis's calendar). Travis ticks
+   every line, and only the lines he ticks are added up. Nothing here moves money. */
+const PAY = { shift: 40, clean: 10, lead: 25 };
+let payWeekBack = 0, payList = [];
+const payMoney = n => '$' + (Math.round(n * 100) / 100).toLocaleString();
+function payWeekKeys(back) {
+  const d = new Date(); d.setHours(12, 0, 0, 0);
+  d.setDate(d.getDate() - ((d.getDay() + 6) % 7) - 7 * back);
+  return Array.from({ length: 7 }, (_, i) => { const x = new Date(d); x.setDate(d.getDate() + i); return dayKey(+x); });
+}
+const shortDay = k => new Date(k + 'T12:00:00').toLocaleDateString([], { weekday:'short', month:'short', day:'numeric' });
+async function payBuildWeek(back) {
+  const keys = payWeekKeys(back), shifts = [], leads = [];
+  for (const k of keys) {
+    if (k > todayKey()) break;
+    const doors = doorsOnDay(k); if (!doors.length) continue;
+    let f = null; try { f = await dayFacts(k); } catch (e) {}
+    shifts.push({ day: k, first: f && f.first, last: f && f.last, workedMins: f ? f.workedMins : 0, doors: doors.length,
+      miles: f && f.hasTrack ? Math.round(f.metres / 160.934) / 10 : 0, flagged: f ? f.flagged : 0 });
+    for (const v of doors) if (v.dispo === 'appt') leads.push(v);
+  }
+  return { week: keys[0], keys, shifts, leads };
+}
+function payStatusWord(p) {
+  if (!p) return '';
+  const amt = p.review && p.review.amount ? ' ' + payMoney(p.review.amount) : '';
+  return p.status === 'paid' ? `Paid${amt}` : p.status === 'approved' ? `Approved${amt}` : p.status === 'questions' ? 'Travis has questions' : 'Sent, waiting for Travis';
+}
+async function openPay() {
+  if (!syncCode()) return flashToast('Needs a team code', 'Menu, Settings, Team sync. Pay requests go through the same mailbox.', '#f59e0b');
+  openSheet('paySheet');
+  $('payBody').innerHTML = '<div class="small">Loading…</div>';
+  try { payList = (await syncFetch('/pay')).list || []; } catch (e) { payList = []; }
+  if (syncRole() === 'boss') renderPayBoss(); else renderPayKid();
+}
+async function renderPayKid() {
+  const w = await payBuildWeek(payWeekBack);
+  const mine = payList.find(p => p.week === w.week);
+  const locked = mine && (mine.status === 'approved' || mine.status === 'paid');
+  const est = w.shifts.length * (PAY.shift + PAY.clean) + w.leads.length * PAY.lead;
+  $('payBody').innerHTML =
+    `<div class="chips"><button class="chip${payWeekBack === 0 ? ' on' : ''}" data-wk="0">This week</button><button class="chip${payWeekBack === 1 ? ' on' : ''}" data-wk="1">Last week</button></div>`
+    + `<p class="small" style="margin:8px 0">${esc(shortDay(w.keys[0]))} to ${esc(shortDay(w.keys[6]))}${mine ? ` · <b>${esc(payStatusWord(mine))}</b>` : ''}</p>`
+    + (w.shifts.length ? `<table class="payT"><tr><th>Day</th><th>Worked</th><th>Doors</th><th>Miles</th></tr>`
+        + w.shifts.map(s => `<tr><td>${esc(shortDay(s.day))}</td><td>${esc(hoursMins(s.workedMins))}</td><td>${s.doors}</td><td>${s.miles || '—'}</td></tr>`).join('') + `</table>`
+      : `<p class="small">No doors recorded this week yet.</p>`)
+    + (w.leads.length ? `<p class="small" style="margin:10px 0 4px"><b>Leads set (Stage: Appointment)</b></p>` + w.leads.map(v =>
+        `<div class="small">• ${esc(v.addr || 'No address')}${v.owner ? ' · ' + esc(v.owner) : ''}</div>`).join('') : '')
+    + `<p class="small" style="margin:10px 0">Most this week could come to <b>${payMoney(est)}</b>: ${payMoney(PAY.shift)} a completed shift, ${payMoney(PAY.clean)} for a clean shift, and ${payMoney(PAY.lead)} for each lead Travis actually runs. Travis checks every line.</p>`
+    + (mine && mine.review && mine.review.note ? `<p class="small" style="background:#1e293b;padding:8px;border-radius:8px">Travis: ${esc(mine.review.note)}</p>` : '')
+    + (locked ? '' : `<textarea id="payNote" rows="2" maxlength="500" placeholder="Anything Travis should know (optional)" style="width:100%;margin-top:6px"></textarea>`
+       + `<button class="primary" id="paySend" style="margin-top:10px"${w.shifts.length ? '' : ' disabled'}>💵 Send pay request</button>`)
+    + (payList.length ? `<p class="small" style="margin-top:14px"><b>Earlier requests</b></p>` + payList.map(p =>
+        `<div class="small">Week of ${esc(shortDay(p.week))}: ${esc(payStatusWord(p))}</div>`).join('') : '');
+  $('payBody').querySelectorAll('[data-wk]').forEach(b => b.onclick = () => { payWeekBack = +b.dataset.wk; renderPayKid(); });
+  const send = $('paySend'); if (!send) return;
+  send.onclick = async () => {
+    send.disabled = true;
+    await syncFlush();
+    const q = syncGet('syncQ') || {};
+    if (Object.keys(q.p || {}).length || Object.keys(q.g || {}).length) {
+      send.disabled = false;
+      return flashToast('Some doors have not gone yet', 'They need signal first, or Travis will not see them. Try again in a minute.', '#f59e0b');
+    }
+    try {
+      const r = await syncFetch('/pay', { method:'POST', body: JSON.stringify({ week: w.week, shifts: w.shifts, leads: w.leads.map(v => v.id), note: ($('payNote') || {}).value || '' }) });
+      flashToast('Pay request sent', `${r.shifts} shift${r.shifts === 1 ? '' : 's'} and ${r.leads} lead${r.leads === 1 ? '' : 's'} went to Travis.`, '#22c55e');
+      openPay();
+    } catch (e) { send.disabled = false; flashToast('Not sent', e.message || 'Could not reach the mailbox.', '#ef4444'); }
+  };
+}
+function renderPayBoss() {
+  const wrap = $('payBody');
+  if (!payList.length) { wrap.innerHTML = '<p class="small">No pay requests yet.</p>'; return; }
+  const order = { sent:0, questions:1, approved:2, paid:3 };
+  const list = payList.slice().sort((a, b) => (order[a.status] - order[b.status]) || (b.updated - a.updated));
+  wrap.innerHTML = list.map((p, i) => {
+    const rv = p.review || {}, b = p.body || {};
+    const sh = (b.shifts || []).map(s => {
+      const r = (rv.shifts || {})[s.day] || { done: true, clean: false };
+      const gap = s.doors > s.onRecord;
+      return `<div class="payRow"><div><b>${esc(shortDay(s.day))}</b> · ${esc(hoursMins(s.workedMins))} · ${s.doors} doors`
+        + ` <span style="color:${gap ? '#f59e0b' : '#22c55e'}">(${s.onRecord} reached the mailbox that day${s.late ? `, ${s.late} late` : ''})</span>`
+        + (s.flagged ? ` · ${s.flagged} worth a look` : '') + `</div>`
+        + `<label><input type="checkbox" data-p="${i}" data-s="${esc(s.day)}" data-k="done"${r.done ? ' checked' : ''}> Completed ${payMoney(PAY.shift)}</label> `
+        + `<label><input type="checkbox" data-p="${i}" data-s="${esc(s.day)}" data-k="clean"${r.clean ? ' checked' : ''}> Clean ${payMoney(PAY.clean)}</label></div>`;
+    }).join('');
+    const ld = (b.leads || []).map(l => {
+      const ran = (rv.leads || {})[l.id]; const def = ran === undefined ? l.cal === 'ran' : ran;
+      const cal = l.cal === 'ran' ? `<span style="color:#22c55e">Ran${l.calAt ? ', ' + esc(new Date(l.calAt).toLocaleString([], { weekday:'short', hour:'numeric', minute:'2-digit' })) : ''}</span>`
+        : l.cal === 'upcoming' ? `<span style="color:#38bdf8">Upcoming${l.calAt ? ', ' + esc(new Date(l.calAt).toLocaleString([], { weekday:'short', month:'short', day:'numeric', hour:'numeric', minute:'2-digit' })) : ''}</span>`
+        : l.cal === 'none' ? `<span style="color:#f59e0b">Not on your calendar</span>` : `<span>Calendar not checked</span>`;
+      return `<div class="payRow"><div>${esc(l.addr)}${l.owner ? ' · ' + esc(l.owner) : ''} · ${cal}</div>`
+        + `<label><input type="checkbox" data-p="${i}" data-l="${esc(l.id)}"${def ? ' checked' : ''}> Ran ${payMoney(PAY.lead)}</label></div>`;
+    }).join('');
+    return `<div class="payCard" data-card="${i}"><div style="display:flex;justify-content:space-between;gap:8px"><b>${esc(p.canvasser)}</b><span class="small">${esc(payStatusWord(p))}</span></div>`
+      + `<div class="small">Week of ${esc(shortDay(p.week))}${b.missingLeads ? ` · ${b.missingLeads} lead${b.missingLeads === 1 ? '' : 's'} never reached the mailbox` : ''}</div>`
+      + (b.note ? `<div class="small" style="margin-top:4px">“${esc(b.note)}”</div>` : '')
+      + sh + (ld ? `<div class="small" style="margin-top:8px"><b>Leads</b></div>` + ld : '')
+      + `<div style="margin-top:8px"><b>Total: <span data-total="${i}"></span></b></div>`
+      + `<input type="text" data-note="${i}" maxlength="500" placeholder="Note to ${esc(p.canvasser)} (optional)" value="${esc(rv.note || '')}" style="width:100%;margin-top:6px">`
+      + `<div class="chips" style="margin-top:6px"><button class="chip" data-act="approved" data-i="${i}">✓ Approve</button><button class="chip" data-act="paid" data-i="${i}">💵 Mark paid</button><button class="chip" data-act="questions" data-i="${i}">? Questions</button></div></div>`;
+  }).join('');
+  const totalFor = i => {
+    let t = 0;
+    wrap.querySelectorAll(`input[data-p="${i}"]`).forEach(x => { if (!x.checked) return;
+      t += x.dataset.l ? PAY.lead : x.dataset.k === 'clean' ? PAY.clean : PAY.shift; });
+    return t;
+  };
+  const paint = () => list.forEach((_, i) => { const el = wrap.querySelector(`[data-total="${i}"]`); if (el) el.textContent = payMoney(totalFor(i)); });
+  wrap.querySelectorAll('input[type=checkbox]').forEach(x => x.onchange = paint);
+  paint();
+  wrap.querySelectorAll('[data-act]').forEach(btn => btn.onclick = async () => {
+    const i = +btn.dataset.i, p = list[i], shifts = {}, leads = {};
+    wrap.querySelectorAll(`input[data-p="${i}"]`).forEach(x => {
+      if (x.dataset.l) leads[x.dataset.l] = x.checked;
+      else { shifts[x.dataset.s] = shifts[x.dataset.s] || {}; shifts[x.dataset.s][x.dataset.k] = x.checked; }
+    });
+    try {
+      await syncFetch('/pay/review', { method:'POST', body: JSON.stringify({ id: p.id, status: btn.dataset.act, shifts, leads,
+        amount: totalFor(i), note: (wrap.querySelector(`[data-note="${i}"]`) || {}).value || '' }) });
+      flashToast(btn.dataset.act === 'paid' ? 'Marked paid' : btn.dataset.act === 'approved' ? `Approved ${payMoney(totalFor(i))}` : 'Sent back with questions',
+        `${p.canvasser} sees it on their phone.`, '#22c55e');
+      openPay();
+    } catch (e) { flashToast('Not saved', e.message || 'Could not reach the mailbox.', '#ef4444'); }
+  });
+}
+$('mPay').onclick = () => openPay();
+
+/* Settings: the code goes in once per phone. */
+(() => {
+  const inp = $('mSyncCode'); if (!inp) return;
+  inp.value = syncCode() ? '••••••••' : '';
+  renderSyncInfo();
+  $('mSyncSave').onclick = async () => {
+    const code = (inp.value || '').trim();
+    if (!code || code.startsWith('•')) return flashToast('Type the team code first', 'Travis gives each phone its own.', '#f59e0b');
+    if (!navigator.onLine) return flashToast('Needs signal', 'Saving the code checks it with the mailbox. Try again with signal.', '#f59e0b');
+    let me;
+    try { me = await fetch(SYNC_URL + '/whoami', { headers:{ 'x-team-code': code }, cache:'no-store' }).then(r => r.ok ? r.json() : Promise.reject(r.status)); }
+    catch (e) { return flashToast('That code did not work', e === 401 ? 'Check it with Travis and type it again.' : 'Could not reach the mailbox. Try again in a minute.', '#ef4444'); }
+    try {
+      localStorage.setItem('syncCode', code); localStorage.setItem('syncRole', me.role); localStorage.setItem('syncName', me.name || '');
+    } catch (e) { return flashToast('Could not save the code', 'The phone is out of room.', '#ef4444'); }
+    inp.value = '••••••••';
+    if (me.role === 'canvasser') {
+      if (!myName() && me.name) { try { localStorage.setItem('myName', me.name); } catch (e) {} if ($('mMyName')) $('mMyName').value = me.name; }
+      /* First time on: every door already on the phone goes too. */
+      const q = syncGet('syncQ') || { p:{}, g:{}, a:0, n:0 };
+      q.p = q.p || {}; q.g = q.g || {};
+      let all = []; try { all = await DB.keys('visits'); } catch (e) {}
+      for (const id of all) q.p[id] = (q.n = (q.n || 0) + 1);
+      q.a = (q.n = (q.n || 0) + 1);
+      syncSet('syncQ', q);
+      flashToast(`Team sync on, ${me.name}`, 'Your doors now go to Travis by themselves when you have signal.', '#22c55e');
+      syncFlush();
+    } else {
+      flashToast('Team sync on', "The canvassers' doors will show up here by themselves.", '#22c55e');
+      syncPull(false);
+    }
+    renderSyncInfo();
+    if (!state._syncBooted) { state._syncBooted = true; syncBoot(); }
+  };
+  $('mSyncNow').onclick = () => { if (!syncCode()) return flashToast('No team code yet', 'Type it in and tap Save code.', '#f59e0b'); syncTick(false); };
+  $('mSyncOff').onclick = async () => {
+    if (!syncCode()) return;
+    const k = await askChoice('Turn off team sync?', 'Nothing is deleted. Doors simply stop going out (or coming in) until a code is saved again.',
+      [{ key:'off', label:'Turn it off' }, { key:'no', label:'Keep it on' }]);
+    if (k !== 'off') return;
+    try { ['syncCode','syncRole','syncName'].forEach(x => localStorage.removeItem(x)); } catch (e) {}
+    inp.value = ''; syncSay('Turned off.');
+  };
+})();
+
 function renderPinInfo() {
   $('pinInfo').textContent = localStorage.getItem('pin')
     ? 'A PIN is set. The app asks for it when you open it or come back to it.'
@@ -20742,6 +21168,7 @@ window.addEventListener('resize', drawMini);
   await loadStored();
   if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(()=>{});
   drawMini();
+  state._syncBooted = true; syncBoot();
 })();
 </script>
 </body>
