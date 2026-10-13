@@ -1218,7 +1218,7 @@ select{min-height:44px}
        words, and is tapped where he is looking. One tap cycles off → big map → both maps,
        which is his own ruling narrowed: the app cannot carry a separate setting per map,
        so the small map follows the big one. -->
-  <div id="stormBar" class="off">
+  <div id="stormBar" class="off" style="display:none">
     <button class="mbtn" id="stormCycle">⛈ Storms off</button>
     <!-- WHICH LIBRARY. A second chip rather than more states on the first one, because the
          two axes are orthogonal — where it is shown, and which instrument drew it — and one
@@ -1337,6 +1337,8 @@ select{min-height:44px}
       <div class="inlineBlk">
         <label class="f">Stage and follow-up<span class="cnt" id="dStageCount"></span></label>
         <div class="chips" id="dDispo"></div>
+        <!-- v48: Travis's live booking calendar, for a clear yes at the door. -->
+        <button class="ghost" id="dBook" style="margin-top:8px">📅 Book on Travis's calendar</button>
         <div class="subLab">Come back</div>
         <div class="chips" id="dFollowChips"></div>
         <!-- The real date control lives off-screen. On the page it rendered as a
@@ -1415,9 +1417,28 @@ select{min-height:44px}
       <div class="statsbox" id="sesStats"></div>
       <div class="small hide" id="sesStreets" style="margin-top:10px;color:var(--dim)"></div>
       <div class="small" id="sesMeta" style="margin-top:10px"></div>
-      <button class="primary" id="sesExport">⬇︎ Save this session's list</button>
+      <button class="primary" id="sesSendDay">📤 Send my day</button>
+      <div class="small" style="margin-top:6px;color:var(--dim)">Sends your day log and a full backup together. Pick Dustin in the share sheet.</div>
+      <button class="ghost" id="sesExport">⬇︎ Save this session's list</button>
       <button class="ghost" id="sesEnd">■ End session and stop tracking</button>
       <button class="ghost" id="sesKeep">Keep canvassing</button>
+    </div>
+  </div>
+</div>
+
+<!-- v48: Travis's live booking calendar. The homeowner picks the time and types their own
+     name and phone, the same rule the canvasser program teaches. Loaded fresh on every open
+     so the open times are always today's. -->
+<div id="bookSheet" class="sheet hide">
+  <div class="sheetBody">
+    <div class="sheetHead"><h2>Travis's open times</h2><button class="x" data-close="bookSheet">Close</button></div>
+    <div class="sheetScroll">
+      <div class="small" id="bookNote">Hand the phone over. They pick a time and type their own name and phone.</div>
+      <div id="bookWrap" style="height:68vh;min-height:420px;border-radius:12px;overflow:hidden;background:#fff;margin-top:10px"></div>
+      <div id="bookActs">
+        <button class="primary" id="bookDone" style="margin-top:12px">✓ They booked a time</button>
+        <button class="ghost" id="bookNo">They didn't book</button>
+      </div>
     </div>
   </div>
 </div>
@@ -1726,6 +1747,7 @@ select{min-height:44px}
           <button class="ghost" id="mScout"><span class="emo">🔭</span> <span class="mtxt" data-lbl="lbl.menu.mScout">Scout</span></button>
           <button class="ghost" id="mMarks"><span class="emo">🔎</span> <span class="mtxt" data-lbl="lbl.menu.mMarks">Scouted houses</span></button>
           <button class="ghost" id="mAppt"><span class="emo">📋</span> <span class="mtxt" data-lbl="lbl.menu.mAppt">Schedule and appointments</span></button>
+          <button class="ghost" id="mBookTimes"><span class="emo">📅</span> <span class="mtxt" data-lbl="lbl.menu.mBookTimes">Travis's open times</span></button>
           <!-- The truck block moved to Settings at his word. It was four rows and a
                readout sitting between the last thing he taps out here and "How you're
                doing", which is where History lives — and he does not need it: he drops
@@ -1863,8 +1885,13 @@ select{min-height:44px}
           <div class="small" id="diag" style="margin-top:10px"></div>
           <div class="small" id="conn" style="margin-top:8px"></div>
 
+          <label class="f">Your name</label>
+          <div class="small why" style="margin-bottom:6px">It goes at the top of your day log, so whoever reads it knows whose day it was.</div>
+          <input id="mMyName" type="text" autocomplete="off" maxlength="40" placeholder="First name">
+
           <!-- One row, not a block. Without a key nothing about the app changes: no button,
                no prompt, no nag. That is the whole degradation strategy. -->
+
           <label class="f">Measure roofs from the air</label>
           <div class="small why" style="margin-bottom:6px">Paste a Google Solar key here and a <b>Measure the roof</b> button appears on every house you open. It measures the roof off aerial photography — size and slope — in about a second.<br><b>What it costs you:</b> nothing at your volume. The first 10,000 lookups a month are free and twenty a day is about 440. Google still needs a card on the account before the free allowance works, so set a daily cap of 200 in the console first and a runaway can never cost more than pocket change.<br><b>Two things to know.</b> Around Columbus the photography is 10&nbsp;cm and the numbers have been checked against your own takeoffs to about 4%. Outside the metro — Marysville, London, Newark, Lancaster, Circleville and everywhere rural — it drops to 25&nbsp;cm photography, which has never been checked against a real takeoff. The panel tells you which one you got, every time.<br><b>The key stays on this phone</b> and is deliberately left out of your backup file, the same as your PIN — a live key does not belong in something you email to yourself. If you reinstall the app, paste it again.</div>
           <input id="mSolarKey" type="text" inputmode="text" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="Paste key, or leave blank">
@@ -2024,6 +2051,13 @@ const APP_NAME = 'CanvassEaze';
    the big button — those are the four CSS variables at the top of the stylesheet, a
    darker set chosen to carry white text. The two have always differed and neither is
    derived from the other. */
+/* v48. STORMS_ON: the storm overlay and the storm panel are switched off at Travis's word
+   (2026-10-13: "the storm map feature on the big map is just kinda messy"). The code stays;
+   flip this to true to bring every piece of it back exactly as v47 had it.
+   BOOKING_URL: Travis's live booking calendar. One line to change if the calendar moves. */
+const STORMS_ON = false;
+const BOOKING_URL = 'https://api.leadconnectorhq.com/widget/booking/UdfUdXLLXzEFo2dw577S';
+
 const STATUS = {
   talked:   { label:'Talked',           color:'#22c55e', short:'Talked' },
   material: { label:'Left Material',    color:'#3b82f6', short:'Material' },
@@ -2281,6 +2315,7 @@ const LABELS = {
   'lbl.menu.mScout':       { def:'Scout',                                              group:'menu', cap:LBL_CAP.scout, note:'Menu button, the pill on the main screen, and the screen itself. Short — it shares the top strip with the menu button.' },
   'lbl.menu.mMarks':       { def:'Scouted houses',                                     group:'menu', cap:LBL_CAP.menu, note:'Menu button, and the title of the screen it opens.' },
   'lbl.menu.mAppt':        { def:'Schedule and appointments',                          group:'menu', cap:LBL_CAP.menu, note:'Menu button.' },
+  'lbl.menu.mBookTimes':   { def:"Travis's open times",                                group:'menu', cap:LBL_CAP.menu, note:'Menu button.' },
   'lbl.menu.mSession':     { def:"How today's going — doors, miles, hours",        group:'menu', cap:LBL_CAP.menu, note:'Menu button.' },
   'lbl.menu.mDaysLog':     { def:'History — every day you were out, door by door', group:'menu', cap:LBL_CAP.menu, note:'Menu button.' },
   'lbl.menu.mEndDay':      { def:'End the day — stop tracking',                    group:'menu', cap:LBL_CAP.menu, note:'Menu button.' },
@@ -6116,7 +6151,8 @@ function pockShowOnMap() {
 function pockSeatBar() {
   const bar = $('pockBar'), sb = $('stormBar');
   if (!bar) return;
-  if (!sb) { bar.style.top = ''; return; }
+  /* v48: with storms off the pockets bar takes the storm bar's old seat under the search box. */
+  if (!sb || !STORMS_ON) { bar.style.top = 'calc(var(--safe-t) + 104px)'; return; }
   const r = sb.getBoundingClientRect();
   /* A HIDDEN MAP MEASURES ZERO, AND ZERO IS NOT AN ANSWER. This used to clear the seat when
      the storm bar had no height, which happens on every position fix while the map screen is
@@ -11593,6 +11629,7 @@ function stormSrcApply() {
 }
 
 function stormShowLoad() {
+  if (!STORMS_ON) { stormState.show = 0; return 0; }
   const raw = Number(localStorage.getItem('stormShow'));
   stormState.show = (raw === 1 || raw === 2) ? raw : 0;
   return stormState.show;
@@ -11600,6 +11637,8 @@ function stormShowLoad() {
 
 function syncStormBar() {
   const bar = $('stormBar'); if (!bar) return;
+  if (!STORMS_ON) { bar.style.display = 'none'; pockSeatBar(); return; }
+  bar.style.display = '';
   bar.classList.toggle('off', !stormState.show);
   const btn = $('stormCycle');
   if (btn) btn.textContent = STORM_SHOW_WORDS[stormState.show] || STORM_SHOW_WORDS[0];
@@ -12042,6 +12081,7 @@ let stormTickForced = false;
 
    Returns false when another Done has overtaken this one while the map was opening. */
 async function stormShowResult(seq, fromPanel) {
+  if (!STORMS_ON) return false;
   if (!stormState.show) { stormState.show = 1; stormTickForced = true; }
   if (fromPanel) {
     closeSheet('detailSheet');
@@ -13525,7 +13565,7 @@ document.querySelectorAll('.dsecHead[data-msec]').forEach(b => {
 /* ---- what version is actually on the phone ----
    Matches the service worker cache name, so "did the update land" is answerable by
    looking rather than guessing. */
-const BUILD_VERSION = 'v47';
+const BUILD_VERSION = 'v48';
 const BUILD_DATE = '7 August 2026';
 function renderVersionStamp() {
   const el = $('versionStamp'); if (!el) return;
@@ -14693,6 +14733,7 @@ const STORM_MESH_PREFACE = "Radar also draws a second layer that covers much les
       count built from all of them, and only one of those is honest. */
 function renderStormPanel(v) {
   const el = $('dStorm'); if (!el) return;
+  if (!STORMS_ON) { el.classList.add('hide'); el.innerHTML = ''; return; }
   if (!v || v.lat == null || v.lon == null) {
     el.classList.add('hide'); el.innerHTML = ''; return;
   }
@@ -15156,6 +15197,9 @@ $('truckPill').onclick = async () => {
   const end = e => {
     clearTimeout(timer); timer = null;
     if (held) { e.preventDefault(); e.stopPropagation(); held = false; return; }
+    /* v48: the big map always opens following him. Every other way in that jumps the
+       map somewhere on purpose turns follow off itself, after openMap. */
+    mapOpts.follow = true; syncMapBtns();
     openMap();
   };
   el.addEventListener('touchstart', start, {passive:true});
@@ -15324,6 +15368,97 @@ $('mEndDay').onclick = async () => {
   flashToast('Day ended', 'Tracking stopped and the GPS is off. Take a full backup below.', '#64748b');
 };
 $('sesExport').onclick = () => { xOpts.range = 'today'; openExport(); closeSheet('sessionSheet'); };
+
+/* ---------------- v48: book on Travis's calendar ---------------- */
+let bookFor = null;   // the door record the booking is for, or null when just looking
+function openBooking(forDoor) {
+  bookFor = forDoor || null;
+  $('bookActs').classList.toggle('hide', !bookFor);
+  const wrap = $('bookWrap');
+  if (!navigator.onLine) {
+    wrap.innerHTML = '<div class="small" style="padding:16px;color:#334155">No signal right now, so the calendar cannot load. '
+      + 'Get their first name and phone for a callback instead, and set Stage to Callback.</div>';
+  } else {
+    // a fresh frame every time, so the times shown are the times open right now
+    wrap.innerHTML = '';
+    const f = document.createElement('iframe');
+    f.src = BOOKING_URL; f.title = "Travis's open times";
+    f.style.cssText = 'width:100%;height:100%;border:0;display:block;background:#fff';
+    wrap.appendChild(f);
+  }
+  openSheet('bookSheet');
+}
+$('mBookTimes').onclick = () => openBooking(null);
+$('dBook').onclick = () => { if (!editing) return; pullDetail(); openBooking(editing); };
+$('bookNo').onclick = () => { bookFor = null; closeSheet('bookSheet'); };
+$('bookDone').onclick = async () => {
+  const v = bookFor; bookFor = null;
+  closeSheet('bookSheet');
+  if (!v || v !== editing) return;
+  if (!editing.status) editing.status = 'talked';
+  if ((editing.dispo || 'new') !== 'appt') {
+    editing.dispo = 'appt';
+    const stageWord = (LABELS['lbl.stage.appt'] || {}).def || 'appt';
+    editing.log = [...logOf(editing), { id:newId(), ts:Date.now(), kind:'note', auto:true, text:`Stage set to ${stageWord}.` }];
+  }
+  editing.log = [...logOf(editing), { id:newId(), ts:Date.now(), kind:'note', auto:true, text:"Booked on Travis's calendar." }];
+  await saveDetail();
+};
+
+/* ---------------- v48: your name, and Send my day ---------------- */
+const myName = () => { try { return (localStorage.getItem('myName') || '').trim(); } catch (e) { return ''; } };
+(() => {
+  const el = $('mMyName'); if (!el) return;
+  el.value = myName();
+  el.onchange = () => {
+    const n = el.value.trim().slice(0, 40);
+    try { if (n) localStorage.setItem('myName', n); else localStorage.removeItem('myName'); } catch (e) {}
+    el.value = n;
+    flashToast(n ? 'Name saved' : 'Name cleared', n ? 'It goes on your day log' : '', '#22c55e');
+  };
+})();
+const nameSlug = n => (n || '').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+$('sesSendDay').onclick = async () => {
+  let name = myName();
+  if (!name) {
+    const n = (window.prompt('Your first name, for the top of your day log') || '').trim().slice(0, 40);
+    if (!n) return flashToast('Add your name first', 'Menu, Settings, Your name. Then tap Send my day again.', '#f59e0b');
+    try { localStorage.setItem('myName', n); } catch (e) {}
+    name = n; if ($('mMyName')) $('mMyName').value = n;
+  }
+  if (visitsReadFailed) {
+    return flashToast('Not sending that', 'The phone will not hand back your door records. Close the app right down and open it again.', '#ef4444');
+  }
+  const key = todayKey(), slug = nameSlug(name) || 'canvasser';
+  let html, bk;
+  try { html = await dayReportHtml(key); }
+  catch (e) { return flashToast('Could not build your day log', 'Something in today would not read back. Try again in a moment.', '#ef4444'); }
+  try { bk = await buildBackup(); } catch (e) { return backupFailed(e); }
+  const files = [
+    new File([html], `day-log-${slug}-${key}.html`, { type:'text/html' }),
+    new File([bk.text], `${slug}-${bk.name}`, { type:'application/json' }),
+  ];
+  const canFiles = !!(navigator.canShare && navigator.share && navigator.canShare({ files }));
+  for (let attempt = 0; canFiles && attempt < 2; attempt++) {
+    try {
+      await navigator.share({ files, title: `${name} - day log ${key}` });
+      markBackedUp();
+      return flashToast('Sent', 'Your day log and backup are on their way.', '#22c55e');
+    } catch (e) {
+      if (e && e.name === 'AbortError') return flashToast('Nothing was sent', 'You closed the share sheet.', '#64748b');
+      /* Building the files can take long enough that the phone forgets the tap. One more
+         tap on a real button gives it a fresh one. */
+      if (!(e && e.name === 'NotAllowedError') || attempt) break;
+      const k = await askChoice('Ready to send', 'Your day log and backup are ready.',
+        [{ key:'send', label:'📤 Send now' }, { key:'no', label:'Not now' }]);
+      if (k !== 'send') return flashToast('Nothing was sent', 'Tap Send my day when you are ready.', '#64748b');
+    }
+  }
+  download(files[0].name, html, 'text/html');
+  download(files[1].name, bk.text, 'application/json');
+  markBackedUp();
+  flashToast('Downloaded instead', 'This phone would not open the share sheet. Both files are in Downloads.', '#38bdf8');
+};
 function renderPinInfo() {
   $('pinInfo').textContent = localStorage.getItem('pin')
     ? 'A PIN is set. The app asks for it when you open it or come back to it.'
@@ -15684,6 +15819,7 @@ $('mapSat').onclick = () => { mapOpts.sat = !mapOpts.sat;
    some later save, because the state this control holds IS the whole setting — there is
    nowhere else it could be recovered from. */
 $('stormCycle').onclick = async () => {
+  if (!STORMS_ON) return;
   stormState.show = (stormState.show + 1) % 3;
   localStorage.setItem('stormShow', String(stormState.show));
   buzz(10);
@@ -19936,9 +20072,20 @@ async function dayReportHtml(key) {
   const bookLine = Object.keys(byBook).map(l => `${esc((LINES[l] || LINES.roof).label)}: ${byBook[l]}`).join(' &middot; ');
   const counts = Object.keys(STATUS).filter(k => f.byStatus[k])
     .map(k => `${esc((STATUS[k]||{}).label || k)}: ${f.byStatus[k]}`).join(' &middot; ');
+  /* v48: whose day it is, and what they set. Read from fields the records already carry
+     (dispo, followAt, owner, phone, log). Nothing new is stored on a door. */
+  const who = myName();
+  const setToday = f.doors.map(c => c.v).filter(v => v.dispo === 'appt' || v.dispo === 'callback');
+  const setRow = v => {
+    const booked = logOf(v).some(e => e && e.kind === 'note' && /Booked on Travis's calendar/.test(e.text || ''));
+    const when = v.dispo === 'callback' && v.followAt ? 'call back ' + new Date(v.followAt).toLocaleString([], { weekday:'short', month:'short', day:'numeric', hour:'numeric', minute:'2-digit' }) : '';
+    return `<tr><td>${esc(dlClock(v.ts))}</td><td>${esc(v.addr || '')}</td><td>${esc(v.owner || '')}</td>`
+      + `<td>${esc(v.phone || '')}</td><td>${esc((DISPO[v.dispo] || {}).label || v.dispo)}${booked ? ' (booked on calendar)' : ''}</td>`
+      + `<td>${esc(when)}</td></tr>`;
+  };
   return `<!doctype html><html><head><meta charset="utf-8">`
    + `<meta name="viewport" content="width=device-width,initial-scale=1">`
-   + `<title>${esc(dayLabelLong(key))} — door log</title><style>`
+   + `<title>${who ? esc(who) + ' · ' : ''}${esc(dayLabelLong(key))} — door log</title><style>`
    + `body{font:14px/1.5 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;margin:0;padding:18px;color:#111}`
    + `h1{font-size:20px;margin:0 0 2px}h2{font-size:15px;margin:18px 0 6px}`
    + `.sub{color:#555;margin:0 0 14px}`
@@ -19951,7 +20098,7 @@ async function dayReportHtml(key) {
    + `.note{margin-top:18px;font-size:12px;color:#444;border-top:1px solid #ddd;padding-top:10px}`
    + `@media print{.tile{border-color:#999}}`
    + `</style></head><body>`
-   + `<h1>${esc(dayLabelLong(key))}</h1>`
+   + `<h1>${who ? esc(who) + ' &middot; ' : ''}${esc(dayLabelLong(key))}</h1>`
    + `<p class="sub">${f.first != null ? 'Out from ' + esc(dlClock(f.first)) + ' to ' + esc(dlClock(f.last)) : 'Nothing recorded'}`
    + ` &middot; ${esc(new Date(key + 'T12:00:00').toLocaleDateString())}</p>`
    + `<div class="tiles"><div class="tile"><b>${f.count}</b><span>doors</span></div>`
@@ -19967,6 +20114,11 @@ async function dayReportHtml(key) {
        : '')
    + (counts ? `<p class="sub">${counts}</p>` : '')
    + (bookLine ? `<p class="sub">${bookLine}</p>` : '')
+   + (setToday.length
+       ? `<h2>Appointments and callbacks set today: ${setToday.length}</h2>`
+         + `<table><tr><th>Time</th><th>Address</th><th>Owner</th><th>Phone</th><th>Stage</th><th>Follow up</th></tr>`
+         + setToday.map(setRow).join('') + `</table>`
+       : '')
    /* On the report as well as on the screen. This is the file he hands to someone who is
       paying for the hours, so a day that closed itself has to say so IN the document —
       otherwise the short day looks like a short day and nothing explains it. */
