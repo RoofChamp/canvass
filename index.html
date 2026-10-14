@@ -1341,6 +1341,7 @@ select{min-height:44px}
         <div class="chips" id="dDispo"></div>
         <!-- v48: Travis's live booking calendar, for a clear yes at the door. -->
         <button class="ghost" id="dBook" style="margin-top:8px">📅 Book on Travis's calendar</button>
+        <button class="ghost" id="dTalk" style="margin-top:6px">💬 What do I say? (Talk Paths)</button>
         <div class="subLab">Come back</div>
         <div class="chips" id="dFollowChips"></div>
         <!-- The real date control lives off-screen. On the page it rendered as a
@@ -1738,6 +1739,16 @@ select{min-height:44px}
     <div class="sheetHead"><h2>Menu</h2><button class="x" data-close="menuSheet">Close</button></div>
     <div class="sheetScroll">
       <div id="backupNag" class="hide"></div>
+      <!-- v49: Team sync sits at the very top of the Menu. In Settings it was folded away
+           under a closed section, past the PIN and the county notes, and the first person
+           to look for it could not find it. -->
+      <div id="syncCard" style="border:1px solid #334155;border-radius:12px;padding:10px 12px;margin:2px 0 12px">
+        <div style="font-weight:800;font-size:15px">🔄 Team sync</div>
+        <div class="small" id="syncInfo" style="margin-top:4px"></div>
+        <input id="mSyncCode" type="text" autocomplete="off" autocapitalize="characters" spellcheck="false" maxlength="24" placeholder="Type your team code" style="margin-top:8px">
+        <div class="chips" style="margin-top:6px"><button class="chip" id="mSyncSave">Save code</button><button class="chip" id="mSyncNow">Sync now</button><button class="chip" id="mSyncOff">Turn off</button></div>
+        <div class="small why" style="margin-top:6px">Each phone types its own code once. Doors then go to Travis by themselves whenever there is signal, and wait on the phone when there is not. The code stays on this phone and is not in your backup.</div>
+      </div>
 
       <!-- The words of a section heading sit in their own span so a rename can reach
            them without touching the caret, which setMSection rewrites on every open and
@@ -1749,6 +1760,7 @@ select{min-height:44px}
                retype the emoji on a phone keyboard every time. The single space between
                the two spans is the same one space that was in the text before, so
                nothing moves on screen. -->
+          <button class="ghost" id="mTalk"><span class="emo">💬</span> <span class="mtxt" data-lbl="lbl.menu.mTalk">Talk Paths: what to say at the door</span></button>
           <button class="ghost" id="mCrm"><span class="emo">👥</span> <span class="mtxt" data-lbl="lbl.menu.mCrm">Customers and follow-ups</span></button>
           <button class="ghost" id="mAreas"><span class="emo">📍</span> <span class="mtxt" data-lbl="lbl.menu.mAreas">By area — the patches you named, round by round</span></button>
           <button class="ghost" id="mRoute"><span class="emo">🔁</span> <span class="mtxt" data-lbl="lbl.menu.mRoute">Doors to try again</span></button>
@@ -1782,7 +1794,9 @@ select{min-height:44px}
                is finished, above the backup he should take next. -->
           <button class="ghost" id="mEndDay" style="margin-top:0"><span class="emo">■</span> <span class="mtxt" data-lbl="lbl.menu.mEndDay">End the day — stop tracking</span></button>
           <div class="small" id="endDayNote" style="margin:5px 0 16px"></div>
-          <button class="primary" id="mBackupShare" style="margin-top:0"><span class="emo">📤</span> <span class="mtxt" data-lbl="lbl.menu.mBackupShare">Full backup — send it somewhere safe</span></button>
+          <button class="primary" id="mSendDay" style="margin-top:0"><span class="emo">📤</span> <span class="mtxt" data-lbl="lbl.menu.mSendDay">Send my day</span></button>
+          <div class="small why" style="margin:5px 0 16px">Your day log and a full backup, together. Pick Dustin in the share sheet. Only Dustin, never a group chat.</div>
+          <button class="ghost" id="mBackupShare" style="margin-top:0"><span class="emo">📤</span> <span class="mtxt" data-lbl="lbl.menu.mBackupShare">Full backup — send it somewhere safe</span></button>
           <button class="ghost" id="mBackup"><span class="emo">💾</span> <span class="mtxt" data-lbl="lbl.menu.mBackup">Full backup — just download it</span></button>
           <div class="small why" style="margin-top:5px">Every door, note, tag, stage, follow-up, appointment and walking track, in one file. This is the only thing that can rebuild the app if the phone is lost or the icon is deleted. Get it off the phone.</div>
           <button class="ghost" id="mRestore" style="margin-top:12px"><span class="emo">⤴︎</span> <span class="mtxt" data-lbl="lbl.menu.mRestore">Restore from a full backup</span></button>
@@ -1902,11 +1916,6 @@ select{min-height:44px}
           <div class="small why" style="margin-bottom:6px">It goes at the top of your day log, so whoever reads it knows whose day it was.</div>
           <input id="mMyName" type="text" autocomplete="off" maxlength="40" placeholder="First name">
 
-          <label class="f">Team sync</label>
-          <div class="small why" style="margin-bottom:6px">Type the team code Travis gave this phone. Doors then go to Travis by themselves whenever there is signal, and wait on the phone when there is not. The code stays on this phone and is not in your backup.</div>
-          <input id="mSyncCode" type="text" autocomplete="off" autocapitalize="characters" spellcheck="false" maxlength="24" placeholder="Team code">
-          <div class="chips" style="margin-top:6px"><button class="chip" id="mSyncSave">Save code</button><button class="chip" id="mSyncNow">Sync now</button><button class="chip" id="mSyncOff">Turn off</button></div>
-          <div class="small" id="syncInfo" style="margin-top:6px"></div>
 
           <!-- One row, not a block. Without a key nothing about the app changes: no button,
                no prompt, no nag. That is the whole degradation strategy. -->
@@ -2341,6 +2350,8 @@ const LABELS = {
   'lbl.menu.mBackupShare': { def:'Full backup — send it somewhere safe',           group:'menu', cap:LBL_CAP.menu, note:'Menu button.' },
   'lbl.menu.mBackup':      { def:'Full backup — just download it',                 group:'menu', cap:LBL_CAP.menu, note:'Menu button.' },
   'lbl.menu.mRestore':     { def:'Restore from a full backup',                          group:'menu', cap:LBL_CAP.menu, note:'Menu button.' },
+  'lbl.menu.mTalk':        { def:'Talk Paths: what to say at the door',                 group:'menu', cap:LBL_CAP.menu, note:'Menu button.' },
+  'lbl.menu.mSendDay':     { def:'Send my day',                                         group:'menu', cap:LBL_CAP.menu, note:'Menu button.' },
   'lbl.menu.mPay':         { def:'Pay requests',                                        group:'menu', cap:LBL_CAP.menu, note:'Menu button.' },
   'lbl.menu.mAddTeam':     { def:"Add a canvasser's doors",                             group:'menu', cap:LBL_CAP.menu, note:'Menu button.' },
   'lbl.menu.mExport':      { def:'Export…',                                        group:'menu', cap:LBL_CAP.menu, note:'Menu button.' },
@@ -13589,7 +13600,7 @@ document.querySelectorAll('.dsecHead[data-msec]').forEach(b => {
 /* ---- what version is actually on the phone ----
    Matches the service worker cache name, so "did the update land" is answerable by
    looking rather than guessing. */
-const BUILD_VERSION = 'v48';
+const BUILD_VERSION = 'v49';
 const BUILD_DATE = '7 August 2026';
 function renderVersionStamp() {
   const el = $('versionStamp'); if (!el) return;
@@ -15513,7 +15524,14 @@ function syncSay(text) { syncSet('syncStatus', { text, ts: Date.now() }); render
 function renderSyncInfo() {
   const el = $('syncInfo'); if (!el) return;
   const code = syncCode(), role = syncRole(), st = syncGet('syncStatus');
-  if (!code) { el.textContent = 'Off. Doors stay on this phone until you send them.'; return; }
+  /* v49: once a code is saved the box and Save button step aside, so the card is one
+     line of status. Turn off brings them back. */
+  const inp = $('mSyncCode'), sv = $('mSyncSave');
+  if (inp) inp.style.display = code ? 'none' : '';
+  if (sv) sv.style.display = code ? 'none' : '';
+  const off = $('mSyncOff'); if (off) off.style.display = code ? '' : 'none';
+  const now = $('mSyncNow'); if (now) now.style.display = code ? '' : 'none';
+  if (!code) { el.textContent = 'Off. Type the code Travis gave this phone, then tap Save code.'; return; }
   const q = syncGet('syncQ') || {};
   const waiting = Object.keys(q.p || {}).length + Object.keys(q.g || {}).length;
   const who = role === 'boss' ? `On as ${syncName() || 'Travis'}: picking up the canvassers' doors.`
@@ -15846,6 +15864,19 @@ function renderPayBoss() {
   });
 }
 $('mPay').onclick = () => openPay();
+
+/* ---------------- v49: Talk Paths, one tap away ----------------
+   The training site's At the door search, opened in its own window so CanvassEaze and
+   the session keep running underneath. Needs signal the first time; the training site
+   keeps itself for offline after that. */
+const TALK_URL = 'https://roof-champ-canvas-initiative.netlify.app/#door';
+function openTalkPaths() {
+  const w = window.open(TALK_URL, '_blank', 'noopener');
+  if (!w && !navigator.onLine) flashToast('Needs signal', 'Talk Paths open from the training site. Your Field Card has the Core 10.', '#f59e0b');
+}
+$('mTalk').onclick = openTalkPaths;
+$('dTalk').onclick = openTalkPaths;
+$('mSendDay').onclick = () => $('sesSendDay').onclick();
 
 /* Settings: the code goes in once per phone. */
 (() => {
