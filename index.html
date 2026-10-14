@@ -785,6 +785,11 @@ select{min-height:44px}
 /* ---------- address search on the big map ---------- */
 #eraseBar.picking{background:rgba(22,163,74,.95);border-color:rgba(34,197,94,.65)}
 .payT{border-collapse:collapse;width:100%;font-size:13px}.payT th,.payT td{border-bottom:1px solid #334155;padding:5px 3px;text-align:left}.payCard{border:1px solid #334155;border-radius:12px;padding:10px;margin:10px 0}.payRow{font-size:13px;padding:6px 0;border-bottom:1px solid #1e293b}.payRow label{display:inline-flex;align-items:center;gap:6px;margin:6px 14px 0 0;white-space:nowrap}.payRow input[type=checkbox]{width:20px;height:20px;margin:0;flex:none}
+#detailSheet.kid .kidHide{display:none!important}
+#detailSheet:not(.kid) .kidOnly{display:none!important}
+#dKidNext .chip{flex:1;font-size:14px}
+#dKidNext .chip.on.cb{background:#f59e0b2e;border-color:#f59e0b;color:#fbbf24}
+#dKidNext .chip.on.no{background:#64748b2e;border-color:#94a3b8;color:#cbd5e1}
 .bkDays{display:flex;gap:8px;overflow-x:auto;padding:10px 0 4px;-webkit-overflow-scrolling:touch}
 .bkDay{flex:0 0 auto;min-width:64px;min-height:52px;border-radius:12px;background:var(--card2);border:1px solid var(--line);color:var(--txt);font-weight:800;font-size:13px;line-height:1.2;padding:6px 10px}
 .bkDay small{display:block;font-weight:600;color:var(--dim);font-size:11px}
@@ -1348,33 +1353,39 @@ select{min-height:44px}
       <!-- Quick tags and Stage came out of their accordions. They are the two he reaches
            for on nearly every door, and a chevron between him and them was a tap that
            bought nothing. A top border keeps them reading as separate blocks. -->
-      <div class="inlineBlk">
+      <div class="inlineBlk kidHide">
         <label class="f">Quick tags<span class="cnt" id="dTagCount"></span></label>
         <div class="chips" id="dTags"></div>
       </div>
       <div class="inlineBlk">
-        <label class="f">Stage and follow-up<span class="cnt" id="dStageCount"></span></label>
-        <div class="chips" id="dDispo"></div>
+        <label class="f kidHide">Stage and follow-up<span class="cnt" id="dStageCount"></span></label>
+        <label class="f kidOnly">Next step</label>
+        <div class="chips kidHide" id="dDispo"></div>
         <!-- v48: Travis's live booking calendar, for a clear yes at the door. -->
         <button class="ghost" id="dBook" style="margin-top:8px">📅 Book on Travis's calendar</button>
+        <!-- v52: the canvasser's whole stage choice. Book above, or one of these two. -->
+        <div class="chips kidOnly" id="dKidNext" style="margin-top:8px">
+          <button class="chip" data-d="callback">📞 Callback</button>
+          <button class="chip" data-d="cold">👎 Not interested</button>
+        </div>
         <button class="ghost hide" id="dBuild" style="margin-top:6px">🏗️ Mark a build here</button>
         <button class="ghost" id="dTalk" style="margin-top:6px">💬 What do I say? (Talk Paths)</button>
-        <div class="subLab">Come back</div>
-        <div class="chips" id="dFollowChips"></div>
+        <div class="subLab kidHide">Come back</div>
+        <div class="chips kidHide" id="dFollowChips"></div>
         <!-- The real date control lives off-screen. On the page it rendered as a
              near-invisible box that overlapped the chips above it. The pill opens it. -->
         <input id="dFollow" type="datetime-local" class="offscreenDate">
         <!-- meaningless without a date, and a whole row back when it is not in use -->
-        <button class="ghost hide" id="dIcs" style="margin-top:8px">📅 Add to phone calendar</button>
+        <button class="ghost hide kidHide" id="dIcs" style="margin-top:8px">📅 Add to phone calendar</button>
       </div>
 
       <div class="dsec"><button class="dsecHead" data-sec="who"><i>▸</i>Who lives here</button>
         <div class="dsecBody hide" id="dsecWho"></div></div>
-      <div class="dsec"><button class="dsecHead" data-sec="prop"><i>▸</i>What the auditor holds</button>
+      <div class="dsec kidHide"><button class="dsecHead" data-sec="prop"><i>▸</i>What the auditor holds</button>
         <div class="dsecBody hide" id="dsecProp"><div id="dProp" class="hide"></div><div id="dRoof" class="hide"></div><div id="dStorm" class="hide"></div></div></div>
       <div class="dsec"><button class="dsecHead" data-sec="log"><i>▸</i>Everything logged here<span class="cnt" id="dLogCount"></span></button>
         <div class="dsecBody hide" id="dsecLog"><div id="dLog"></div></div></div>
-      <div class="dsec"><button class="dsecHead" data-sec="danger"><i>▸</i>Clear or delete this house</button>
+      <div class="dsec kidHide"><button class="dsecHead" data-sec="danger"><i>▸</i>Clear or delete this house</button>
         <div class="dsecBody hide" id="dsecDanger">
           <button class="ghost" id="dClear">Clear notes, tags and contact</button>
           <button class="ghost danger" id="dDelete">Delete everything for this house</button>
@@ -1477,6 +1488,8 @@ select{min-height:44px}
           <input id="bkPhone" type="tel" inputmode="tel" autocomplete="off" placeholder="(614) 555-0100" maxlength="20">
           <label class="f">Email <span class="bkOpt">(optional)</span></label>
           <input id="bkEmail" type="email" inputmode="email" autocomplete="off" autocapitalize="off" maxlength="80">
+          <label class="f">Notes for Travis <span class="bkOpt">(optional)</span></label>
+          <textarea id="bkNote" rows="3" maxlength="600" placeholder="What they told you: leak over the garage, storm in May, home after 5, dog in the yard…"></textarea>
           <div class="small hide" id="bookErr" style="color:#fca5a5;margin-top:10px;font-weight:700"></div>
           <button class="primary" id="bookGo">Book it</button>
         </div>
@@ -13662,7 +13675,7 @@ document.querySelectorAll('.dsecHead[data-msec]').forEach(b => {
 /* ---- what version is actually on the phone ----
    Matches the service worker cache name, so "did the update land" is answerable by
    looking rather than guessing. */
-const BUILD_VERSION = 'v51';
+const BUILD_VERSION = 'v52';
 const BUILD_DATE = '7 August 2026';
 function renderVersionStamp() {
   const el = $('versionStamp'); if (!el) return;
@@ -15473,7 +15486,7 @@ $('sesExport').onclick = () => { xOpts.range = 'today'; openExport(); closeSheet
    the mailbox cannot (no team code, booking not switched on, an error), the GHL booking page
    comes up exactly as before, with They booked a time. */
 let bookFor = null;   // the door record the booking is for, or null when just looking
-let bookDays = {}, bookDay = null, bookSlot = null, bookBusy = false;
+let bookDays = {}, bookDay = null, bookSlot = null, bookBusy = false, bookNotePre = '';
 const BOOK_NEAR_MI = 6;
 const etKeyOf = ms => new Intl.DateTimeFormat('en-CA', { timeZone: 'America/New_York', year: 'numeric', month: '2-digit', day: '2-digit' }).format(new Date(ms));
 const slotLabel = iso => new Date(iso).toLocaleTimeString([], { hour:'numeric', minute:'2-digit' });
@@ -15525,14 +15538,21 @@ function slotNear(iso, near) {
     && ((t + D <= s.start && s.start - (t + D) <= W) || (t >= s.end && t - s.end <= W)));
 }
 /* Can Travis actually get there? Every visit is blocked 45 minutes (he is usually on site 30
-   to 40), then 15 minutes in case it runs long, then the drive, figured at 2 minutes a mile
-   in a straight line, which is on the safe side around Columbus. A time that does not
+   to 40), then 15 minutes in case it runs long, then the drive. The drive is worked out by
+   distance, because a short hop is side streets and lights and a long one is mostly highway:
+   road miles are about 1.3 times the straight line; under 5 road miles counts at 25 mph,
+   under 12 at 35 mph, past that 50 mph; plus 5 minutes to get in and out of the truck.
+   2 miles is about 11 minutes, 10 about 21, 25 about 44, 50 about 83. A time that does not
    leave room for all of that, before or after one of his visits, is not shown at all. */
-const BOOK_RUNOVER_MIN = 15, BOOK_MIN_PER_MILE = 2;
+const BOOK_RUNOVER_MIN = 15;
+function driveMins(straightMi) {
+  const road = straightMi * 1.3, mph = road < 5 ? 25 : road < 12 ? 35 : 50;
+  return 5 + road / mph * 60;
+}
 function slotReachable(iso, near) {
   const t = Date.parse(iso), e = t + 45 * 60000;
   return !near.all.some(s => {
-    const gap = (BOOK_RUNOVER_MIN + s.mi * BOOK_MIN_PER_MILE) * 60000;
+    const gap = (BOOK_RUNOVER_MIN + driveMins(s.mi)) * 60000;
     if (t < s.end && e > s.start) return true;          // overlaps it
     if (s.end <= t) return t - s.end < gap;             // right after it, from there
     return s.start - e < gap;                           // right before it, to there
@@ -15598,6 +15618,10 @@ async function openBooking(forDoor) {
     const parts = nm.split(/\s+/).filter(Boolean);
     $('bkFirst').value = parts[0] || ''; $('bkLast').value = parts.slice(1).join(' ');
     $('bkPhone').value = bookFor.phone || ''; $('bkEmail').value = bookFor.email || '';
+    const typed = bookFor === editing && $('dNewNote') ? $('dNewNote').value.trim() : '';
+    const had = logOf(bookFor).filter(e => e.kind === 'note' && !e.auto && e.text).map(e => e.text);
+    bookNotePre = [...had, typed].filter(Boolean).join('. ').replace(/\.\./g, '.').slice(0, 600);
+    $('bkNote').value = bookNotePre;
   }
   renderBookNear(bookFor);
   fetchStops().then(() => renderBookNear(bookFor));
@@ -15634,11 +15658,11 @@ $('bookDone').onclick = async () => {
   await markBooked(v, '');
 };
 const bookErr = t => { const e = $('bookErr'); e.textContent = t; e.classList.remove('hide'); };
-['bkFirst','bkLast','bkPhone','bkEmail'].forEach(id => $(id).addEventListener('input', () => $('bookErr').classList.add('hide')));
+['bkFirst','bkLast','bkPhone','bkEmail','bkNote'].forEach(id => $(id).addEventListener('input', () => $('bookErr').classList.add('hide')));
 $('bookGo').onclick = async () => {
   if (bookBusy || !bookFor || !bookSlot) return;
   const first = $('bkFirst').value.trim(), last = $('bkLast').value.trim();
-  const phone = $('bkPhone').value.trim(), email = $('bkEmail').value.trim();
+  const phone = $('bkPhone').value.trim(), email = $('bkEmail').value.trim(), note = $('bkNote').value.trim();
   const digits = phone.replace(/\D/g, '').replace(/^1(?=\d{10}$)/, '');
   if (!first) return bookErr('Add their first name.');
   if (digits.length !== 10) return bookErr('Their phone number needs all 10 digits.');
@@ -15647,7 +15671,7 @@ $('bookGo').onclick = async () => {
   const v = bookFor, slot = bookSlot;
   bookBusy = true; const btn = $('bookGo'), was = btn.textContent; btn.textContent = 'Booking…'; btn.disabled = true;
   try {
-    const r = await syncFetch('/book', { method: 'POST', body: JSON.stringify({ doorId: v.id, start: slot, first, last, phone: digits, email,
+    const r = await syncFetch('/book', { method: 'POST', body: JSON.stringify({ doorId: v.id, start: slot, first, last, phone: digits, email, note,
       addr: v.addr || '', area: doorArea(v), lat: v.lat, lon: v.lon }) });
     const at = r.start ? new Date(r.start) : new Date(slot);
     const when = slotLong(at.toISOString());
@@ -15659,6 +15683,11 @@ $('bookGo').onclick = async () => {
       if (!$('dName').value.trim()) $('dName').value = [first, last].filter(Boolean).join(' ');
       if (!$('dPhone').value.trim()) $('dPhone').value = phone;
       if (email && !$('dEmail').value.trim()) $('dEmail').value = email;
+      // whatever they added or changed in the booking notes goes on the house too
+      if (note && note !== bookNotePre) {
+        if ($('dNewNote')) $('dNewNote').value = '';
+        editing.log = [...logOf(editing), { id:newId(), ts:Date.now(), kind:'note', text:note }];
+      }
     }
     bookFor = null; bookSlot = null;
     $('bookForm').classList.add('hide'); $('bookDays').innerHTML = ''; $('bookTimes').innerHTML = ''; $('bookHint').textContent = '';
@@ -16081,6 +16110,15 @@ async function openBuilds(pre) {
   $('bdList').innerHTML = '<div class="small">Loading…</div>';
   await fetchBuilds(true); bdRender();
 }
+$('dKidNext').querySelectorAll('.chip').forEach(c => c.onclick = () => {
+  if (!editing) return;
+  pullDetail();
+  const k = (editing.dispo || 'new') === c.dataset.d ? 'new' : c.dataset.d;   // a second tap takes it back off
+  editing.dispo = k;
+  const stageWord = (LABELS['lbl.stage.' + k] || {}).def || k;
+  editing.log = [...logOf(editing), { id:newId(), ts:Date.now(), kind:'note', auto:true, text:`Stage set to ${stageWord}.` }];
+  openDetail(editing);
+});
 $('mBuilds').onclick = () => { closeSheet('menuSheet'); openBuilds(null); };
 $('bdNew').onclick = () => bdForm(null);
 $('dBuild').onclick = () => {
@@ -16110,7 +16148,23 @@ $('bdSave').onclick = async () => {
 /* the house panel offers Mark a build here on Travis's phone only */
 (() => {
   const od = openDetail;
-  openDetail = function () { const r = od.apply(this, arguments); try { $('dBuild').classList.toggle('hide', !(syncRole() === 'boss' && syncCode())); } catch (e) {} return r; };
+  openDetail = function () {
+    const r = od.apply(this, arguments);
+    try {
+      $('dBuild').classList.toggle('hide', !(syncRole() === 'boss' && syncCode()));
+      /* v52: a canvasser's phone gets the short panel. Tags, the full stage list, come-back
+         dates, the county record and delete are Travis's, so they step aside. Nothing is
+         removed from the record. */
+      const kid = syncRole() === 'canvasser';
+      $('detailSheet').classList.toggle('kid', kid);
+      const br = $('dBookRow'); if (br) br.classList.toggle('kidHide', true);
+      if (kid && editing) $('dKidNext').querySelectorAll('.chip').forEach(c => {
+        const on = (editing.dispo || 'new') === c.dataset.d;
+        c.classList.toggle('on', on); c.classList.toggle('cb', c.dataset.d === 'callback'); c.classList.toggle('no', c.dataset.d === 'cold');
+      });
+    } catch (e) {}
+    return r;
+  };
 })();
 
 /* ---------------- v48: pay requests ----------------
