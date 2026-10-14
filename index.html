@@ -784,6 +784,8 @@ select{min-height:44px}
 .medrag{width:26px;height:26px;border-radius:50%;background:#38bdf8;border:4px solid #fff;box-shadow:0 0 0 3px rgba(45,212,191,.8),0 3px 10px rgba(0,0,0,.6);transform:translate(-13px,-13px)}
 /* ---------- address search on the big map ---------- */
 #eraseBar.picking{background:rgba(22,163,74,.95);border-color:rgba(34,197,94,.65)}
+.payT{border-collapse:collapse;width:100%;font-size:13px}.payT th,.payT td{border-bottom:1px solid #334155;padding:5px 3px;text-align:left}.payCard{border:1px solid #334155;border-radius:12px;padding:10px;margin:10px 0}.payRow{font-size:13px;padding:6px 0;border-bottom:1px solid #1e293b}.payRow label{display:inline-flex;align-items:center;gap:6px;margin:6px 14px 0 0;white-space:nowrap}.payRow input[type=checkbox]{width:20px;height:20px;margin:0;flex:none}
+.leaflet-tooltip.stopTip{background:#7c3aed;color:#fff;border:0;font-weight:700;font-size:11px;padding:2px 6px;box-shadow:none}.leaflet-tooltip.stopTip:before{display:none}
 #findWrap{position:absolute;z-index:1002;left:10px;right:10px;top:calc(var(--safe-t) + 52px)}
 #findInput{background:rgba(15,21,29,.96);border:1px solid var(--line);border-radius:12px;padding:11px 38px 11px 13px;
   font-size:14px;font-weight:600;box-shadow:0 6px 20px rgba(0,0,0,.5)}
@@ -1218,7 +1220,7 @@ select{min-height:44px}
        words, and is tapped where he is looking. One tap cycles off → big map → both maps,
        which is his own ruling narrowed: the app cannot carry a separate setting per map,
        so the small map follows the big one. -->
-  <div id="stormBar" class="off">
+  <div id="stormBar" class="off" style="display:none">
     <button class="mbtn" id="stormCycle">⛈ Storms off</button>
     <!-- WHICH LIBRARY. A second chip rather than more states on the first one, because the
          two axes are orthogonal — where it is shown, and which instrument drew it — and one
@@ -1337,6 +1339,8 @@ select{min-height:44px}
       <div class="inlineBlk">
         <label class="f">Stage and follow-up<span class="cnt" id="dStageCount"></span></label>
         <div class="chips" id="dDispo"></div>
+        <!-- v48: Travis's live booking calendar, for a clear yes at the door. -->
+        <button class="ghost" id="dBook" style="margin-top:8px">📅 Book on Travis's calendar</button>
         <div class="subLab">Come back</div>
         <div class="chips" id="dFollowChips"></div>
         <!-- The real date control lives off-screen. On the page it rendered as a
@@ -1415,9 +1419,35 @@ select{min-height:44px}
       <div class="statsbox" id="sesStats"></div>
       <div class="small hide" id="sesStreets" style="margin-top:10px;color:var(--dim)"></div>
       <div class="small" id="sesMeta" style="margin-top:10px"></div>
-      <button class="primary" id="sesExport">⬇︎ Save this session's list</button>
+      <button class="primary" id="sesSendDay">📤 Send my day</button>
+      <div class="small" style="margin-top:6px;color:var(--dim)">Sends your day log and a full backup together. Pick Dustin in the share sheet.</div>
+      <button class="ghost" id="sesExport">⬇︎ Save this session's list</button>
       <button class="ghost" id="sesEnd">■ End session and stop tracking</button>
       <button class="ghost" id="sesKeep">Keep canvassing</button>
+    </div>
+  </div>
+</div>
+
+<!-- v48: Travis's live booking calendar. The homeowner picks the time and types their own
+     name and phone, the same rule the canvasser program teaches. Loaded fresh on every open
+     so the open times are always today's. -->
+<div id="paySheet" class="sheet hide">
+  <div class="sheetBody">
+    <div class="sheetHead"><h2>Pay</h2><button class="x" data-close="paySheet">Close</button></div>
+    <div class="sheetScroll"><div id="payBody"></div></div>
+  </div>
+</div>
+<div id="bookSheet" class="sheet hide">
+  <div class="sheetBody">
+    <div class="sheetHead"><h2>Travis's open times</h2><button class="x" data-close="bookSheet">Close</button></div>
+    <div class="sheetScroll">
+      <div class="small" id="bookNote">Hand the phone over. They pick a time and type their own name and phone.</div>
+      <div class="small hide" id="bookNear" style="margin:8px 0 2px;padding:8px 10px;border-radius:10px;background:#2e1065;color:#ede9fe;line-height:1.45"></div>
+      <div id="bookWrap" style="height:68vh;min-height:420px;border-radius:12px;overflow:hidden;background:#fff;margin-top:10px"></div>
+      <div id="bookActs">
+        <button class="primary" id="bookDone" style="margin-top:12px">✓ They booked a time</button>
+        <button class="ghost" id="bookNo">They didn't book</button>
+      </div>
     </div>
   </div>
 </div>
@@ -1726,6 +1756,8 @@ select{min-height:44px}
           <button class="ghost" id="mScout"><span class="emo">🔭</span> <span class="mtxt" data-lbl="lbl.menu.mScout">Scout</span></button>
           <button class="ghost" id="mMarks"><span class="emo">🔎</span> <span class="mtxt" data-lbl="lbl.menu.mMarks">Scouted houses</span></button>
           <button class="ghost" id="mAppt"><span class="emo">📋</span> <span class="mtxt" data-lbl="lbl.menu.mAppt">Schedule and appointments</span></button>
+          <button class="ghost" id="mBookTimes"><span class="emo">📅</span> <span class="mtxt" data-lbl="lbl.menu.mBookTimes">Travis's open times</span></button>
+          <button class="ghost" id="mPay"><span class="emo">💵</span> <span class="mtxt" data-lbl="lbl.menu.mPay">Pay requests</span></button>
           <!-- The truck block moved to Settings at his word. It was four rows and a
                readout sitting between the last thing he taps out here and "How you're
                doing", which is where History lives — and he does not need it: he drops
@@ -1755,6 +1787,9 @@ select{min-height:44px}
           <div class="small why" style="margin-top:5px">Every door, note, tag, stage, follow-up, appointment and walking track, in one file. This is the only thing that can rebuild the app if the phone is lost or the icon is deleted. Get it off the phone.</div>
           <button class="ghost" id="mRestore" style="margin-top:12px"><span class="emo">⤴︎</span> <span class="mtxt" data-lbl="lbl.menu.mRestore">Restore from a full backup</span></button>
           <input type="file" id="restoreFile" accept=".json,application/json" class="hide">
+          <button class="ghost" id="mAddTeam" style="margin-top:12px"><span class="emo">👥</span> <span class="mtxt" data-lbl="lbl.menu.mAddTeam">Add a canvasser's doors</span></button>
+          <input type="file" id="teamFile" accept=".json,application/json" multiple class="hide">
+          <div class="small why" style="margin-top:5px">Pick the backup file a canvasser sent you. Their doors and appointments are added to yours. Nothing of yours is changed: not your doors, your settings, your home pin or your walking track. Adding the same file twice adds nothing the second time.</div>
           <button class="ghost" id="mExport" style="margin-top:16px"><span class="emo">⬇︎</span> <span class="mtxt" data-lbl="lbl.menu.mExport">Export…</span></button>
           <div class="small why" style="margin-top:5px">A spreadsheet or a map file, for working at a laptop. Useful, but <b>this is not a backup</b> — it leaves things out and nothing can restore from it.</div>
         </div></div>
@@ -1863,8 +1898,19 @@ select{min-height:44px}
           <div class="small" id="diag" style="margin-top:10px"></div>
           <div class="small" id="conn" style="margin-top:8px"></div>
 
+          <label class="f">Your name</label>
+          <div class="small why" style="margin-bottom:6px">It goes at the top of your day log, so whoever reads it knows whose day it was.</div>
+          <input id="mMyName" type="text" autocomplete="off" maxlength="40" placeholder="First name">
+
+          <label class="f">Team sync</label>
+          <div class="small why" style="margin-bottom:6px">Type the team code Travis gave this phone. Doors then go to Travis by themselves whenever there is signal, and wait on the phone when there is not. The code stays on this phone and is not in your backup.</div>
+          <input id="mSyncCode" type="text" autocomplete="off" autocapitalize="characters" spellcheck="false" maxlength="24" placeholder="Team code">
+          <div class="chips" style="margin-top:6px"><button class="chip" id="mSyncSave">Save code</button><button class="chip" id="mSyncNow">Sync now</button><button class="chip" id="mSyncOff">Turn off</button></div>
+          <div class="small" id="syncInfo" style="margin-top:6px"></div>
+
           <!-- One row, not a block. Without a key nothing about the app changes: no button,
                no prompt, no nag. That is the whole degradation strategy. -->
+
           <label class="f">Measure roofs from the air</label>
           <div class="small why" style="margin-bottom:6px">Paste a Google Solar key here and a <b>Measure the roof</b> button appears on every house you open. It measures the roof off aerial photography — size and slope — in about a second.<br><b>What it costs you:</b> nothing at your volume. The first 10,000 lookups a month are free and twenty a day is about 440. Google still needs a card on the account before the free allowance works, so set a daily cap of 200 in the console first and a runaway can never cost more than pocket change.<br><b>Two things to know.</b> Around Columbus the photography is 10&nbsp;cm and the numbers have been checked against your own takeoffs to about 4%. Outside the metro — Marysville, London, Newark, Lancaster, Circleville and everywhere rural — it drops to 25&nbsp;cm photography, which has never been checked against a real takeoff. The panel tells you which one you got, every time.<br><b>The key stays on this phone</b> and is deliberately left out of your backup file, the same as your PIN — a live key does not belong in something you email to yourself. If you reinstall the app, paste it again.</div>
           <input id="mSolarKey" type="text" inputmode="text" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="Paste key, or leave blank">
@@ -2024,6 +2070,13 @@ const APP_NAME = 'CanvassEaze';
    the big button — those are the four CSS variables at the top of the stylesheet, a
    darker set chosen to carry white text. The two have always differed and neither is
    derived from the other. */
+/* v48. STORMS_ON: the storm overlay and the storm panel are switched off at Travis's word
+   (2026-10-13: "the storm map feature on the big map is just kinda messy"). The code stays;
+   flip this to true to bring every piece of it back exactly as v47 had it.
+   BOOKING_URL: Travis's live booking calendar. One line to change if the calendar moves. */
+const STORMS_ON = false;
+const BOOKING_URL = 'https://api.leadconnectorhq.com/widget/booking/UdfUdXLLXzEFo2dw577S';
+
 const STATUS = {
   talked:   { label:'Talked',           color:'#22c55e', short:'Talked' },
   material: { label:'Left Material',    color:'#3b82f6', short:'Material' },
@@ -2281,12 +2334,15 @@ const LABELS = {
   'lbl.menu.mScout':       { def:'Scout',                                              group:'menu', cap:LBL_CAP.scout, note:'Menu button, the pill on the main screen, and the screen itself. Short — it shares the top strip with the menu button.' },
   'lbl.menu.mMarks':       { def:'Scouted houses',                                     group:'menu', cap:LBL_CAP.menu, note:'Menu button, and the title of the screen it opens.' },
   'lbl.menu.mAppt':        { def:'Schedule and appointments',                          group:'menu', cap:LBL_CAP.menu, note:'Menu button.' },
+  'lbl.menu.mBookTimes':   { def:"Travis's open times",                                group:'menu', cap:LBL_CAP.menu, note:'Menu button.' },
   'lbl.menu.mSession':     { def:"How today's going — doors, miles, hours",        group:'menu', cap:LBL_CAP.menu, note:'Menu button.' },
   'lbl.menu.mDaysLog':     { def:'History — every day you were out, door by door', group:'menu', cap:LBL_CAP.menu, note:'Menu button.' },
   'lbl.menu.mEndDay':      { def:'End the day — stop tracking',                    group:'menu', cap:LBL_CAP.menu, note:'Menu button.' },
   'lbl.menu.mBackupShare': { def:'Full backup — send it somewhere safe',           group:'menu', cap:LBL_CAP.menu, note:'Menu button.' },
   'lbl.menu.mBackup':      { def:'Full backup — just download it',                 group:'menu', cap:LBL_CAP.menu, note:'Menu button.' },
   'lbl.menu.mRestore':     { def:'Restore from a full backup',                          group:'menu', cap:LBL_CAP.menu, note:'Menu button.' },
+  'lbl.menu.mPay':         { def:'Pay requests',                                        group:'menu', cap:LBL_CAP.menu, note:'Menu button.' },
+  'lbl.menu.mAddTeam':     { def:"Add a canvasser's doors",                             group:'menu', cap:LBL_CAP.menu, note:'Menu button.' },
   'lbl.menu.mExport':      { def:'Export…',                                        group:'menu', cap:LBL_CAP.menu, note:'Menu button.' },
   /* The editor's own name. It was written out by hand in TWO places — the Settings
      button and the heading of the screen it opens — and was the only button in the menu
@@ -6116,7 +6172,8 @@ function pockShowOnMap() {
 function pockSeatBar() {
   const bar = $('pockBar'), sb = $('stormBar');
   if (!bar) return;
-  if (!sb) { bar.style.top = ''; return; }
+  /* v48: with storms off the pockets bar takes the storm bar's old seat under the search box. */
+  if (!sb || !STORMS_ON) { bar.style.top = 'calc(var(--safe-t) + 104px)'; return; }
   const r = sb.getBoundingClientRect();
   /* A HIDDEN MAP MEASURES ZERO, AND ZERO IS NOT AN ANSWER. This used to clear the seat when
      the storm bar had no height, which happens on every position fix while the map screen is
@@ -11593,6 +11650,7 @@ function stormSrcApply() {
 }
 
 function stormShowLoad() {
+  if (!STORMS_ON) { stormState.show = 0; return 0; }
   const raw = Number(localStorage.getItem('stormShow'));
   stormState.show = (raw === 1 || raw === 2) ? raw : 0;
   return stormState.show;
@@ -11600,6 +11658,8 @@ function stormShowLoad() {
 
 function syncStormBar() {
   const bar = $('stormBar'); if (!bar) return;
+  if (!STORMS_ON) { bar.style.display = 'none'; pockSeatBar(); return; }
+  bar.style.display = '';
   bar.classList.toggle('off', !stormState.show);
   const btn = $('stormCycle');
   if (btn) btn.textContent = STORM_SHOW_WORDS[stormState.show] || STORM_SHOW_WORDS[0];
@@ -12042,6 +12102,7 @@ let stormTickForced = false;
 
    Returns false when another Done has overtaken this one while the map was opening. */
 async function stormShowResult(seq, fromPanel) {
+  if (!STORMS_ON) return false;
   if (!stormState.show) { stormState.show = 1; stormTickForced = true; }
   if (fromPanel) {
     closeSheet('detailSheet');
@@ -12286,6 +12347,9 @@ async function buildBackup() {
     // what the "Work" column says in every spreadsheet he exports afterwards
     lineNames: lineNamesSaved(), hubData: state.hubData, mapData: state.mapData,
     visits, days, vehicle: state.vehicle,
+    /* v48: whose phone this came from, so Add a canvasser's doors can say whose they were.
+       A label on the file only; restore ignores it. */
+    madeBy: myName() || undefined,
     /* The top-level fields above are kept as they were so an older build could still
        read this file. `local` is the one that is complete. */
     local };
@@ -13525,7 +13589,7 @@ document.querySelectorAll('.dsecHead[data-msec]').forEach(b => {
 /* ---- what version is actually on the phone ----
    Matches the service worker cache name, so "did the update land" is answerable by
    looking rather than guessing. */
-const BUILD_VERSION = 'v47';
+const BUILD_VERSION = 'v48';
 const BUILD_DATE = '7 August 2026';
 function renderVersionStamp() {
   const el = $('versionStamp'); if (!el) return;
@@ -14693,6 +14757,7 @@ const STORM_MESH_PREFACE = "Radar also draws a second layer that covers much les
       count built from all of them, and only one of those is honest. */
 function renderStormPanel(v) {
   const el = $('dStorm'); if (!el) return;
+  if (!STORMS_ON) { el.classList.add('hide'); el.innerHTML = ''; return; }
   if (!v || v.lat == null || v.lon == null) {
     el.classList.add('hide'); el.innerHTML = ''; return;
   }
@@ -15156,6 +15221,9 @@ $('truckPill').onclick = async () => {
   const end = e => {
     clearTimeout(timer); timer = null;
     if (held) { e.preventDefault(); e.stopPropagation(); held = false; return; }
+    /* v48: the big map always opens following him. Every other way in that jumps the
+       map somewhere on purpose turns follow off itself, after openMap. */
+    mapOpts.follow = true; syncMapBtns();
     openMap();
   };
   el.addEventListener('touchstart', start, {passive:true});
@@ -15324,6 +15392,506 @@ $('mEndDay').onclick = async () => {
   flashToast('Day ended', 'Tracking stopped and the GPS is off. Take a full backup below.', '#64748b');
 };
 $('sesExport').onclick = () => { xOpts.range = 'today'; openExport(); closeSheet('sessionSheet'); };
+
+/* ---------------- v48: book on Travis's calendar ---------------- */
+let bookFor = null;   // the door record the booking is for, or null when just looking
+function openBooking(forDoor) {
+  bookFor = forDoor || null;
+  $('bookActs').classList.toggle('hide', !bookFor);
+  renderBookNear(bookFor);
+  fetchStops().then(() => renderBookNear(bookFor));
+  const wrap = $('bookWrap');
+  if (!navigator.onLine) {
+    wrap.innerHTML = '<div class="small" style="padding:16px;color:#334155">No signal right now, so the calendar cannot load. '
+      + 'Get their first name and phone for a callback instead, and set Stage to Callback.</div>';
+  } else {
+    // a fresh frame every time, so the times shown are the times open right now
+    wrap.innerHTML = '';
+    const f = document.createElement('iframe');
+    f.src = BOOKING_URL; f.title = "Travis's open times";
+    f.style.cssText = 'width:100%;height:100%;border:0;display:block;background:#fff';
+    wrap.appendChild(f);
+  }
+  openSheet('bookSheet');
+}
+$('mBookTimes').onclick = () => openBooking(null);
+$('dBook').onclick = () => { if (!editing) return; pullDetail(); openBooking(editing); };
+$('bookNo').onclick = () => { bookFor = null; closeSheet('bookSheet'); };
+$('bookDone').onclick = async () => {
+  const v = bookFor; bookFor = null;
+  closeSheet('bookSheet');
+  if (!v || v !== editing) return;
+  if (!editing.status) editing.status = 'talked';
+  if ((editing.dispo || 'new') !== 'appt') {
+    editing.dispo = 'appt';
+    const stageWord = (LABELS['lbl.stage.appt'] || {}).def || 'appt';
+    editing.log = [...logOf(editing), { id:newId(), ts:Date.now(), kind:'note', auto:true, text:`Stage set to ${stageWord}.` }];
+  }
+  editing.log = [...logOf(editing), { id:newId(), ts:Date.now(), kind:'note', auto:true, text:"Booked on Travis's calendar." }];
+  await saveDetail();
+};
+
+/* ---------------- v48: your name, and Send my day ---------------- */
+const myName = () => { try { return (localStorage.getItem('myName') || '').trim(); } catch (e) { return ''; } };
+(() => {
+  const el = $('mMyName'); if (!el) return;
+  el.value = myName();
+  el.onchange = () => {
+    const n = el.value.trim().slice(0, 40);
+    try { if (n) localStorage.setItem('myName', n); else localStorage.removeItem('myName'); } catch (e) {}
+    el.value = n;
+    flashToast(n ? 'Name saved' : 'Name cleared', n ? 'It goes on your day log' : '', '#22c55e');
+  };
+})();
+const nameSlug = n => (n || '').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+$('sesSendDay').onclick = async () => {
+  let name = myName();
+  if (!name) {
+    const n = (window.prompt('Your first name, for the top of your day log') || '').trim().slice(0, 40);
+    if (!n) return flashToast('Add your name first', 'Menu, Settings, Your name. Then tap Send my day again.', '#f59e0b');
+    try { localStorage.setItem('myName', n); } catch (e) {}
+    name = n; if ($('mMyName')) $('mMyName').value = n;
+  }
+  if (visitsReadFailed) {
+    return flashToast('Not sending that', 'The phone will not hand back your door records. Close the app right down and open it again.', '#ef4444');
+  }
+  const key = todayKey(), slug = nameSlug(name) || 'canvasser';
+  let html, bk;
+  try { html = await dayReportHtml(key); }
+  catch (e) { return flashToast('Could not build your day log', 'Something in today would not read back. Try again in a moment.', '#ef4444'); }
+  try { bk = await buildBackup(); } catch (e) { return backupFailed(e); }
+  const files = [
+    new File([html], `day-log-${slug}-${key}.html`, { type:'text/html' }),
+    new File([bk.text], `${slug}-${bk.name}`, { type:'application/json' }),
+  ];
+  const canFiles = !!(navigator.canShare && navigator.share && navigator.canShare({ files }));
+  for (let attempt = 0; canFiles && attempt < 2; attempt++) {
+    try {
+      await navigator.share({ files, title: `${name} - day log ${key}` });
+      markBackedUp();
+      return flashToast('Sent', 'Your day log and backup are on their way.', '#22c55e');
+    } catch (e) {
+      if (e && e.name === 'AbortError') return flashToast('Nothing was sent', 'You closed the share sheet.', '#64748b');
+      /* Building the files can take long enough that the phone forgets the tap. One more
+         tap on a real button gives it a fresh one. */
+      if (!(e && e.name === 'NotAllowedError') || attempt) break;
+      const k = await askChoice('Ready to send', 'Your day log and backup are ready.',
+        [{ key:'send', label:'📤 Send now' }, { key:'no', label:'Not now' }]);
+      if (k !== 'send') return flashToast('Nothing was sent', 'Tap Send my day when you are ready.', '#64748b');
+    }
+  }
+  download(files[0].name, html, 'text/html');
+  download(files[1].name, bk.text, 'application/json');
+  markBackedUp();
+  flashToast('Downloaded instead', 'This phone would not open the share sheet. Both files are in Downloads.', '#38bdf8');
+};
+/* ---------------- v48: team sync ----------------
+   Canvasser phones send every door they save to a small mailbox on Travis's Cloudflare.
+   Travis's phone picks up whatever is new. Same add-only rules as Add a canvasser's doors:
+   a door of his own is never overwritten, and a door of theirs that he has changed since
+   it arrived only ever gains their new notes, never loses his.
+   The team code is a password and stays on this phone: it is NOT in the backup file.
+   Nothing new is stored on a door record. Sync's own bookkeeping lives in localStorage. */
+const SYNC_URL = 'https://canvasseaze-sync.james-d55.workers.dev';
+const SYNC_BATCH = 35;
+const syncGet = k => { try { return JSON.parse(localStorage.getItem(k) || 'null'); } catch (e) { return null; } };
+const syncSet = (k, v) => { try { localStorage.setItem(k, JSON.stringify(v)); return true; } catch (e) { return false; } };
+const syncCode = () => { try { return localStorage.getItem('syncCode') || ''; } catch (e) { return ''; } };
+const syncRole = () => { try { return localStorage.getItem('syncRole') || ''; } catch (e) { return ''; } };
+const syncName = () => { try { return localStorage.getItem('syncName') || ''; } catch (e) { return ''; } };
+const syncHash = o => { const s = JSON.stringify(o); let h = 2166136261;
+  for (let i = 0; i < s.length; i++) { h ^= s.charCodeAt(i); h = Math.imul(h, 16777619); } return (h >>> 0).toString(36) + '.' + s.length; };
+async function syncFetch(path, opts = {}) {
+  const r = await fetch(SYNC_URL + path, Object.assign({}, opts, {
+    headers: Object.assign({ 'x-team-code': syncCode() }, opts.body ? { 'content-type': 'application/json' } : {}),
+    cache: 'no-store' }));
+  let body = null; try { body = await r.json(); } catch (e) {}
+  if (!r.ok) { const err = new Error((body && body.error) || ('HTTP ' + r.status)); err.status = r.status; throw err; }
+  return body;
+}
+function syncSay(text) { syncSet('syncStatus', { text, ts: Date.now() }); renderSyncInfo(); }
+function renderSyncInfo() {
+  const el = $('syncInfo'); if (!el) return;
+  const code = syncCode(), role = syncRole(), st = syncGet('syncStatus');
+  if (!code) { el.textContent = 'Off. Doors stay on this phone until you send them.'; return; }
+  const q = syncGet('syncQ') || {};
+  const waiting = Object.keys(q.p || {}).length + Object.keys(q.g || {}).length;
+  const who = role === 'boss' ? `On as ${syncName() || 'Travis'}: picking up the canvassers' doors.`
+                              : `On as ${syncName() || 'you'}: your doors go to Travis by themselves.`;
+  el.textContent = who + (role === 'canvasser' ? ` ${waiting ? waiting + ' waiting to send.' : 'Nothing waiting.'}` : '')
+    + (st ? ` ${st.text} (${new Date(st.ts).toLocaleTimeString([], { hour:'numeric', minute:'2-digit' })})` : '');
+}
+
+/* Canvasser side: note every write, send in the background. */
+let syncTimer = null, syncBusy = false;
+function syncNote(kind, id) {
+  if (syncRole() !== 'canvasser' || !syncCode()) return;
+  const q = syncGet('syncQ') || { p:{}, g:{}, a:0, n:0 };
+  q.p = q.p || {}; q.g = q.g || {}; q.n = (q.n || 0) + 1;
+  if (kind === 'p') { q.p[id] = q.n; delete q.g[id]; }
+  else if (kind === 'g') { q.g[id] = q.n; delete q.p[id]; }
+  else if (kind === 'a') q.a = q.n;
+  syncSet('syncQ', q);
+  clearTimeout(syncTimer); syncTimer = setTimeout(syncFlush, 2500);
+}
+(() => {
+  const put = DB.put, del = DB.del;
+  DB.put = async (s, v) => { const r = await put(s, v); if (s === 'visits' && v && v.id) syncNote('p', v.id); return r; };
+  DB.del = async (s, k) => { const r = await del(s, k); if (s === 'visits' && k) syncNote('g', k); return r; };
+  const sa = saveAppts;
+  saveAppts = function () { const r = sa.apply(this, arguments); syncNote('a'); return r; };
+})();
+async function syncFlush() {
+  if (syncBusy || syncRole() !== 'canvasser' || !syncCode() || !navigator.onLine) return;
+  syncBusy = true;
+  try {
+    for (let round = 0; round < 50; round++) {
+      const q = syncGet('syncQ') || {};
+      const pIds = Object.keys(q.p || {}), gIds = Object.keys(q.g || {});
+      const wantAppts = !!q.a && (state.appts || []).length < SYNC_BATCH;
+      if (!pIds.length && !gIds.length && !wantAppts) break;
+      const room = SYNC_BATCH - (wantAppts ? (state.appts || []).length + 1 : 0);
+      const doors = [], gone = [], sent = {};
+      for (const id of pIds.slice(0, Math.max(0, room))) {
+        let v = null; try { v = await DB.get('visits', id); } catch (e) { continue; }
+        if (v) doors.push(v); else gone.push(id);
+        sent['p:' + id] = q.p[id];
+      }
+      for (const id of gIds.slice(0, Math.max(0, room - doors.length - gone.length))) { gone.push(id); sent['g:' + id] = q.g[id]; }
+      const body = { doors, gone };
+      if (wantAppts) body.appts = state.appts || [];
+      await syncFetch('/push', { method:'POST', body: JSON.stringify(body) });
+      /* Only clear what was sent AND not touched again while it was on its way. */
+      const now = syncGet('syncQ') || {}; now.p = now.p || {}; now.g = now.g || {};
+      for (const k of Object.keys(sent)) {
+        const [t, id] = [k.slice(0, 1), k.slice(2)];
+        const box = t === 'p' ? now.p : now.g;
+        if (box[id] === sent[k]) delete box[id];
+      }
+      if (wantAppts && now.a === q.a) now.a = 0;
+      syncSet('syncQ', now);
+      syncSay('Sent.');
+    }
+  } catch (e) {
+    syncSay(e.status === 401 ? 'Team code not accepted. Check it with Travis.' : 'Could not reach the mailbox. Will try again.');
+  } finally { syncBusy = false; renderSyncInfo(); }
+}
+
+/* Travis's side: pick up what is new. */
+const syncTagFor = name => `From ${name}'s doors.`;
+function syncWithTag(v, name) {
+  const tag = syncTagFor(name);
+  const lg = Array.isArray(v.log) ? v.log.slice() : [];
+  if (!lg.some(e => e && e.text === tag)) lg.push({ id:'lsync' + v.id, ts: v.ts, kind:'note', auto:true, text: tag });
+  return Object.assign({}, v, { log: lg, notes: lg.filter(x => x && x.kind === 'note').map(x => x.text).join(' | ') });
+}
+let syncPulling = false;
+async function syncPull(quiet) {
+  if (syncPulling || syncRole() !== 'boss' || !syncCode() || !navigator.onLine || visitsReadFailed || wipeHalfDone) return;
+  syncPulling = true;
+  const added = {}; let changed = 0;
+  try {
+    const seen = syncGet('syncSeen') || {};
+    let cur = syncGet('syncCur') || { doors:0, appts:0 };
+    for (let round = 0; round < 20; round++) {
+      const r = await syncFetch(`/pull?doors=${cur.doors}&appts=${cur.appts}`);
+      for (const row of r.doors || []) {
+        let v; try { v = JSON.parse(row.body); } catch (e) { continue; }
+        let mine = null; try { mine = await DB.get('visits', row.id); } catch (e) { continue; }
+        const untouched = mine && seen[row.id] && syncHash(mine) === seen[row.id];
+        if (row.deleted) {
+          if (untouched) { await DB.del('visits', row.id); delete seen[row.id]; changed++; }
+          continue;
+        }
+        const rec = syncWithTag(v, row.canvasser);
+        if (!mine) { await DB.put('visits', rec); seen[row.id] = syncHash(rec); changed++; added[row.canvasser] = (added[row.canvasser] || 0) + 1; }
+        else if (untouched) { await DB.put('visits', rec); seen[row.id] = syncHash(rec); changed++; }
+        else {
+          /* He has changed it since it arrived (or it came in by file first). Keep his copy
+             and add only the notes and status entries he does not have yet. */
+          const have = new Set(logOf(mine).map(e => e && e.id));
+          const extra = (rec.log || []).filter(e => e && e.id && !have.has(e.id) && !logOf(mine).some(m => m && m.text === e.text && m.kind === 'note' && e.kind === 'note'));
+          if (extra.length) {
+            const lg = logOf(mine).concat(extra).sort((a, b) => (a.ts || 0) - (b.ts || 0));
+            await DB.put('visits', Object.assign({}, mine, { log: lg, notes: lg.filter(x => x && x.kind === 'note').map(x => x.text).join(' | ') }));
+            changed++;
+          }
+        }
+      }
+      let apptsChanged = false;
+      for (const row of r.appts || []) {
+        let a; try { a = JSON.parse(row.body); } catch (e) { continue; }
+        const i = state.appts.findIndex(x => x && x.id === row.id);
+        if (row.deleted) { if (i >= 0) { state.appts.splice(i, 1); apptsChanged = true; } continue; }
+        if (i >= 0) state.appts[i] = a; else state.appts.push(a);
+        apptsChanged = true;
+      }
+      if (apptsChanged) { saveAppts(); changed++; }
+      cur = r.cursor || cur;
+      syncSet('syncSeen', seen); syncSet('syncCur', cur);
+      if (!r.more) break;
+    }
+    if (changed) {
+      await flushDay();
+      for (const day of state.days.values()) day.readFailed = true;
+      state.days.clear(); allDaysLoaded = false;
+      await loadStored();
+      if (!visitsReadFailed) { renderSwitchUi(); renderStats(); renderAreas(); renderHouse(); drawMini(); if (window._map) refreshMapLayers(); }
+    }
+    const names = Object.keys(added);
+    if (names.length) {
+      const said = names.map(n => `${added[n]} from ${n}`).join(', ');
+      syncSay(`New doors: ${said}.`);
+      if (!quiet || names.length) flashToast('New doors in', said, '#22c55e');
+    } else syncSay(changed ? 'Updated.' : 'Up to date.');
+  } catch (e) {
+    syncSay(e.status === 401 ? 'Team code not accepted.' : 'Could not reach the mailbox. Will try again.');
+  } finally { syncPulling = false; renderSyncInfo(); }
+}
+function syncTick(quiet) { if (syncRole() === 'boss') syncPull(quiet); else syncFlush(); }
+function syncBoot() {
+  renderSyncInfo();
+  if (!syncCode()) return;
+  setTimeout(() => { syncTick(true); fetchStops(true); }, 1500);
+  setInterval(() => { if (document.visibilityState === 'visible') syncTick(true); }, 120000);
+}
+window.addEventListener('online', () => syncTick(true));
+document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') syncTick(true); });
+
+/* ---------------- v48: Travis's stops ----------------
+   His booked visits for the next three weeks, as a time and a rough spot (rounded to about
+   300 m, street name only, no names). Shown on the big map, and at the top of the booking
+   sheet as "Travis is near here", so a canvasser can offer the times next to a stop he
+   already has and he is not driving across town twice. Needs a team code, like sync. */
+let stopsAt = 0;
+const stopsCached = () => (syncGet('syncStops') || { stops: [] }).stops || [];
+async function fetchStops(force) {
+  if (!syncCode() || !navigator.onLine) return stopsCached();
+  if (!force && Date.now() - stopsAt < 5 * 60000) return stopsCached();
+  try {
+    const r = await syncFetch('/stops');
+    stopsAt = Date.now();
+    syncSet('syncStops', { stops: Array.isArray(r.stops) ? r.stops : [], at: stopsAt });
+    if (window._map) drawStops();
+  } catch (e) {}
+  return stopsCached();
+}
+const stopWhen = s => {
+  const a = new Date(s.start), b = new Date(s.end);
+  const t = d => d.toLocaleTimeString([], { hour:'numeric', minute:'2-digit' });
+  return `${a.toLocaleDateString([], { weekday:'short', month:'short', day:'numeric' })}, ${t(a)} to ${t(b)}`;
+};
+function drawStops() {
+  if (!window._map || typeof L === 'undefined') return;
+  if (window._stopsLayer) { window._stopsLayer.remove(); window._stopsLayer = null; }
+  const now = Date.now();
+  const list = stopsCached().filter(s => s.lat != null && s.lon != null && s.end > now && s.start < now + 8 * 86400000);
+  if (!list.length) return;
+  const g = L.layerGroup();
+  for (const s of list) {
+    L.circleMarker([s.lat, s.lon], { radius: 11, color: '#fff', weight: 2, fillColor: '#7c3aed', fillOpacity: .9 })
+      .bindTooltip(`Travis · ${new Date(s.start).toLocaleDateString([], { weekday:'short' })} ${new Date(s.start).toLocaleTimeString([], { hour:'numeric', minute:'2-digit' })}`,
+        { permanent: true, direction: 'top', offset: [0, -10], className: 'stopTip' })
+      .bindPopup(`<b>Travis is booked here</b><br>${esc(stopWhen(s))}<br>Near ${esc(s.street)}${s.city ? ', ' + esc(s.city) : ''}`)
+      .addTo(g);
+  }
+  window._stopsLayer = g.addTo(window._map);
+}
+(() => {
+  const rml = refreshMapLayers;
+  refreshMapLayers = function () { const r = rml.apply(this, arguments); try { drawStops(); } catch (e) {} return r; };
+})();
+function renderBookNear(forDoor) {
+  const el = $('bookNear'); if (!el) return;
+  const here = forDoor && forDoor.lat != null ? forDoor : (state.pos ? { lat: state.pos.lat, lon: state.pos.lon } : null);
+  const now = Date.now();
+  const list = stopsCached().filter(s => s.end > now);
+  if (!syncCode() || !list.length) { el.innerHTML = ''; el.classList.add('hide'); return; }
+  let rows = list.map(s => ({ s, mi: here && s.lat != null ? haversine(here.lat, here.lon, s.lat, s.lon) / 1609.34 : null }));
+  const near = rows.filter(r => r.mi != null && r.mi <= 6).sort((a, b) => a.s.start - b.s.start).slice(0, 4);
+  el.classList.remove('hide');
+  el.innerHTML = near.length
+    ? `<b>Travis is already near here:</b><br>` + near.map(r => `${esc(stopWhen(r.s))}, ${r.mi < 1 ? 'under a mile' : 'about ' + Math.round(r.mi) + ' mi'} away`).join('<br>')
+      + `<br><span style="opacity:.75">Offer the times right before or after one of these first.</span>`
+    : `No stops booked within 6 miles of here yet. Any open time works.`;
+}
+
+/* ---------------- v48: pay requests ----------------
+   The canvasser sends the week from what the phone recorded. The mailbox adds what it can
+   check by itself (doors that reached it that day, leads on Travis's calendar). Travis ticks
+   every line, and only the lines he ticks are added up. Nothing here moves money. */
+const PAY = { shift: 40, clean: 10, lead: 25 };
+let payWeekBack = 0, payList = [];
+const payMoney = n => '$' + (Math.round(n * 100) / 100).toLocaleString();
+function payWeekKeys(back) {
+  const d = new Date(); d.setHours(12, 0, 0, 0);
+  d.setDate(d.getDate() - ((d.getDay() + 6) % 7) - 7 * back);
+  return Array.from({ length: 7 }, (_, i) => { const x = new Date(d); x.setDate(d.getDate() + i); return dayKey(+x); });
+}
+const shortDay = k => new Date(k + 'T12:00:00').toLocaleDateString([], { weekday:'short', month:'short', day:'numeric' });
+async function payBuildWeek(back) {
+  const keys = payWeekKeys(back), shifts = [], leads = [];
+  for (const k of keys) {
+    if (k > todayKey()) break;
+    const doors = doorsOnDay(k); if (!doors.length) continue;
+    let f = null; try { f = await dayFacts(k); } catch (e) {}
+    shifts.push({ day: k, first: f && f.first, last: f && f.last, workedMins: f ? f.workedMins : 0, doors: doors.length,
+      miles: f && f.hasTrack ? Math.round(f.metres / 160.934) / 10 : 0, flagged: f ? f.flagged : 0 });
+    for (const v of doors) if (v.dispo === 'appt') leads.push(v);
+  }
+  return { week: keys[0], keys, shifts, leads };
+}
+function payStatusWord(p) {
+  if (!p) return '';
+  const amt = p.review && p.review.amount ? ' ' + payMoney(p.review.amount) : '';
+  return p.status === 'paid' ? `Paid${amt}` : p.status === 'approved' ? `Approved${amt}` : p.status === 'questions' ? 'Travis has questions' : 'Sent, waiting for Travis';
+}
+async function openPay() {
+  if (!syncCode()) return flashToast('Needs a team code', 'Menu, Settings, Team sync. Pay requests go through the same mailbox.', '#f59e0b');
+  openSheet('paySheet');
+  $('payBody').innerHTML = '<div class="small">Loading…</div>';
+  try { payList = (await syncFetch('/pay')).list || []; } catch (e) { payList = []; }
+  if (syncRole() === 'boss') renderPayBoss(); else renderPayKid();
+}
+async function renderPayKid() {
+  const w = await payBuildWeek(payWeekBack);
+  const mine = payList.find(p => p.week === w.week);
+  const locked = mine && (mine.status === 'approved' || mine.status === 'paid');
+  const est = w.shifts.length * (PAY.shift + PAY.clean) + w.leads.length * PAY.lead;
+  $('payBody').innerHTML =
+    `<div class="chips"><button class="chip${payWeekBack === 0 ? ' on' : ''}" data-wk="0">This week</button><button class="chip${payWeekBack === 1 ? ' on' : ''}" data-wk="1">Last week</button></div>`
+    + `<p class="small" style="margin:8px 0">${esc(shortDay(w.keys[0]))} to ${esc(shortDay(w.keys[6]))}${mine ? ` · <b>${esc(payStatusWord(mine))}</b>` : ''}</p>`
+    + (w.shifts.length ? `<table class="payT"><tr><th>Day</th><th>Worked</th><th>Doors</th><th>Miles</th></tr>`
+        + w.shifts.map(s => `<tr><td>${esc(shortDay(s.day))}</td><td>${esc(hoursMins(s.workedMins))}</td><td>${s.doors}</td><td>${s.miles || '—'}</td></tr>`).join('') + `</table>`
+      : `<p class="small">No doors recorded this week yet.</p>`)
+    + (w.leads.length ? `<p class="small" style="margin:10px 0 4px"><b>Leads set (Stage: Appointment)</b></p>` + w.leads.map(v =>
+        `<div class="small">• ${esc(v.addr || 'No address')}${v.owner ? ' · ' + esc(v.owner) : ''}</div>`).join('') : '')
+    + `<p class="small" style="margin:10px 0">Most this week could come to <b>${payMoney(est)}</b>: ${payMoney(PAY.shift)} a completed shift, ${payMoney(PAY.clean)} for a clean shift, and ${payMoney(PAY.lead)} for each lead Travis actually runs. Travis checks every line.</p>`
+    + (mine && mine.review && mine.review.note ? `<p class="small" style="background:#1e293b;padding:8px;border-radius:8px">Travis: ${esc(mine.review.note)}</p>` : '')
+    + (locked ? '' : `<textarea id="payNote" rows="2" maxlength="500" placeholder="Anything Travis should know (optional)" style="width:100%;margin-top:6px"></textarea>`
+       + `<button class="primary" id="paySend" style="margin-top:10px"${w.shifts.length ? '' : ' disabled'}>💵 Send pay request</button>`)
+    + (payList.length ? `<p class="small" style="margin-top:14px"><b>Earlier requests</b></p>` + payList.map(p =>
+        `<div class="small">Week of ${esc(shortDay(p.week))}: ${esc(payStatusWord(p))}</div>`).join('') : '');
+  $('payBody').querySelectorAll('[data-wk]').forEach(b => b.onclick = () => { payWeekBack = +b.dataset.wk; renderPayKid(); });
+  const send = $('paySend'); if (!send) return;
+  send.onclick = async () => {
+    send.disabled = true;
+    await syncFlush();
+    const q = syncGet('syncQ') || {};
+    if (Object.keys(q.p || {}).length || Object.keys(q.g || {}).length) {
+      send.disabled = false;
+      return flashToast('Some doors have not gone yet', 'They need signal first, or Travis will not see them. Try again in a minute.', '#f59e0b');
+    }
+    try {
+      const r = await syncFetch('/pay', { method:'POST', body: JSON.stringify({ week: w.week, shifts: w.shifts, leads: w.leads.map(v => v.id), note: ($('payNote') || {}).value || '' }) });
+      flashToast('Pay request sent', `${r.shifts} shift${r.shifts === 1 ? '' : 's'} and ${r.leads} lead${r.leads === 1 ? '' : 's'} went to Travis.`, '#22c55e');
+      openPay();
+    } catch (e) { send.disabled = false; flashToast('Not sent', e.message || 'Could not reach the mailbox.', '#ef4444'); }
+  };
+}
+function renderPayBoss() {
+  const wrap = $('payBody');
+  if (!payList.length) { wrap.innerHTML = '<p class="small">No pay requests yet.</p>'; return; }
+  const order = { sent:0, questions:1, approved:2, paid:3 };
+  const list = payList.slice().sort((a, b) => (order[a.status] - order[b.status]) || (b.updated - a.updated));
+  wrap.innerHTML = list.map((p, i) => {
+    const rv = p.review || {}, b = p.body || {};
+    const sh = (b.shifts || []).map(s => {
+      const r = (rv.shifts || {})[s.day] || { done: true, clean: false };
+      const gap = s.doors > s.onRecord;
+      return `<div class="payRow"><div><b>${esc(shortDay(s.day))}</b> · ${esc(hoursMins(s.workedMins))} · ${s.doors} doors`
+        + ` <span style="color:${gap ? '#f59e0b' : '#22c55e'}">(${s.onRecord} reached the mailbox that day${s.late ? `, ${s.late} late` : ''})</span>`
+        + (s.flagged ? ` · ${s.flagged} worth a look` : '') + `</div>`
+        + `<label><input type="checkbox" data-p="${i}" data-s="${esc(s.day)}" data-k="done"${r.done ? ' checked' : ''}> Completed ${payMoney(PAY.shift)}</label> `
+        + `<label><input type="checkbox" data-p="${i}" data-s="${esc(s.day)}" data-k="clean"${r.clean ? ' checked' : ''}> Clean ${payMoney(PAY.clean)}</label></div>`;
+    }).join('');
+    const ld = (b.leads || []).map(l => {
+      const ran = (rv.leads || {})[l.id]; const def = ran === undefined ? l.cal === 'ran' : ran;
+      const cal = l.cal === 'ran' ? `<span style="color:#22c55e">Ran${l.calAt ? ', ' + esc(new Date(l.calAt).toLocaleString([], { weekday:'short', hour:'numeric', minute:'2-digit' })) : ''}</span>`
+        : l.cal === 'upcoming' ? `<span style="color:#38bdf8">Upcoming${l.calAt ? ', ' + esc(new Date(l.calAt).toLocaleString([], { weekday:'short', month:'short', day:'numeric', hour:'numeric', minute:'2-digit' })) : ''}</span>`
+        : l.cal === 'none' ? `<span style="color:#f59e0b">Not on your calendar</span>` : `<span>Calendar not checked</span>`;
+      return `<div class="payRow"><div>${esc(l.addr)}${l.owner ? ' · ' + esc(l.owner) : ''} · ${cal}</div>`
+        + `<label><input type="checkbox" data-p="${i}" data-l="${esc(l.id)}"${def ? ' checked' : ''}> Ran ${payMoney(PAY.lead)}</label></div>`;
+    }).join('');
+    return `<div class="payCard" data-card="${i}"><div style="display:flex;justify-content:space-between;gap:8px"><b>${esc(p.canvasser)}</b><span class="small">${esc(payStatusWord(p))}</span></div>`
+      + `<div class="small">Week of ${esc(shortDay(p.week))}${b.missingLeads ? ` · ${b.missingLeads} lead${b.missingLeads === 1 ? '' : 's'} never reached the mailbox` : ''}</div>`
+      + (b.note ? `<div class="small" style="margin-top:4px">“${esc(b.note)}”</div>` : '')
+      + sh + (ld ? `<div class="small" style="margin-top:8px"><b>Leads</b></div>` + ld : '')
+      + `<div style="margin-top:8px"><b>Total: <span data-total="${i}"></span></b></div>`
+      + `<input type="text" data-note="${i}" maxlength="500" placeholder="Note to ${esc(p.canvasser)} (optional)" value="${esc(rv.note || '')}" style="width:100%;margin-top:6px">`
+      + `<div class="chips" style="margin-top:6px"><button class="chip" data-act="approved" data-i="${i}">✓ Approve</button><button class="chip" data-act="paid" data-i="${i}">💵 Mark paid</button><button class="chip" data-act="questions" data-i="${i}">? Questions</button></div></div>`;
+  }).join('');
+  const totalFor = i => {
+    let t = 0;
+    wrap.querySelectorAll(`input[data-p="${i}"]`).forEach(x => { if (!x.checked) return;
+      t += x.dataset.l ? PAY.lead : x.dataset.k === 'clean' ? PAY.clean : PAY.shift; });
+    return t;
+  };
+  const paint = () => list.forEach((_, i) => { const el = wrap.querySelector(`[data-total="${i}"]`); if (el) el.textContent = payMoney(totalFor(i)); });
+  wrap.querySelectorAll('input[type=checkbox]').forEach(x => x.onchange = paint);
+  paint();
+  wrap.querySelectorAll('[data-act]').forEach(btn => btn.onclick = async () => {
+    const i = +btn.dataset.i, p = list[i], shifts = {}, leads = {};
+    wrap.querySelectorAll(`input[data-p="${i}"]`).forEach(x => {
+      if (x.dataset.l) leads[x.dataset.l] = x.checked;
+      else { shifts[x.dataset.s] = shifts[x.dataset.s] || {}; shifts[x.dataset.s][x.dataset.k] = x.checked; }
+    });
+    try {
+      await syncFetch('/pay/review', { method:'POST', body: JSON.stringify({ id: p.id, status: btn.dataset.act, shifts, leads,
+        amount: totalFor(i), note: (wrap.querySelector(`[data-note="${i}"]`) || {}).value || '' }) });
+      flashToast(btn.dataset.act === 'paid' ? 'Marked paid' : btn.dataset.act === 'approved' ? `Approved ${payMoney(totalFor(i))}` : 'Sent back with questions',
+        `${p.canvasser} sees it on their phone.`, '#22c55e');
+      openPay();
+    } catch (e) { flashToast('Not saved', e.message || 'Could not reach the mailbox.', '#ef4444'); }
+  });
+}
+$('mPay').onclick = () => openPay();
+
+/* Settings: the code goes in once per phone. */
+(() => {
+  const inp = $('mSyncCode'); if (!inp) return;
+  inp.value = syncCode() ? '••••••••' : '';
+  renderSyncInfo();
+  $('mSyncSave').onclick = async () => {
+    const code = (inp.value || '').trim();
+    if (!code || code.startsWith('•')) return flashToast('Type the team code first', 'Travis gives each phone its own.', '#f59e0b');
+    if (!navigator.onLine) return flashToast('Needs signal', 'Saving the code checks it with the mailbox. Try again with signal.', '#f59e0b');
+    let me;
+    try { me = await fetch(SYNC_URL + '/whoami', { headers:{ 'x-team-code': code }, cache:'no-store' }).then(r => r.ok ? r.json() : Promise.reject(r.status)); }
+    catch (e) { return flashToast('That code did not work', e === 401 ? 'Check it with Travis and type it again.' : 'Could not reach the mailbox. Try again in a minute.', '#ef4444'); }
+    try {
+      localStorage.setItem('syncCode', code); localStorage.setItem('syncRole', me.role); localStorage.setItem('syncName', me.name || '');
+    } catch (e) { return flashToast('Could not save the code', 'The phone is out of room.', '#ef4444'); }
+    inp.value = '••••••••';
+    if (me.role === 'canvasser') {
+      if (!myName() && me.name) { try { localStorage.setItem('myName', me.name); } catch (e) {} if ($('mMyName')) $('mMyName').value = me.name; }
+      /* First time on: every door already on the phone goes too. */
+      const q = syncGet('syncQ') || { p:{}, g:{}, a:0, n:0 };
+      q.p = q.p || {}; q.g = q.g || {};
+      let all = []; try { all = await DB.keys('visits'); } catch (e) {}
+      for (const id of all) q.p[id] = (q.n = (q.n || 0) + 1);
+      q.a = (q.n = (q.n || 0) + 1);
+      syncSet('syncQ', q);
+      flashToast(`Team sync on, ${me.name}`, 'Your doors now go to Travis by themselves when you have signal.', '#22c55e');
+      syncFlush();
+    } else {
+      flashToast('Team sync on', "The canvassers' doors will show up here by themselves.", '#22c55e');
+      syncPull(false);
+    }
+    renderSyncInfo();
+    if (!state._syncBooted) { state._syncBooted = true; syncBoot(); }
+  };
+  $('mSyncNow').onclick = () => { if (!syncCode()) return flashToast('No team code yet', 'Type it in and tap Save code.', '#f59e0b'); syncTick(false); };
+  $('mSyncOff').onclick = async () => {
+    if (!syncCode()) return;
+    const k = await askChoice('Turn off team sync?', 'Nothing is deleted. Doors simply stop going out (or coming in) until a code is saved again.',
+      [{ key:'off', label:'Turn it off' }, { key:'no', label:'Keep it on' }]);
+    if (k !== 'off') return;
+    try { ['syncCode','syncRole','syncName'].forEach(x => localStorage.removeItem(x)); } catch (e) {}
+    inp.value = ''; syncSay('Turned off.');
+  };
+})();
+
 function renderPinInfo() {
   $('pinInfo').textContent = localStorage.getItem('pin')
     ? 'A PIN is set. The app asks for it when you open it or come back to it.'
@@ -15387,6 +15955,79 @@ $('mSound').onclick = () => {
 };
 $('mTest').onclick = testConnections;
 $('mRestore').onclick = () => $('restoreFile').click();
+
+/* ---------------- v48: add a canvasser's doors ----------------
+   The merge tool, built into the app. A canvasser's backup carries THEIR settings, home
+   pin and walking track, and a full Restore would lay those over his. This takes only
+   the two things that belong to the business: door records and appointments. Both are
+   add-only by id, the same rule Restore already uses, so a door he already has is never
+   touched and the same file twice adds nothing. Each new door gets one note saying whose
+   it was. No new fields on any record. */
+const whoFromFile = (d, fname) => {
+  const n = (d && (d.canvasser || d.madeBy)) || '';
+  if (typeof n === 'string' && n.trim()) return n.trim().slice(0, 40);
+  const m = /^([a-z0-9-]+?)-canvass-backup-/i.exec(fname || '');
+  return m ? m[1].replace(/-/g, ' ').replace(/\b\w/g, c => c.toUpperCase()) : '';
+};
+$('mAddTeam').onclick = () => $('teamFile').click();
+$('teamFile').onchange = async e => {
+  const files = [...(e.target.files || [])];
+  try { e.target.value = ''; } catch (err) {}
+  if (!files.length) return;
+  if (visitsReadFailed || wipeHalfDone) {
+    return flashToast('Not adding anything right now', 'The phone will not hand back your own door records. Close the app right down and open it again first.', '#ef4444');
+  }
+  const lines = []; let anyWrote = 0, refused = 0, badFiles = [];
+  await flushDay();
+  for (const f of files) {
+    let d;
+    try { d = JSON.parse(await f.text()); } catch (err) { badFiles.push(f.name); continue; }
+    if (!d || typeof d !== 'object' || !Array.isArray(d.visits)) { badFiles.push(f.name); continue; }
+    const who = whoFromFile(d, f.name);
+    const tag = who ? `From ${who}'s doors.` : "From a canvasser's doors.";
+    let wrote = 0, kept = 0;
+    for (const v of d.visits) {
+      if (!v || typeof v.id !== 'string' || !v.id || typeof v.ts !== 'number') { refused++; continue; }
+      try {
+        if (await DB.get('visits', v.id)) { kept++; continue; }
+        const lg = Array.isArray(v.log) ? v.log.slice() : [];
+        lg.push({ id:newId(), ts:Date.now(), kind:'note', auto:true, text:tag });
+        const rec = Object.assign({}, v, { log: lg,
+          notes: lg.filter(x => x && x.kind === 'note').map(x => x.text).join(' | ') });
+        await DB.put('visits', rec); wrote++;
+      } catch (err) { refused++; }
+    }
+    /* Appointments: a v4 backup carries them as the raw string in local.appts; the merge
+       tool's file and older backups carry an array at the top. */
+    let theirAppts = [];
+    try {
+      if (d.local && typeof d.local.appts === 'string') theirAppts = JSON.parse(d.local.appts);
+      else if (Array.isArray(d.appts)) theirAppts = d.appts;
+    } catch (err) { theirAppts = []; }
+    if (!Array.isArray(theirAppts)) theirAppts = [];
+    const have = new Set(state.appts.map(a => a && a.id));
+    const newAppts = theirAppts.filter(a => a && typeof a.id === 'string' && a.id && typeof a.at === 'number' && !have.has(a.id));
+    if (newAppts.length) {
+      const before = state.appts;
+      state.appts = state.appts.concat(newAppts);
+      try { saveAppts(); } catch (err) { state.appts = before; refused += newAppts.length; newAppts.length = 0; }
+    }
+    anyWrote += wrote + newAppts.length;
+    lines.push(`<b>${esc(who || f.name)}</b>: ${wrote} new door${wrote === 1 ? '' : 's'} added`
+      + (kept ? `, ${kept} already here and left alone` : '')
+      + (newAppts.length ? `, ${newAppts.length} appointment${newAppts.length === 1 ? '' : 's'} added` : '') + '.');
+  }
+  if (anyWrote) {
+    for (const day of state.days.values()) day.readFailed = true;
+    state.days.clear(); allDaysLoaded = false;
+    await loadStored();
+    if (!visitsReadFailed) { renderSwitchUi(); renderStats(); renderAreas(); renderHouse(); drawMini(); if (window._map) refreshMapLayers(); }
+  }
+  if (badFiles.length) lines.push(`Not a CanvassEaze backup, so skipped: ${badFiles.map(esc).join(', ')}. `
+    + `Pick the file that ends in <b>.json</b>, not the day log.`);
+  if (refused) lines.push(`${refused} thing${refused === 1 ? '' : 's'} would not save. Nearly always no room left on the phone. Nothing of yours was removed.`);
+  await askChoice(anyWrote ? 'Added' : 'Nothing new to add', lines.join('<br><br>') || 'That file had nothing in it.', [{ key:'ok', label:'OK' }]);
+};
 $('restoreFile').onchange = async e => {
   const f = e.target.files[0]; if (!f) return;
   try {
@@ -15684,6 +16325,7 @@ $('mapSat').onclick = () => { mapOpts.sat = !mapOpts.sat;
    some later save, because the state this control holds IS the whole setting — there is
    nowhere else it could be recovered from. */
 $('stormCycle').onclick = async () => {
+  if (!STORMS_ON) return;
   stormState.show = (stormState.show + 1) % 3;
   localStorage.setItem('stormShow', String(stormState.show));
   buzz(10);
@@ -19936,9 +20578,20 @@ async function dayReportHtml(key) {
   const bookLine = Object.keys(byBook).map(l => `${esc((LINES[l] || LINES.roof).label)}: ${byBook[l]}`).join(' &middot; ');
   const counts = Object.keys(STATUS).filter(k => f.byStatus[k])
     .map(k => `${esc((STATUS[k]||{}).label || k)}: ${f.byStatus[k]}`).join(' &middot; ');
+  /* v48: whose day it is, and what they set. Read from fields the records already carry
+     (dispo, followAt, owner, phone, log). Nothing new is stored on a door. */
+  const who = myName();
+  const setToday = f.doors.map(c => c.v).filter(v => v.dispo === 'appt' || v.dispo === 'callback');
+  const setRow = v => {
+    const booked = logOf(v).some(e => e && e.kind === 'note' && /Booked on Travis's calendar/.test(e.text || ''));
+    const when = v.dispo === 'callback' && v.followAt ? 'call back ' + new Date(v.followAt).toLocaleString([], { weekday:'short', month:'short', day:'numeric', hour:'numeric', minute:'2-digit' }) : '';
+    return `<tr><td>${esc(dlClock(v.ts))}</td><td>${esc(v.addr || '')}</td><td>${esc(v.owner || '')}</td>`
+      + `<td>${esc(v.phone || '')}</td><td>${esc((DISPO[v.dispo] || {}).label || v.dispo)}${booked ? ' (booked on calendar)' : ''}</td>`
+      + `<td>${esc(when)}</td></tr>`;
+  };
   return `<!doctype html><html><head><meta charset="utf-8">`
    + `<meta name="viewport" content="width=device-width,initial-scale=1">`
-   + `<title>${esc(dayLabelLong(key))} — door log</title><style>`
+   + `<title>${who ? esc(who) + ' · ' : ''}${esc(dayLabelLong(key))} — door log</title><style>`
    + `body{font:14px/1.5 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;margin:0;padding:18px;color:#111}`
    + `h1{font-size:20px;margin:0 0 2px}h2{font-size:15px;margin:18px 0 6px}`
    + `.sub{color:#555;margin:0 0 14px}`
@@ -19951,7 +20604,7 @@ async function dayReportHtml(key) {
    + `.note{margin-top:18px;font-size:12px;color:#444;border-top:1px solid #ddd;padding-top:10px}`
    + `@media print{.tile{border-color:#999}}`
    + `</style></head><body>`
-   + `<h1>${esc(dayLabelLong(key))}</h1>`
+   + `<h1>${who ? esc(who) + ' &middot; ' : ''}${esc(dayLabelLong(key))}</h1>`
    + `<p class="sub">${f.first != null ? 'Out from ' + esc(dlClock(f.first)) + ' to ' + esc(dlClock(f.last)) : 'Nothing recorded'}`
    + ` &middot; ${esc(new Date(key + 'T12:00:00').toLocaleDateString())}</p>`
    + `<div class="tiles"><div class="tile"><b>${f.count}</b><span>doors</span></div>`
@@ -19967,6 +20620,11 @@ async function dayReportHtml(key) {
        : '')
    + (counts ? `<p class="sub">${counts}</p>` : '')
    + (bookLine ? `<p class="sub">${bookLine}</p>` : '')
+   + (setToday.length
+       ? `<h2>Appointments and callbacks set today: ${setToday.length}</h2>`
+         + `<table><tr><th>Time</th><th>Address</th><th>Owner</th><th>Phone</th><th>Stage</th><th>Follow up</th></tr>`
+         + setToday.map(setRow).join('') + `</table>`
+       : '')
    /* On the report as well as on the screen. This is the file he hands to someone who is
       paying for the hours, so a day that closed itself has to say so IN the document —
       otherwise the short day looks like a short day and nothing explains it. */
@@ -20510,6 +21168,7 @@ window.addEventListener('resize', drawMini);
   await loadStored();
   if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(()=>{});
   drawMini();
+  state._syncBooted = true; syncBoot();
 })();
 </script>
 </body>
