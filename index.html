@@ -786,6 +786,12 @@ select{min-height:44px}
 #eraseBar.picking{background:rgba(22,163,74,.95);border-color:rgba(34,197,94,.65)}
 .payT{border-collapse:collapse;width:100%;font-size:13px}.payT th,.payT td{border-bottom:1px solid #334155;padding:5px 3px;text-align:left}.payCard{border:1px solid #334155;border-radius:12px;padding:10px;margin:10px 0}.payRow{font-size:13px;padding:6px 0;border-bottom:1px solid #1e293b}.payRow label{display:inline-flex;align-items:center;gap:6px;margin:6px 14px 0 0;white-space:nowrap}.payRow input[type=checkbox]{width:20px;height:20px;margin:0;flex:none}
 #detailSheet.kid .kidHide{display:none!important}
+#menuSheet.kid .sheetScroll > *:not(#syncCard):not(#kidMenu):not(#versionStamp){display:none!important}
+#menuSheet.kid #mSyncOff{display:none!important}
+#menuSheet:not(.kid) #kidMenu{display:none}
+#kidMenu .kmHead{font-size:12px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:var(--dim);margin:16px 0 2px}
+#kidMenu .kmBtn{text-align:left;margin-top:8px}
+#kidMenu .kmBtn.primary{text-align:center}
 #detailSheet:not(.kid) .kidOnly{display:none!important}
 #dKidNext .chip{flex:1;font-size:14px}
 #dKidNext .chip.on.cb{background:#f59e0b2e;border-color:#f59e0b;color:#fbbf24}
@@ -1823,6 +1829,23 @@ select{min-height:44px}
         <div class="chips" style="margin-top:6px"><button class="chip" id="mSyncSave">Save code</button><button class="chip" id="mSyncNow">Sync now</button><button class="chip" id="mSyncOff">Turn off</button></div>
         <button class="ghost hide" id="mBuilds" style="margin-top:8px">🏗️ My builds (where I'm working)</button>
         <div class="small why" style="margin-top:6px">Each phone types its own code once. Doors then go to Travis by themselves whenever there is signal, and wait on the phone when there is not. The code stays on this phone and is not in your backup.</div>
+      </div>
+
+      <!-- v52: a canvasser's phone gets this short menu instead of everything below it.
+           Same buttons underneath (each one presses the real one), just the ones they use. -->
+      <div id="kidMenu">
+        <div class="kmHead">At the door</div>
+        <button class="ghost kmBtn" data-go="mTalk">💬 What do I say? (Talk Paths)</button>
+        <button class="ghost kmBtn" data-go="mBookTimes">📅 Travis's open times</button>
+        <button class="ghost kmBtn" data-go="mRoute">🔁 Doors to try again</button>
+        <div class="kmHead">My day</div>
+        <button class="ghost kmBtn" data-go="mSession">📊 How today's going</button>
+        <button class="ghost kmBtn" data-go="mEndDay">■ End the day</button>
+        <button class="primary kmBtn" data-go="mSendDay">📤 Send my day to Dustin</button>
+        <button class="ghost kmBtn" data-go="mPay">💵 Pay requests</button>
+        <div class="kmHead">Me</div>
+        <label class="f" style="margin-top:4px">Your name (goes on your day log)</label>
+        <input id="kmName" type="text" autocomplete="off" maxlength="40" placeholder="First name">
       </div>
 
       <!-- The words of a section heading sit in their own span so a rename can reach
@@ -15800,6 +15823,7 @@ function renderSyncInfo() {
   const off = $('mSyncOff'); if (off) off.style.display = code ? '' : 'none';
   const now = $('mSyncNow'); if (now) now.style.display = code ? '' : 'none';
   const mb = $('mBuilds'); if (mb) mb.classList.toggle('hide', !(code && role === 'boss'));
+  const ms = $('menuSheet'); if (ms) ms.classList.toggle('kid', !!code && role === 'canvasser');
   if (!code) { el.textContent = 'Off. Type the code Travis gave this phone, then tap Save code.'; return; }
   const q = syncGet('syncQ') || {};
   const waiting = Object.keys(q.p || {}).length + Object.keys(q.g || {}).length;
@@ -16110,6 +16134,18 @@ async function openBuilds(pre) {
   $('bdList').innerHTML = '<div class="small">Loading…</div>';
   await fetchBuilds(true); bdRender();
 }
+/* the short menu's buttons press the real ones, so every rule behind them still applies */
+document.querySelectorAll('#kidMenu .kmBtn').forEach(b => b.onclick = () => { const t = $(b.dataset.go); if (t) t.click(); });
+(() => {
+  const k = $('kmName'); if (!k) return;
+  k.value = myName();
+  k.onchange = () => {
+    const n = k.value.trim().slice(0, 40);
+    try { if (n) localStorage.setItem('myName', n); else localStorage.removeItem('myName'); } catch (e) {}
+    k.value = n; if ($('mMyName')) $('mMyName').value = n;
+    flashToast(n ? 'Name saved' : 'Name cleared', n ? 'It goes on your day log' : '', '#22c55e');
+  };
+})();
 $('dKidNext').querySelectorAll('.chip').forEach(c => c.onclick = () => {
   if (!editing) return;
   pullDetail();
