@@ -1847,6 +1847,7 @@ select{min-height:44px}
         <input id="mSyncCode" type="text" autocomplete="off" autocapitalize="characters" spellcheck="false" maxlength="24" placeholder="Type your team code" style="margin-top:8px">
         <div class="chips" style="margin-top:6px"><button class="chip" id="mSyncSave">Save code</button><button class="chip" id="mSyncNow">Sync now</button><button class="chip" id="mSyncOff">Turn off</button></div>
         <button class="primary hide" id="mTeam" style="margin-top:8px">👥 Team: what the canvassers did</button>
+        <button class="ghost hide" id="mPreview" style="margin-top:8px">👀 Preview what the kids see</button>
         <button class="ghost hide" id="mBuilds" style="margin-top:8px">🏗️ My builds (where I'm working)</button>
         <div class="small why" style="margin-top:6px">Each phone types its own code once. Doors then go to Travis by themselves whenever there is signal, and wait on the phone when there is not. The code stays on this phone and is not in your backup.</div>
       </div>
@@ -1854,6 +1855,11 @@ select{min-height:44px}
       <!-- v52: a canvasser's phone gets this short menu instead of everything below it.
            Same buttons underneath (each one presses the real one), just the ones they use. -->
       <div id="kidMenu">
+        <div id="kmPreview" class="hide" style="border:1px dashed #a78bfa;border-radius:12px;padding:10px 12px;margin-top:4px">
+          <div style="font-weight:800">👀 You're previewing the kids' view</div>
+          <div class="small" style="margin-top:2px">Your phone still syncs as you. Only the screens change.</div>
+          <button class="primary" id="kmExit" style="margin-top:8px">Back to my view</button>
+        </div>
         <div class="kmHead">At the door</div>
         <button class="ghost kmBtn" data-go="mTalk">💬 What do I say? (Talk Paths)</button>
         <button class="ghost kmBtn" data-go="mBookTimes">📅 Travis's open times</button>
@@ -15820,6 +15826,9 @@ const syncGet = k => { try { return JSON.parse(localStorage.getItem(k) || 'null'
 const syncSet = (k, v) => { try { localStorage.setItem(k, JSON.stringify(v)); return true; } catch (e) { return false; } };
 const syncCode = () => { try { return localStorage.getItem('syncCode') || ''; } catch (e) { return ''; } };
 const syncRole = () => { try { return localStorage.getItem('syncRole') || ''; } catch (e) { return ''; } };
+const kidPreview = () => { try { return localStorage.getItem('kidPreview') === '1'; } catch (e) { return false; } };
+/* the short screens: a canvasser's phone, or Travis previewing them */
+const kidView = () => !!syncCode() && (syncRole() === 'canvasser' || (syncRole() === 'boss' && kidPreview()));
 const syncName = () => { try { return localStorage.getItem('syncName') || ''; } catch (e) { return ''; } };
 const syncHash = o => { const s = JSON.stringify(o); let h = 2166136261;
   for (let i = 0; i < s.length; i++) { h ^= s.charCodeAt(i); h = Math.imul(h, 16777619); } return (h >>> 0).toString(36) + '.' + s.length; };
@@ -15844,7 +15853,9 @@ function renderSyncInfo() {
   const now = $('mSyncNow'); if (now) now.style.display = code ? '' : 'none';
   const mb = $('mBuilds'); if (mb) mb.classList.toggle('hide', !(code && role === 'boss'));
   const mt = $('mTeam'); if (mt) mt.classList.toggle('hide', !(code && role === 'boss'));
-  const ms = $('menuSheet'); if (ms) ms.classList.toggle('kid', !!code && role === 'canvasser');
+  const ms = $('menuSheet'); if (ms) ms.classList.toggle('kid', kidView());
+  const mp = $('mPreview'); if (mp) mp.classList.toggle('hide', !(code && role === 'boss'));
+  const kp = $('kmPreview'); if (kp) kp.classList.toggle('hide', !(code && role === 'boss' && kidPreview()));
   if (!code) { el.textContent = 'Off. Type the code Travis gave this phone, then tap Save code.'; return; }
   const q = syncGet('syncQ') || {};
   const waiting = Object.keys(q.p || {}).length + Object.keys(q.g || {}).length;
@@ -16216,6 +16227,11 @@ async function openTeam() {
 }
 $('mTeam').onclick = openTeam;
 
+/* v53: Travis can look at the kids' screens from his own phone. Screens only: his phone
+   keeps syncing as him, and his own records are untouched. */
+$('mPreview').onclick = () => { try { localStorage.setItem('kidPreview', '1'); } catch (e) {} renderSyncInfo(); flashToast("Kids' view", 'Open any house to see their screen. Menu, Back to my view, to switch back.', '#a78bfa'); };
+$('kmExit').onclick = () => { try { localStorage.removeItem('kidPreview'); } catch (e) {} renderSyncInfo(); };
+
 /* the short menu's buttons press the real ones, so every rule behind them still applies */
 document.querySelectorAll('#kidMenu .kmBtn').forEach(b => b.onclick = () => { const t = $(b.dataset.go); if (t) t.click(); });
 (() => {
@@ -16273,7 +16289,7 @@ $('bdSave').onclick = async () => {
       /* v52: a canvasser's phone gets the short panel. Tags, the full stage list, come-back
          dates, the county record and delete are Travis's, so they step aside. Nothing is
          removed from the record. */
-      const kid = syncRole() === 'canvasser';
+      const kid = kidView();
       $('detailSheet').classList.toggle('kid', kid);
       const br = $('dBookRow'); if (br) br.classList.toggle('kidHide', true);
       if (kid && editing) $('dKidNext').querySelectorAll('.chip').forEach(c => {
