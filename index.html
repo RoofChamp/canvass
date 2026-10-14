@@ -785,6 +785,21 @@ select{min-height:44px}
 /* ---------- address search on the big map ---------- */
 #eraseBar.picking{background:rgba(22,163,74,.95);border-color:rgba(34,197,94,.65)}
 .payT{border-collapse:collapse;width:100%;font-size:13px}.payT th,.payT td{border-bottom:1px solid #334155;padding:5px 3px;text-align:left}.payCard{border:1px solid #334155;border-radius:12px;padding:10px;margin:10px 0}.payRow{font-size:13px;padding:6px 0;border-bottom:1px solid #1e293b}.payRow label{display:inline-flex;align-items:center;gap:6px;margin:6px 14px 0 0;white-space:nowrap}.payRow input[type=checkbox]{width:20px;height:20px;margin:0;flex:none}
+.bkDays{display:flex;gap:8px;overflow-x:auto;padding:10px 0 4px;-webkit-overflow-scrolling:touch}
+.bkDay{flex:0 0 auto;min-width:64px;min-height:52px;border-radius:12px;background:var(--card2);border:1px solid var(--line);color:var(--txt);font-weight:800;font-size:13px;line-height:1.2;padding:6px 10px}
+.bkDay small{display:block;font-weight:600;color:var(--dim);font-size:11px}
+.bkDay.on{background:#1e3a5f;border-color:#3b82f6}
+.bkDay.near{box-shadow:inset 0 -3px 0 #a78bfa}
+.bkTimes{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:10px}
+.bkT{min-height:48px;border-radius:12px;background:var(--card2);border:1px solid var(--line);color:var(--txt);font-weight:800;font-size:15px}
+.bkT.near{border:2px solid #a78bfa;background:#2e1065}
+.bkT.on{background:#2563eb;border-color:#2563eb;color:#fff}
+.bkT.look{opacity:.85}
+.bkWhen{margin-top:14px;padding:10px 12px;border-radius:12px;background:#0f2a1a;border:1px solid #166534;font-weight:800}
+.bkOpt{font-weight:600;color:var(--dim)}
+.bkDone{margin-top:12px;padding:14px;border-radius:14px;background:#0f2a1a;border:1px solid #166534;line-height:1.5}
+.bdRow{border:1px solid var(--line);border-radius:12px;padding:10px 12px;margin-top:8px}
+.leaflet-tooltip.buildTip{background:#c2410c;color:#fff;border:0;font-weight:700;font-size:11px;padding:2px 6px;box-shadow:none}.leaflet-tooltip.buildTip:before{display:none}
 .leaflet-tooltip.stopTip{background:#7c3aed;color:#fff;border:0;font-weight:700;font-size:11px;padding:2px 6px;box-shadow:none}.leaflet-tooltip.stopTip:before{display:none}
 #findWrap{position:absolute;z-index:1002;left:10px;right:10px;top:calc(var(--safe-t) + 52px)}
 #findInput{background:rgba(15,21,29,.96);border:1px solid var(--line);border-radius:12px;padding:11px 38px 11px 13px;
@@ -1341,6 +1356,7 @@ select{min-height:44px}
         <div class="chips" id="dDispo"></div>
         <!-- v48: Travis's live booking calendar, for a clear yes at the door. -->
         <button class="ghost" id="dBook" style="margin-top:8px">📅 Book on Travis's calendar</button>
+        <button class="ghost hide" id="dBuild" style="margin-top:6px">🏗️ Mark a build here</button>
         <button class="ghost" id="dTalk" style="margin-top:6px">💬 What do I say? (Talk Paths)</button>
         <div class="subLab">Come back</div>
         <div class="chips" id="dFollowChips"></div>
@@ -1442,13 +1458,57 @@ select{min-height:44px}
   <div class="sheetBody">
     <div class="sheetHead"><h2>Travis's open times</h2><button class="x" data-close="bookSheet">Close</button></div>
     <div class="sheetScroll">
-      <div class="small" id="bookNote">Hand the phone over. They pick a time and type their own name and phone.</div>
+      <div class="small" id="bookFor" style="font-weight:700;color:var(--txt)"></div>
       <div class="small hide" id="bookNear" style="margin:8px 0 2px;padding:8px 10px;border-radius:10px;background:#2e1065;color:#ede9fe;line-height:1.45"></div>
+      <!-- v50: Travis's open times as plain buttons. Nothing else of his calendar is reachable
+           from here: pick a time, type their name and phone, Book. -->
+      <div id="bookPick" class="hide">
+        <div class="bkDays" id="bookDays"></div>
+        <div class="bkTimes" id="bookTimes"></div>
+        <div class="small" id="bookHint" style="margin-top:8px;color:var(--dim)"></div>
+        <div id="bookForm" class="hide">
+          <div id="bookWhen" class="bkWhen"></div>
+          <label class="f">Their first name</label>
+          <input id="bkFirst" autocomplete="off" autocapitalize="words" maxlength="40">
+          <label class="f">Last name <span class="bkOpt">(optional)</span></label>
+          <input id="bkLast" autocomplete="off" autocapitalize="words" maxlength="40">
+          <label class="f">Their phone</label>
+          <input id="bkPhone" type="tel" inputmode="tel" autocomplete="off" placeholder="(614) 555-0100" maxlength="20">
+          <label class="f">Email <span class="bkOpt">(optional)</span></label>
+          <input id="bkEmail" type="email" inputmode="email" autocomplete="off" autocapitalize="off" maxlength="80">
+          <div class="small hide" id="bookErr" style="color:#fca5a5;margin-top:10px;font-weight:700"></div>
+          <button class="primary" id="bookGo">Book it</button>
+        </div>
+        <div id="bookOk" class="hide"></div>
+      </div>
+      <div class="small" id="bookNote">Hand the phone over. They pick a time and type their own name and phone.</div>
       <div id="bookWrap" style="height:68vh;min-height:420px;border-radius:12px;overflow:hidden;background:#fff;margin-top:10px"></div>
       <div id="bookActs">
         <button class="primary" id="bookDone" style="margin-top:12px">✓ They booked a time</button>
         <button class="ghost" id="bookNo">They didn't book</button>
       </div>
+    </div>
+  </div>
+</div>
+<!-- v50: Travis marks where he has a job going. Canvassers see the street and the days. -->
+<div id="buildSheet" class="sheet hide">
+  <div class="sheetBody">
+    <div class="sheetHead"><h2>🏗️ My builds</h2><button class="x" data-close="buildSheet">Close</button></div>
+    <div class="sheetScroll">
+      <div class="small">Mark where you have a job going. The canvassers see the street and the days on their map (never the house number), so they can work the streets around it and mention it next door.</div>
+      <label class="f">Address</label>
+      <input id="bdAddr" autocomplete="off" placeholder="123 Main St, Columbus" maxlength="120">
+      <div class="small hide" id="bdOk" style="color:#86efac;margin-top:8px;font-weight:700"></div>
+      <label class="f">What</label>
+      <div class="chips" id="bdWhat"></div>
+      <div style="display:flex;gap:10px">
+        <div style="flex:1;min-width:0"><label class="f">First day</label><input id="bdFrom" type="date"></div>
+        <div style="flex:1;min-width:0"><label class="f">Last day</label><input id="bdTo" type="date"></div>
+      </div>
+      <div class="small hide" id="bdErr" style="color:#fca5a5;margin-top:10px;font-weight:700"></div>
+      <button class="primary" id="bdSave">Save build</button>
+      <button class="ghost hide" id="bdNew">Start a new one instead</button>
+      <div id="bdList" style="margin-top:16px"></div>
     </div>
   </div>
 </div>
@@ -1747,6 +1807,7 @@ select{min-height:44px}
         <div class="small" id="syncInfo" style="margin-top:4px"></div>
         <input id="mSyncCode" type="text" autocomplete="off" autocapitalize="characters" spellcheck="false" maxlength="24" placeholder="Type your team code" style="margin-top:8px">
         <div class="chips" style="margin-top:6px"><button class="chip" id="mSyncSave">Save code</button><button class="chip" id="mSyncNow">Sync now</button><button class="chip" id="mSyncOff">Turn off</button></div>
+        <button class="ghost hide" id="mBuilds" style="margin-top:8px">🏗️ My builds (where I'm working)</button>
         <div class="small why" style="margin-top:6px">Each phone types its own code once. Doors then go to Travis by themselves whenever there is signal, and wait on the phone when there is not. The code stays on this phone and is not in your backup.</div>
       </div>
 
@@ -13600,7 +13661,7 @@ document.querySelectorAll('.dsecHead[data-msec]').forEach(b => {
 /* ---- what version is actually on the phone ----
    Matches the service worker cache name, so "did the update land" is answerable by
    looking rather than guessing. */
-const BUILD_VERSION = 'v49';
+const BUILD_VERSION = 'v50';
 const BUILD_DATE = '7 August 2026';
 function renderVersionStamp() {
   const el = $('versionStamp'); if (!el) return;
@@ -15404,33 +15465,140 @@ $('mEndDay').onclick = async () => {
 };
 $('sesExport').onclick = () => { xOpts.range = 'today'; openExport(); closeSheet('sessionSheet'); };
 
-/* ---------------- v48: book on Travis's calendar ---------------- */
+/* ---------------- v48: book on Travis's calendar ----------------
+   v50: when the mailbox can reach Travis's calendar, the sheet is just his open times as
+   buttons, then their name and phone, then Book. The booking carries this house's address,
+   so it lands on his calendar with a location and the door marks itself Appointment. When
+   the mailbox cannot (no team code, booking not switched on, an error), the GHL booking page
+   comes up exactly as before, with They booked a time. */
 let bookFor = null;   // the door record the booking is for, or null when just looking
-function openBooking(forDoor) {
-  bookFor = forDoor || null;
-  $('bookActs').classList.toggle('hide', !bookFor);
-  renderBookNear(bookFor);
-  fetchStops().then(() => renderBookNear(bookFor));
+let bookDays = {}, bookDay = null, bookSlot = null, bookBusy = false;
+const BOOK_NEAR_MI = 6;
+const etKeyOf = ms => new Intl.DateTimeFormat('en-CA', { timeZone: 'America/New_York', year: 'numeric', month: '2-digit', day: '2-digit' }).format(new Date(ms));
+const slotLabel = iso => new Date(iso).toLocaleTimeString([], { hour:'numeric', minute:'2-digit' });
+const slotLong = iso => new Date(iso).toLocaleString([], { weekday:'short', month:'short', day:'numeric', hour:'numeric', minute:'2-digit' });
+function doorArea(v) {
+  const f = v && CITY_FIELDS[v.county];
+  const raw = f && v.extra ? String(f(v.extra) || '').trim() : '';
+  return raw && raw !== '0' ? raw : '';
+}
+function bookShow(mode) {          // 'pick' | 'page' | 'off'
+  $('bookPick').classList.toggle('hide', mode !== 'pick');
+  $('bookWrap').classList.toggle('hide', mode === 'pick');
+  $('bookNote').classList.toggle('hide', mode === 'pick');
+  $('bookActs').classList.toggle('hide', mode !== 'page' || !bookFor);
+}
+function bookPage() {
+  bookShow('page');
   const wrap = $('bookWrap');
   if (!navigator.onLine) {
     wrap.innerHTML = '<div class="small" style="padding:16px;color:#334155">No signal right now, so the calendar cannot load. '
       + 'Get their first name and phone for a callback instead, and set Stage to Callback.</div>';
-  } else {
-    // a fresh frame every time, so the times shown are the times open right now
-    wrap.innerHTML = '';
-    const f = document.createElement('iframe');
-    f.src = BOOKING_URL; f.title = "Travis's open times";
-    f.style.cssText = 'width:100%;height:100%;border:0;display:block;background:#fff';
-    wrap.appendChild(f);
+    return;
   }
+  // a fresh frame every time, so the times shown are the times open right now
+  wrap.innerHTML = '';
+  const f = document.createElement('iframe');
+  f.src = BOOKING_URL; f.title = "Travis's open times";
+  f.style.cssText = 'width:100%;height:100%;border:0;display:block;background:#fff';
+  wrap.appendChild(f);
+}
+/* Which times are "near Travis": the same day as one of his stops within 6 miles of this
+   house and inside 2.5 hours of it, or any time on a day he has a build within 6 miles. */
+function bookNearInfo() {
+  const here = bookFor && bookFor.lat != null ? bookFor : (state.pos ? { lat: state.pos.lat, lon: state.pos.lon } : null);
+  const out = { stops: [], buildDays: new Set() };
+  if (!here) return out;
+  const mi = (a) => haversine(here.lat, here.lon, a.lat, a.lon) / 1609.34;
+  out.stops = stopsCached().filter(s => s.lat != null && mi(s) <= BOOK_NEAR_MI);
+  for (const b of buildsCached()) {
+    if (b.lat == null || mi(b) > BOOK_NEAR_MI) continue;
+    for (let d = new Date(b.from + 'T12:00:00'); dayKey(+d) <= b.to; d.setDate(d.getDate() + 1)) out.buildDays.add(dayKey(+d));
+  }
+  return out;
+}
+function slotNear(iso, near) {
+  const t = Date.parse(iso), k = etKeyOf(t), W = 1.5 * 3600000, D = 45 * 60000;
+  if (near.buildDays.has(k)) return true;
+  return near.stops.some(s => etKeyOf(s.start) === k
+    && ((t + D <= s.start && s.start - (t + D) <= W) || (t >= s.end && t - s.end <= W)));
+}
+/* Fifteen-minute steps make a wall of buttons. Show the hour and half hour, plus the time
+   right before and right after each of Travis's nearby stops, unless a day has hardly any. */
+function daySlots(list, near) {
+  const keep = new Set(list.filter(x => /:(00|30):00/.test(x)));
+  for (const s of near.stops) {
+    const before = list.filter(x => Date.parse(x) + 45 * 60000 <= s.start).pop();
+    const after = list.find(x => Date.parse(x) >= s.end);
+    for (const x of [before, after]) if (x && slotNear(x, near)) keep.add(x);
+  }
+  return keep.size >= 4 ? list.filter(x => keep.has(x)) : list;
+}
+function renderBookPick() {
+  const near = bookNearInfo();
+  const keys = Object.keys(bookDays).sort();
+  const today = etKeyOf(Date.now()), tmw = etKeyOf(Date.now() + 86400000);
+  if (!keys.length) {
+    $('bookDays').innerHTML = ''; $('bookTimes').innerHTML = '';
+    $('bookHint').textContent = 'No open times in the next 10 days. Get their name and phone and set Stage to Callback.';
+    $('bookForm').classList.add('hide');
+    return;
+  }
+  const dayNear = k => near.buildDays.has(k) || bookDays[k].some(x => slotNear(x, near));
+  if (!bookDay || !bookDays[bookDay]) bookDay = keys.find(dayNear) || keys[0];
+  $('bookDays').innerHTML = keys.map(k => {
+    const d = new Date(k + 'T12:00:00');
+    const top = k === today ? 'Today' : k === tmw ? 'Tomorrow' : d.toLocaleDateString([], { weekday:'short' });
+    return `<button class="bkDay${k === bookDay ? ' on' : ''}${dayNear(k) ? ' near' : ''}" data-k="${k}">${top}`
+      + `<small>${d.toLocaleDateString([], { month:'short', day:'numeric' })}</small></button>`;
+  }).join('');
+  const list = daySlots(bookDays[bookDay], near);
+  const look = !bookFor;
+  $('bookTimes').innerHTML = list.map(x => `<button class="bkT${slotNear(x, near) ? ' near' : ''}${x === bookSlot ? ' on' : ''}${look ? ' look' : ''}" data-s="${x}">${slotLabel(x)}</button>`).join('');
+  const anyNear = list.some(x => slotNear(x, near));
+  $('bookHint').textContent = (anyNear ? 'Purple times are next to where Travis already is. Offer those first. ' : '')
+    + (look ? 'Just looking. To book one, open the house and tap Book on Travis\'s calendar.' : '');
+  $('bookDays').querySelectorAll('.bkDay').forEach(b => b.onclick = () => { bookDay = b.dataset.k; bookSlot = null; $('bookForm').classList.add('hide'); renderBookPick(); });
+  if (!look) $('bookTimes').querySelectorAll('.bkT').forEach(b => b.onclick = () => bookPickSlot(b.dataset.s));
+}
+function bookPickSlot(iso) {
+  bookSlot = iso; renderBookPick();
+  $('bookWhen').textContent = `${slotLong(iso)} · about 45 minutes`;
+  $('bookGo').textContent = `Book ${slotLong(iso)}`;
+  $('bookErr').classList.add('hide');
+  $('bookForm').classList.remove('hide');
+  setTimeout(() => $('bookForm').scrollIntoView({ behavior: 'smooth', block: 'start' }), 60);
+}
+async function openBooking(forDoor) {
+  bookFor = forDoor || null; bookSlot = null; bookDay = null;
+  $('bookFor').textContent = bookFor ? `For ${bookFor.addr || 'this house'}` : '';
+  $('bookOk').classList.add('hide'); $('bookOk').innerHTML = '';
+  $('bookForm').classList.add('hide');
+  $('bookDays').innerHTML = ''; $('bookTimes').innerHTML = ''; $('bookHint').textContent = '';
+  if (bookFor) {               // whatever is already on the house, so nobody types it twice
+    const nm = bookFor.nameFromOwner ? '' : (goesByOf(bookFor) || contactOf(bookFor));
+    const parts = nm.split(/\s+/).filter(Boolean);
+    $('bkFirst').value = parts[0] || ''; $('bkLast').value = parts.slice(1).join(' ');
+    $('bkPhone').value = bookFor.phone || ''; $('bkEmail').value = bookFor.email || '';
+  }
+  renderBookNear(bookFor);
+  fetchStops().then(() => renderBookNear(bookFor));
+  fetchBuilds().then(() => renderBookNear(bookFor));
   openSheet('bookSheet');
+  if (!navigator.onLine || !syncCode()) return bookPage();
+  bookShow('pick');
+  $('bookHint').textContent = 'Loading Travis\'s open times…';
+  let r = null;
+  try { r = await syncFetch('/book/slots'); } catch (e) { r = null; }
+  if (!r || !r.ready) return bookPage();
+  bookDays = r.days || {};
+  await Promise.all([fetchStops(), fetchBuilds()]).catch(() => {});
+  renderBookNear(bookFor); renderBookPick();
 }
 $('mBookTimes').onclick = () => openBooking(null);
 $('dBook').onclick = () => { if (!editing) return; pullDetail(); openBooking(editing); };
 $('bookNo').onclick = () => { bookFor = null; closeSheet('bookSheet'); };
-$('bookDone').onclick = async () => {
-  const v = bookFor; bookFor = null;
-  closeSheet('bookSheet');
+async function markBooked(v, whenText) {
   if (!v || v !== editing) return;
   if (!editing.status) editing.status = 'talked';
   if ((editing.dispo || 'new') !== 'appt') {
@@ -15438,8 +15606,61 @@ $('bookDone').onclick = async () => {
     const stageWord = (LABELS['lbl.stage.appt'] || {}).def || 'appt';
     editing.log = [...logOf(editing), { id:newId(), ts:Date.now(), kind:'note', auto:true, text:`Stage set to ${stageWord}.` }];
   }
-  editing.log = [...logOf(editing), { id:newId(), ts:Date.now(), kind:'note', auto:true, text:"Booked on Travis's calendar." }];
+  editing.log = [...logOf(editing), { id:newId(), ts:Date.now(), kind:'note', auto:true,
+    text: whenText ? `Booked on Travis's calendar for ${whenText}.` : "Booked on Travis's calendar." }];
   await saveDetail();
+}
+$('bookDone').onclick = async () => {
+  const v = bookFor; bookFor = null;
+  closeSheet('bookSheet');
+  await markBooked(v, '');
+};
+const bookErr = t => { const e = $('bookErr'); e.textContent = t; e.classList.remove('hide'); };
+['bkFirst','bkLast','bkPhone','bkEmail'].forEach(id => $(id).addEventListener('input', () => $('bookErr').classList.add('hide')));
+$('bookGo').onclick = async () => {
+  if (bookBusy || !bookFor || !bookSlot) return;
+  const first = $('bkFirst').value.trim(), last = $('bkLast').value.trim();
+  const phone = $('bkPhone').value.trim(), email = $('bkEmail').value.trim();
+  const digits = phone.replace(/\D/g, '').replace(/^1(?=\d{10}$)/, '');
+  if (!first) return bookErr('Add their first name.');
+  if (digits.length !== 10) return bookErr('Their phone number needs all 10 digits.');
+  if (email && !/^[^@\s]+@[^@\s]+\.[A-Za-z]{2,}$/.test(email)) return bookErr('That email does not look right. Leave it blank if unsure.');
+  if (!navigator.onLine) return bookErr('No signal. Get their name and phone and set Stage to Callback.');
+  const v = bookFor, slot = bookSlot;
+  bookBusy = true; const btn = $('bookGo'), was = btn.textContent; btn.textContent = 'Booking…'; btn.disabled = true;
+  try {
+    const r = await syncFetch('/book', { method: 'POST', body: JSON.stringify({ doorId: v.id, start: slot, first, last, phone: digits, email,
+      addr: v.addr || '', area: doorArea(v), lat: v.lat, lon: v.lon }) });
+    const at = r.start ? new Date(r.start) : new Date(slot);
+    const when = slotLong(at.toISOString());
+    const k = etKeyOf(+at), dayWord = k === etKeyOf(Date.now()) ? 'today' : k === etKeyOf(Date.now() + 86400000) ? 'tomorrow'
+      : at.toLocaleDateString([], { weekday:'long' });
+    const sayIt = `Travis will see you ${dayWord} at ${at.toLocaleTimeString([], { hour:'numeric', minute:'2-digit' })}.`;
+    // the name and phone they typed belong on the house too, where the house has none
+    if (v === editing) {
+      if (!$('dName').value.trim()) $('dName').value = [first, last].filter(Boolean).join(' ');
+      if (!$('dPhone').value.trim()) $('dPhone').value = phone;
+      if (email && !$('dEmail').value.trim()) $('dEmail').value = email;
+    }
+    bookFor = null; bookSlot = null;
+    $('bookForm').classList.add('hide'); $('bookDays').innerHTML = ''; $('bookTimes').innerHTML = ''; $('bookHint').textContent = '';
+    $('bookOk').innerHTML = `<div class="bkDone"><div style="font-size:18px;font-weight:800">✅ Booked: ${esc(when)}</div>`
+      + `<div style="margin-top:6px">It is on Travis's calendar with this address. Tell ${esc(first)}: "${esc(sayIt)}"</div>`
+      + `<button class="primary" id="bookOkDone">Done</button></div>`;
+    $('bookOk').classList.remove('hide');
+    $('bookOkDone').onclick = () => closeSheet('bookSheet');
+    await markBooked(v, when);
+  } catch (e) {
+    if (e && e.status === 409 && e.body) {
+      bookDays = e.body.days || bookDays; bookSlot = null; $('bookForm').classList.add('hide');
+      renderBookPick();
+      $('bookHint').innerHTML = '<b style="color:#fbbf24">That time just got taken. Pick another one.</b> ' + esc($('bookHint').textContent);
+    } else if (e && e.status === 503) {
+      bookPage();
+    } else {
+      bookErr((e && e.status ? e.message : 'No answer from Travis\'s calendar.') + ' If it keeps failing, get their name and phone and set Stage to Callback.');
+    }
+  } finally { bookBusy = false; btn.disabled = false; if (btn.textContent === 'Booking…') btn.textContent = was; }
 };
 
 /* ---------------- v48: your name, and Send my day ---------------- */
@@ -15517,7 +15738,7 @@ async function syncFetch(path, opts = {}) {
     headers: Object.assign({ 'x-team-code': syncCode() }, opts.body ? { 'content-type': 'application/json' } : {}),
     cache: 'no-store' }));
   let body = null; try { body = await r.json(); } catch (e) {}
-  if (!r.ok) { const err = new Error((body && body.error) || ('HTTP ' + r.status)); err.status = r.status; throw err; }
+  if (!r.ok) { const err = new Error((body && body.error) || ('HTTP ' + r.status)); err.status = r.status; err.body = body; throw err; }
   return body;
 }
 function syncSay(text) { syncSet('syncStatus', { text, ts: Date.now() }); renderSyncInfo(); }
@@ -15531,6 +15752,7 @@ function renderSyncInfo() {
   if (sv) sv.style.display = code ? 'none' : '';
   const off = $('mSyncOff'); if (off) off.style.display = code ? '' : 'none';
   const now = $('mSyncNow'); if (now) now.style.display = code ? '' : 'none';
+  const mb = $('mBuilds'); if (mb) mb.classList.toggle('hide', !(code && role === 'boss'));
   if (!code) { el.textContent = 'Off. Type the code Travis gave this phone, then tap Save code.'; return; }
   const q = syncGet('syncQ') || {};
   const waiting = Object.keys(q.p || {}).length + Object.keys(q.g || {}).length;
@@ -15722,17 +15944,156 @@ function drawStops() {
 function renderBookNear(forDoor) {
   const el = $('bookNear'); if (!el) return;
   const here = forDoor && forDoor.lat != null ? forDoor : (state.pos ? { lat: state.pos.lat, lon: state.pos.lon } : null);
-  const now = Date.now();
+  const now = Date.now(), today = dayKey(now);
   const list = stopsCached().filter(s => s.end > now);
-  if (!syncCode() || !list.length) { el.innerHTML = ''; el.classList.add('hide'); return; }
-  let rows = list.map(s => ({ s, mi: here && s.lat != null ? haversine(here.lat, here.lon, s.lat, s.lon) / 1609.34 : null }));
-  const near = rows.filter(r => r.mi != null && r.mi <= 6).sort((a, b) => a.s.start - b.s.start).slice(0, 4);
+  const blds = buildsCached().filter(b => b.to >= today);
+  if (!syncCode() || (!list.length && !blds.length)) { el.innerHTML = ''; el.classList.add('hide'); return; }
+  const miOf = a => here && a.lat != null ? haversine(here.lat, here.lon, a.lat, a.lon) / 1609.34 : null;
+  const away = m => m < 1 ? 'under a mile' : 'about ' + Math.round(m) + ' mi';
+  const near = list.map(s => ({ s, mi: miOf(s) })).filter(r => r.mi != null && r.mi <= BOOK_NEAR_MI)
+    .sort((a, b) => a.s.start - b.s.start).slice(0, 4);
+  const nb = blds.map(b => ({ b, mi: miOf(b) })).filter(r => r.mi != null && r.mi <= BOOK_NEAR_MI).slice(0, 2);
   el.classList.remove('hide');
-  el.innerHTML = near.length
-    ? `<b>Travis is already near here:</b><br>` + near.map(r => `${esc(stopWhen(r.s))}, ${r.mi < 1 ? 'under a mile' : 'about ' + Math.round(r.mi) + ' mi'} away`).join('<br>')
-      + `<br><span style="opacity:.75">Offer the times right before or after one of these first.</span>`
-    : `No stops booked within 6 miles of here yet. Any open time works.`;
+  if (!near.length && !nb.length) { el.innerHTML = `Travis has nothing booked within ${BOOK_NEAR_MI} miles of here yet. Any open time works.`; return; }
+  el.innerHTML = `<b>Travis is already near here:</b><br>`
+    + near.map(r => `${esc(stopWhen(r.s))}, ${away(r.mi)} away`).concat(
+      nb.map(r => `His ${esc(buildWhat(r.b).toLowerCase())}, ${esc(buildDays(r.b))}, ${away(r.mi)} away`)).join('<br>')
+    + `<br><span style="opacity:.75">Offer the times next to these first. They show in purple below.</span>`;
 }
+
+/* ---------------- v50: builds ----------------
+   Where Travis has a job going. He marks them (Menu, Team sync, My builds, or from a house).
+   Everyone with a team code sees them on the map: street and days, a point rounded to about
+   300 m, never the house number. Shown until a week after the last day. */
+let buildsAt = 0;
+const buildsCached = () => (syncGet('syncBuilds') || { builds: [] }).builds || [];
+async function fetchBuilds(force) {
+  if (!syncCode() || !navigator.onLine) return buildsCached();
+  if (!force && Date.now() - buildsAt < 5 * 60000) return buildsCached();
+  try {
+    const r = await syncFetch('/builds');
+    buildsAt = Date.now();
+    syncSet('syncBuilds', { builds: Array.isArray(r.builds) ? r.builds : [], at: buildsAt });
+    if (window._map) drawBuilds();
+  } catch (e) {}
+  return buildsCached();
+}
+const BUILD_WHAT = ['Roof replacement', 'Siding', 'Gutters', 'Repair', 'Other'];
+const buildWhat = b => b.what || 'Roof replacement';
+function buildDays(b) {
+  const t = dayKey(Date.now());
+  if (b.to < t) return `finished ${shortDay(b.to)}`;
+  if (b.from > t) return b.from === b.to ? `on ${shortDay(b.from)}` : `${shortDay(b.from)} to ${shortDay(b.to)}`;
+  return b.to === t ? 'today' : `now, through ${shortDay(b.to)}`;
+}
+function buildLine(b) {
+  const what = { 'Roof replacement': 'a roof', 'Siding': 'siding', 'Gutters': 'gutters', 'Repair': 'a repair' }[buildWhat(b)] || 'a job';
+  const st = (b.street || '').replace(/\s+(st|street|dr|drive|ave|avenue|rd|road|ct|court|ln|lane|way|blvd|pl|place|cir|circle|trl|trail|pkwy|ter|terrace)\.?$/i, '');
+  const done = b.to < dayKey(Date.now());
+  return `"We ${done ? 'just finished' : 're doing'} ${what} over on ${st || 'the next street'}."`.replace('We re', "We're");
+}
+function drawBuilds() {
+  if (!window._map || typeof L === 'undefined') return;
+  if (window._buildsLayer) { window._buildsLayer.remove(); window._buildsLayer = null; }
+  const t = dayKey(Date.now()), soon = dayKey(Date.now() + 14 * 86400000);
+  const list = buildsCached().filter(b => b.lat != null && b.lon != null && b.from <= soon);
+  if (!list.length) return;
+  const g = L.layerGroup();
+  for (const b of list) {
+    const tip = b.to < t ? `Build done ${new Date(b.to + 'T12:00:00').toLocaleDateString([], { month:'short', day:'numeric' })}`
+      : `🔨 Build ${new Date(b.from + 'T12:00:00').toLocaleDateString([], { month:'short', day:'numeric' })}`
+        + (b.to !== b.from ? `–${new Date(b.to + 'T12:00:00').toLocaleDateString([], { day:'numeric' })}` : '');
+    L.circleMarker([b.lat, b.lon], { radius: 11, color: '#fff', weight: 2, fillColor: '#ea580c', fillOpacity: .9 })
+      .bindTooltip(tip, { permanent: true, direction: 'top', offset: [0, -10], className: 'buildTip' })
+      .bindPopup(`<b>Travis's ${esc(buildWhat(b).toLowerCase())} near here</b><br>${esc(buildDays(b))}<br>Near ${esc(b.street || '')}${b.city ? ', ' + esc(b.city) : ''}`
+        + `<br><span style="opacity:.8">Neighbors notice the work. Fine to say at the door: ${esc(buildLine(b))} Never the homeowner's name.</span>`)
+      .addTo(g);
+  }
+  window._buildsLayer = g.addTo(window._map);
+}
+(() => {
+  const rml = refreshMapLayers;
+  refreshMapLayers = function () { const r = rml.apply(this, arguments); try { drawBuilds(); } catch (e) {} return r; };
+})();
+setTimeout(() => { fetchBuilds(); }, 4000);
+
+/* Travis's side: mark, change or take down a build. */
+let bdEdit = null, bdWhat = 'Roof replacement', bdPoint = null;
+function bdSetWhat(w) {
+  bdWhat = w;
+  $('bdWhat').innerHTML = BUILD_WHAT.map(x => `<button class="chip${x === w ? ' on' : ''}" data-w="${x}">${x}</button>`).join('');
+  $('bdWhat').querySelectorAll('.chip').forEach(c => c.onclick = () => bdSetWhat(c.dataset.w));
+}
+function bdForm(b, pre) {
+  bdEdit = b ? b.id : null; bdPoint = pre && pre.lat != null ? { lat: pre.lat, lon: pre.lon, area: pre.area || '', addr: pre.addr } : null;
+  const t = dayKey(Date.now());
+  $('bdAddr').value = b ? (b.addr || '') : (pre ? pre.addr : '');
+  $('bdFrom').value = b ? b.from : t;
+  $('bdTo').value = b ? b.to : dayKey(Date.now() + 86400000);
+  bdSetWhat(b ? buildWhat(b) : 'Roof replacement');
+  $('bdSave').textContent = b ? 'Save changes' : 'Save build';
+  $('bdNew').classList.toggle('hide', !b);
+  $('bdErr').classList.add('hide');
+  if (!b) $('bdOk').classList.add('hide');
+}
+function bdRender() {
+  const list = buildsCached();
+  $('bdList').innerHTML = list.length
+    ? '<div style="font-weight:800">On the canvassers\' maps now</div>' + list.map((b, i) =>
+      `<div class="bdRow"><div style="font-weight:700">${esc(b.addr || b.street || '')}</div>`
+      + `<div class="small">${esc(buildWhat(b))} · ${esc(buildDays(b))}${b.lat == null ? ' · not on the map' : ''}</div>`
+      + `<div class="chips" style="margin-top:6px"><button class="chip" data-e="${i}">Change</button><button class="chip" data-r="${i}">Take it down</button></div></div>`).join('')
+    : '<div class="small">No builds marked yet.</div>';
+  $('bdList').querySelectorAll('[data-e]').forEach(x => x.onclick = () => { bdForm(list[+x.dataset.e]); $('bdAddr').scrollIntoView({ behavior:'smooth', block:'center' }); });
+  $('bdList').querySelectorAll('[data-r]').forEach(x => x.onclick = async () => {
+    const b = list[+x.dataset.r];
+    const k = await askChoice('Take this build down?', `${b.addr || b.street} comes off the canvassers' maps.`,
+      [{ key:'yes', label:'Take it down' }, { key:'no', label:'Keep it' }]);
+    if (k !== 'yes') return;
+    try { await syncFetch('/builds', { method:'POST', body: JSON.stringify({ id: b.id, remove: true }) }); }
+    catch (e) { $('bdErr').textContent = 'Not changed: ' + (e.message || 'no signal'); $('bdErr').classList.remove('hide'); return; }
+    await fetchBuilds(true); bdRender();
+    $('bdOk').textContent = `Taken down: ${b.addr || b.street}.`; $('bdOk').classList.remove('hide');
+  });
+}
+async function openBuilds(pre) {
+  if (syncRole() !== 'boss' || !syncCode()) return flashToast('Travis only', 'Builds are marked from Travis\'s phone.', '#f59e0b');
+  bdForm(null, pre);
+  openSheet('buildSheet');
+  $('bdList').innerHTML = '<div class="small">Loading…</div>';
+  await fetchBuilds(true); bdRender();
+}
+$('mBuilds').onclick = () => { closeSheet('menuSheet'); openBuilds(null); };
+$('bdNew').onclick = () => bdForm(null);
+$('dBuild').onclick = () => {
+  if (!editing) return;
+  const area = doorArea(editing);
+  const a = String(editing.addr || '').toLowerCase().replace(/\b[a-z]/g, c => c.toUpperCase());
+  openBuilds({ addr: a + (/^\d{5}$/.test(area) ? ', OH ' + area : area ? ', ' + area.toLowerCase().replace(/\b[a-z]/g, c => c.toUpperCase()) : ''),
+    lat: editing.lat, lon: editing.lon, area });
+};
+$('bdSave').onclick = async () => {
+  const addr = $('bdAddr').value.trim(), from = $('bdFrom').value, to = $('bdTo').value;
+  const err = t => { $('bdErr').textContent = t; $('bdErr').classList.remove('hide'); };
+  $('bdOk').classList.add('hide');
+  if (!addr) return err('Type the address.');
+  if (!from || !to) return err('Pick the first and last day.');
+  const btn = $('bdSave'); btn.disabled = true; const was = btn.textContent; btn.textContent = 'Saving…';
+  try {
+    const body = { id: bdEdit || undefined, addr, from, to, what: bdWhat };
+    // straight from a house: its own point goes along, in case the lookup cannot find it
+    if (bdPoint && addr === bdPoint.addr) Object.assign(body, { lat: bdPoint.lat, lon: bdPoint.lon, area: bdPoint.area });
+    const r = await syncFetch('/builds', { method:'POST', body: JSON.stringify(body) });
+    await fetchBuilds(true); bdForm(null); bdRender();
+    $('bdOk').textContent = `Saved: ${r.addr || addr}. It is on the canvassers' maps.`; $('bdOk').classList.remove('hide');
+  } catch (e) { err(e.message || 'No signal. Try again.'); }
+  finally { btn.disabled = false; if (btn.textContent === 'Saving…') btn.textContent = was; }
+};
+/* the house panel offers Mark a build here on Travis's phone only */
+(() => {
+  const od = openDetail;
+  openDetail = function () { const r = od.apply(this, arguments); try { $('dBuild').classList.toggle('hide', !(syncRole() === 'boss' && syncCode())); } catch (e) {} return r; };
+})();
 
 /* ---------------- v48: pay requests ----------------
    The canvasser sends the week from what the phone recorded. The mailbox adds what it can
@@ -15828,7 +16189,8 @@ function renderPayBoss() {
       const cal = l.cal === 'ran' ? `<span style="color:#22c55e">Ran${l.calAt ? ', ' + esc(new Date(l.calAt).toLocaleString([], { weekday:'short', hour:'numeric', minute:'2-digit' })) : ''}</span>`
         : l.cal === 'upcoming' ? `<span style="color:#38bdf8">Upcoming${l.calAt ? ', ' + esc(new Date(l.calAt).toLocaleString([], { weekday:'short', month:'short', day:'numeric', hour:'numeric', minute:'2-digit' })) : ''}</span>`
         : l.cal === 'none' ? `<span style="color:#f59e0b">Not on your calendar</span>` : `<span>Calendar not checked</span>`;
-      return `<div class="payRow"><div>${esc(l.addr)}${l.owner ? ' · ' + esc(l.owner) : ''} · ${cal}</div>`
+      const bkd = l.booked ? ` · <span style="color:#c4b5fd">booked in the app by ${esc(l.booked.by)}</span>` : '';
+      return `<div class="payRow"><div>${esc(l.addr)}${l.owner ? ' · ' + esc(l.owner) : ''} · ${cal}${bkd}</div>`
         + `<label><input type="checkbox" data-p="${i}" data-l="${esc(l.id)}"${def ? ' checked' : ''}> Ran ${payMoney(PAY.lead)}</label></div>`;
     }).join('');
     return `<div class="payCard" data-card="${i}"><div style="display:flex;justify-content:space-between;gap:8px"><b>${esc(p.canvasser)}</b><span class="small">${esc(payStatusWord(p))}</span></div>`
