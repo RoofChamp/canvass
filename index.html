@@ -810,6 +810,15 @@ select{min-height:44px}
 .bkWhen{margin-top:14px;padding:10px 12px;border-radius:12px;background:#0f2a1a;border:1px solid #166534;font-weight:800}
 .bkOpt{font-weight:600;color:var(--dim)}
 .bkDone{margin-top:12px;padding:14px;border-radius:14px;background:#0f2a1a;border:1px solid #166534;line-height:1.5}
+.tmCard{border:1px solid var(--line);border-radius:14px;padding:12px;margin-top:12px;background:var(--card)}
+.tmTop{display:flex;justify-content:space-between;align-items:baseline;gap:8px}
+.tmName{font-weight:800;font-size:17px}
+.tmNums{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-top:10px}
+.tmNum{background:var(--card2);border-radius:10px;padding:7px 4px;text-align:center}
+.tmNum b{display:block;font-size:18px}
+.tmNum span{font-size:11px;color:var(--dim);font-weight:700}
+.tmRow{display:flex;gap:8px;align-items:flex-start;padding:8px 2px;border-top:1px solid var(--line);font-size:13px;text-align:left;width:100%;background:none;color:var(--txt)}
+.tmDot{width:10px;height:10px;border-radius:50%;margin-top:4px;flex:0 0 auto}
 .bdRow{border:1px solid var(--line);border-radius:12px;padding:10px 12px;margin-top:8px}
 .leaflet-tooltip.buildTip{background:#c2410c;color:#fff;border:0;font-weight:700;font-size:11px;padding:2px 6px;box-shadow:none}.leaflet-tooltip.buildTip:before{display:none}
 .leaflet-tooltip.stopTip{background:#7c3aed;color:#fff;border:0;font-weight:700;font-size:11px;padding:2px 6px;box-shadow:none}.leaflet-tooltip.stopTip:before{display:none}
@@ -1510,6 +1519,16 @@ select{min-height:44px}
     </div>
   </div>
 </div>
+<!-- v53: Travis's Team screen. One card per canvasser for the day picked. -->
+<div id="teamSheet" class="sheet hide">
+  <div class="sheetBody">
+    <div class="sheetHead"><h2>👥 Team</h2><button class="x" data-close="teamSheet">Close</button></div>
+    <div class="sheetScroll">
+      <div class="bkDays" id="tmDays"></div>
+      <div id="tmBody"></div>
+    </div>
+  </div>
+</div>
 <!-- v50: Travis marks where he has a job going. Canvassers see the street and the days. -->
 <div id="buildSheet" class="sheet hide">
   <div class="sheetBody">
@@ -1827,6 +1846,7 @@ select{min-height:44px}
         <div class="small" id="syncInfo" style="margin-top:4px"></div>
         <input id="mSyncCode" type="text" autocomplete="off" autocapitalize="characters" spellcheck="false" maxlength="24" placeholder="Type your team code" style="margin-top:8px">
         <div class="chips" style="margin-top:6px"><button class="chip" id="mSyncSave">Save code</button><button class="chip" id="mSyncNow">Sync now</button><button class="chip" id="mSyncOff">Turn off</button></div>
+        <button class="primary hide" id="mTeam" style="margin-top:8px">👥 Team: what the canvassers did</button>
         <button class="ghost hide" id="mBuilds" style="margin-top:8px">🏗️ My builds (where I'm working)</button>
         <div class="small why" style="margin-top:6px">Each phone types its own code once. Doors then go to Travis by themselves whenever there is signal, and wait on the phone when there is not. The code stays on this phone and is not in your backup.</div>
       </div>
@@ -13698,7 +13718,7 @@ document.querySelectorAll('.dsecHead[data-msec]').forEach(b => {
 /* ---- what version is actually on the phone ----
    Matches the service worker cache name, so "did the update land" is answerable by
    looking rather than guessing. */
-const BUILD_VERSION = 'v52';
+const BUILD_VERSION = 'v53';
 const BUILD_DATE = '7 August 2026';
 function renderVersionStamp() {
   const el = $('versionStamp'); if (!el) return;
@@ -15823,6 +15843,7 @@ function renderSyncInfo() {
   const off = $('mSyncOff'); if (off) off.style.display = code ? '' : 'none';
   const now = $('mSyncNow'); if (now) now.style.display = code ? '' : 'none';
   const mb = $('mBuilds'); if (mb) mb.classList.toggle('hide', !(code && role === 'boss'));
+  const mt = $('mTeam'); if (mt) mt.classList.toggle('hide', !(code && role === 'boss'));
   const ms = $('menuSheet'); if (ms) ms.classList.toggle('kid', !!code && role === 'canvasser');
   if (!code) { el.textContent = 'Off. Type the code Travis gave this phone, then tap Save code.'; return; }
   const q = syncGet('syncQ') || {};
@@ -16134,6 +16155,67 @@ async function openBuilds(pre) {
   $('bdList').innerHTML = '<div class="small">Loading…</div>';
   await fetchBuilds(true); bdRender();
 }
+/* ---------------- v53: Team (Travis's phone) ----------------
+   What each canvasser did on a day, from the doors that synced to this phone. Their doors
+   carry a "From NAME's doors." line; that is how they are told apart from his own. */
+const whoOf = v => { for (const e of logOf(v)) { const m = e && e.auto && /^From (.+)'s doors\.$/.exec(e.text || ''); if (m) return m[1]; } return ''; };
+let tmDay = null, tmTeam = [];
+const hm = ms => new Date(ms).toLocaleTimeString([], { hour:'numeric', minute:'2-digit' });
+function tmDoors(name, key) { return state.visitLog.filter(v => dayKeyOf(v) === key && whoOf(v) === name).sort((a, b) => a.ts - b.ts); }
+function renderTeam() {
+  const today = dayKey(Date.now());
+  const names = [...new Set(tmTeam.map(t => t.name).concat(state.visitLog.map(whoOf).filter(Boolean)))].sort();
+  const keys = [];
+  for (let i = 0; i < 7; i++) keys.push(dayKey(Date.now() - i * 86400000));
+  if (!tmDay) tmDay = keys.find(k => names.some(n => tmDoors(n, k).length)) || today;
+  $('tmDays').innerHTML = keys.map(k => {
+    const d = new Date(k + 'T12:00:00'), any = names.some(n => tmDoors(n, k).length);
+    const top = k === today ? 'Today' : k === dayKey(Date.now() - 86400000) ? 'Yesterday' : d.toLocaleDateString([], { weekday:'short' });
+    return `<button class="bkDay${k === tmDay ? ' on' : ''}${any ? ' near' : ''}" data-k="${k}">${top}<small>${d.toLocaleDateString([], { month:'short', day:'numeric' })}</small></button>`;
+  }).join('');
+  $('tmDays').querySelectorAll('.bkDay').forEach(b => b.onclick = () => { tmDay = b.dataset.k; renderTeam(); });
+  if (!names.length) { $('tmBody').innerHTML = '<div class="small" style="margin-top:12px">No canvasser doors on this phone yet. They show up here once their phones sync.</div>'; return; }
+  $('tmBody').innerHTML = names.map((n, i) => {
+    const ds = tmDoors(n, tmDay), t = tmTeam.find(x => x.name === n);
+    const c = k => ds.filter(v => v.status === k).length, st = k => ds.filter(v => (v.dispo || 'new') === k).length;
+    const sync = t && t.lastDoor ? `last door came in ${new Date(t.lastDoor).toLocaleString([], { weekday:'short', hour:'numeric', minute:'2-digit' })}` : 'nothing sent yet';
+    if (!ds.length) return `<div class="tmCard"><div class="tmTop"><span class="tmName">${esc(n)}</span><span class="small">${esc(sync)}</span></div><div class="small" style="margin-top:6px">No doors this day.</div></div>`;
+    const span = ds[ds.length - 1].ts - ds[0].ts, hrs = Math.floor(span / 3600000), mins = Math.round(span % 3600000 / 60000);
+    return `<div class="tmCard"><div class="tmTop"><span class="tmName">${esc(n)}</span><span class="small">${esc(sync)}</span></div>`
+      + `<div class="small" style="margin-top:4px">First door ${hm(ds[0].ts)} · last ${hm(ds[ds.length - 1].ts)} · ${hrs} h ${mins} m</div>`
+      + `<div class="tmNums"><div class="tmNum"><b>${ds.length}</b><span>Doors</span></div><div class="tmNum"><b>${c('talked')}</b><span>Talked</span></div>`
+      + `<div class="tmNum"><b style="color:#22c55e">${st('appt')}</b><span>Booked</span></div><div class="tmNum"><b style="color:#f59e0b">${st('callback')}</b><span>Callbacks</span></div>`
+      + `<div class="tmNum"><b>${c('noanswer')}</b><span>No answer</span></div><div class="tmNum"><b>${st('cold') + c('dnr')}</b><span>No / DNR</span></div></div>`
+      + `<div class="chips" style="margin-top:10px"><button class="chip" data-list="${i}">📋 Their doors</button><button class="chip" data-map="${i}">🗺️ Show on map</button></div>`
+      + `<div class="hide" id="tmList${i}">` + ds.map(v => {
+          const note = logOf(v).filter(e => e.kind === 'note' && !e.auto && e.text).map(e => e.text).pop() || '';
+          const sc = (STATUS[v.status] || {}).color || '#64748b', dz = DISPO[v.dispo || 'new'];
+          return `<button class="tmRow" data-open="${esc(v.id)}"><span class="tmDot" style="background:${sc}"></span><span><b>${hm(v.ts)}</b> ${esc(v.addr || 'No address')}`
+            + ` · ${esc((STATUS[v.status] || {}).short || '')}${v.dispo && v.dispo !== 'new' ? ' · <b style="color:' + dz.color + '">' + esc(dz.label) + '</b>' : ''}`
+            + `${note ? '<br><span style="color:var(--dim)">' + esc(note) + '</span>' : ''}</span></button>`;
+        }).join('') + `</div></div>`;
+  }).join('');
+  $('tmBody').querySelectorAll('[data-list]').forEach(b => b.onclick = () => $('tmList' + b.dataset.list).classList.toggle('hide'));
+  $('tmBody').querySelectorAll('[data-open]').forEach(b => b.onclick = () => { const v = state.visitLog.find(x => x.id === b.dataset.open); if (v) openDetail(v); });
+  $('tmBody').querySelectorAll('[data-map]').forEach(b => b.onclick = async () => {
+    const ll = tmDoors(names[+b.dataset.map], tmDay).filter(v => isFinite(v.lat) && isFinite(v.lon)).map(v => [v.lat, v.lon]);
+    closeSheet('teamSheet'); await openMap();
+    const m = window._map; if (!m || !ll.length) return;
+    if (mapOpts.follow) { mapOpts.follow = false; syncMapBtns(); }
+    try { ll.length === 1 ? m.setView(ll[0], 18) : m.fitBounds(L.latLngBounds(ll).pad(0.12), { maxZoom:18 }); } catch (e) {}
+  });
+}
+async function openTeam() {
+  if (syncRole() !== 'boss') return;
+  closeSheet('menuSheet'); tmDay = null;
+  openSheet('teamSheet');
+  $('tmBody').innerHTML = '<div class="small" style="margin-top:12px">Checking for new doors…</div>';
+  try { await syncPull(true); } catch (e) {}
+  try { tmTeam = (await syncFetch('/team')).team || []; } catch (e) { tmTeam = []; }
+  renderTeam();
+}
+$('mTeam').onclick = openTeam;
+
 /* the short menu's buttons press the real ones, so every rule behind them still applies */
 document.querySelectorAll('#kidMenu .kmBtn').forEach(b => b.onclick = () => { const t = $(b.dataset.go); if (t) t.click(); });
 (() => {
