@@ -791,8 +791,9 @@ select{min-height:44px}
 .bkDay.on{background:#1e3a5f;border-color:#3b82f6}
 .bkDay.near{box-shadow:inset 0 -3px 0 #a78bfa}
 .bkTimes{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:10px}
-.bkT{min-height:48px;border-radius:12px;background:var(--card2);border:1px solid var(--line);color:var(--txt);font-weight:800;font-size:15px}
-.bkT.near{border:2px solid #a78bfa;background:#2e1065}
+.bkT{min-height:52px;border-radius:12px;background:var(--card2);border:1px solid var(--line);color:var(--txt);font-weight:800;font-size:15px}
+.bkT.near{border:2px solid #a78bfa;background:#2e1065;line-height:1.15}
+.bkT small{display:block;font-size:10.5px;font-weight:700;color:#ddd6fe;margin-top:2px}
 .bkT.on{background:#2563eb;border-color:#2563eb;color:#fff}
 .bkT.look{opacity:.85}
 .bkWhen{margin-top:14px;padding:10px 12px;border-radius:12px;background:#0f2a1a;border:1px solid #166534;font-weight:800}
@@ -13661,7 +13662,7 @@ document.querySelectorAll('.dsecHead[data-msec]').forEach(b => {
 /* ---- what version is actually on the phone ----
    Matches the service worker cache name, so "did the update land" is answerable by
    looking rather than guessing. */
-const BUILD_VERSION = 'v50';
+const BUILD_VERSION = 'v51';
 const BUILD_DATE = '7 August 2026';
 function renderVersionStamp() {
   const el = $('versionStamp'); if (!el) return;
@@ -15507,10 +15508,11 @@ function bookPage() {
    house and inside 2.5 hours of it, or any time on a day he has a build within 6 miles. */
 function bookNearInfo() {
   const here = bookFor && bookFor.lat != null ? bookFor : (state.pos ? { lat: state.pos.lat, lon: state.pos.lon } : null);
-  const out = { stops: [], buildDays: new Set() };
+  const out = { stops: [], all: [], buildDays: new Set() };
   if (!here) return out;
   const mi = (a) => haversine(here.lat, here.lon, a.lat, a.lon) / 1609.34;
-  out.stops = stopsCached().filter(s => s.lat != null && mi(s) <= BOOK_NEAR_MI);
+  out.all = stopsCached().filter(s => s.lat != null).map(s => Object.assign({}, s, { mi: mi(s) }));
+  out.stops = out.all.filter(s => s.mi <= BOOK_NEAR_MI);
   for (const b of buildsCached()) {
     if (b.lat == null || mi(b) > BOOK_NEAR_MI) continue;
     for (let d = new Date(b.from + 'T12:00:00'); dayKey(+d) <= b.to; d.setDate(d.getDate() + 1)) out.buildDays.add(dayKey(+d));
@@ -15519,9 +15521,22 @@ function bookNearInfo() {
 }
 function slotNear(iso, near) {
   const t = Date.parse(iso), k = etKeyOf(t), W = 1.5 * 3600000, D = 45 * 60000;
-  if (near.buildDays.has(k)) return true;
   return near.stops.some(s => etKeyOf(s.start) === k
     && ((t + D <= s.start && s.start - (t + D) <= W) || (t >= s.end && t - s.end <= W)));
+}
+/* Can Travis actually get there? Every visit is blocked 45 minutes (he is usually on site 30
+   to 40), then 15 minutes in case it runs long, then the drive, figured at 2 minutes a mile
+   in a straight line, which is on the safe side around Columbus. A time that does not
+   leave room for all of that, before or after one of his visits, is not shown at all. */
+const BOOK_RUNOVER_MIN = 15, BOOK_MIN_PER_MILE = 2;
+function slotReachable(iso, near) {
+  const t = Date.parse(iso), e = t + 45 * 60000;
+  return !near.all.some(s => {
+    const gap = (BOOK_RUNOVER_MIN + s.mi * BOOK_MIN_PER_MILE) * 60000;
+    if (t < s.end && e > s.start) return true;          // overlaps it
+    if (s.end <= t) return t - s.end < gap;             // right after it, from there
+    return s.start - e < gap;                           // right before it, to there
+  });
 }
 /* Fifteen-minute steps make a wall of buttons. Show the hour and half hour, plus the time
    right before and right after each of Travis's nearby stops, unless a day has hardly any. */
@@ -15536,7 +15551,9 @@ function daySlots(list, near) {
 }
 function renderBookPick() {
   const near = bookNearInfo();
-  const keys = Object.keys(bookDays).sort();
+  const open = {};
+  for (const [k, v] of Object.entries(bookDays)) { const r = v.filter(x => slotReachable(x, near)); if (r.length) open[k] = r; }
+  const keys = Object.keys(open).sort();
   const today = etKeyOf(Date.now()), tmw = etKeyOf(Date.now() + 86400000);
   if (!keys.length) {
     $('bookDays').innerHTML = ''; $('bookTimes').innerHTML = '';
@@ -15544,19 +15561,20 @@ function renderBookPick() {
     $('bookForm').classList.add('hide');
     return;
   }
-  const dayNear = k => near.buildDays.has(k) || bookDays[k].some(x => slotNear(x, near));
-  if (!bookDay || !bookDays[bookDay]) bookDay = keys.find(dayNear) || keys[0];
+  const dayNear = k => near.buildDays.has(k) || open[k].some(x => slotNear(x, near));
+  if (!bookDay || !open[bookDay]) bookDay = keys.find(dayNear) || keys[0];
   $('bookDays').innerHTML = keys.map(k => {
     const d = new Date(k + 'T12:00:00');
     const top = k === today ? 'Today' : k === tmw ? 'Tomorrow' : d.toLocaleDateString([], { weekday:'short' });
-    return `<button class="bkDay${k === bookDay ? ' on' : ''}${dayNear(k) ? ' near' : ''}" data-k="${k}">${top}`
+    return `<button class="bkDay${k === bookDay ? ' on' : ''}${dayNear(k) ? ' near' : ''}" data-k="${k}">${dayNear(k) ? '⭐ ' : ''}${top}`
       + `<small>${d.toLocaleDateString([], { month:'short', day:'numeric' })}</small></button>`;
   }).join('');
-  const list = daySlots(bookDays[bookDay], near);
+  const list = daySlots(open[bookDay], near);
   const look = !bookFor;
-  $('bookTimes').innerHTML = list.map(x => `<button class="bkT${slotNear(x, near) ? ' near' : ''}${x === bookSlot ? ' on' : ''}${look ? ' look' : ''}" data-s="${x}">${slotLabel(x)}</button>`).join('');
+  $('bookTimes').innerHTML = list.map(x => `<button class="bkT${slotNear(x, near) ? ' near' : ''}${x === bookSlot ? ' on' : ''}${look ? ' look' : ''}" data-s="${x}">${slotLabel(x)}${slotNear(x, near) ? '<small>⭐ Travis nearby</small>' : ''}</button>`).join('');
   const anyNear = list.some(x => slotNear(x, near));
-  $('bookHint').textContent = (anyNear ? 'Purple times are next to where Travis already is. Offer those first. ' : '')
+  $('bookHint').textContent = (anyNear ? '⭐ Travis is already nearby at those times. Offer them first. ' : '')
+    + (near.buildDays.has(bookDay) ? 'He also has a job going near here this day. ' : '')
     + (look ? 'Just looking. To book one, open the house and tap Book on Travis\'s calendar.' : '');
   $('bookDays').querySelectorAll('.bkDay').forEach(b => b.onclick = () => { bookDay = b.dataset.k; bookSlot = null; $('bookForm').classList.add('hide'); renderBookPick(); });
   if (!look) $('bookTimes').querySelectorAll('.bkT').forEach(b => b.onclick = () => bookPickSlot(b.dataset.s));
@@ -15958,7 +15976,7 @@ function renderBookNear(forDoor) {
   el.innerHTML = `<b>Travis is already near here:</b><br>`
     + near.map(r => `${esc(stopWhen(r.s))}, ${away(r.mi)} away`).concat(
       nb.map(r => `His ${esc(buildWhat(r.b).toLowerCase())}, ${esc(buildDays(r.b))}, ${away(r.mi)} away`)).join('<br>')
-    + `<br><span style="opacity:.75">Offer the times next to these first. They show in purple below.</span>`;
+    + `<br><span style="opacity:.75">Times marked ⭐ below line up with these. Offer them first. Times he can't get to in time are already left off.</span>`;
 }
 
 /* ---------------- v50: builds ----------------
