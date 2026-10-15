@@ -13856,7 +13856,7 @@ document.querySelectorAll('.dsecHead[data-msec]').forEach(b => {
 /* ---- what version is actually on the phone ----
    Matches the service worker cache name, so "did the update land" is answerable by
    looking rather than guessing. */
-const BUILD_VERSION = 'v56';
+const BUILD_VERSION = 'v57';
 const BUILD_DATE = '14 October 2026';
 function renderVersionStamp() {
   const el = $('versionStamp'); if (!el) return;
@@ -16385,10 +16385,14 @@ function renderTeam() {
   $('tmBody').innerHTML = names.map((n, i) => {
     const ds = tmDoors(n, tmDay), t = tmTeam.find(x => x.name === n);
     const c = k => ds.filter(v => v.status === k).length, st = k => ds.filter(v => (v.dispo || 'new') === k).length;
+    const when = ms => new Date(ms).toLocaleString([], { weekday:'short', month:'short', day:'numeric', hour:'numeric', minute:'2-digit' });
+    /* v57: whether their phone has the code in yet. "Last opened" is the last time their phone talked to the mailbox. */
+    const opened = t ? (t.seen ? `✅ App set up · last opened ${when(t.seen)}` : "⏳ Hasn't opened the app with their code yet") : '';
     const sync = t && t.lastDoor ? `last door came in ${new Date(t.lastDoor).toLocaleString([], { weekday:'short', hour:'numeric', minute:'2-digit' })}` : 'nothing sent yet';
-    if (!ds.length) return `<div class="tmCard"><div class="tmTop"><span class="tmName">${esc(n)}</span><span class="small">${esc(sync)}</span></div><div class="small" style="margin-top:6px">No doors this day.</div></div>`;
+    const openedLine = opened ? `<div class="small" style="margin-top:4px;color:${t.seen ? '#86efac' : '#fbbf24'}">${esc(opened)}</div>` : '';
+    if (!ds.length) return `<div class="tmCard"><div class="tmTop"><span class="tmName">${esc(n)}</span><span class="small">${esc(sync)}</span></div>${openedLine}<div class="small" style="margin-top:6px">No doors this day.</div></div>`;
     const span = ds[ds.length - 1].ts - ds[0].ts, hrs = Math.floor(span / 3600000), mins = Math.round(span % 3600000 / 60000);
-    return `<div class="tmCard"><div class="tmTop"><span class="tmName">${esc(n)}</span><span class="small">${esc(sync)}</span></div>`
+    return `<div class="tmCard"><div class="tmTop"><span class="tmName">${esc(n)}</span><span class="small">${esc(sync)}</span></div>${openedLine}`
       + `<div class="small" style="margin-top:4px">First door ${hm(ds[0].ts)} · last ${hm(ds[ds.length - 1].ts)} · ${hrs} h ${mins} m</div>`
       + `<div class="tmNums"><div class="tmNum"><b>${ds.length}</b><span>Doors</span></div><div class="tmNum"><b>${c('talked')}</b><span>Talked</span></div>`
       + `<div class="tmNum"><b style="color:#22c55e">${st('appt')}</b><span>Booked</span></div><div class="tmNum"><b style="color:#f59e0b">${st('callback')}</b><span>Callbacks</span></div>`
