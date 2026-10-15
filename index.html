@@ -785,10 +785,27 @@ select{min-height:44px}
 /* ---------- address search on the big map ---------- */
 #eraseBar.picking{background:rgba(22,163,74,.95);border-color:rgba(34,197,94,.65)}
 .payT{border-collapse:collapse;width:100%;font-size:13px}.payT th,.payT td{border-bottom:1px solid #334155;padding:5px 3px;text-align:left}.payCard{border:1px solid #334155;border-radius:12px;padding:10px;margin:10px 0}.payRow{font-size:13px;padding:6px 0;border-bottom:1px solid #1e293b}.payRow label{display:inline-flex;align-items:center;gap:6px;margin:6px 14px 0 0;white-space:nowrap}.payRow input[type=checkbox]{width:20px;height:20px;margin:0;flex:none}
+#codeLock{position:fixed;inset:0;z-index:100000;background:var(--bg);display:flex;align-items:center;justify-content:center;padding:20px 16px;overflow:auto}
+#codeLock.hide{display:none}
+#codeLock .gCard{width:100%;max-width:420px}
+#codeLock .gLogo{font-weight:800;font-size:15px;color:var(--dim);margin-bottom:10px}
+#codeLock h1{font-size:24px;margin:0 0 12px}
+#codeLock .gSteps{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:10px 12px;font-size:14px;line-height:1.5;margin-bottom:12px}
+#codeLock input{font-size:20px;letter-spacing:.08em;text-align:center;text-transform:uppercase}
+#codeLock .gErr{color:#fca5a5;font-weight:700;margin-top:10px;font-size:14px}
+#codeLock .gSmall{color:var(--dim);font-size:13px;margin-top:12px;line-height:1.45}
 #detailSheet.kid .kidHide{display:none!important}
 #menuSheet.kid .sheetScroll > *:not(#syncCard):not(#kidMenu):not(#versionStamp){display:none!important}
 #menuSheet.kid #mSyncOff{display:none!important}
 #menuSheet:not(.kid) #kidMenu{display:none}
+#menuSheet:not(.boss) #bossMenu{display:none}
+#menuSheet.boss .oldSec, #menuSheet.boss #mTeam, #menuSheet.boss #mBuilds, #menuSheet.boss #mPreview{display:none!important}
+#bossMenu .tHead{font-size:12px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:var(--dim);margin:16px 2px 8px}
+#bossMenu .tGrid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+#bossMenu .tGrid.g4{grid-template-columns:repeat(4,1fr)}
+#bossMenu .tile{min-height:78px;border-radius:14px;background:var(--card2);border:1px solid var(--line);color:var(--txt);font-weight:700;font-size:12.5px;line-height:1.2;padding:8px 6px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:5px;text-align:center}
+#bossMenu .tile b{font-size:22px;line-height:1}
+#bossMenu .tile:active{background:#1e3a5f;border-color:#3b82f6}
 #kidMenu .kmHead{font-size:12px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:var(--dim);margin:16px 0 2px}
 #kidMenu .kmBtn{text-align:left;margin-top:8px}
 #kidMenu .kmBtn.primary{text-align:center}
@@ -810,6 +827,15 @@ select{min-height:44px}
 .bkWhen{margin-top:14px;padding:10px 12px;border-radius:12px;background:#0f2a1a;border:1px solid #166534;font-weight:800}
 .bkOpt{font-weight:600;color:var(--dim)}
 .bkDone{margin-top:12px;padding:14px;border-radius:14px;background:#0f2a1a;border:1px solid #166534;line-height:1.5}
+.tmCard{border:1px solid var(--line);border-radius:14px;padding:12px;margin-top:12px;background:var(--card)}
+.tmTop{display:flex;justify-content:space-between;align-items:baseline;gap:8px}
+.tmName{font-weight:800;font-size:17px}
+.tmNums{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-top:10px}
+.tmNum{background:var(--card2);border-radius:10px;padding:7px 4px;text-align:center}
+.tmNum b{display:block;font-size:18px}
+.tmNum span{font-size:11px;color:var(--dim);font-weight:700}
+.tmRow{display:flex;gap:8px;align-items:flex-start;padding:8px 2px;border-top:1px solid var(--line);font-size:13px;text-align:left;width:100%;background:none;color:var(--txt)}
+.tmDot{width:10px;height:10px;border-radius:50%;margin-top:4px;flex:0 0 auto}
 .bdRow{border:1px solid var(--line);border-radius:12px;padding:10px 12px;margin-top:8px}
 .leaflet-tooltip.buildTip{background:#c2410c;color:#fff;border:0;font-weight:700;font-size:11px;padding:2px 6px;box-shadow:none}.leaflet-tooltip.buildTip:before{display:none}
 .leaflet-tooltip.stopTip{background:#7c3aed;color:#fff;border:0;font-weight:700;font-size:11px;padding:2px 6px;box-shadow:none}.leaflet-tooltip.stopTip:before{display:none}
@@ -917,6 +943,30 @@ select{min-height:44px}
 </style>
 </head>
 <body>
+<!-- v53: the code lock. Nothing in the app works until this phone has a team code that the
+     mailbox recognises. Turning a code off locks the phone again the next time it has signal. -->
+<div id="codeLock" class="hide">
+  <div class="gCard">
+    <div class="gLogo">🏠 CanvassEaze</div>
+    <div id="gAsk">
+      <h1>Type your team code</h1>
+      <div class="gSteps" id="gHomeTip">
+        <b>First time?</b> Add this app to your home screen, then open it from the new icon and type your code there.<br>
+        iPhone: tap Share, then <b>Add to Home Screen</b>. Android: tap ⋮, then <b>Add to Home screen</b>.
+      </div>
+      <input id="gCode" type="text" autocomplete="off" autocapitalize="characters" spellcheck="false" maxlength="24" placeholder="XXXX-XXXX-XXXX">
+      <div class="gErr hide" id="gErr"></div>
+      <button class="primary" id="gGo">Unlock</button>
+      <div class="gSmall">Your code comes from Travis. Don't have it? Ask Travis. The first time needs signal.</div>
+    </div>
+    <div id="gDone" class="hide">
+      <h1 id="gHi">You're in</h1>
+      <div class="gSteps"><b>Save your code somewhere safe</b>, like a note on your phone or a photo of the card it came on. You'll need it on a new phone or if the app gets reinstalled.</div>
+      <button class="ghost" id="gCopy">📋 Copy my code</button>
+      <button class="primary" id="gOpen">Open CanvassEaze</button>
+    </div>
+  </div>
+</div>
 
 <div id="app">
   <div id="strip">
@@ -1510,6 +1560,16 @@ select{min-height:44px}
     </div>
   </div>
 </div>
+<!-- v53: Travis's Team screen. One card per canvasser for the day picked. -->
+<div id="teamSheet" class="sheet hide">
+  <div class="sheetBody">
+    <div class="sheetHead"><h2>👥 Team</h2><button class="x" data-close="teamSheet">Close</button></div>
+    <div class="sheetScroll">
+      <div class="bkDays" id="tmDays"></div>
+      <div id="tmBody"></div>
+    </div>
+  </div>
+</div>
 <!-- v50: Travis marks where he has a job going. Canvassers see the street and the days. -->
 <div id="buildSheet" class="sheet hide">
   <div class="sheetBody">
@@ -1827,13 +1887,59 @@ select{min-height:44px}
         <div class="small" id="syncInfo" style="margin-top:4px"></div>
         <input id="mSyncCode" type="text" autocomplete="off" autocapitalize="characters" spellcheck="false" maxlength="24" placeholder="Type your team code" style="margin-top:8px">
         <div class="chips" style="margin-top:6px"><button class="chip" id="mSyncSave">Save code</button><button class="chip" id="mSyncNow">Sync now</button><button class="chip" id="mSyncOff">Turn off</button></div>
+        <button class="primary hide" id="mTeam" style="margin-top:8px">👥 Team: what the canvassers did</button>
+        <button class="ghost hide" id="mPreview" style="margin-top:8px">👀 Preview what the kids see</button>
         <button class="ghost hide" id="mBuilds" style="margin-top:8px">🏗️ My builds (where I'm working)</button>
         <div class="small why" style="margin-top:6px">Each phone types its own code once. Doors then go to Travis by themselves whenever there is signal, and wait on the phone when there is not. The code stays on this phone and is not in your backup.</div>
+      </div>
+
+      <!-- v53: Travis's menu as tiles. Every tile presses the real button further down, which
+           stays in the page, so nothing behind it changed. The long lists below step aside. -->
+      <div id="bossMenu">
+        <div class="tHead">Team</div>
+        <div class="tGrid g4">
+          <button class="tile" data-go="mTeam"><b>👥</b>Team today</button>
+          <button class="tile" data-go="mPay"><b>💵</b>Pay requests</button>
+          <button class="tile" data-go="mBuilds"><b>🏗️</b>My builds</button>
+          <button class="tile" data-go="mPreview"><b>👀</b>Kids' view</button>
+        </div>
+        <div class="tHead">Customers and doors</div>
+        <div class="tGrid">
+          <button class="tile" data-go="mCrm"><b>📇</b>Customers and follow-ups</button>
+          <button class="tile" data-go="mAppt"><b>📋</b>Appointments</button>
+          <button class="tile" data-go="mBookTimes"><b>📅</b>My open times</button>
+          <button class="tile" data-go="mRoute"><b>🔁</b>Doors to try again</button>
+          <button class="tile" data-go="mFilters"><b>🔎</b>Where to knock</button>
+          <button class="tile" data-go="mAreas"><b>📍</b>By area</button>
+          <button class="tile" data-go="mScout"><b>🔭</b>Scout</button>
+          <button class="tile" data-go="mMarks"><b>🏷️</b>Scouted houses</button>
+          <button class="tile" data-go="mTalk"><b>💬</b>Talk Paths</button>
+        </div>
+        <div class="tHead">My day</div>
+        <div class="tGrid g4">
+          <button class="tile" data-go="mSession"><b>📊</b>How today's going</button>
+          <button class="tile" data-go="mDaysLog"><b>🗓️</b>History</button>
+          <button class="tile" data-go="mEndDay"><b>⏹️</b>End the day</button>
+          <button class="tile" data-go="mSendDay"><b>📤</b>Send my day</button>
+        </div>
+        <div class="tHead">Backup and files</div>
+        <div class="tGrid">
+          <button class="tile" data-go="mBackupShare"><b>☁️</b>Back up (send it)</button>
+          <button class="tile" data-go="mBackup"><b>💾</b>Back up (download)</button>
+          <button class="tile" data-go="mExport"><b>⬇️</b>Export a spreadsheet or map</button>
+          <button class="tile" data-go="mRestore"><b>⤴️</b>Restore a backup</button>
+          <button class="tile" data-go="mAddTeam"><b>📥</b>Add doors from a file</button>
+        </div>
       </div>
 
       <!-- v52: a canvasser's phone gets this short menu instead of everything below it.
            Same buttons underneath (each one presses the real one), just the ones they use. -->
       <div id="kidMenu">
+        <div id="kmPreview" class="hide" style="border:1px dashed #a78bfa;border-radius:12px;padding:10px 12px;margin-top:4px">
+          <div style="font-weight:800">👀 You're previewing the kids' view</div>
+          <div class="small" style="margin-top:2px">Your phone still syncs as you. Only the screens change.</div>
+          <button class="primary" id="kmExit" style="margin-top:8px">Back to my view</button>
+        </div>
         <div class="kmHead">At the door</div>
         <button class="ghost kmBtn" data-go="mTalk">💬 What do I say? (Talk Paths)</button>
         <button class="ghost kmBtn" data-go="mBookTimes">📅 Travis's open times</button>
@@ -1851,7 +1957,7 @@ select{min-height:44px}
       <!-- The words of a section heading sit in their own span so a rename can reach
            them without touching the caret, which setMSection rewrites on every open and
            close. The caret is not a label and is never editable. -->
-      <div class="dsec"><button class="dsecHead" data-msec="work"><i>▾</i><span data-lbl="lbl.menu.sec.work">Out working</span></button>
+      <div class="dsec oldSec"><button class="dsecHead" data-msec="work"><i>▾</i><span data-lbl="lbl.menu.sec.work">Out working</span></button>
         <div class="dsecBody" id="msecWork">
           <!-- The icon and the words are separate spans on every menu button. They used
                to be one text node, which meant renaming a button would have made him
@@ -1877,13 +1983,13 @@ select{min-height:44px}
       <!-- These two are read sitting down, not on a porch, so they left "Out working".
            was "■ End session / session log", which read like a stop button, so the
            stats screen behind it went unfound. Ending is a button inside. -->
-      <div class="dsec"><button class="dsecHead" data-msec="review"><i>▾</i><span data-lbl="lbl.menu.sec.review">How you're doing</span></button>
+      <div class="dsec oldSec"><button class="dsecHead" data-msec="review"><i>▾</i><span data-lbl="lbl.menu.sec.review">How you're doing</span></button>
         <div class="dsecBody" id="msecReview">
           <button class="ghost" id="mSession"><span class="emo">📊</span> <span class="mtxt" data-lbl="lbl.menu.mSession">How today's going — doors, miles, hours</span></button>
           <button class="ghost" id="mDaysLog"><span class="emo">📅</span> <span class="mtxt" data-lbl="lbl.menu.mDaysLog">History — every day you were out, door by door</span></button>
         </div></div>
 
-      <div class="dsec"><button class="dsecHead" data-msec="day"><i>▾</i><span data-lbl="lbl.menu.sec.day">End of day</span></button>
+      <div class="dsec oldSec"><button class="dsecHead" data-msec="day"><i>▾</i><span data-lbl="lbl.menu.sec.day">End of day</span></button>
         <div class="dsecBody" id="msecDay">
           <!-- The tier is called End of day and could not end the day. The only button
                that stops the session and the GPS was at the foot of the stats screen,
@@ -13698,7 +13804,7 @@ document.querySelectorAll('.dsecHead[data-msec]').forEach(b => {
 /* ---- what version is actually on the phone ----
    Matches the service worker cache name, so "did the update land" is answerable by
    looking rather than guessing. */
-const BUILD_VERSION = 'v52';
+const BUILD_VERSION = 'v53';
 const BUILD_DATE = '7 August 2026';
 function renderVersionStamp() {
   const el = $('versionStamp'); if (!el) return;
@@ -15800,6 +15906,9 @@ const syncGet = k => { try { return JSON.parse(localStorage.getItem(k) || 'null'
 const syncSet = (k, v) => { try { localStorage.setItem(k, JSON.stringify(v)); return true; } catch (e) { return false; } };
 const syncCode = () => { try { return localStorage.getItem('syncCode') || ''; } catch (e) { return ''; } };
 const syncRole = () => { try { return localStorage.getItem('syncRole') || ''; } catch (e) { return ''; } };
+const kidPreview = () => { try { return localStorage.getItem('kidPreview') === '1'; } catch (e) { return false; } };
+/* the short screens: a canvasser's phone, or Travis previewing them */
+const kidView = () => !!syncCode() && (syncRole() === 'canvasser' || (syncRole() === 'boss' && kidPreview()));
 const syncName = () => { try { return localStorage.getItem('syncName') || ''; } catch (e) { return ''; } };
 const syncHash = o => { const s = JSON.stringify(o); let h = 2166136261;
   for (let i = 0; i < s.length; i++) { h ^= s.charCodeAt(i); h = Math.imul(h, 16777619); } return (h >>> 0).toString(36) + '.' + s.length; };
@@ -15808,6 +15917,7 @@ async function syncFetch(path, opts = {}) {
     headers: Object.assign({ 'x-team-code': syncCode() }, opts.body ? { 'content-type': 'application/json' } : {}),
     cache: 'no-store' }));
   let body = null; try { body = await r.json(); } catch (e) {}
+  if (r.status === 401 && body && /not on the list/.test(body.error || '') && syncCode()) { try { lockOut(); } catch (e) {} }
   if (!r.ok) { const err = new Error((body && body.error) || ('HTTP ' + r.status)); err.status = r.status; err.body = body; throw err; }
   return body;
 }
@@ -15823,7 +15933,10 @@ function renderSyncInfo() {
   const off = $('mSyncOff'); if (off) off.style.display = code ? '' : 'none';
   const now = $('mSyncNow'); if (now) now.style.display = code ? '' : 'none';
   const mb = $('mBuilds'); if (mb) mb.classList.toggle('hide', !(code && role === 'boss'));
-  const ms = $('menuSheet'); if (ms) ms.classList.toggle('kid', !!code && role === 'canvasser');
+  const mt = $('mTeam'); if (mt) mt.classList.toggle('hide', !(code && role === 'boss'));
+  const ms = $('menuSheet'); if (ms) { ms.classList.toggle('kid', kidView()); ms.classList.toggle('boss', !!code && role === 'boss' && !kidView()); }
+  const mp = $('mPreview'); if (mp) mp.classList.toggle('hide', !(code && role === 'boss'));
+  const kp = $('kmPreview'); if (kp) kp.classList.toggle('hide', !(code && role === 'boss' && kidPreview()));
   if (!code) { el.textContent = 'Off. Type the code Travis gave this phone, then tap Save code.'; return; }
   const q = syncGet('syncQ') || {};
   const waiting = Object.keys(q.p || {}).length + Object.keys(q.g || {}).length;
@@ -16134,7 +16247,111 @@ async function openBuilds(pre) {
   $('bdList').innerHTML = '<div class="small">Loading…</div>';
   await fetchBuilds(true); bdRender();
 }
+/* ---------------- v53: Team (Travis's phone) ----------------
+   What each canvasser did on a day, from the doors that synced to this phone. Their doors
+   carry a "From NAME's doors." line; that is how they are told apart from his own. */
+const whoOf = v => { for (const e of logOf(v)) { const m = e && e.auto && /^From (.+)'s doors\.$/.exec(e.text || ''); if (m) return m[1]; } return ''; };
+let tmDay = null, tmTeam = [];
+const hm = ms => new Date(ms).toLocaleTimeString([], { hour:'numeric', minute:'2-digit' });
+function tmDoors(name, key) { return state.visitLog.filter(v => dayKeyOf(v) === key && whoOf(v) === name).sort((a, b) => a.ts - b.ts); }
+function renderTeam() {
+  const today = dayKey(Date.now());
+  const names = [...new Set(tmTeam.map(t => t.name).concat(state.visitLog.map(whoOf).filter(Boolean)))].sort();
+  const keys = [];
+  for (let i = 0; i < 7; i++) keys.push(dayKey(Date.now() - i * 86400000));
+  if (!tmDay) tmDay = keys.find(k => names.some(n => tmDoors(n, k).length)) || today;
+  $('tmDays').innerHTML = keys.map(k => {
+    const d = new Date(k + 'T12:00:00'), any = names.some(n => tmDoors(n, k).length);
+    const top = k === today ? 'Today' : k === dayKey(Date.now() - 86400000) ? 'Yesterday' : d.toLocaleDateString([], { weekday:'short' });
+    return `<button class="bkDay${k === tmDay ? ' on' : ''}${any ? ' near' : ''}" data-k="${k}">${top}<small>${d.toLocaleDateString([], { month:'short', day:'numeric' })}</small></button>`;
+  }).join('');
+  $('tmDays').querySelectorAll('.bkDay').forEach(b => b.onclick = () => { tmDay = b.dataset.k; renderTeam(); });
+  if (!names.length) { $('tmBody').innerHTML = '<div class="small" style="margin-top:12px">No canvasser doors on this phone yet. They show up here once their phones sync.</div>'; return; }
+  $('tmBody').innerHTML = names.map((n, i) => {
+    const ds = tmDoors(n, tmDay), t = tmTeam.find(x => x.name === n);
+    const c = k => ds.filter(v => v.status === k).length, st = k => ds.filter(v => (v.dispo || 'new') === k).length;
+    const sync = t && t.lastDoor ? `last door came in ${new Date(t.lastDoor).toLocaleString([], { weekday:'short', hour:'numeric', minute:'2-digit' })}` : 'nothing sent yet';
+    if (!ds.length) return `<div class="tmCard"><div class="tmTop"><span class="tmName">${esc(n)}</span><span class="small">${esc(sync)}</span></div><div class="small" style="margin-top:6px">No doors this day.</div></div>`;
+    const span = ds[ds.length - 1].ts - ds[0].ts, hrs = Math.floor(span / 3600000), mins = Math.round(span % 3600000 / 60000);
+    return `<div class="tmCard"><div class="tmTop"><span class="tmName">${esc(n)}</span><span class="small">${esc(sync)}</span></div>`
+      + `<div class="small" style="margin-top:4px">First door ${hm(ds[0].ts)} · last ${hm(ds[ds.length - 1].ts)} · ${hrs} h ${mins} m</div>`
+      + `<div class="tmNums"><div class="tmNum"><b>${ds.length}</b><span>Doors</span></div><div class="tmNum"><b>${c('talked')}</b><span>Talked</span></div>`
+      + `<div class="tmNum"><b style="color:#22c55e">${st('appt')}</b><span>Booked</span></div><div class="tmNum"><b style="color:#f59e0b">${st('callback')}</b><span>Callbacks</span></div>`
+      + `<div class="tmNum"><b>${c('noanswer')}</b><span>No answer</span></div><div class="tmNum"><b>${st('cold') + c('dnr')}</b><span>No / DNR</span></div></div>`
+      + `<div class="chips" style="margin-top:10px"><button class="chip" data-list="${i}">📋 Their doors</button><button class="chip" data-map="${i}">🗺️ Show on map</button></div>`
+      + `<div class="hide" id="tmList${i}">` + ds.map(v => {
+          const note = logOf(v).filter(e => e.kind === 'note' && !e.auto && e.text).map(e => e.text).pop() || '';
+          const sc = (STATUS[v.status] || {}).color || '#64748b', dz = DISPO[v.dispo || 'new'];
+          return `<button class="tmRow" data-open="${esc(v.id)}"><span class="tmDot" style="background:${sc}"></span><span><b>${hm(v.ts)}</b> ${esc(v.addr || 'No address')}`
+            + ` · ${esc((STATUS[v.status] || {}).short || '')}${v.dispo && v.dispo !== 'new' ? ' · <b style="color:' + dz.color + '">' + esc(dz.label) + '</b>' : ''}`
+            + `${note ? '<br><span style="color:var(--dim)">' + esc(note) + '</span>' : ''}</span></button>`;
+        }).join('') + `</div></div>`;
+  }).join('');
+  $('tmBody').querySelectorAll('[data-list]').forEach(b => b.onclick = () => $('tmList' + b.dataset.list).classList.toggle('hide'));
+  $('tmBody').querySelectorAll('[data-open]').forEach(b => b.onclick = () => { const v = state.visitLog.find(x => x.id === b.dataset.open); if (v) openDetail(v); });
+  $('tmBody').querySelectorAll('[data-map]').forEach(b => b.onclick = async () => {
+    const ll = tmDoors(names[+b.dataset.map], tmDay).filter(v => isFinite(v.lat) && isFinite(v.lon)).map(v => [v.lat, v.lon]);
+    closeSheet('teamSheet'); await openMap();
+    const m = window._map; if (!m || !ll.length) return;
+    if (mapOpts.follow) { mapOpts.follow = false; syncMapBtns(); }
+    try { ll.length === 1 ? m.setView(ll[0], 18) : m.fitBounds(L.latLngBounds(ll).pad(0.12), { maxZoom:18 }); } catch (e) {}
+  });
+}
+async function openTeam() {
+  if (syncRole() !== 'boss') return;
+  closeSheet('menuSheet'); tmDay = null;
+  openSheet('teamSheet');
+  $('tmBody').innerHTML = '<div class="small" style="margin-top:12px">Checking for new doors…</div>';
+  try { await syncPull(true); } catch (e) {}
+  try { tmTeam = (await syncFetch('/team')).team || []; } catch (e) { tmTeam = []; }
+  renderTeam();
+}
+$('mTeam').onclick = openTeam;
+
+/* ---------------- v53: the code lock ---------------- */
+function showGate(msg) {
+  $('gAsk').classList.remove('hide'); $('gDone').classList.add('hide');
+  const standalone = (window.matchMedia && matchMedia('(display-mode: standalone)').matches) || navigator.standalone === true;
+  $('gHomeTip').classList.toggle('hide', standalone);
+  const e = $('gErr'); e.textContent = msg || ''; e.classList.toggle('hide', !msg);
+  $('gCode').value = '';
+  $('codeLock').classList.remove('hide');
+}
+function lockOut() {
+  try { ['syncCode','syncRole','syncName','kidPreview'].forEach(x => localStorage.removeItem(x)); } catch (e) {}
+  renderSyncInfo();
+  showGate("This code isn't active anymore. Ask Travis.");
+}
+$('gGo').onclick = async () => {
+  const code = $('gCode').value.trim(), err = t => { $('gErr').textContent = t; $('gErr').classList.remove('hide'); };
+  if (code.replace(/[^A-Za-z0-9]/g, '').length < 8) return err('Type the whole code, letters and numbers.');
+  if (!navigator.onLine) return err('No signal. The first time needs signal so the code can be checked.');
+  const b = $('gGo'); b.disabled = true; b.textContent = 'Checking…';
+  try {
+    $('mSyncCode').value = code;
+    await $('mSyncSave').onclick();
+  } finally { b.disabled = false; b.textContent = 'Unlock'; }
+  if (!syncCode()) return err("That code didn't work. Check it with Travis and type it again.");
+  $('gHi').textContent = `You're in, ${syncName() || 'welcome'} 👋`;
+  $('gAsk').classList.add('hide'); $('gDone').classList.remove('hide');
+  $('gCopy').onclick = async () => {
+    try { await navigator.clipboard.writeText(code); $('gCopy').textContent = '✓ Copied. Paste it into a note.'; }
+    catch (e) { $('gCopy').textContent = 'Write it down: ' + code; }
+  };
+};
+$('gCode').addEventListener('keydown', e => { if (e.key === 'Enter') $('gGo').click(); });
+$('gOpen').onclick = () => $('codeLock').classList.add('hide');
+if (!syncCode()) showGate('');
+/* a code that has been turned off locks the phone the next time it has signal */
+setTimeout(() => { if (syncCode() && navigator.onLine) syncFetch('/whoami').catch(() => {}); }, 2000);
+
+/* v53: Travis can look at the kids' screens from his own phone. Screens only: his phone
+   keeps syncing as him, and his own records are untouched. */
+$('mPreview').onclick = () => { try { localStorage.setItem('kidPreview', '1'); } catch (e) {} renderSyncInfo(); flashToast("Kids' view", 'Open any house to see their screen. Menu, Back to my view, to switch back.', '#a78bfa'); };
+$('kmExit').onclick = () => { try { localStorage.removeItem('kidPreview'); } catch (e) {} renderSyncInfo(); };
+
 /* the short menu's buttons press the real ones, so every rule behind them still applies */
+document.querySelectorAll('#bossMenu .tile').forEach(b => b.onclick = () => { const t = $(b.dataset.go); if (t) t.click(); });
 document.querySelectorAll('#kidMenu .kmBtn').forEach(b => b.onclick = () => { const t = $(b.dataset.go); if (t) t.click(); });
 (() => {
   const k = $('kmName'); if (!k) return;
@@ -16191,7 +16408,7 @@ $('bdSave').onclick = async () => {
       /* v52: a canvasser's phone gets the short panel. Tags, the full stage list, come-back
          dates, the county record and delete are Travis's, so they step aside. Nothing is
          removed from the record. */
-      const kid = syncRole() === 'canvasser';
+      const kid = kidView();
       $('detailSheet').classList.toggle('kid', kid);
       const br = $('dBookRow'); if (br) br.classList.toggle('kidHide', true);
       if (kid && editing) $('dKidNext').querySelectorAll('.chip').forEach(c => {
@@ -16385,11 +16602,11 @@ $('mSendDay').onclick = () => $('sesSendDay').onclick();
   $('mSyncNow').onclick = () => { if (!syncCode()) return flashToast('No team code yet', 'Type it in and tap Save code.', '#f59e0b'); syncTick(false); };
   $('mSyncOff').onclick = async () => {
     if (!syncCode()) return;
-    const k = await askChoice('Turn off team sync?', 'Nothing is deleted. Doors simply stop going out (or coming in) until a code is saved again.',
+    const k = await askChoice('Turn off team sync?', 'Nothing is deleted, but the app locks until a team code is typed in again.',
       [{ key:'off', label:'Turn it off' }, { key:'no', label:'Keep it on' }]);
     if (k !== 'off') return;
     try { ['syncCode','syncRole','syncName'].forEach(x => localStorage.removeItem(x)); } catch (e) {}
-    inp.value = ''; syncSay('Turned off.');
+    inp.value = ''; syncSay('Turned off.'); showGate('');
   };
 })();
 
