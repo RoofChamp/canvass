@@ -1560,6 +1560,13 @@ select{min-height:44px}
     </div>
   </div>
 </div>
+<!-- v54: audit one canvasser's day: every door in order, time between doors, the route. -->
+<div id="auditSheet" class="sheet hide">
+  <div class="sheetBody">
+    <div class="sheetHead"><h2 id="auTitle">Audit</h2><button class="x" data-close="auditSheet">Close</button></div>
+    <div class="sheetScroll"><div id="auBody"></div></div>
+  </div>
+</div>
 <!-- v53: Travis's Team screen. One card per canvasser for the day picked. -->
 <div id="teamSheet" class="sheet hide">
   <div class="sheetBody">
@@ -1947,8 +1954,7 @@ select{min-height:44px}
         <div class="kmHead">My day</div>
         <button class="ghost kmBtn" data-go="mSession">📊 How today's going</button>
         <button class="ghost kmBtn" data-go="mEndDay">■ End the day</button>
-        <button class="primary kmBtn" data-go="mSendDay">📤 Send day log</button>
-        <button class="ghost kmBtn" data-go="mPay">💵 Pay requests</button>
+        <button class="primary kmBtn" data-go="mPay">💵 Send my week (pay request)</button>
         <div class="kmHead">Me</div>
         <label class="f" style="margin-top:4px">Your name (goes on your day log)</label>
         <input id="kmName" type="text" autocomplete="off" maxlength="40" placeholder="First name">
@@ -16358,6 +16364,49 @@ setTimeout(() => { if (syncCode() && navigator.onLine) syncFetch('/whoami').catc
 $('mPreview').onclick = () => { try { localStorage.setItem('kidPreview', '1'); } catch (e) {} renderSyncInfo(); flashToast("Kids' view", 'Open any house to see their screen. Menu, Back to my view, to switch back.', '#a78bfa'); };
 $('kmExit').onclick = () => { try { localStorage.removeItem('kidPreview'); } catch (e) {} renderSyncInfo(); };
 
+/* ---------------- v54: audit a day (Travis only) ----------------
+   Every door the canvasser logged that day, in order, with the minutes since the door before.
+   Long gaps are marked so they stand out. "Show the route" draws the doors in order on the map. */
+async function openAudit(name, key) {
+  const ds = state.visitLog.filter(v => dayKeyOf(v) === key && whoOf(v) === name).sort((a, b) => a.ts - b.ts);
+  $('auTitle').textContent = `${name} · ${new Date(key + 'T12:00:00').toLocaleDateString([], { weekday:'short', month:'short', day:'numeric' })}`;
+  if (!ds.length) { $('auBody').innerHTML = '<div class="small">None of their doors for this day are on this phone yet. Open Team once with signal so they come down.</div>'; openSheet('auditSheet'); return; }
+  const span = ds[ds.length - 1].ts - ds[0].ts;
+  let longGaps = 0;
+  const rows = ds.map((v, i) => {
+    const gap = i ? Math.round((v.ts - ds[i - 1].ts) / 60000) : null, big = gap != null && gap >= 20;
+    if (big) longGaps++;
+    const note = logOf(v).filter(e => e.kind === 'note' && !e.auto && e.text).map(e => e.text).pop() || '';
+    const sc = (STATUS[v.status] || {}).color || '#64748b';
+    return `<button class="tmRow" data-open="${esc(v.id)}"><span class="tmDot" style="background:${sc}"></span><span><b>${hm(v.ts)}</b>`
+      + (gap != null ? ` <span style="color:${big ? '#f59e0b' : 'var(--dim)'}">+${gap} min${big ? ' ⚠' : ''}</span>` : ' <span style="color:var(--dim)">first door</span>')
+      + `<br>${esc(v.addr || 'No address')} · ${esc((STATUS[v.status] || {}).short || '')}${v.dispo && v.dispo !== 'new' ? ' · ' + esc(DISPO[v.dispo].label) : ''}`
+      + `${note ? '<br><span style="color:var(--dim)">' + esc(note) + '</span>' : ''}</span></button>`;
+  }).join('');
+  $('auBody').innerHTML = `<div class="small">${ds.length} doors · first ${hm(ds[0].ts)} · last ${hm(ds[ds.length - 1].ts)} · ${Math.floor(span / 3600000)} h ${Math.round(span % 3600000 / 60000)} m`
+    + `${longGaps ? ` · <b style="color:#f59e0b">${longGaps} gap${longGaps === 1 ? '' : 's'} of 20+ min</b>` : ''}</div>`
+    + `<button class="ghost" id="auMap">🗺️ Show the route on the map</button>` + `<div style="margin-top:8px">${rows}</div>`;
+  $('auBody').querySelectorAll('[data-open]').forEach(b => b.onclick = () => { const v = state.visitLog.find(x => x.id === b.dataset.open); if (v) openDetail(v); });
+  $('auMap').onclick = async () => {
+    const ll = ds.filter(v => isFinite(v.lat) && isFinite(v.lon)).map(v => [v.lat, v.lon]);
+    closeSheet('auditSheet'); closeSheet('paySheet'); await openMap();
+    const m = window._map; if (!m || !ll.length) return;
+    if (mapOpts.follow) { mapOpts.follow = false; syncMapBtns(); }
+    if (window._auditLayer) window._auditLayer.remove();
+    const g = L.layerGroup([L.polyline(ll, { color:'#f59e0b', weight:3, opacity:.9, dashArray:'6 6' })]);
+    ll.forEach((p, i) => L.marker(p, { icon: L.divIcon({ className:'', html:`<div style="background:#f59e0b;color:#111;font:800 11px sans-serif;border-radius:9px;padding:1px 5px;border:1px solid #fff">${i + 1}</div>` }) }).addTo(g));
+    window._auditLayer = g.addTo(m);
+    try { ll.length === 1 ? m.setView(ll[0], 18) : m.fitBounds(L.latLngBounds(ll).pad(0.12), { maxZoom:18 }); } catch (e) {}
+  };
+  openSheet('auditSheet');
+}
+document.addEventListener('click', e => {
+  const b = e.target.closest && e.target.closest('[data-audit]'); if (!b) return;
+  const [name, key] = b.dataset.audit.split('|'); openAudit(name, key);
+});
+/* the email's "Open Pay requests" link lands here */
+setTimeout(() => { if (location.hash === '#pay' && syncRole() === 'boss' && syncCode()) { try { history.replaceState(null, '', location.pathname); } catch (e) {} openPay(); } }, 2500);
+
 /* the short menu's buttons press the real ones, so every rule behind them still applies */
 document.querySelectorAll('#bossMenu .tile').forEach(b => b.onclick = () => { const t = $(b.dataset.go); if (t) t.click(); });
 document.querySelectorAll('#kidMenu .kmBtn').forEach(b => b.onclick = () => { const t = $(b.dataset.go); if (t) t.click(); });
@@ -16518,7 +16567,7 @@ function renderPayBoss() {
       const gap = s.doors > s.onRecord;
       return `<div class="payRow"><div><b>${esc(shortDay(s.day))}</b> · ${esc(hoursMins(s.workedMins))} · ${s.doors} doors`
         + ` <span style="color:${gap ? '#f59e0b' : '#22c55e'}">(${s.onRecord} reached the mailbox that day${s.late ? `, ${s.late} late` : ''})</span>`
-        + (s.flagged ? ` · ${s.flagged} worth a look` : '') + `</div>`
+        + (s.flagged ? ` · ${s.flagged} worth a look` : '') + ` <button class="chip" data-audit="${esc(p.canvasser)}|${esc(s.day)}" style="min-height:32px;padding:4px 10px">🔍 Audit</button></div>`
         + `<label><input type="checkbox" data-p="${i}" data-s="${esc(s.day)}" data-k="done"${r.done ? ' checked' : ''}> Completed ${payMoney(PAY.shift)}</label> `
         + `<label><input type="checkbox" data-p="${i}" data-s="${esc(s.day)}" data-k="clean"${r.clean ? ' checked' : ''}> Clean ${payMoney(PAY.clean)}</label></div>`;
     }).join('');
