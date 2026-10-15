@@ -837,6 +837,13 @@ select{min-height:44px}
 .tmRow{display:flex;gap:8px;align-items:flex-start;padding:8px 2px;border-top:1px solid var(--line);font-size:13px;text-align:left;width:100%;background:none;color:var(--txt)}
 .tmDot{width:10px;height:10px;border-radius:50%;margin-top:4px;flex:0 0 auto}
 .bdRow{border:1px solid var(--line);border-radius:12px;padding:10px 12px;margin-top:8px}
+.swRow{display:flex;align-items:center;gap:12px;padding:14px 0;border-bottom:1px solid var(--line)}
+.swRow .swTxt{flex:1;min-width:0}.swRow .swTxt b{display:block;font-size:16px}.swRow .swTxt span{display:block;font-size:13px;color:var(--dim);margin-top:3px;line-height:1.4}
+.sw{flex:none;width:56px;height:32px;border-radius:16px;border:1px solid var(--line);background:#334155;position:relative;padding:0;min-height:0}
+.sw::after{content:'';position:absolute;top:3px;left:3px;width:24px;height:24px;border-radius:50%;background:#fff;transition:left .15s}
+.sw.on{background:#22c55e;border-color:#22c55e}.sw.on::after{left:27px}.sw:disabled{opacity:.5}
+#mapBuild{background:#ea580c;border-color:#ea580c;color:#fff}
+.bnCard{border:1px solid #ea580c;background:#2a1508;border-radius:14px;padding:12px 14px;margin-top:10px;line-height:1.5}
 .leaflet-tooltip.buildTip{background:#c2410c;color:#fff;border:0;font-weight:700;font-size:11px;padding:2px 6px;box-shadow:none}.leaflet-tooltip.buildTip:before{display:none}
 .leaflet-tooltip.stopTip{background:#7c3aed;color:#fff;border:0;font-weight:700;font-size:11px;padding:2px 6px;box-shadow:none}.leaflet-tooltip.stopTip:before{display:none}
 #findWrap{position:absolute;z-index:1002;left:10px;right:10px;top:calc(var(--safe-t) + 52px)}
@@ -1225,6 +1232,7 @@ select{min-height:44px}
     <button class="mbtn" id="mapClose">✕ Close</button>
     <button class="mbtn" id="mapSat">🛰 Satellite</button>
     <button class="mbtn" id="mapFollow">◎ Follow</button>
+    <button class="mbtn hide" id="mapBuild">🏗️ Build</button>
   </div>
   <!-- The key used to be a permanent box in this corner, which the Tracks and
        Move me buttons were drawn straight over. It is a button you tap now. -->
@@ -1577,16 +1585,28 @@ select{min-height:44px}
     </div>
   </div>
 </div>
-<!-- v55: Travis's master switch for the homeowner confirmation on bookings the kids make -->
-<div id="confirmSheet" class="sheet hide">
+<!-- v55: Travis's switches. Each one is saved in the mailbox, so it applies to every phone. -->
+<div id="switchSheet" class="sheet hide">
   <div class="sheetBody">
-    <div class="sheetHead"><h2>✉️ Homeowner confirmations</h2><button class="x" data-close="confirmSheet">Close</button></div>
+    <div class="sheetHead"><h2>🎚️ Switches</h2><button class="x" data-close="switchSheet">Close</button></div>
     <div class="sheetScroll">
-      <div id="cfState" style="font-size:20px;font-weight:800;margin-top:4px">Checking…</div>
-      <div class="small" id="cfWhat" style="margin-top:6px"></div>
-      <button class="primary" id="cfFlip" disabled>…</button>
-      <div class="small hide" id="cfErr" style="color:#fca5a5;margin-top:10px;font-weight:700"></div>
-      <div class="small why" style="margin-top:14px">This is for bookings the kids make at the door. Bookings you make yourself in GoHighLevel are not affected. Either way the visit still lands on your calendar, and the kids' screens look the same.</div>
+      <div class="swRow"><div class="swTxt"><b>Homeowner confirmations</b><span id="swConfirmWhat">When a kid books a visit, GoHighLevel sends the homeowner its confirmation and reminders.</span></div><button class="sw" id="swConfirm" disabled aria-label="Homeowner confirmations"></button></div>
+      <div class="swRow"><div class="swTxt"><b>Build heads-up for the kids</b><span id="swCardWhat">The first time they open the app on a build day (or the day before), a card shows where your job is.</span></div><button class="sw" id="swCard" disabled aria-label="Build heads-up"></button></div>
+      <div class="small hide" id="swErr" style="color:#fca5a5;margin-top:10px;font-weight:700"></div>
+      <button class="ghost" id="swPreviewCard" style="margin-top:14px">👀 Show me the build card they'd see</button>
+      <div class="small" style="margin-top:10px">Turn single builds on or off for the kids in My builds.</div>
+    </div>
+  </div>
+</div>
+<!-- v55: the build heads-up the kids get when they open the app -->
+<div id="buildNewsSheet" class="sheet hide">
+  <div class="sheetBody">
+    <div class="sheetHead"><h2>🏗️ Travis has a job going</h2><button class="x" data-close="buildNewsSheet">Close</button></div>
+    <div class="sheetScroll">
+      <div class="small">Neighbors see the crew and the dumpster. Knock the streets around it and use it at the door.</div>
+      <div id="bnBody"></div>
+      <button class="primary" id="bnMap" style="margin-top:12px">🗺️ Show me on the map</button>
+      <button class="ghost" id="bnOk">Got it</button>
     </div>
   </div>
 </div>
@@ -1595,10 +1615,14 @@ select{min-height:44px}
   <div class="sheetBody">
     <div class="sheetHead"><h2>🏗️ My builds</h2><button class="x" data-close="buildSheet">Close</button></div>
     <div class="sheetScroll">
-      <div class="small">Mark where you have a job going. The canvassers see the street and the days on their map (never the house number), so they can work the streets around it and mention it next door.</div>
+      <div class="small">Mark where you have a job going. The canvassers see the house, the days and the name you add, on their map and on a heads-up card, so they can work the streets around it and point to it at the door.</div>
       <label class="f">Address</label>
       <input id="bdAddr" autocomplete="off" placeholder="123 Main St, Columbus" maxlength="120">
       <div class="small hide" id="bdOk" style="color:#86efac;margin-top:8px;font-weight:700"></div>
+      <label class="f">Customer name (optional)</label>
+      <input id="bdWho" autocomplete="off" placeholder="The kids can use it at the door" maxlength="60">
+      <label class="f">Cross street (optional)</label>
+      <input id="bdNear" autocomplete="off" placeholder="Leave blank and the app finds it" maxlength="60">
       <label class="f">What</label>
       <div class="chips" id="bdWhat"></div>
       <div style="display:flex;gap:10px">
@@ -1922,7 +1946,7 @@ select{min-height:44px}
           <button class="tile" data-go="mPay"><b>💵</b>Pay requests</button>
           <button class="tile" data-go="mBuilds"><b>🏗️</b>My builds</button>
           <button class="tile" data-go="mPreview"><b>👀</b>Kids' view</button>
-          <button class="tile" id="tConfirm"><b>✉️</b><span id="tConfirmLbl">Homeowner confirmations</span></button>
+          <button class="tile" id="tSwitch"><b>🎚️</b>Switches</button>
         </div>
         <div class="tHead">Customers and doors</div>
         <div class="tGrid">
@@ -16176,7 +16200,9 @@ function renderBookNear(forDoor) {
 /* ---------------- v50: builds ----------------
    Where Travis has a job going. He marks them (Menu, Team sync, My builds, or from a house).
    Everyone with a team code sees them on the map: street and days, a point rounded to about
-   300 m, never the house number. Shown until a week after the last day. */
+   300 m, never the house number. Shown until a week after the last day.
+   v55, per Travis: they see the full address, the exact point and the customer's name, and he
+   can switch each build off for them. */
 let buildsAt = 0;
 const buildsCached = () => (syncGet('syncBuilds') || { builds: [] }).builds || [];
 async function fetchBuilds(force) {
@@ -16185,7 +16211,7 @@ async function fetchBuilds(force) {
   try {
     const r = await syncFetch('/builds');
     buildsAt = Date.now();
-    syncSet('syncBuilds', { builds: Array.isArray(r.builds) ? r.builds : [], at: buildsAt });
+    syncSet('syncBuilds', { builds: Array.isArray(r.builds) ? r.builds : [], at: buildsAt, card: r.card !== false });
     if (window._map) drawBuilds();
   } catch (e) {}
   return buildsCached();
@@ -16200,25 +16226,34 @@ function buildDays(b) {
 }
 function buildLine(b) {
   const what = { 'Roof replacement': 'a roof', 'Siding': 'siding', 'Gutters': 'gutters', 'Repair': 'a repair' }[buildWhat(b)] || 'a job';
-  const st = (b.street || '').replace(/\s+(st|street|dr|drive|ave|avenue|rd|road|ct|court|ln|lane|way|blvd|pl|place|cir|circle|trl|trail|pkwy|ter|terrace)\.?$/i, '');
   const done = b.to < dayKey(Date.now());
-  return `"We ${done ? 'just finished' : 're doing'} ${what} over on ${st || 'the next street'}."`.replace('We re', "We're");
+  const house = (b.addr || '').split(',')[0] || b.street || 'down the street';
+  return `"We ${done ? 'just finished' : "'re doing"} ${what}${b.who ? ' for ' + b.who : ''} at ${house}${done ? '' : ' right now'}. Go take a look."`.replace("We 're", "We're");
+}
+/* builds the kids should hear about: on today, or starting tomorrow. Travis's hidden ones never count. */
+function buildsNow(forKids) {
+  const t = dayKey(Date.now()), tm = dayKey(Date.now() + 86400000);
+  return buildsCached().filter(b => b.lat != null && b.from <= tm && b.to >= t && !(forKids && b.hidden));
+}
+function buildPlace(b) {
+  return `${b.addr || b.street || ''}${b.near ? ' (near ' + b.near + ')' : ''}`;
 }
 function drawBuilds() {
   if (!window._map || typeof L === 'undefined') return;
   if (window._buildsLayer) { window._buildsLayer.remove(); window._buildsLayer = null; }
   const t = dayKey(Date.now()), soon = dayKey(Date.now() + 14 * 86400000);
-  const list = buildsCached().filter(b => b.lat != null && b.lon != null && b.from <= soon);
+  const list = buildsCached().filter(b => b.lat != null && b.lon != null && b.from <= soon && !(kidView() && b.hidden));
+  paintBuildChip();
   if (!list.length) return;
   const g = L.layerGroup();
   for (const b of list) {
     const tip = b.to < t ? `Build done ${new Date(b.to + 'T12:00:00').toLocaleDateString([], { month:'short', day:'numeric' })}`
       : `🔨 Build ${new Date(b.from + 'T12:00:00').toLocaleDateString([], { month:'short', day:'numeric' })}`
         + (b.to !== b.from ? `–${new Date(b.to + 'T12:00:00').toLocaleDateString([], { day:'numeric' })}` : '');
-    L.circleMarker([b.lat, b.lon], { radius: 11, color: '#fff', weight: 2, fillColor: '#ea580c', fillOpacity: .9 })
+    L.circleMarker([b.lat, b.lon], { radius: 11, color: '#fff', weight: 2, fillColor: b.hidden ? '#64748b' : '#ea580c', fillOpacity: .9 })
       .bindTooltip(tip, { permanent: true, direction: 'top', offset: [0, -10], className: 'buildTip' })
-      .bindPopup(`<b>Travis's ${esc(buildWhat(b).toLowerCase())} near here</b><br>${esc(buildDays(b))}<br>Near ${esc(b.street || '')}${b.city ? ', ' + esc(b.city) : ''}`
-        + `<br><span style="opacity:.8">Neighbors notice the work. Fine to say at the door: ${esc(buildLine(b))} Never the homeowner's name.</span>`)
+      .bindPopup(`<b>Travis's ${esc(buildWhat(b).toLowerCase())}${b.who ? ' for ' + esc(b.who) : ''}</b><br>${esc(buildDays(b))}<br>${esc(buildPlace(b))}`
+        + `<br><span style="opacity:.8">At the door: ${esc(buildLine(b))}</span>`)
       .addTo(g);
   }
   window._buildsLayer = g.addTo(window._map);
@@ -16227,7 +16262,49 @@ function drawBuilds() {
   const rml = refreshMapLayers;
   refreshMapLayers = function () { const r = rml.apply(this, arguments); try { drawBuilds(); } catch (e) {} return r; };
 })();
-setTimeout(() => { fetchBuilds(); }, 4000);
+setTimeout(() => { fetchBuilds().then(() => maybeBuildNews()); }, 4000);
+
+/* v55: the build heads-up. Once a day per set of builds, on a kid's phone (or Travis in the
+   kids' view), and only when Travis has the switch on. A PWA is usually resumed rather than
+   reopened, so coming back to the app counts as opening it. */
+function bnKey() { return dayKey(Date.now()) + '|' + buildsNow(true).map(b => b.id).join(','); }
+function showBuildNews(preview) {
+  const list = buildsNow(true); if (!list.length) return;
+  $('bnBody').innerHTML = list.map(b => `<div class="bnCard"><div style="font-weight:800;font-size:17px">${esc(buildWhat(b))}${b.who ? ' for ' + esc(b.who) : ''}</div>`
+    + `<div>${esc(buildPlace(b))}</div><div class="small">${esc(buildDays(b))}</div>`
+    + `<div class="small" style="margin-top:6px">Say: ${esc(buildLine(b))}</div></div>`).join('');
+  const done = () => { if (!preview) { try { localStorage.setItem('buildNewsSeen', bnKey()); } catch (e) {} } };
+  $('bnOk').onclick = () => { done(); closeSheet('buildNewsSheet'); };
+  $('bnMap').onclick = async () => { done(); closeSheet('buildNewsSheet'); await showBuildsOnMap(); };
+  openSheet('buildNewsSheet');
+}
+function maybeBuildNews() {
+  try {
+    if (!syncCode() || !kidView()) return;
+    if ((syncGet('syncBuilds') || {}).card === false) return;
+    if (!buildsNow(true).length) return;
+    let seen = ''; try { seen = localStorage.getItem('buildNewsSeen') || ''; } catch (e) {}
+    if (seen === bnKey()) return;
+    if (!$('codeLock').classList.contains('hide') || document.querySelector('.sheet:not(.hide)')) return;   // later, when the screen is clear
+    showBuildNews(false);
+  } catch (e) {}
+}
+document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') setTimeout(() => fetchBuilds(true).then(() => maybeBuildNews()), 1500); });
+setInterval(() => maybeBuildNews(), 90000);
+async function showBuildsOnMap() {
+  const list = buildsNow(kidView()); if (!list.length) return;
+  if (!$('mapView') || $('mapView').classList.contains('hide')) await openMap();
+  const m = window._map; if (!m) return;
+  if (mapOpts.follow) { mapOpts.follow = false; syncMapBtns(); }
+  try { list.length === 1 ? m.setView([list[0].lat, list[0].lon], 18) : m.fitBounds(L.latLngBounds(list.map(b => [b.lat, b.lon])).pad(0.2), { maxZoom: 18 }); } catch (e) {}
+}
+function paintBuildChip() {
+  const c = $('mapBuild'); if (!c) return;
+  const list = buildsNow(kidView());
+  c.classList.toggle('hide', !list.length);
+  if (list.length) c.textContent = list.length > 1 ? `🏗️ ${list.length} builds` : '🏗️ Build';
+}
+$('mapBuild').onclick = () => showBuildsOnMap();
 
 /* Travis's side: mark, change or take down a build. */
 let bdEdit = null, bdWhat = 'Roof replacement', bdPoint = null;
@@ -16240,6 +16317,8 @@ function bdForm(b, pre) {
   bdEdit = b ? b.id : null; bdPoint = pre && pre.lat != null ? { lat: pre.lat, lon: pre.lon, area: pre.area || '', addr: pre.addr } : null;
   const t = dayKey(Date.now());
   $('bdAddr').value = b ? (b.addr || '') : (pre ? pre.addr : '');
+  $('bdWho').value = b ? (b.who || '') : '';
+  $('bdNear').value = b ? (b.near || '') : '';
   $('bdFrom').value = b ? b.from : t;
   $('bdTo').value = b ? b.to : dayKey(Date.now() + 86400000);
   bdSetWhat(b ? buildWhat(b) : 'Roof replacement');
@@ -16253,9 +16332,17 @@ function bdRender() {
   $('bdList').innerHTML = list.length
     ? '<div style="font-weight:800">On the canvassers\' maps now</div>' + list.map((b, i) =>
       `<div class="bdRow"><div style="font-weight:700">${esc(b.addr || b.street || '')}</div>`
-      + `<div class="small">${esc(buildWhat(b))} · ${esc(buildDays(b))}${b.lat == null ? ' · not on the map' : ''}</div>`
+      + `<div class="small">${esc(buildWhat(b))} · ${esc(buildDays(b))}${b.who ? ' · ' + esc(b.who) : ''}${b.near ? ' · near ' + esc(b.near) : ''}${b.lat == null ? ' · not on the map' : ''}</div>`
+      + `<div class="swRow" style="border:0;padding:8px 0 2px"><div class="swTxt"><b style="font-size:14px">Kids see it</b></div><button class="sw${b.hidden ? '' : ' on'}" data-h="${i}" aria-label="Kids see it"></button></div>`
       + `<div class="chips" style="margin-top:6px"><button class="chip" data-e="${i}">Change</button><button class="chip" data-r="${i}">Take it down</button></div></div>`).join('')
     : '<div class="small">No builds marked yet.</div>';
+  $('bdList').querySelectorAll('[data-h]').forEach(x => x.onclick = async () => {
+    const b = list[+x.dataset.h], hide = !b.hidden;
+    x.disabled = true; x.classList.toggle('on', !hide);
+    try { await syncFetch('/builds', { method:'POST', body: JSON.stringify({ id: b.id, hidden: hide }) }); }
+    catch (e) { $('bdErr').textContent = 'Not changed: ' + (e.message || 'no signal'); $('bdErr').classList.remove('hide'); }
+    await fetchBuilds(true); bdRender();
+  });
   $('bdList').querySelectorAll('[data-e]').forEach(x => x.onclick = () => { bdForm(list[+x.dataset.e]); $('bdAddr').scrollIntoView({ behavior:'smooth', block:'center' }); });
   $('bdList').querySelectorAll('[data-r]').forEach(x => x.onclick = async () => {
     const b = list[+x.dataset.r];
@@ -16336,31 +16423,38 @@ async function openTeam() {
 }
 $('mTeam').onclick = openTeam;
 
-/* ---------------- v55: homeowner confirmation switch (Travis only) ---------------- */
-let cfOn = null;
-function paintConfirm() {
-  const on = cfOn !== false;
-  $('cfState').textContent = cfOn == null ? 'Checking…' : on ? '🟢 On: homeowners get a confirmation' : '⚪ Off: homeowners get nothing from GHL';
-  $('cfWhat').textContent = cfOn == null ? '' : on
-    ? 'When a kid books a visit, GoHighLevel sends the homeowner its usual confirmation and reminders.'
-    : 'When a kid books a visit, GoHighLevel sends the homeowner no confirmation and no reminders, and runs no automations on that booking. You reach out yourself.';
-  $('cfFlip').textContent = on ? 'Turn confirmations off' : 'Turn confirmations on';
-  $('cfFlip').disabled = cfOn == null;
-  $('tConfirmLbl').textContent = cfOn == null ? 'Homeowner confirmations' : 'Confirmations: ' + (on ? 'On' : 'Off');
+/* ---------------- v55: Travis's switches ---------------- */
+let swState = null;
+function paintTeamSwitches() {
+  const on = k => !swState || swState[k] !== 'off';
+  [['swConfirm', 'custConfirm'], ['swCard', 'buildCard']].forEach(([id, k]) => {
+    const b = $(id); b.classList.toggle('on', on(k)); b.disabled = !swState; b.setAttribute('aria-pressed', on(k) ? 'true' : 'false');
+  });
+  $('swConfirmWhat').textContent = on('custConfirm')
+    ? 'On: when a kid books a visit, GoHighLevel sends the homeowner its confirmation and reminders.'
+    : 'Off: GoHighLevel sends the homeowner nothing on kid bookings, and runs no automations on them. You reach out yourself.';
+  $('swCardWhat').textContent = on('buildCard')
+    ? 'On: the first time they open the app on a build day (or the day before), a card shows where your job is.'
+    : 'Off: no card. Your builds still show on their map.';
 }
-async function loadConfirm() {
-  try { cfOn = (await syncFetch('/settings')).custConfirm !== 'off'; $('cfErr').classList.add('hide'); }
-  catch (e) { $('cfErr').textContent = navigator.onLine ? "Couldn't reach the mailbox. Try again in a moment." : 'No signal. This needs signal.'; $('cfErr').classList.remove('hide'); }
-  paintConfirm();
+async function loadTeamSwitches() {
+  try { swState = await syncFetch('/settings'); $('swErr').classList.add('hide'); }
+  catch (e) { $('swErr').textContent = navigator.onLine ? "Couldn't reach the mailbox. Try again in a moment." : 'No signal. Switches need signal.'; $('swErr').classList.remove('hide'); }
+  paintTeamSwitches();
 }
-$('tConfirm').onclick = () => { if (syncRole() !== 'boss') return; closeSheet('menuSheet'); openSheet('confirmSheet'); paintConfirm(); loadConfirm(); };
-$('cfFlip').onclick = async () => {
-  const want = cfOn ? 'off' : 'on', b = $('cfFlip'); b.disabled = true; b.textContent = 'Saving…';
-  try {
-    cfOn = (await syncFetch('/settings', { method:'POST', body: JSON.stringify({ custConfirm: want }) })).custConfirm !== 'off';
-    $('cfErr').classList.add('hide');
-  } catch (e) { $('cfErr').textContent = "That didn't save. Check signal and try again."; $('cfErr').classList.remove('hide'); }
-  paintConfirm();
+$('tSwitch').onclick = () => { if (syncRole() !== 'boss') return; closeSheet('menuSheet'); openSheet('switchSheet'); paintTeamSwitches(); loadTeamSwitches(); };
+[['swConfirm', 'custConfirm'], ['swCard', 'buildCard']].forEach(([id, k]) => $(id).onclick = async () => {
+  if (!swState) return;
+  const want = swState[k] === 'off' ? 'on' : 'off', b = $(id);
+  b.disabled = true; b.classList.toggle('on', want === 'on');           // move it now, settle it after
+  try { swState = await syncFetch('/settings', { method:'POST', body: JSON.stringify({ [k]: want }) }); $('swErr').classList.add('hide'); }
+  catch (e) { $('swErr').textContent = "That didn't save. Check signal and try again."; $('swErr').classList.remove('hide'); }
+  paintTeamSwitches();
+});
+$('swPreviewCard').onclick = async () => {
+  await fetchBuilds(true);
+  if (!buildsNow(true).length) { $('swErr').textContent = 'No build today or tomorrow that the kids can see, so there is no card to show.'; $('swErr').classList.remove('hide'); return; }
+  closeSheet('switchSheet'); showBuildNews(true);
 };
 
 /* ---------------- v53: the code lock ---------------- */
@@ -16487,12 +16581,12 @@ $('bdSave').onclick = async () => {
   if (!from || !to) return err('Pick the first and last day.');
   const btn = $('bdSave'); btn.disabled = true; const was = btn.textContent; btn.textContent = 'Saving…';
   try {
-    const body = { id: bdEdit || undefined, addr, from, to, what: bdWhat };
+    const body = { id: bdEdit || undefined, addr, from, to, what: bdWhat, who: $('bdWho').value.trim(), near: $('bdNear').value.trim() };
     // straight from a house: its own point goes along, in case the lookup cannot find it
     if (bdPoint && addr === bdPoint.addr) Object.assign(body, { lat: bdPoint.lat, lon: bdPoint.lon, area: bdPoint.area });
     const r = await syncFetch('/builds', { method:'POST', body: JSON.stringify(body) });
     await fetchBuilds(true); bdForm(null); bdRender();
-    $('bdOk').textContent = `Saved: ${r.addr || addr}. It is on the canvassers' maps.`; $('bdOk').classList.remove('hide');
+    $('bdOk').textContent = `Saved: ${r.addr || addr}${r.near ? ', near ' + r.near : ''}. It is on the canvassers' maps.`; $('bdOk').classList.remove('hide');
   } catch (e) { err(e.message || 'No signal. Try again.'); }
   finally { btn.disabled = false; if (btn.textContent === 'Saving…') btn.textContent = was; }
 };
