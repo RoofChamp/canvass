@@ -1504,7 +1504,7 @@ select{min-height:44px}
       <div class="statsbox" id="sesStats"></div>
       <div class="small hide" id="sesStreets" style="margin-top:10px;color:var(--dim)"></div>
       <div class="small" id="sesMeta" style="margin-top:10px"></div>
-      <button class="primary" id="sesSendDay">📤 Send my day</button>
+      <button class="primary" id="sesSendDay">📤 Send day log</button>
       <div class="small" style="margin-top:6px;color:var(--dim)">Sends your day log and a full backup together. Pick Dustin in the share sheet.</div>
       <button class="ghost" id="sesExport">⬇︎ Save this session's list</button>
       <button class="ghost" id="sesEnd">■ End session and stop tracking</button>
@@ -1558,6 +1558,13 @@ select{min-height:44px}
         <button class="ghost" id="bookNo">They didn't book</button>
       </div>
     </div>
+  </div>
+</div>
+<!-- v54: audit one canvasser's day: every door in order, time between doors, the route. -->
+<div id="auditSheet" class="sheet hide">
+  <div class="sheetBody">
+    <div class="sheetHead"><h2 id="auTitle">Audit</h2><button class="x" data-close="auditSheet">Close</button></div>
+    <div class="sheetScroll"><div id="auBody"></div></div>
   </div>
 </div>
 <!-- v53: Travis's Team screen. One card per canvasser for the day picked. -->
@@ -1920,7 +1927,7 @@ select{min-height:44px}
           <button class="tile" data-go="mSession"><b>📊</b>How today's going</button>
           <button class="tile" data-go="mDaysLog"><b>🗓️</b>History</button>
           <button class="tile" data-go="mEndDay"><b>⏹️</b>End the day</button>
-          <button class="tile" data-go="mSendDay"><b>📤</b>Send my day</button>
+          <button class="tile" data-go="mSendDay"><b>📤</b>Send day log</button>
         </div>
         <div class="tHead">Backup and files</div>
         <div class="tGrid">
@@ -1947,10 +1954,9 @@ select{min-height:44px}
         <div class="kmHead">My day</div>
         <button class="ghost kmBtn" data-go="mSession">📊 How today's going</button>
         <button class="ghost kmBtn" data-go="mEndDay">■ End the day</button>
-        <button class="primary kmBtn" data-go="mSendDay">📤 Send my day to Dustin</button>
-        <button class="ghost kmBtn" data-go="mPay">💵 Pay requests</button>
+        <button class="primary kmBtn" data-go="mPay">💵 Send my week (pay request)</button>
         <div class="kmHead">Me</div>
-        <label class="f" style="margin-top:4px">Your name (goes on your day log)</label>
+        <label class="f" style="margin-top:4px">Your name (goes on your pay request)</label>
         <input id="kmName" type="text" autocomplete="off" maxlength="40" placeholder="First name">
       </div>
 
@@ -1998,7 +2004,7 @@ select{min-height:44px}
                is finished, above the backup he should take next. -->
           <button class="ghost" id="mEndDay" style="margin-top:0"><span class="emo">■</span> <span class="mtxt" data-lbl="lbl.menu.mEndDay">End the day — stop tracking</span></button>
           <div class="small" id="endDayNote" style="margin:5px 0 16px"></div>
-          <button class="primary" id="mSendDay" style="margin-top:0"><span class="emo">📤</span> <span class="mtxt" data-lbl="lbl.menu.mSendDay">Send my day</span></button>
+          <button class="primary" id="mSendDay" style="margin-top:0"><span class="emo">📤</span> <span class="mtxt" data-lbl="lbl.menu.mSendDay">Send day log</span></button>
           <div class="small why" style="margin:5px 0 16px">Your day log and a full backup, together. Pick Dustin in the share sheet. Only Dustin, never a group chat.</div>
           <button class="ghost" id="mBackupShare" style="margin-top:0"><span class="emo">📤</span> <span class="mtxt" data-lbl="lbl.menu.mBackupShare">Full backup — send it somewhere safe</span></button>
           <button class="ghost" id="mBackup"><span class="emo">💾</span> <span class="mtxt" data-lbl="lbl.menu.mBackup">Full backup — just download it</span></button>
@@ -2555,7 +2561,7 @@ const LABELS = {
   'lbl.menu.mBackup':      { def:'Full backup — just download it',                 group:'menu', cap:LBL_CAP.menu, note:'Menu button.' },
   'lbl.menu.mRestore':     { def:'Restore from a full backup',                          group:'menu', cap:LBL_CAP.menu, note:'Menu button.' },
   'lbl.menu.mTalk':        { def:'Talk Paths: what to say at the door',                 group:'menu', cap:LBL_CAP.menu, note:'Menu button.' },
-  'lbl.menu.mSendDay':     { def:'Send my day',                                         group:'menu', cap:LBL_CAP.menu, note:'Menu button.' },
+  'lbl.menu.mSendDay':     { def:'Send day log',                                         group:'menu', cap:LBL_CAP.menu, note:'Menu button.' },
   'lbl.menu.mPay':         { def:'Pay requests',                                        group:'menu', cap:LBL_CAP.menu, note:'Menu button.' },
   'lbl.menu.mAddTeam':     { def:"Add a canvasser's doors",                             group:'menu', cap:LBL_CAP.menu, note:'Menu button.' },
   'lbl.menu.mExport':      { def:'Export…',                                        group:'menu', cap:LBL_CAP.menu, note:'Menu button.' },
@@ -9302,7 +9308,8 @@ if (window.visualViewport) {
 }
 
 /* ---------------- full map (Leaflet, lazy loaded) ---------------- */
-const mapOpts = { sat:false, names:true, tracks:true, filter:'all', follow:true };
+/* v54: satellite (with road names on top) is the default; his last choice is remembered. */
+const mapOpts = { sat:(() => { try { return localStorage.getItem('mapSat') !== '0'; } catch (e) { return true; } })(), names:true, tracks:true, filter:'all', follow:true };
 function loadLeaflet() {
   if (window.L) return Promise.resolve();
   return new Promise((res, rej) => {
@@ -9326,6 +9333,8 @@ async function openMap() {
   menuReturn = null;
   closeSheet('menuSheet');
   $('mapView').classList.remove('hide');
+  // v54: the map always opens following him. Anything that opens it to show a place turns it off after.
+  mapOpts.follow = true;
   try { await loadLeaflet(); } catch(e) {
     $('mapView').classList.add('hide');
     flashToast('Map needs signal', 'Open the big map once while online and it will cache', '#f59e0b');
@@ -9339,8 +9348,13 @@ async function openMap() {
     // showing "map data not yet available" blanks past the imagery's real limit
     window._street = L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png',
       { maxZoom:22, maxNativeZoom:19, attribution:'© OpenStreetMap' }).addTo(m);
-    window._satL = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
-      { maxZoom:22, maxNativeZoom:18, attribution:'Esri' });
+    window._satL = L.layerGroup([
+      L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
+        { maxZoom:22, maxNativeZoom:18, attribution:'Esri' }),
+      // road and street names over the photo, so the satellite view still reads like a map
+      L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Transportation/MapServer/tile/{z}/{y}/{x}',
+        { maxZoom:22, maxNativeZoom:18 })]);
+    if (mapOpts.sat) { m.removeLayer(window._street); window._satL.addTo(m); }
     window._parcelLayer = L.layerGroup().addTo(m);
     window._labelLayer  = L.layerGroup().addTo(m);
     window._routeLayer  = L.layerGroup().addTo(m);
@@ -13804,7 +13818,7 @@ document.querySelectorAll('.dsecHead[data-msec]').forEach(b => {
 /* ---- what version is actually on the phone ----
    Matches the service worker cache name, so "did the update land" is answerable by
    looking rather than guessing. */
-const BUILD_VERSION = 'v53';
+const BUILD_VERSION = 'v54';
 const BUILD_DATE = '7 August 2026';
 function renderVersionStamp() {
   const el = $('versionStamp'); if (!el) return;
@@ -15856,7 +15870,7 @@ $('sesSendDay').onclick = async () => {
   let name = myName();
   if (!name) {
     const n = (window.prompt('Your first name, for the top of your day log') || '').trim().slice(0, 40);
-    if (!n) return flashToast('Add your name first', 'Menu, Settings, Your name. Then tap Send my day again.', '#f59e0b');
+    if (!n) return flashToast('Add your name first', 'Menu, Your name. Then tap Send day log again.', '#f59e0b');
     try { localStorage.setItem('myName', n); } catch (e) {}
     name = n; if ($('mMyName')) $('mMyName').value = n;
   }
@@ -15885,7 +15899,7 @@ $('sesSendDay').onclick = async () => {
       if (!(e && e.name === 'NotAllowedError') || attempt) break;
       const k = await askChoice('Ready to send', 'Your day log and backup are ready.',
         [{ key:'send', label:'📤 Send now' }, { key:'no', label:'Not now' }]);
-      if (k !== 'send') return flashToast('Nothing was sent', 'Tap Send my day when you are ready.', '#64748b');
+      if (k !== 'send') return flashToast('Nothing was sent', 'Tap Send day log when you are ready.', '#64748b');
     }
   }
   download(files[0].name, html, 'text/html');
@@ -16340,7 +16354,7 @@ $('gGo').onclick = async () => {
   };
 };
 $('gCode').addEventListener('keydown', e => { if (e.key === 'Enter') $('gGo').click(); });
-$('gOpen').onclick = () => $('codeLock').classList.add('hide');
+$('gOpen').onclick = () => { $('codeLock').classList.add('hide'); if (!state.started) $('startBtn').click(); };
 if (!syncCode()) showGate('');
 /* a code that has been turned off locks the phone the next time it has signal */
 setTimeout(() => { if (syncCode() && navigator.onLine) syncFetch('/whoami').catch(() => {}); }, 2000);
@@ -16349,6 +16363,49 @@ setTimeout(() => { if (syncCode() && navigator.onLine) syncFetch('/whoami').catc
    keeps syncing as him, and his own records are untouched. */
 $('mPreview').onclick = () => { try { localStorage.setItem('kidPreview', '1'); } catch (e) {} renderSyncInfo(); flashToast("Kids' view", 'Open any house to see their screen. Menu, Back to my view, to switch back.', '#a78bfa'); };
 $('kmExit').onclick = () => { try { localStorage.removeItem('kidPreview'); } catch (e) {} renderSyncInfo(); };
+
+/* ---------------- v54: audit a day (Travis only) ----------------
+   Every door the canvasser logged that day, in order, with the minutes since the door before.
+   Long gaps are marked so they stand out. "Show the route" draws the doors in order on the map. */
+async function openAudit(name, key) {
+  const ds = state.visitLog.filter(v => dayKeyOf(v) === key && whoOf(v) === name).sort((a, b) => a.ts - b.ts);
+  $('auTitle').textContent = `${name} · ${new Date(key + 'T12:00:00').toLocaleDateString([], { weekday:'short', month:'short', day:'numeric' })}`;
+  if (!ds.length) { $('auBody').innerHTML = '<div class="small">None of their doors for this day are on this phone yet. Open Team once with signal so they come down.</div>'; openSheet('auditSheet'); return; }
+  const span = ds[ds.length - 1].ts - ds[0].ts;
+  let longGaps = 0;
+  const rows = ds.map((v, i) => {
+    const gap = i ? Math.round((v.ts - ds[i - 1].ts) / 60000) : null, big = gap != null && gap >= 20;
+    if (big) longGaps++;
+    const note = logOf(v).filter(e => e.kind === 'note' && !e.auto && e.text).map(e => e.text).pop() || '';
+    const sc = (STATUS[v.status] || {}).color || '#64748b';
+    return `<button class="tmRow" data-open="${esc(v.id)}"><span class="tmDot" style="background:${sc}"></span><span><b>${hm(v.ts)}</b>`
+      + (gap != null ? ` <span style="color:${big ? '#f59e0b' : 'var(--dim)'}">+${gap} min${big ? ' ⚠' : ''}</span>` : ' <span style="color:var(--dim)">first door</span>')
+      + `<br>${esc(v.addr || 'No address')} · ${esc((STATUS[v.status] || {}).short || '')}${v.dispo && v.dispo !== 'new' ? ' · ' + esc(DISPO[v.dispo].label) : ''}`
+      + `${note ? '<br><span style="color:var(--dim)">' + esc(note) + '</span>' : ''}</span></button>`;
+  }).join('');
+  $('auBody').innerHTML = `<div class="small">${ds.length} doors · first ${hm(ds[0].ts)} · last ${hm(ds[ds.length - 1].ts)} · ${Math.floor(span / 3600000)} h ${Math.round(span % 3600000 / 60000)} m`
+    + `${longGaps ? ` · <b style="color:#f59e0b">${longGaps} gap${longGaps === 1 ? '' : 's'} of 20+ min</b>` : ''}</div>`
+    + `<button class="ghost" id="auMap">🗺️ Show the route on the map</button>` + `<div style="margin-top:8px">${rows}</div>`;
+  $('auBody').querySelectorAll('[data-open]').forEach(b => b.onclick = () => { const v = state.visitLog.find(x => x.id === b.dataset.open); if (v) openDetail(v); });
+  $('auMap').onclick = async () => {
+    const ll = ds.filter(v => isFinite(v.lat) && isFinite(v.lon)).map(v => [v.lat, v.lon]);
+    closeSheet('auditSheet'); closeSheet('paySheet'); await openMap();
+    const m = window._map; if (!m || !ll.length) return;
+    if (mapOpts.follow) { mapOpts.follow = false; syncMapBtns(); }
+    if (window._auditLayer) window._auditLayer.remove();
+    const g = L.layerGroup([L.polyline(ll, { color:'#f59e0b', weight:3, opacity:.9, dashArray:'6 6' })]);
+    ll.forEach((p, i) => L.marker(p, { icon: L.divIcon({ className:'', html:`<div style="background:#f59e0b;color:#111;font:800 11px sans-serif;border-radius:9px;padding:1px 5px;border:1px solid #fff">${i + 1}</div>` }) }).addTo(g));
+    window._auditLayer = g.addTo(m);
+    try { ll.length === 1 ? m.setView(ll[0], 18) : m.fitBounds(L.latLngBounds(ll).pad(0.12), { maxZoom:18 }); } catch (e) {}
+  };
+  openSheet('auditSheet');
+}
+document.addEventListener('click', e => {
+  const b = e.target.closest && e.target.closest('[data-audit]'); if (!b) return;
+  const [name, key] = b.dataset.audit.split('|'); openAudit(name, key);
+});
+/* the email's "Open Pay requests" link lands here */
+setTimeout(() => { if (location.hash === '#pay' && syncRole() === 'boss' && syncCode()) { try { history.replaceState(null, '', location.pathname); } catch (e) {} openPay(); } }, 2500);
 
 /* the short menu's buttons press the real ones, so every rule behind them still applies */
 document.querySelectorAll('#bossMenu .tile').forEach(b => b.onclick = () => { const t = $(b.dataset.go); if (t) t.click(); });
@@ -16455,26 +16512,31 @@ async function openPay() {
   openSheet('paySheet');
   $('payBody').innerHTML = '<div class="small">Loading…</div>';
   try { payList = (await syncFetch('/pay')).list || []; } catch (e) { payList = []; }
-  if (syncRole() === 'boss') renderPayBoss(); else renderPayKid();
+  if (syncRole() === 'boss' && !kidView()) renderPayBoss(); else renderPayKid();
 }
 async function renderPayKid() {
   const w = await payBuildWeek(payWeekBack);
-  const mine = payList.find(p => p.week === w.week);
+  const preview = syncRole() === 'boss';               // Travis looking at the kids' screen
+  const mine = preview ? null : payList.find(p => p.week === w.week);
   const locked = mine && (mine.status === 'approved' || mine.status === 'paid');
   const est = w.shifts.length * (PAY.shift + PAY.clean) + w.leads.length * PAY.lead;
   $('payBody').innerHTML =
-    `<div class="chips"><button class="chip${payWeekBack === 0 ? ' on' : ''}" data-wk="0">This week</button><button class="chip${payWeekBack === 1 ? ' on' : ''}" data-wk="1">Last week</button></div>`
+    `<div class="small" style="background:var(--card);border:1px solid var(--line);border-radius:12px;padding:10px 12px;line-height:1.5;margin-bottom:10px">`
+    + `<b>How to get paid:</b> after your last shift of the week, open this, check your days and leads below, and tap <b>Send pay request</b>. `
+    + `The app fills it in from what your phone recorded. Travis checks every line, and you'll see it change to Approved, then Paid.</div>`
+    + `<div class="chips"><button class="chip${payWeekBack === 0 ? ' on' : ''}" data-wk="0">This week</button><button class="chip${payWeekBack === 1 ? ' on' : ''}" data-wk="1">Last week</button></div>`
     + `<p class="small" style="margin:8px 0">${esc(shortDay(w.keys[0]))} to ${esc(shortDay(w.keys[6]))}${mine ? ` · <b>${esc(payStatusWord(mine))}</b>` : ''}</p>`
     + (w.shifts.length ? `<table class="payT"><tr><th>Day</th><th>Worked</th><th>Doors</th><th>Miles</th></tr>`
         + w.shifts.map(s => `<tr><td>${esc(shortDay(s.day))}</td><td>${esc(hoursMins(s.workedMins))}</td><td>${s.doors}</td><td>${s.miles || '—'}</td></tr>`).join('') + `</table>`
-      : `<p class="small">No doors recorded this week yet.</p>`)
-    + (w.leads.length ? `<p class="small" style="margin:10px 0 4px"><b>Leads set (Stage: Appointment)</b></p>` + w.leads.map(v =>
+      : `<p class="small">Nothing to send yet. Your days show up here once you've knocked doors this week.</p>`)
+    + (w.leads.length ? `<p class="small" style="margin:10px 0 4px"><b>Leads you booked</b></p>` + w.leads.map(v =>
         `<div class="small">• ${esc(v.addr || 'No address')}${v.owner ? ' · ' + esc(v.owner) : ''}</div>`).join('') : '')
     + `<p class="small" style="margin:10px 0">Most this week could come to <b>${payMoney(est)}</b>: ${payMoney(PAY.shift)} a completed shift, ${payMoney(PAY.clean)} for a clean shift, and ${payMoney(PAY.lead)} for each lead Travis actually runs. Travis checks every line.</p>`
     + (mine && mine.review && mine.review.note ? `<p class="small" style="background:#1e293b;padding:8px;border-radius:8px">Travis: ${esc(mine.review.note)}</p>` : '')
     + (locked ? '' : `<textarea id="payNote" rows="2" maxlength="500" placeholder="Anything Travis should know (optional)" style="width:100%;margin-top:6px"></textarea>`
-       + `<button class="primary" id="paySend" style="margin-top:10px"${w.shifts.length ? '' : ' disabled'}>💵 Send pay request</button>`)
-    + (payList.length ? `<p class="small" style="margin-top:14px"><b>Earlier requests</b></p>` + payList.map(p =>
+       + `<button class="primary" id="paySend" style="margin-top:10px"${w.shifts.length && !preview ? '' : ' disabled'}>💵 Send pay request</button>`
+       + (preview ? `<p class="small" style="color:#c4b5fd;margin-top:6px">Kids' view preview: on their phone this button sends the week to you. Your own pay review is under Pay requests in your normal view.</p>` : ''))
+    + (payList.length && !preview ? `<p class="small" style="margin-top:14px"><b>Earlier requests</b></p>` + payList.map(p =>
         `<div class="small">Week of ${esc(shortDay(p.week))}: ${esc(payStatusWord(p))}</div>`).join('') : '');
   $('payBody').querySelectorAll('[data-wk]').forEach(b => b.onclick = () => { payWeekBack = +b.dataset.wk; renderPayKid(); });
   const send = $('paySend'); if (!send) return;
@@ -16505,7 +16567,7 @@ function renderPayBoss() {
       const gap = s.doors > s.onRecord;
       return `<div class="payRow"><div><b>${esc(shortDay(s.day))}</b> · ${esc(hoursMins(s.workedMins))} · ${s.doors} doors`
         + ` <span style="color:${gap ? '#f59e0b' : '#22c55e'}">(${s.onRecord} reached the mailbox that day${s.late ? `, ${s.late} late` : ''})</span>`
-        + (s.flagged ? ` · ${s.flagged} worth a look` : '') + `</div>`
+        + (s.flagged ? ` · ${s.flagged} worth a look` : '') + ` <button class="chip" data-audit="${esc(p.canvasser)}|${esc(s.day)}" style="min-height:32px;padding:4px 10px">🔍 Audit</button></div>`
         + `<label><input type="checkbox" data-p="${i}" data-s="${esc(s.day)}" data-k="done"${r.done ? ' checked' : ''}> Completed ${payMoney(PAY.shift)}</label> `
         + `<label><input type="checkbox" data-p="${i}" data-s="${esc(s.day)}" data-k="clean"${r.clean ? ' checked' : ''}> Clean ${payMoney(PAY.clean)}</label></div>`;
     }).join('');
@@ -17036,6 +17098,7 @@ $('apFindClear').onclick = () => {
 };
 $('apFind').onkeydown = e => { if (e.key === 'Enter') { e.preventDefault(); if (apFindRows.length) pickApFind(0); } };
 $('mapSat').onclick = () => { mapOpts.sat = !mapOpts.sat;
+  try { localStorage.setItem('mapSat', mapOpts.sat ? '1' : '0'); } catch (e) {}
   if (mapOpts.sat) { window._map.removeLayer(window._street); window._satL.addTo(window._map); }
   else { window._map.removeLayer(window._satL); window._street.addTo(window._map); }
   syncMapBtns(); refreshMapLayers(); };
@@ -21856,10 +21919,19 @@ function toggleMode() {
   flashToast(`Now logging ${LINES[state.line].label}`, 'Counts and exports stay separate', LINES[state.line].color);
   if (window._map) refreshMapLayers();
 }
+/* v54: a session left open from an earlier day is closed out, not carried on. One that was
+   never ended (the app killed, the phone died) used to make the next shift, even months
+   later, count from that old start, so End the day showed the wrong day. The doors and
+   tracks are already saved under their own days; only the stale session marker goes. */
+const sessionIsToday = () => !!(state.session && state.session.start && dayKey(state.session.start) === dayKey(Date.now()));
+function dropStaleSession() {
+  if (state.session && !sessionIsToday()) { state.session = null; try { localStorage.removeItem('session'); } catch (e) {} }
+}
 $('startBtn').onclick = async () => {
   $('gate').classList.add('hide');
   state.started = true;
   state.paused = false;
+  dropStaleSession();
   if (!state.session) startSession();
   startGps();
   primeSound();                       // an AudioContext will only start inside a real tap
@@ -21887,6 +21959,15 @@ window.addEventListener('resize', drawMini);
   if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(()=>{});
   drawMini();
   state._syncBooted = true; syncBoot();
+  /* v54: GPS on by default. A day that was started and never ended picks straight back up
+     when the app opens, as long as the phone already allows location. A new day still
+     starts with one tap on Start canvassing, so opening the app at home never starts a shift. */
+  try {
+    if (sessionIsToday() && !state.started && $('codeLock').classList.contains('hide') && navigator.permissions) {
+      const perm = await navigator.permissions.query({ name:'geolocation' });
+      if (perm.state === 'granted') $('startBtn').click();
+    }
+  } catch (e) {}
 })();
 </script>
 </body>
