@@ -13856,7 +13856,7 @@ document.querySelectorAll('.dsecHead[data-msec]').forEach(b => {
 /* ---- what version is actually on the phone ----
    Matches the service worker cache name, so "did the update land" is answerable by
    looking rather than guessing. */
-const BUILD_VERSION = 'v55';
+const BUILD_VERSION = 'v56';
 const BUILD_DATE = '14 October 2026';
 function renderVersionStamp() {
   const el = $('versionStamp'); if (!el) return;
@@ -17186,6 +17186,14 @@ $('mWipe').onclick = async () => {
     + ((nA || nM) ? `\nKept: ${[nA ? `${nA} named area${nA===1?'':'s'}` : '',
                                 nM ? `${nM} scout mark${nM===1?'':'s'}` : ''].filter(Boolean).join(' and ')}.\n` : '')
     + `\nThis cannot be undone.`)) return;
+  /* v56: a second lock. One tap and one OK was all that stood between a pocket bump and
+     every door on Travis's phone, and his own doors are not in the mailbox. Typing a word
+     cannot happen by accident. Kids never see this button at all. */
+  const typed = prompt('Last check. Type ERASE to erase everything above. Anything else keeps it all.');
+  if (String(typed || '').trim().toUpperCase() !== 'ERASE') {
+    flashToast('Nothing erased', 'Your doors are all still here.', '#22c55e');
+    return;
+  }
   /* Four unguarded clears in a row, in an async handler: one rejection became an
      unhandled promise, every line below stopped, and NOTHING was said. The doors were
      gone from the disk while still sitting on screen and in every count, because memory
