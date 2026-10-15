@@ -798,6 +798,14 @@ select{min-height:44px}
 #menuSheet.kid .sheetScroll > *:not(#syncCard):not(#kidMenu):not(#versionStamp){display:none!important}
 #menuSheet.kid #mSyncOff{display:none!important}
 #menuSheet:not(.kid) #kidMenu{display:none}
+#menuSheet:not(.boss) #bossMenu{display:none}
+#menuSheet.boss .oldSec, #menuSheet.boss #mTeam, #menuSheet.boss #mBuilds, #menuSheet.boss #mPreview{display:none!important}
+#bossMenu .tHead{font-size:12px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:var(--dim);margin:16px 2px 8px}
+#bossMenu .tGrid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+#bossMenu .tGrid.g4{grid-template-columns:repeat(4,1fr)}
+#bossMenu .tile{min-height:78px;border-radius:14px;background:var(--card2);border:1px solid var(--line);color:var(--txt);font-weight:700;font-size:12.5px;line-height:1.2;padding:8px 6px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:5px;text-align:center}
+#bossMenu .tile b{font-size:22px;line-height:1}
+#bossMenu .tile:active{background:#1e3a5f;border-color:#3b82f6}
 #kidMenu .kmHead{font-size:12px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:var(--dim);margin:16px 0 2px}
 #kidMenu .kmBtn{text-align:left;margin-top:8px}
 #kidMenu .kmBtn.primary{text-align:center}
@@ -1885,6 +1893,45 @@ select{min-height:44px}
         <div class="small why" style="margin-top:6px">Each phone types its own code once. Doors then go to Travis by themselves whenever there is signal, and wait on the phone when there is not. The code stays on this phone and is not in your backup.</div>
       </div>
 
+      <!-- v53: Travis's menu as tiles. Every tile presses the real button further down, which
+           stays in the page, so nothing behind it changed. The long lists below step aside. -->
+      <div id="bossMenu">
+        <div class="tHead">Team</div>
+        <div class="tGrid g4">
+          <button class="tile" data-go="mTeam"><b>👥</b>Team today</button>
+          <button class="tile" data-go="mPay"><b>💵</b>Pay requests</button>
+          <button class="tile" data-go="mBuilds"><b>🏗️</b>My builds</button>
+          <button class="tile" data-go="mPreview"><b>👀</b>Kids' view</button>
+        </div>
+        <div class="tHead">Customers and doors</div>
+        <div class="tGrid">
+          <button class="tile" data-go="mCrm"><b>📇</b>Customers and follow-ups</button>
+          <button class="tile" data-go="mAppt"><b>📋</b>Appointments</button>
+          <button class="tile" data-go="mBookTimes"><b>📅</b>My open times</button>
+          <button class="tile" data-go="mRoute"><b>🔁</b>Doors to try again</button>
+          <button class="tile" data-go="mFilters"><b>🔎</b>Where to knock</button>
+          <button class="tile" data-go="mAreas"><b>📍</b>By area</button>
+          <button class="tile" data-go="mScout"><b>🔭</b>Scout</button>
+          <button class="tile" data-go="mMarks"><b>🏷️</b>Scouted houses</button>
+          <button class="tile" data-go="mTalk"><b>💬</b>Talk Paths</button>
+        </div>
+        <div class="tHead">My day</div>
+        <div class="tGrid g4">
+          <button class="tile" data-go="mSession"><b>📊</b>How today's going</button>
+          <button class="tile" data-go="mDaysLog"><b>🗓️</b>History</button>
+          <button class="tile" data-go="mEndDay"><b>⏹️</b>End the day</button>
+          <button class="tile" data-go="mSendDay"><b>📤</b>Send my day</button>
+        </div>
+        <div class="tHead">Backup and files</div>
+        <div class="tGrid">
+          <button class="tile" data-go="mBackupShare"><b>☁️</b>Back up (send it)</button>
+          <button class="tile" data-go="mBackup"><b>💾</b>Back up (download)</button>
+          <button class="tile" data-go="mExport"><b>⬇️</b>Export a spreadsheet or map</button>
+          <button class="tile" data-go="mRestore"><b>⤴️</b>Restore a backup</button>
+          <button class="tile" data-go="mAddTeam"><b>📥</b>Add doors from a file</button>
+        </div>
+      </div>
+
       <!-- v52: a canvasser's phone gets this short menu instead of everything below it.
            Same buttons underneath (each one presses the real one), just the ones they use. -->
       <div id="kidMenu">
@@ -1910,7 +1957,7 @@ select{min-height:44px}
       <!-- The words of a section heading sit in their own span so a rename can reach
            them without touching the caret, which setMSection rewrites on every open and
            close. The caret is not a label and is never editable. -->
-      <div class="dsec"><button class="dsecHead" data-msec="work"><i>▾</i><span data-lbl="lbl.menu.sec.work">Out working</span></button>
+      <div class="dsec oldSec"><button class="dsecHead" data-msec="work"><i>▾</i><span data-lbl="lbl.menu.sec.work">Out working</span></button>
         <div class="dsecBody" id="msecWork">
           <!-- The icon and the words are separate spans on every menu button. They used
                to be one text node, which meant renaming a button would have made him
@@ -1936,13 +1983,13 @@ select{min-height:44px}
       <!-- These two are read sitting down, not on a porch, so they left "Out working".
            was "■ End session / session log", which read like a stop button, so the
            stats screen behind it went unfound. Ending is a button inside. -->
-      <div class="dsec"><button class="dsecHead" data-msec="review"><i>▾</i><span data-lbl="lbl.menu.sec.review">How you're doing</span></button>
+      <div class="dsec oldSec"><button class="dsecHead" data-msec="review"><i>▾</i><span data-lbl="lbl.menu.sec.review">How you're doing</span></button>
         <div class="dsecBody" id="msecReview">
           <button class="ghost" id="mSession"><span class="emo">📊</span> <span class="mtxt" data-lbl="lbl.menu.mSession">How today's going — doors, miles, hours</span></button>
           <button class="ghost" id="mDaysLog"><span class="emo">📅</span> <span class="mtxt" data-lbl="lbl.menu.mDaysLog">History — every day you were out, door by door</span></button>
         </div></div>
 
-      <div class="dsec"><button class="dsecHead" data-msec="day"><i>▾</i><span data-lbl="lbl.menu.sec.day">End of day</span></button>
+      <div class="dsec oldSec"><button class="dsecHead" data-msec="day"><i>▾</i><span data-lbl="lbl.menu.sec.day">End of day</span></button>
         <div class="dsecBody" id="msecDay">
           <!-- The tier is called End of day and could not end the day. The only button
                that stops the session and the GPS was at the foot of the stats screen,
@@ -15887,7 +15934,7 @@ function renderSyncInfo() {
   const now = $('mSyncNow'); if (now) now.style.display = code ? '' : 'none';
   const mb = $('mBuilds'); if (mb) mb.classList.toggle('hide', !(code && role === 'boss'));
   const mt = $('mTeam'); if (mt) mt.classList.toggle('hide', !(code && role === 'boss'));
-  const ms = $('menuSheet'); if (ms) ms.classList.toggle('kid', kidView());
+  const ms = $('menuSheet'); if (ms) { ms.classList.toggle('kid', kidView()); ms.classList.toggle('boss', !!code && role === 'boss' && !kidView()); }
   const mp = $('mPreview'); if (mp) mp.classList.toggle('hide', !(code && role === 'boss'));
   const kp = $('kmPreview'); if (kp) kp.classList.toggle('hide', !(code && role === 'boss' && kidPreview()));
   if (!code) { el.textContent = 'Off. Type the code Travis gave this phone, then tap Save code.'; return; }
@@ -16304,6 +16351,7 @@ $('mPreview').onclick = () => { try { localStorage.setItem('kidPreview', '1'); }
 $('kmExit').onclick = () => { try { localStorage.removeItem('kidPreview'); } catch (e) {} renderSyncInfo(); };
 
 /* the short menu's buttons press the real ones, so every rule behind them still applies */
+document.querySelectorAll('#bossMenu .tile').forEach(b => b.onclick = () => { const t = $(b.dataset.go); if (t) t.click(); });
 document.querySelectorAll('#kidMenu .kmBtn').forEach(b => b.onclick = () => { const t = $(b.dataset.go); if (t) t.click(); });
 (() => {
   const k = $('kmName'); if (!k) return;
