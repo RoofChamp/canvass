@@ -785,6 +785,15 @@ select{min-height:44px}
 /* ---------- address search on the big map ---------- */
 #eraseBar.picking{background:rgba(22,163,74,.95);border-color:rgba(34,197,94,.65)}
 .payT{border-collapse:collapse;width:100%;font-size:13px}.payT th,.payT td{border-bottom:1px solid #334155;padding:5px 3px;text-align:left}.payCard{border:1px solid #334155;border-radius:12px;padding:10px;margin:10px 0}.payRow{font-size:13px;padding:6px 0;border-bottom:1px solid #1e293b}.payRow label{display:inline-flex;align-items:center;gap:6px;margin:6px 14px 0 0;white-space:nowrap}.payRow input[type=checkbox]{width:20px;height:20px;margin:0;flex:none}
+#codeLock{position:fixed;inset:0;z-index:100000;background:var(--bg);display:flex;align-items:center;justify-content:center;padding:20px 16px;overflow:auto}
+#codeLock.hide{display:none}
+#codeLock .gCard{width:100%;max-width:420px}
+#codeLock .gLogo{font-weight:800;font-size:15px;color:var(--dim);margin-bottom:10px}
+#codeLock h1{font-size:24px;margin:0 0 12px}
+#codeLock .gSteps{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:10px 12px;font-size:14px;line-height:1.5;margin-bottom:12px}
+#codeLock input{font-size:20px;letter-spacing:.08em;text-align:center;text-transform:uppercase}
+#codeLock .gErr{color:#fca5a5;font-weight:700;margin-top:10px;font-size:14px}
+#codeLock .gSmall{color:var(--dim);font-size:13px;margin-top:12px;line-height:1.45}
 #detailSheet.kid .kidHide{display:none!important}
 #menuSheet.kid .sheetScroll > *:not(#syncCard):not(#kidMenu):not(#versionStamp){display:none!important}
 #menuSheet.kid #mSyncOff{display:none!important}
@@ -926,6 +935,30 @@ select{min-height:44px}
 </style>
 </head>
 <body>
+<!-- v53: the code lock. Nothing in the app works until this phone has a team code that the
+     mailbox recognises. Turning a code off locks the phone again the next time it has signal. -->
+<div id="codeLock" class="hide">
+  <div class="gCard">
+    <div class="gLogo">🏠 CanvassEaze</div>
+    <div id="gAsk">
+      <h1>Type your team code</h1>
+      <div class="gSteps" id="gHomeTip">
+        <b>First time?</b> Add this app to your home screen, then open it from the new icon and type your code there.<br>
+        iPhone: tap Share, then <b>Add to Home Screen</b>. Android: tap ⋮, then <b>Add to Home screen</b>.
+      </div>
+      <input id="gCode" type="text" autocomplete="off" autocapitalize="characters" spellcheck="false" maxlength="24" placeholder="XXXX-XXXX-XXXX">
+      <div class="gErr hide" id="gErr"></div>
+      <button class="primary" id="gGo">Unlock</button>
+      <div class="gSmall">Your code comes from Travis. Don't have it? Ask Travis. The first time needs signal.</div>
+    </div>
+    <div id="gDone" class="hide">
+      <h1 id="gHi">You're in</h1>
+      <div class="gSteps"><b>Save your code somewhere safe</b>, like a note on your phone or a photo of the card it came on. You'll need it on a new phone or if the app gets reinstalled.</div>
+      <button class="ghost" id="gCopy">📋 Copy my code</button>
+      <button class="primary" id="gOpen">Open CanvassEaze</button>
+    </div>
+  </div>
+</div>
 
 <div id="app">
   <div id="strip">
@@ -15837,6 +15870,7 @@ async function syncFetch(path, opts = {}) {
     headers: Object.assign({ 'x-team-code': syncCode() }, opts.body ? { 'content-type': 'application/json' } : {}),
     cache: 'no-store' }));
   let body = null; try { body = await r.json(); } catch (e) {}
+  if (r.status === 401 && body && /not on the list/.test(body.error || '') && syncCode()) { try { lockOut(); } catch (e) {} }
   if (!r.ok) { const err = new Error((body && body.error) || ('HTTP ' + r.status)); err.status = r.status; err.body = body; throw err; }
   return body;
 }
@@ -16227,6 +16261,43 @@ async function openTeam() {
 }
 $('mTeam').onclick = openTeam;
 
+/* ---------------- v53: the code lock ---------------- */
+function showGate(msg) {
+  $('gAsk').classList.remove('hide'); $('gDone').classList.add('hide');
+  const standalone = (window.matchMedia && matchMedia('(display-mode: standalone)').matches) || navigator.standalone === true;
+  $('gHomeTip').classList.toggle('hide', standalone);
+  const e = $('gErr'); e.textContent = msg || ''; e.classList.toggle('hide', !msg);
+  $('gCode').value = '';
+  $('codeLock').classList.remove('hide');
+}
+function lockOut() {
+  try { ['syncCode','syncRole','syncName','kidPreview'].forEach(x => localStorage.removeItem(x)); } catch (e) {}
+  renderSyncInfo();
+  showGate("This code isn't active anymore. Ask Travis.");
+}
+$('gGo').onclick = async () => {
+  const code = $('gCode').value.trim(), err = t => { $('gErr').textContent = t; $('gErr').classList.remove('hide'); };
+  if (code.replace(/[^A-Za-z0-9]/g, '').length < 8) return err('Type the whole code, letters and numbers.');
+  if (!navigator.onLine) return err('No signal. The first time needs signal so the code can be checked.');
+  const b = $('gGo'); b.disabled = true; b.textContent = 'Checking…';
+  try {
+    $('mSyncCode').value = code;
+    await $('mSyncSave').onclick();
+  } finally { b.disabled = false; b.textContent = 'Unlock'; }
+  if (!syncCode()) return err("That code didn't work. Check it with Travis and type it again.");
+  $('gHi').textContent = `You're in, ${syncName() || 'welcome'} 👋`;
+  $('gAsk').classList.add('hide'); $('gDone').classList.remove('hide');
+  $('gCopy').onclick = async () => {
+    try { await navigator.clipboard.writeText(code); $('gCopy').textContent = '✓ Copied. Paste it into a note.'; }
+    catch (e) { $('gCopy').textContent = 'Write it down: ' + code; }
+  };
+};
+$('gCode').addEventListener('keydown', e => { if (e.key === 'Enter') $('gGo').click(); });
+$('gOpen').onclick = () => $('codeLock').classList.add('hide');
+if (!syncCode()) showGate('');
+/* a code that has been turned off locks the phone the next time it has signal */
+setTimeout(() => { if (syncCode() && navigator.onLine) syncFetch('/whoami').catch(() => {}); }, 2000);
+
 /* v53: Travis can look at the kids' screens from his own phone. Screens only: his phone
    keeps syncing as him, and his own records are untouched. */
 $('mPreview').onclick = () => { try { localStorage.setItem('kidPreview', '1'); } catch (e) {} renderSyncInfo(); flashToast("Kids' view", 'Open any house to see their screen. Menu, Back to my view, to switch back.', '#a78bfa'); };
@@ -16483,11 +16554,11 @@ $('mSendDay').onclick = () => $('sesSendDay').onclick();
   $('mSyncNow').onclick = () => { if (!syncCode()) return flashToast('No team code yet', 'Type it in and tap Save code.', '#f59e0b'); syncTick(false); };
   $('mSyncOff').onclick = async () => {
     if (!syncCode()) return;
-    const k = await askChoice('Turn off team sync?', 'Nothing is deleted. Doors simply stop going out (or coming in) until a code is saved again.',
+    const k = await askChoice('Turn off team sync?', 'Nothing is deleted, but the app locks until a team code is typed in again.',
       [{ key:'off', label:'Turn it off' }, { key:'no', label:'Keep it on' }]);
     if (k !== 'off') return;
     try { ['syncCode','syncRole','syncName'].forEach(x => localStorage.removeItem(x)); } catch (e) {}
-    inp.value = ''; syncSay('Turned off.');
+    inp.value = ''; syncSay('Turned off.'); showGate('');
   };
 })();
 
