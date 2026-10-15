@@ -1577,6 +1577,19 @@ select{min-height:44px}
     </div>
   </div>
 </div>
+<!-- v55: Travis's master switch for the homeowner confirmation on bookings the kids make -->
+<div id="confirmSheet" class="sheet hide">
+  <div class="sheetBody">
+    <div class="sheetHead"><h2>✉️ Homeowner confirmations</h2><button class="x" data-close="confirmSheet">Close</button></div>
+    <div class="sheetScroll">
+      <div id="cfState" style="font-size:20px;font-weight:800;margin-top:4px">Checking…</div>
+      <div class="small" id="cfWhat" style="margin-top:6px"></div>
+      <button class="primary" id="cfFlip" disabled>…</button>
+      <div class="small hide" id="cfErr" style="color:#fca5a5;margin-top:10px;font-weight:700"></div>
+      <div class="small why" style="margin-top:14px">This is for bookings the kids make at the door. Bookings you make yourself in GoHighLevel are not affected. Either way the visit still lands on your calendar, and the kids' screens look the same.</div>
+    </div>
+  </div>
+</div>
 <!-- v50: Travis marks where he has a job going. Canvassers see the street and the days. -->
 <div id="buildSheet" class="sheet hide">
   <div class="sheetBody">
@@ -1909,6 +1922,7 @@ select{min-height:44px}
           <button class="tile" data-go="mPay"><b>💵</b>Pay requests</button>
           <button class="tile" data-go="mBuilds"><b>🏗️</b>My builds</button>
           <button class="tile" data-go="mPreview"><b>👀</b>Kids' view</button>
+          <button class="tile" id="tConfirm"><b>✉️</b><span id="tConfirmLbl">Homeowner confirmations</span></button>
         </div>
         <div class="tHead">Customers and doors</div>
         <div class="tGrid">
@@ -13818,8 +13832,8 @@ document.querySelectorAll('.dsecHead[data-msec]').forEach(b => {
 /* ---- what version is actually on the phone ----
    Matches the service worker cache name, so "did the update land" is answerable by
    looking rather than guessing. */
-const BUILD_VERSION = 'v54';
-const BUILD_DATE = '7 August 2026';
+const BUILD_VERSION = 'v55';
+const BUILD_DATE = '14 October 2026';
 function renderVersionStamp() {
   const el = $('versionStamp'); if (!el) return;
   el.className = 'small';
@@ -16322,6 +16336,33 @@ async function openTeam() {
 }
 $('mTeam').onclick = openTeam;
 
+/* ---------------- v55: homeowner confirmation switch (Travis only) ---------------- */
+let cfOn = null;
+function paintConfirm() {
+  const on = cfOn !== false;
+  $('cfState').textContent = cfOn == null ? 'Checking…' : on ? '🟢 On: homeowners get a confirmation' : '⚪ Off: homeowners get nothing from GHL';
+  $('cfWhat').textContent = cfOn == null ? '' : on
+    ? 'When a kid books a visit, GoHighLevel sends the homeowner its usual confirmation and reminders.'
+    : 'When a kid books a visit, GoHighLevel sends the homeowner no confirmation and no reminders, and runs no automations on that booking. You reach out yourself.';
+  $('cfFlip').textContent = on ? 'Turn confirmations off' : 'Turn confirmations on';
+  $('cfFlip').disabled = cfOn == null;
+  $('tConfirmLbl').textContent = cfOn == null ? 'Homeowner confirmations' : 'Confirmations: ' + (on ? 'On' : 'Off');
+}
+async function loadConfirm() {
+  try { cfOn = (await syncFetch('/settings')).custConfirm !== 'off'; $('cfErr').classList.add('hide'); }
+  catch (e) { $('cfErr').textContent = navigator.onLine ? "Couldn't reach the mailbox. Try again in a moment." : 'No signal. This needs signal.'; $('cfErr').classList.remove('hide'); }
+  paintConfirm();
+}
+$('tConfirm').onclick = () => { if (syncRole() !== 'boss') return; closeSheet('menuSheet'); openSheet('confirmSheet'); paintConfirm(); loadConfirm(); };
+$('cfFlip').onclick = async () => {
+  const want = cfOn ? 'off' : 'on', b = $('cfFlip'); b.disabled = true; b.textContent = 'Saving…';
+  try {
+    cfOn = (await syncFetch('/settings', { method:'POST', body: JSON.stringify({ custConfirm: want }) })).custConfirm !== 'off';
+    $('cfErr').classList.add('hide');
+  } catch (e) { $('cfErr').textContent = "That didn't save. Check signal and try again."; $('cfErr').classList.remove('hide'); }
+  paintConfirm();
+};
+
 /* ---------------- v53: the code lock ---------------- */
 function showGate(msg) {
   $('gAsk').classList.remove('hide'); $('gDone').classList.add('hide');
@@ -16408,7 +16449,7 @@ document.addEventListener('click', e => {
 setTimeout(() => { if (location.hash === '#pay' && syncRole() === 'boss' && syncCode()) { try { history.replaceState(null, '', location.pathname); } catch (e) {} openPay(); } }, 2500);
 
 /* the short menu's buttons press the real ones, so every rule behind them still applies */
-document.querySelectorAll('#bossMenu .tile').forEach(b => b.onclick = () => { const t = $(b.dataset.go); if (t) t.click(); });
+document.querySelectorAll('#bossMenu .tile[data-go]').forEach(b => b.onclick = () => { const t = $(b.dataset.go); if (t) t.click(); });
 document.querySelectorAll('#kidMenu .kmBtn').forEach(b => b.onclick = () => { const t = $(b.dataset.go); if (t) t.click(); });
 (() => {
   const k = $('kmName'); if (!k) return;
@@ -16483,6 +16524,7 @@ $('bdSave').onclick = async () => {
    every line, and only the lines he ticks are added up. Nothing here moves money. */
 const PAY = { shift: 40, clean: 10, lead: 25 };
 let payWeekBack = 0, payList = [];
+const payOff = new Set();   // v55: days a canvasser unticked, so they stay out of the request
 const payMoney = n => '$' + (Math.round(n * 100) / 100).toLocaleString();
 function payWeekKeys(back) {
   const d = new Date(); d.setHours(12, 0, 0, 0);
@@ -16498,7 +16540,7 @@ async function payBuildWeek(back) {
     let f = null; try { f = await dayFacts(k); } catch (e) {}
     shifts.push({ day: k, first: f && f.first, last: f && f.last, workedMins: f ? f.workedMins : 0, doors: doors.length,
       miles: f && f.hasTrack ? Math.round(f.metres / 160.934) / 10 : 0, flagged: f ? f.flagged : 0 });
-    for (const v of doors) if (v.dispo === 'appt') leads.push(v);
+    for (const v of doors) if (v.dispo === 'appt') { v._payDay = k; leads.push(v); }
   }
   return { week: keys[0], keys, shifts, leads };
 }
@@ -16519,26 +16561,35 @@ async function renderPayKid() {
   const preview = syncRole() === 'boss';               // Travis looking at the kids' screen
   const mine = preview ? null : payList.find(p => p.week === w.week);
   const locked = mine && (mine.status === 'approved' || mine.status === 'paid');
-  const est = w.shifts.length * (PAY.shift + PAY.clean) + w.leads.length * PAY.lead;
+  /* v55: every day starts ticked. Untick a day and it, and the leads booked that day, stay out. */
+  const pick = () => ({ shifts: w.shifts.filter(x => !payOff.has(x.day)), leads: w.leads.filter(v => !payOff.has(v._payDay)) });
+  const estOf = () => { const c = pick(); return c.shifts.length * (PAY.shift + PAY.clean) + c.leads.length * PAY.lead; };
+  const est = estOf();
+  const tick = s2 => locked ? '' : `<input type="checkbox" data-pd="${esc(s2.day)}"${payOff.has(s2.day) ? '' : ' checked'} style="width:22px;height:22px;vertical-align:middle;margin-right:8px">`;
   $('payBody').innerHTML =
     `<div class="small" style="background:var(--card);border:1px solid var(--line);border-radius:12px;padding:10px 12px;line-height:1.5;margin-bottom:10px">`
     + `<b>How to get paid:</b> after your last shift of the week, open this, check your days and leads below, and tap <b>Send pay request</b>. `
-    + `The app fills it in from what your phone recorded. Travis checks every line, and you'll see it change to Approved, then Paid.</div>`
+    + `The app fills it in from what your phone recorded. Untick any day you don't want in it. Travis checks every line, and you'll see it change to Approved, then Paid.</div>`
     + `<div class="chips"><button class="chip${payWeekBack === 0 ? ' on' : ''}" data-wk="0">This week</button><button class="chip${payWeekBack === 1 ? ' on' : ''}" data-wk="1">Last week</button></div>`
     + `<p class="small" style="margin:8px 0">${esc(shortDay(w.keys[0]))} to ${esc(shortDay(w.keys[6]))}${mine ? ` · <b>${esc(payStatusWord(mine))}</b>` : ''}</p>`
     + (w.shifts.length ? `<table class="payT"><tr><th>Day</th><th>Worked</th><th>Doors</th><th>Miles</th></tr>`
-        + w.shifts.map(s => `<tr><td>${esc(shortDay(s.day))}</td><td>${esc(hoursMins(s.workedMins))}</td><td>${s.doors}</td><td>${s.miles || '—'}</td></tr>`).join('') + `</table>`
+        + w.shifts.map(s => `<tr${payOff.has(s.day) ? ' style="opacity:.45"' : ''}><td><label style="display:flex;align-items:center;cursor:pointer">${tick(s)}${esc(shortDay(s.day))}</label></td><td>${esc(hoursMins(s.workedMins))}</td><td>${s.doors}</td><td>${s.miles || '—'}</td></tr>`).join('') + `</table>`
       : `<p class="small">Nothing to send yet. Your days show up here once you've knocked doors this week.</p>`)
     + (w.leads.length ? `<p class="small" style="margin:10px 0 4px"><b>Leads you booked</b></p>` + w.leads.map(v =>
-        `<div class="small">• ${esc(v.addr || 'No address')}${v.owner ? ' · ' + esc(v.owner) : ''}</div>`).join('') : '')
+        `<div class="small"${payOff.has(v._payDay) ? ' style="opacity:.45;text-decoration:line-through"' : ''}>• ${esc(v.addr || 'No address')}${v.owner ? ' · ' + esc(v.owner) : ''}</div>`).join('') : '')
     + `<p class="small" style="margin:10px 0">Most this week could come to <b>${payMoney(est)}</b>: ${payMoney(PAY.shift)} a completed shift, ${payMoney(PAY.clean)} for a clean shift, and ${payMoney(PAY.lead)} for each lead Travis actually runs. Travis checks every line.</p>`
     + (mine && mine.review && mine.review.note ? `<p class="small" style="background:#1e293b;padding:8px;border-radius:8px">Travis: ${esc(mine.review.note)}</p>` : '')
     + (locked ? '' : `<textarea id="payNote" rows="2" maxlength="500" placeholder="Anything Travis should know (optional)" style="width:100%;margin-top:6px"></textarea>`
-       + `<button class="primary" id="paySend" style="margin-top:10px"${w.shifts.length && !preview ? '' : ' disabled'}>💵 Send pay request</button>`
+       + `<button class="primary" id="paySend" style="margin-top:10px"${pick().shifts.length && !preview ? '' : ' disabled'}>💵 Send pay request${w.shifts.length && pick().shifts.length < w.shifts.length ? ` (${pick().shifts.length} of ${w.shifts.length} days)` : ''}</button>`
        + (preview ? `<p class="small" style="color:#c4b5fd;margin-top:6px">Kids' view preview: on their phone this button sends the week to you. Your own pay review is under Pay requests in your normal view.</p>` : ''))
     + (payList.length && !preview ? `<p class="small" style="margin-top:14px"><b>Earlier requests</b></p>` + payList.map(p =>
         `<div class="small">Week of ${esc(shortDay(p.week))}: ${esc(payStatusWord(p))}</div>`).join('') : '');
   $('payBody').querySelectorAll('[data-wk]').forEach(b => b.onclick = () => { payWeekBack = +b.dataset.wk; renderPayKid(); });
+  $('payBody').querySelectorAll('[data-pd]').forEach(x => x.onchange = () => {
+    const keep = ($('payNote') || {}).value || '';
+    if (x.checked) payOff.delete(x.dataset.pd); else payOff.add(x.dataset.pd);
+    renderPayKid().then(() => { if ($('payNote')) $('payNote').value = keep; });
+  });
   const send = $('paySend'); if (!send) return;
   send.onclick = async () => {
     send.disabled = true;
@@ -16549,7 +16600,7 @@ async function renderPayKid() {
       return flashToast('Some doors have not gone yet', 'They need signal first, or Travis will not see them. Try again in a minute.', '#f59e0b');
     }
     try {
-      const r = await syncFetch('/pay', { method:'POST', body: JSON.stringify({ week: w.week, shifts: w.shifts, leads: w.leads.map(v => v.id), note: ($('payNote') || {}).value || '' }) });
+      const r = await syncFetch('/pay', { method:'POST', body: JSON.stringify({ week: w.week, shifts: pick().shifts, leads: pick().leads.map(v => v.id), note: ($('payNote') || {}).value || '' }) });
       flashToast('Pay request sent', `${r.shifts} shift${r.shifts === 1 ? '' : 's'} and ${r.leads} lead${r.leads === 1 ? '' : 's'} went to Travis.`, '#22c55e');
       openPay();
     } catch (e) { send.disabled = false; flashToast('Not sent', e.message || 'Could not reach the mailbox.', '#ef4444'); }
