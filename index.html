@@ -837,6 +837,11 @@ select{min-height:44px}
 .tmRow{display:flex;gap:8px;align-items:flex-start;padding:8px 2px;border-top:1px solid var(--line);font-size:13px;text-align:left;width:100%;background:none;color:var(--txt)}
 .tmDot{width:10px;height:10px;border-radius:50%;margin-top:4px;flex:0 0 auto}
 .bdRow{border:1px solid var(--line);border-radius:12px;padding:10px 12px;margin-top:8px}
+.ttRow{display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--line)}
+.ttRow input[type=checkbox]{width:24px;height:24px;flex:none}
+.ttRow .ttName{flex:1;min-width:0}.ttRow .ttName b{display:block;font-size:16px}.ttRow .ttName span{font-size:13px;color:var(--dim)}
+.ttRow .chip{min-height:34px;padding:4px 12px}
+.ttFoot{font-size:12.5px;color:var(--dim);background:var(--card2);border:1px dashed var(--line);border-radius:10px;padding:8px 10px;margin-top:6px;line-height:1.45}
 .swRow{display:flex;align-items:center;gap:12px;padding:14px 0;border-bottom:1px solid var(--line)}
 .swRow .swTxt{flex:1;min-width:0}.swRow .swTxt b{display:block;font-size:16px}.swRow .swTxt span{display:block;font-size:13px;color:var(--dim);margin-top:3px;line-height:1.4}
 .sw{flex:none;width:56px;height:32px;border-radius:16px;border:1px solid var(--line);background:#334155;position:relative;padding:0;min-height:0}
@@ -1585,6 +1590,31 @@ select{min-height:44px}
     </div>
   </div>
 </div>
+<!-- v58: Travis texts the team from his business line. Pick who, write it, send. -->
+<div id="textSheet" class="sheet hide">
+  <div class="sheetBody">
+    <div class="sheetHead"><h2>📣 Message team</h2><button class="x" data-close="textSheet">Close</button></div>
+    <div class="sheetScroll">
+      <label class="f">Send to</label>
+      <div id="ttList"><div class="small">Loading…</div></div>
+      <button class="ghost" id="ttAdd" style="margin-top:8px">＋ Add a number</button>
+      <div id="ttForm" class="hide" style="border:1px solid var(--line);border-radius:12px;padding:10px 12px;margin-top:8px">
+        <label class="f" style="margin-top:0">Name</label><input id="ttName" maxlength="40" autocomplete="off" placeholder="First and last name">
+        <label class="f">Cell number</label><input id="ttPhone" type="tel" inputmode="tel" maxlength="20" autocomplete="off" placeholder="614-555-0100">
+        <div style="display:flex;gap:8px;margin-top:10px"><button class="primary" id="ttSave" style="flex:1">Save</button><button class="ghost" id="ttCancel" style="flex:1">Cancel</button></div>
+        <button class="ghost danger hide" id="ttRemove" style="margin-top:8px">Take off the list</button>
+      </div>
+      <label class="f" style="margin-top:16px">Message</label>
+      <div class="chips" id="ttTpl"></div>
+      <textarea id="ttText" rows="6" maxlength="900" placeholder="Write an update. {name} becomes each person's first name." style="width:100%;margin-top:6px"></textarea>
+      <div class="ttFoot" id="ttFoot"></div>
+      <div class="small hide" id="ttErr" style="color:#fca5a5;margin-top:10px;font-weight:700"></div>
+      <button class="primary" id="ttSend" style="margin-top:12px">Send</button>
+      <div id="ttDone" class="hide" style="margin-top:10px"></div>
+      <div id="ttLog" style="margin-top:16px"></div>
+    </div>
+  </div>
+</div>
 <!-- v55: Travis's switches. Each one is saved in the mailbox, so it applies to every phone. -->
 <div id="switchSheet" class="sheet hide">
   <div class="sheetBody">
@@ -1947,6 +1977,7 @@ select{min-height:44px}
           <button class="tile" data-go="mBuilds"><b>🏗️</b>My builds</button>
           <button class="tile" data-go="mPreview"><b>👀</b>Kids' view</button>
           <button class="tile" id="tSwitch"><b>🎚️</b>Switches</button>
+          <button class="tile" id="tText"><b>📣</b>Message team</button>
         </div>
         <div class="tHead">Customers and doors</div>
         <div class="tGrid">
@@ -13856,7 +13887,7 @@ document.querySelectorAll('.dsecHead[data-msec]').forEach(b => {
 /* ---- what version is actually on the phone ----
    Matches the service worker cache name, so "did the update land" is answerable by
    looking rather than guessing. */
-const BUILD_VERSION = 'v57';
+const BUILD_VERSION = 'v58';
 const BUILD_DATE = '14 October 2026';
 function renderVersionStamp() {
   const el = $('versionStamp'); if (!el) return;
@@ -15024,7 +15055,10 @@ const STORM_MESH_PREFACE = "Radar also draws a second layer that covers much les
       count built from all of them, and only one of those is honest. */
 function renderStormPanel(v) {
   const el = $('dStorm'); if (!el) return;
-  if (!STORMS_ON) { el.classList.add('hide'); el.innerHTML = ''; return; }
+  /* v58: the storm section in the house details is back on Travis's own phone (not the
+     kids', not his Kids' view). The big-map overlay stays off, so "Pick this day", which
+     only leads into that overlay, is taken out below. */
+  if (!STORMS_ON && !(syncRole() === 'boss' && !kidView())) { el.classList.add('hide'); el.innerHTML = ''; return; }
   if (!v || v.lat == null || v.lon == null) {
     el.classList.add('hide'); el.innerHTML = ''; return;
   }
@@ -15293,6 +15327,7 @@ function renderStormPanel(v) {
      IT ADDS. The ticked set is a standing list now, so a day tapped here joins whatever is
      already ticked rather than replacing it — and it does not clear the set, does not
      download and does not commit. Done is the only commit, from here as from the bar. */
+  if (!STORMS_ON) el.querySelectorAll('.dsCmp').forEach(b => b.remove());
   el.querySelectorAll('.dsCmp').forEach(btn => {
     btn.onclick = async () => {
       buzz(8);
@@ -16334,8 +16369,9 @@ function bdRender() {
       `<div class="bdRow"><div style="font-weight:700">${esc(b.addr || b.street || '')}</div>`
       + `<div class="small">${esc(buildWhat(b))} · ${esc(buildDays(b))}${b.who ? ' · ' + esc(b.who) : ''}${b.near ? ' · near ' + esc(b.near) : ''}${b.lat == null ? ' · not on the map' : ''}</div>`
       + `<div class="swRow" style="border:0;padding:8px 0 2px"><div class="swTxt"><b style="font-size:14px">Kids see it</b></div><button class="sw${b.hidden ? '' : ' on'}" data-h="${i}" aria-label="Kids see it"></button></div>`
-      + `<div class="chips" style="margin-top:6px"><button class="chip" data-e="${i}">Change</button><button class="chip" data-r="${i}">Take it down</button></div></div>`).join('')
+      + `<div class="chips" style="margin-top:6px"><button class="chip" data-e="${i}">Change</button><button class="chip" data-tt="${i}">📣 Text the team</button><button class="chip" data-r="${i}">Take it down</button></div></div>`).join('')
     : '<div class="small">No builds marked yet.</div>';
+  $('bdList').querySelectorAll('[data-tt]').forEach(x => x.onclick = () => openTextTeam(list[+x.dataset.tt]));
   $('bdList').querySelectorAll('[data-h]').forEach(x => x.onclick = async () => {
     const b = list[+x.dataset.h], hide = !b.hidden;
     x.disabled = true; x.classList.toggle('on', !hide);
@@ -16446,6 +16482,113 @@ async function loadTeamSwitches() {
   catch (e) { $('swErr').textContent = navigator.onLine ? "Couldn't reach the mailbox. Try again in a moment." : 'No signal. Switches need signal.'; $('swErr').classList.remove('hide'); }
   paintTeamSwitches();
 }
+/* ---------------- v58: Message team (Travis only) ----------------
+   Texts go out from the business number through GHL, one per person. The mailbox adds the
+   same last lines to every one: it is automated, nobody reads replies, and Travis's own
+   cell is how to reach him. */
+let ttPhones = [], ttPick = new Set(), ttEditing = null, ttFooter = '';
+const ttFmt = p => String(p || '').replace(/^(\d{3})(\d{3})(\d{4})$/, '$1-$2-$3');
+function ttBuildText(b) {
+  const what = { 'Roof replacement': 'a roof replacement', 'Siding': 'a siding job', 'Gutters': 'a gutter job', 'Repair': 'a repair' }[buildWhat(b)] || 'a job';
+  const day = d => new Date(d + 'T12:00:00').toLocaleDateString([], { weekday:'long', month:'short', day:'numeric' });
+  const when = b.from === b.to ? day(b.from) : `${day(b.from)} through ${day(b.to)}`;
+  const place = (b.addr || b.street || '').replace(/, OH.*$/, '');
+  return `Hey {name}, we've got ${what} going ${when} at ${place}${b.near ? ' (near ' + b.near + ')' : ''}${b.who ? ', ' + b.who + "'s house" : ''}. `
+    + `Crew, dumpster and our sign will be out front, so it's the best day to knock that neighborhood. Plan on working the streets around it. `
+    + `Open CanvassEaze that morning and it'll show you right where it is.`;
+}
+function ttRender() {
+  $('ttList').innerHTML = ttPhones.length ? ttPhones.map(p =>
+    `<div class="ttRow"><input type="checkbox" data-tp="${esc(p.id)}"${ttPick.has(p.id) ? ' checked' : ''} aria-label="Send to ${esc(p.name)}">`
+    + `<div class="ttName"><b>${esc(p.name)}</b><span>${esc(ttFmt(p.phone))}</span></div>`
+    + `<button class="chip" data-te="${esc(p.id)}">Edit</button></div>`).join('')
+    : '<div class="small">Nobody on the list yet. Add a number below.</div>';
+  $('ttList').querySelectorAll('[data-tp]').forEach(x => x.onchange = () => { x.checked ? ttPick.add(x.dataset.tp) : ttPick.delete(x.dataset.tp); ttPaintSend(); });
+  $('ttList').querySelectorAll('[data-te]').forEach(x => x.onclick = () => ttOpenForm(ttPhones.find(p => p.id === x.dataset.te)));
+  $('ttFoot').textContent = 'Added to every text: ' + (ttFooter || 'Automated message from The Roof Champion. This line doesn\'t take replies. To reach Travis, call or text 715-213-4314.');
+  const bl = buildsCached().filter(b => b.to >= dayKey(Date.now()));
+  $('ttTpl').innerHTML = bl.map((b, i) => `<button class="chip" data-tb="${i}">🏗️ ${esc((b.addr || b.street || '').split(',')[0])}, ${esc(new Date(b.from + 'T12:00:00').toLocaleDateString([], { weekday:'short', month:'short', day:'numeric' }))}</button>`).join('')
+    + `<button class="chip" data-tb="clear">Blank</button>`;
+  $('ttTpl').querySelectorAll('[data-tb]').forEach(x => x.onclick = () => {
+    $('ttText').value = x.dataset.tb === 'clear' ? '' : ttBuildText(bl[+x.dataset.tb]); $('ttDone').classList.add('hide'); ttPaintSend();
+  });
+  ttPaintSend();
+}
+function ttPaintSend() {
+  const n = ttPhones.filter(p => ttPick.has(p.id)).length;
+  $('ttSend').textContent = n ? `Send to ${n === ttPhones.length && n > 1 ? 'all ' + n : n === 1 ? ttPhones.find(p => ttPick.has(p.id)).name.split(' ')[0] : n + ' people'}` : 'Pick who gets it';
+  $('ttSend').disabled = !n || !$('ttText').value.trim();
+}
+$('ttText').addEventListener('input', ttPaintSend);
+function ttOpenForm(p) {
+  ttEditing = p || null;
+  $('ttName').value = p ? p.name : ''; $('ttPhone').value = p ? ttFmt(p.phone) : '';
+  $('ttRemove').classList.toggle('hide', !p); $('ttForm').classList.remove('hide'); $('ttAdd').classList.add('hide');
+  $('ttErr').classList.add('hide'); $('ttName').focus();
+}
+function ttCloseForm() { ttEditing = null; $('ttForm').classList.add('hide'); $('ttAdd').classList.remove('hide'); $('ttErr').classList.add('hide'); }
+$('ttAdd').onclick = () => ttOpenForm(null);
+$('ttCancel').onclick = ttCloseForm;
+async function ttSavePhone(body) {
+  try {
+    const r = await syncFetch('/phones', { method:'POST', body: JSON.stringify(body) });
+    const before = new Set(ttPhones.map(p => p.id));
+    ttPhones = r.phones || []; ttFooter = r.footer || ttFooter;
+    ttPhones.forEach(p => { if (!before.has(p.id)) ttPick.add(p.id); });   // someone new starts ticked
+    [...ttPick].forEach(id => { if (!ttPhones.some(p => p.id === id)) ttPick.delete(id); });
+    ttCloseForm(); ttRender();
+  } catch (e) { $('ttErr').textContent = e.message || 'No signal. Try again.'; $('ttErr').classList.remove('hide'); }
+}
+$('ttSave').onclick = () => ttSavePhone({ id: ttEditing ? ttEditing.id : undefined, name: $('ttName').value.trim(), phone: $('ttPhone').value });
+$('ttRemove').onclick = async () => {
+  if (!ttEditing) return;
+  const k = await askChoice(`Take ${ttEditing.name} off the list?`, 'They stop getting team texts. You can add them back any time.',
+    [{ key:'yes', label:'Take them off' }, { key:'no', label:'Keep them' }]);
+  if (k === 'yes') ttSavePhone({ id: ttEditing.id, remove: true });
+};
+async function ttLoadLog() {
+  try {
+    const r = await syncFetch('/text-log');
+    const log = r.log || [];
+    $('ttLog').innerHTML = log.length ? '<div style="font-weight:800">Sent before</div>' + log.slice(0, 5).map(m =>
+      `<div class="small" style="border-top:1px solid var(--line);padding:6px 0">${esc(new Date(m.at).toLocaleString([], { weekday:'short', month:'short', day:'numeric', hour:'numeric', minute:'2-digit' }))} to ${esc(m.sent_to)}`
+      + `${m.failed ? ' <b style="color:#fca5a5">(' + m.failed + ' did not go)</b>' : ''}<br><span style="color:var(--dim)">${esc(String(m.text).slice(0, 140))}${String(m.text).length > 140 ? '…' : ''}</span></div>`).join('') : '';
+  } catch (e) {}
+}
+async function openTextTeam(build) {
+  if (syncRole() !== 'boss' || !syncCode()) return;
+  closeSheet('menuSheet'); closeSheet('buildSheet');
+  openSheet('textSheet'); ttCloseForm();
+  $('ttDone').classList.add('hide'); $('ttErr').classList.add('hide');
+  $('ttText').value = build ? ttBuildText(build) : '';
+  $('ttList').innerHTML = '<div class="small">Loading…</div>';
+  try {
+    await fetchBuilds();
+    const r = await syncFetch('/phones');
+    ttPhones = r.phones || []; ttFooter = r.footer || '';
+    ttPick = new Set(ttPhones.map(p => p.id));                 // the whole team, by default
+  } catch (e) { ttPhones = []; $('ttErr').textContent = navigator.onLine ? "Couldn't reach the mailbox. Try again in a moment." : 'No signal. Texts need signal.'; $('ttErr').classList.remove('hide'); }
+  ttRender(); ttLoadLog();
+}
+$('tText').onclick = () => openTextTeam(null);
+$('ttSend').onclick = async () => {
+  const text = $('ttText').value.trim(), who = ttPhones.filter(p => ttPick.has(p.id));
+  if (!text || !who.length) return;
+  const names = who.map(p => p.name.split(' ')[0]);
+  const k = await askChoice(`Text ${names.length > 1 ? names.slice(0, -1).join(', ') + ' and ' + names.slice(-1) : names[0]}?`,
+    'It goes out now from the business line, with the automated note and your cell number at the end.',
+    [{ key:'yes', label:'Send it' }, { key:'no', label:'Not yet' }]);
+  if (k !== 'yes') return;
+  const b = $('ttSend'); b.disabled = true; b.textContent = 'Sending…';
+  try {
+    const r = await syncFetch('/text-team', { method:'POST', body: JSON.stringify({ to: who.map(p => p.id), text }) });
+    const res = r.results || [];
+    $('ttDone').innerHTML = res.map(x => `<div style="font-weight:700;color:${x.ok ? '#86efac' : '#fca5a5'}">${x.ok ? '✓ Sent to' : '✗ Did not go to'} ${esc(x.name)}${x.ok ? '' : ': ' + esc(x.why || 'unknown')}</div>`).join('');
+    $('ttDone').classList.remove('hide'); ttLoadLog();
+  } catch (e) { $('ttErr').textContent = 'Not sent: ' + (e.message || 'no signal'); $('ttErr').classList.remove('hide'); }
+  ttPaintSend();
+};
+
 $('tSwitch').onclick = () => { if (syncRole() !== 'boss') return; closeSheet('menuSheet'); openSheet('switchSheet'); paintTeamSwitches(); loadTeamSwitches(); };
 [['swConfirm', 'custConfirm'], ['swCard', 'buildCard']].forEach(([id, k]) => $(id).onclick = async () => {
   if (!swState) return;
