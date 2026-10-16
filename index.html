@@ -854,6 +854,10 @@ select{min-height:44px}
 .shItem img{display:block;width:100%;height:auto;background:#fff}
 .shItem .shTxt{padding:10px 12px}.shItem .shTxt b{display:block;font-size:16px}.shItem .shTxt span{display:block;font-size:13.5px;color:var(--dim);margin-top:2px;line-height:1.4}
 .shCard{display:flex;gap:12px;align-items:flex-start;padding:14px 12px}.shCard .shIco{font-size:26px;flex:none}
+.alPh{display:flex;gap:10px;align-items:center;padding:8px 0;border-bottom:1px solid var(--line)}
+.alPh img{width:72px;height:72px;object-fit:cover;border-radius:10px;flex:none;background:var(--card2)}
+.alPh input{flex:1;min-width:0}.alPh .chip{min-height:34px;padding:4px 10px;flex:none}
+.shAlbTools{display:flex;gap:8px;margin-top:10px}.shAlbTools button{flex:1}
 .shWarn{font-size:12px;font-weight:800;color:#fbbf24;margin-top:4px}
 #shViewer{position:fixed;inset:0;z-index:120;background:#000;display:flex;flex-direction:column}
 #shViewer img{flex:1;min-height:0;width:100%;object-fit:contain}
@@ -1614,6 +1618,32 @@ select{min-height:44px}
     <div class="sheetScroll">
       <div id="shList"></div>
       <div id="shAlbum" class="hide"></div>
+    </div>
+  </div>
+</div>
+<!-- v61: Travis's short-lived albums (a build, a storm). Photos go to the mailbox; every phone saves them. -->
+<div id="albumSheet" class="sheet hide">
+  <div class="sheetBody">
+    <div class="sheetHead"><h2 id="alHead">📸 New album</h2><button class="x" id="alClose">Close</button></div>
+    <div class="sheetScroll">
+      <label class="f" style="margin-top:0">Name</label><input id="alTitle" maxlength="60" autocomplete="off" placeholder="Roof replacement on Tweed Ct">
+      <label class="f">Icon</label><div class="chips" id="alIcon"></div>
+      <label class="f">For a build (optional)</label><select id="alBuild"><option value="">Not tied to a build</option></select>
+      <label class="f">Last day it shows</label><input id="alEnds" type="date">
+      <div class="small" style="margin-top:4px">The day after, it comes off every phone by itself.</div>
+      <label class="f">Who sees it</label>
+      <div class="chips" id="alKids"><button class="chip on" data-k="1">Kids and me</button><button class="chip" data-k="0">Just me</button></div>
+      <label class="f">What to say (optional)</label><textarea id="alSay" rows="2" maxlength="300" placeholder="We're replacing the roof right around the corner. Here's what it looks like." style="width:100%"></textarea>
+      <div class="small hide" id="alErr" style="color:#fca5a5;margin-top:10px;font-weight:700"></div>
+      <button class="primary" id="alSave" style="margin-top:12px">Save album</button>
+      <div id="alPhotos" class="hide">
+        <label class="f" style="margin-top:18px">Photos</label>
+        <div class="small">Show-only. The kids can show these at the door; there is no way to send them.</div>
+        <div id="alGrid"></div>
+        <label class="ghost" id="alAddLbl" style="display:flex;align-items:center;justify-content:center;margin-top:10px;cursor:pointer">＋ Add photos<input id="alFile" type="file" accept="image/*" multiple style="display:none"></label>
+        <div class="small hide" id="alUp" style="margin-top:8px;font-weight:700"></div>
+        <button class="ghost danger" id="alDelete" style="margin-top:16px">Delete this album</button>
+      </div>
     </div>
   </div>
 </div>
@@ -13951,7 +13981,7 @@ document.querySelectorAll('.dsecHead[data-msec]').forEach(b => {
 /* ---- what version is actually on the phone ----
    Matches the service worker cache name, so "did the update land" is answerable by
    looking rather than guessing. */
-const BUILD_VERSION = 'v60';
+const BUILD_VERSION = 'v61';
 const BUILD_DATE = '14 October 2026';
 function renderVersionStamp() {
   const el = $('versionStamp'); if (!el) return;
@@ -16782,22 +16812,57 @@ async function showSync() {
     if (!allIn) return;                                  // keep the old albums until every photo is here
     await c.put(SHOW_INDEX, new Response(text, { headers: { 'Content-Type': 'application/json' } }));
     // photos no album uses any more come off the phone
-    for (const k of await c.keys()) { const path = new URL(k.url).pathname.replace(/^.*\/show\//, 'show/'); if (path !== SHOW_INDEX && !want.has(path)) await c.delete(k); }
+    for (const k of await c.keys()) { const path = new URL(k.url).pathname.replace(/^.*\/show\//, 'show/'); if (path !== SHOW_INDEX && !path.startsWith(TMP_PREFIX) && !want.has(path)) await c.delete(k); }
     showData = fresh; showSaved = await showCheckSaved(fresh);
   } catch (e) {} finally { showSyncing = false; }
 }
-setTimeout(() => { showSync(); }, 6000);
-document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') setTimeout(showSync, 2500); });
+/* ---- v61: Travis's short-lived albums ----
+   The mailbox holds them; this phone copies every photo into the same saved cache (under
+   show/tmp/) and only then takes the new list, so an album is never half there. An album past
+   its last day disappears here on time even with no signal; the mailbox deletes it the next day. */
+const TMP_PREFIX = 'show/tmp/', tmpKey = id => TMP_PREFIX + id + '.jpg';
+let tmpAlbums = (() => { try { return JSON.parse(localStorage.getItem('tmpAlbums') || '[]'); } catch (e) { return []; } })();
+const tmpLive = () => tmpAlbums.filter(a => a.ends >= showToday() && (!kidView() || a.kids));
+let tmpSyncing = false;
+async function tmpSync() {
+  if (tmpSyncing || !syncCode() || !navigator.onLine || !('caches' in window)) return;
+  tmpSyncing = true;
+  try {
+    const r = await syncFetch('/albums');
+    const fresh = r.albums || [], c = await caches.open(SHOW_CACHE), want = new Set();
+    let allIn = true;
+    for (const a of fresh) for (const ph of a.photos || []) {
+      const k = tmpKey(ph.id); want.add(k);
+      if (await c.match(k)) continue;
+      try {
+        const res = await fetch(SYNC_URL + '/photo?id=' + encodeURIComponent(ph.id), { headers: { 'x-team-code': syncCode() }, cache: 'no-store' });
+        if (res.ok) await c.put(k, new Response(await res.blob(), { headers: { 'Content-Type': 'image/jpeg' } })); else allIn = false;
+      } catch (e) { allIn = false; }
+    }
+    if (!allIn) return;                                  // keep what this phone had until every photo is here
+    tmpAlbums = fresh; try { localStorage.setItem('tmpAlbums', JSON.stringify(fresh)); } catch (e) {}
+    for (const k of await c.keys()) { const path = new URL(k.url).pathname.replace(/^.*\/show\//, 'show/'); if (path.startsWith(TMP_PREFIX) && !want.has(path)) { await c.delete(k); delete showBlobs[path]; } }
+  } catch (e) {} finally { tmpSyncing = false; }
+}
+const tmpAsAlbum = a => ({ id: a.id, tmp: true, title: a.title, icon: a.icon, say: a.say, ends: a.ends, kids: a.kids,
+  items: (a.photos || []).map(ph => ({ img: tmpKey(ph.id), title: ph.caption || '', kind: 'photo' })) });
+setTimeout(() => { showSync(); tmpSync(); }, 6000);
+document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') setTimeout(() => { showSync(); tmpSync(); }, 2500); });
 function showRenderList() {
   $('shHead').textContent = '📸 Show them'; $('shAlbum').classList.add('hide'); $('shList').classList.remove('hide');
-  const albums = (showData && showData.albums) || [];
-  $('shList').innerHTML = albums.length ? '<div class="small">Hand the phone across, or hold it so they can see. Swipe through, or tap a photo to make it big.</div>'
+  const boss = syncRole() === 'boss' && !kidView();
+  const albums = tmpLive().map(tmpAsAlbum).concat((showData && showData.albums) || []);
+  const untilDay = d => new Date(d + 'T12:00:00').toLocaleDateString([], { weekday:'short', month:'short', day:'numeric' });
+  $('shList').innerHTML = (albums.length ? '<div class="small">Hand the phone across, or hold it so they can see. Swipe through, or tap a photo to make it big.</div>'
     + albums.map((a, i) => {
       const n = (a.items || []).filter(it => !showItemState(it).hide).length;
+      const extra = a.tmp ? ` · until ${esc(untilDay(a.ends))}${boss && !a.kids ? ' · just you' : ''}` : '';
       return `<button class="shAlb" data-sa="${i}"><span class="shIco">${esc(a.icon || '📸')}</span><span style="flex:1;min-width:0"><b>${esc(a.title)}</b>`
-        + `<span>${n} item${n === 1 ? '' : 's'} · ${showSaved[a.id] ? '✓ Saved on this phone' : 'Needs signal once to save'}</span></span></button>`;
-    }).join('') : '<div class="small">Nothing here yet.</div>';
+        + `<span>${n} ${a.tmp ? 'photo' : 'item'}${n === 1 ? '' : 's'} · ${a.tmp || showSaved[a.id] ? '✓ Saved on this phone' : 'Needs signal once to save'}${extra}</span></span></button>`;
+    }).join('') : '<div class="small">Nothing here yet.</div>')
+    + (boss ? '<button class="ghost" id="shNewAlb" style="margin-top:14px">＋ New album (a build, a storm)</button>' : '');
   $('shList').querySelectorAll('[data-sa]').forEach(b => b.onclick = () => showOpenAlbum(albums[+b.dataset.sa]));
+  if (boss) $('shNewAlb').onclick = () => alOpen(null);
 }
 function showOpenAlbum(a) {
   showAlbumOpen = a;
@@ -16806,17 +16871,19 @@ function showOpenAlbum(a) {
   shvList = items.filter(x => !x.st.hide && x.st.img).map(x => ({ src: x.st.img, cap: x.st.title }));
   $('shHead').textContent = (a.icon ? a.icon + ' ' : '') + a.title;
   $('shList').classList.add('hide'); $('shAlbum').classList.remove('hide');
-  $('shAlbum').innerHTML = `<button class="ghost" id="shToList" style="margin-top:0">‹ All albums</button>`
+  $('shAlbum').innerHTML = (a.tmp && boss ? `<div class="shAlbTools" style="margin-top:0"><button class="ghost" id="shToList" style="margin-top:0">‹ All albums</button><button class="ghost" id="shEditAlb" style="margin-top:0">Edit album</button></div>`
+      : `<button class="ghost" id="shToList" style="margin-top:0">‹ All albums</button>`)
     + (a.say ? `<div class="shSay"><b>Say:</b> "${esc(a.say)}"</div>` : '')
     + items.map(({ it, st }) => {
       const warn = boss && st.exp ? (st.lapsed ? `<div class="shWarn">⚠️ Expired ${esc(shortDay(st.exp))}. ${it.kind === 'legal' ? 'Hidden from the kids until it is updated.' : 'Showing as "trained".'}</div>`
         : st.soon ? `<div class="shWarn">⏰ Expires ${esc(shortDay(st.exp))}</div>` : '') : '';
       if (st.hide) return `<div class="shItem"><div class="shCard"><span class="shIco">⏳</span><div class="shTxt" style="padding:0"><b>${esc(it.title)}: being updated</b>${warn}</div></div></div>`;
       if (st.img) { const k = shvList.findIndex(x => x.src === st.img);
-        return `<div class="shItem"><img data-src="${esc(st.img)}" alt="${esc(st.title)}" data-shv="${k}" style="min-height:120px"><div class="shTxt"><b>${esc(st.title)}</b>${st.text ? `<span>${esc(st.text)}</span>` : ''}${warn}</div></div>`; }
+        return `<div class="shItem"><img data-src="${esc(st.img)}" alt="${esc(st.title || 'Photo')}" data-shv="${k}" style="min-height:120px">${st.title || st.text || warn ? `<div class="shTxt"><b>${esc(st.title)}</b>${st.text ? `<span>${esc(st.text)}</span>` : ''}${warn}</div>` : ''}</div>`; }
       return `<div class="shItem"><div class="shCard"><span class="shIco">${esc(it.icon || '✅')}</span><div class="shTxt" style="padding:0"><b>${esc(st.title)}</b>${st.text ? `<span>${esc(st.text)}</span>` : ''}${warn}</div></div></div>`;
     }).join('');
   $('shToList').onclick = showRenderList;
+  if ($('shEditAlb')) $('shEditAlb').onclick = () => alOpen(tmpAlbums.find(x => x.id === a.id));
   $('shAlbum').querySelectorAll('[data-shv]').forEach(im => { im.onclick = () => showViewer(+im.dataset.shv); showLocal(im.dataset.src).then(u => { im.src = u; im.style.minHeight = ''; }); });
   $('shAlbum').closest('.sheetScroll').scrollTop = 0;
 }
@@ -16842,8 +16909,120 @@ $('mShow').onclick = async () => {
   $('shList').innerHTML = '<div class="small">Loading…</div>';
   if (!showData) { showData = await showRead(); showSaved = await showCheckSaved(showData); }
   showRenderList();
+  tmpSync().then(() => { if (!$('showSheet').classList.contains('hide') && !$('shList').classList.contains('hide')) showRenderList(); });
   fetchExpiries().then(() => { if (!$('showSheet').classList.contains('hide')) { if (!$('shList').classList.contains('hide')) showRenderList(); else if (showAlbumOpen) showOpenAlbum(showAlbumOpen); } });
   showSync().then(() => { if (!$('showSheet').classList.contains('hide') && !$('shList').classList.contains('hide')) showRenderList(); });
+};
+
+/* ---------------- v61: album editor (Travis only) ---------------- */
+let alEditing = null, alIconPick = '📸', alKidsOn = true;
+const AL_ICONS = ['📸', '🏗️', '⛈️', '🏠', '🧰'];
+const alDayPlus = (d, n) => { const t = new Date(d + 'T12:00:00'); t.setDate(t.getDate() + n); return dayKey(t.getTime()); };
+function alPaintIcons() { $('alIcon').innerHTML = AL_ICONS.map(i => `<button class="chip${i === alIconPick ? ' on' : ''}" data-i="${i}">${i}</button>`).join('');
+  $('alIcon').querySelectorAll('[data-i]').forEach(x => x.onclick = () => { alIconPick = x.dataset.i; alPaintIcons(); }); }
+function alPaintKids() { $('alKids').querySelectorAll('[data-k]').forEach(x => x.classList.toggle('on', (x.dataset.k === '1') === alKidsOn)); }
+$('alKids').querySelectorAll('[data-k]').forEach(x => x.onclick = () => { alKidsOn = x.dataset.k === '1'; alPaintKids(); });
+function alOpen(a) {
+  if (syncRole() !== 'boss') return;
+  alEditing = a || null;
+  $('alHead').textContent = a ? '📸 Edit album' : '📸 New album';
+  $('alTitle').value = a ? a.title : ''; $('alSay').value = a ? (a.say || '') : '';
+  alIconPick = a ? (a.icon || '📸') : '🏗️'; alKidsOn = a ? !!a.kids : true; alPaintIcons(); alPaintKids();
+  const bl = buildsCached().filter(b => b.to >= dayKey(Date.now()) || (a && a.buildId === b.id));
+  $('alBuild').innerHTML = '<option value="">Not tied to a build</option>' + bl.map(b => `<option value="${esc(b.id)}">${esc((b.addr || b.street || '').split(',')[0])}, ${esc(shortDay(b.from))}</option>`).join('');
+  $('alBuild').value = a && a.buildId ? a.buildId : '';
+  $('alEnds').value = a ? a.ends : alDayPlus(dayKey(Date.now()), 14);
+  $('alErr').classList.add('hide'); $('alUp').classList.add('hide');
+  $('alSave').textContent = a ? 'Save changes' : 'Save album, then add photos';
+  $('alPhotos').classList.toggle('hide', !a);
+  alPaintPhotos();
+  openSheet('albumSheet');
+}
+$('alBuild').onchange = () => {
+  const b = buildsCached().find(x => x.id === $('alBuild').value); if (!b) return;
+  if (!$('alTitle').value.trim()) $('alTitle').value = `${b.what || 'Roof replacement'} on ${(b.addr || b.street || '').split(',')[0].replace(/^\d+\s+/, '')}`;
+  if (!alEditing) $('alEnds').value = alDayPlus(b.to, 14);
+};
+$('alClose').onclick = () => { closeSheet('albumSheet'); tmpSync().then(() => { if (!$('showSheet').classList.contains('hide')) showRenderList(); }); };
+function alErr(t) { $('alErr').textContent = t; $('alErr').classList.remove('hide'); }
+async function alAfter(r, keepId) {
+  tmpAlbums = r.albums || tmpAlbums;
+  alEditing = tmpAlbums.find(x => x.id === keepId) || null;
+  $('alPhotos').classList.toggle('hide', !alEditing); $('alSave').textContent = 'Save changes'; $('alHead').textContent = '📸 Edit album';
+  alPaintPhotos();
+}
+$('alSave').onclick = async () => {
+  $('alErr').classList.add('hide');
+  const body = { id: alEditing ? alEditing.id : undefined, title: $('alTitle').value.trim(), icon: alIconPick, ends: $('alEnds').value,
+    buildId: $('alBuild').value || null, kids: alKidsOn, say: $('alSay').value.trim() };
+  const b = $('alSave'); b.disabled = true;
+  try { const r = await syncFetch('/albums', { method:'POST', body: JSON.stringify(body) }); await alAfter(r, r.id); b.textContent = '✓ Saved'; setTimeout(() => { b.textContent = 'Save changes'; }, 1500); }
+  catch (e) { alErr(e.message || 'No signal. Try again.'); }
+  b.disabled = false;
+};
+const alThumbs = {};   // photo id -> local address, for the editor
+async function alThumb(id) {
+  if (alThumbs[id]) return alThumbs[id];
+  const u = await showLocal(tmpKey(id)); if (u.startsWith('blob:')) return (alThumbs[id] = u);
+  try { const r = await fetch(SYNC_URL + '/photo?id=' + encodeURIComponent(id), { headers: { 'x-team-code': syncCode() } }); if (r.ok) return (alThumbs[id] = URL.createObjectURL(await r.blob())); } catch (e) {}
+  return '';
+}
+function alPaintPhotos() {
+  const ph = (alEditing && alEditing.photos) || [];
+  $('alGrid').innerHTML = ph.length ? ph.map(p => `<div class="alPh"><img data-ap="${esc(p.id)}" alt=""><input data-cap="${esc(p.id)}" maxlength="120" value="${esc(p.caption || '')}" placeholder="Caption (optional)"><button class="chip" data-rm="${esc(p.id)}">✕</button></div>`).join('')
+    : '<div class="small" style="margin-top:6px">No photos yet.</div>';
+  $('alGrid').querySelectorAll('[data-ap]').forEach(im => alThumb(im.dataset.ap).then(u => { if (u) im.src = u; }));
+  $('alGrid').querySelectorAll('[data-cap]').forEach(inp => inp.onchange = async () => {
+    try { await syncFetch('/albums/photo', { method:'POST', body: JSON.stringify({ id: inp.dataset.cap, caption: inp.value.trim() }) });
+      const p = ph.find(x => x.id === inp.dataset.cap); if (p) p.caption = inp.value.trim(); } catch (e) { alErr('Caption did not save. Check signal.'); }
+  });
+  $('alGrid').querySelectorAll('[data-rm]').forEach(x => x.onclick = async () => {
+    const k = await askChoice('Take this photo out?', 'It comes off every phone on their next sync.', [{ key:'yes', label:'Take it out' }, { key:'no', label:'Keep it' }]);
+    if (k !== 'yes') return;
+    try { await syncFetch('/albums/photo', { method:'POST', body: JSON.stringify({ remove: x.dataset.rm }) });
+      const r = await syncFetch('/albums'); await alAfter(r, alEditing.id); } catch (e) { alErr('Not removed. Check signal.'); }
+  });
+}
+/* Shrink on the phone before it goes: long side 1600, JPEG. About 200 to 400 KB a photo. */
+async function alShrink(file) {
+  const bmp = await createImageBitmap(file, { imageOrientation: 'from-image' }).catch(() => null);
+  let w, h, draw;
+  if (bmp) { w = bmp.width; h = bmp.height; draw = (ctx, W, H) => ctx.drawImage(bmp, 0, 0, W, H); }
+  else {
+    const img = await new Promise((ok, no) => { const i = new Image(); i.onload = () => ok(i); i.onerror = no; i.src = URL.createObjectURL(file); });
+    w = img.naturalWidth; h = img.naturalHeight; draw = (ctx, W, H) => ctx.drawImage(img, 0, 0, W, H);
+  }
+  for (const [side, q] of [[1600, 0.8], [1280, 0.72], [1024, 0.65]]) {
+    const k = Math.min(1, side / Math.max(w, h)), W = Math.round(w * k), H = Math.round(h * k);
+    const cv = document.createElement('canvas'); cv.width = W; cv.height = H; draw(cv.getContext('2d'), W, H);
+    const url = cv.toDataURL('image/jpeg', q);
+    if (url.length * 0.75 < 480000) return url;
+  }
+  return null;
+}
+$('alFile').onchange = async () => {
+  const files = [...$('alFile').files]; $('alFile').value = '';
+  if (!files.length || !alEditing) return;
+  const up = $('alUp'); up.classList.remove('hide'); $('alErr').classList.add('hide');
+  let done = 0, bad = 0;
+  for (const f of files) {
+    up.textContent = `Uploading ${done + bad + 1} of ${files.length}…`;
+    try {
+      const data = await alShrink(f); if (!data) { bad++; continue; }
+      const r = await syncFetch('/albums/photo', { method:'POST', body: JSON.stringify({ album: alEditing.id, data }) });
+      alThumbs[r.id] = data; done++;
+    } catch (e) { bad++; if (!navigator.onLine) break; }
+  }
+  up.textContent = `✓ ${done} added${bad ? ` · ${bad} did not go (try again with signal)` : ''}`;
+  try { const r = await syncFetch('/albums'); await alAfter(r, alEditing.id); } catch (e) {}
+};
+$('alDelete').onclick = async () => {
+  if (!alEditing) return;
+  const k = await askChoice(`Delete "${alEditing.title}"?`, 'The album and its photos come off every phone. This cannot be undone.', [{ key:'yes', label:'Delete it' }, { key:'no', label:'Keep it' }]);
+  if (k !== 'yes') return;
+  try { const r = await syncFetch('/albums', { method:'POST', body: JSON.stringify({ id: alEditing.id, remove: true }) }); tmpAlbums = r.albums || []; alEditing = null; closeSheet('albumSheet');
+    await tmpSync(); if (!$('showSheet').classList.contains('hide')) showRenderList(); }
+  catch (e) { alErr('Not deleted. Check signal.'); }
 };
 
 /* ---------------- v59: Expiration dates (Travis only) ---------------- */
