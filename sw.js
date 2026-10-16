@@ -16,6 +16,16 @@ const DATA  = 'canvass-data-v1';
    The name must never begin `canvass-shell-` — `isShellCache` below matches that prefix,
    and a cache caught by it can be kept as a lifeboat and searched for shell files. */
 const STORMS = 'canvass-storms-v1';
+/* v58: "Show them" albums (credentials and the like). Its own cache, never named
+   canvass-shell-, so a deploy never wipes it. The PAGE fills it: it downloads every photo
+   first and only then writes the new albums.json, so a weak signal mid-update leaves the
+   old album whole rather than half of a new one. This file only answers from it. */
+const SHOW = 'canvass-show-v1';
+const isShowFile = u => {
+  let url;
+  try { url = new URL(u); } catch (err) { return false; }
+  return url.origin === self.location.origin && /\/show\//.test(url.pathname);
+};
 
 /* WITHOUT THESE FILES THE APP DOES NOT OPEN. All of them are this app's own, off the
    same server the phone just fetched sw.js from, so if any one of them cannot be had,
@@ -459,6 +469,18 @@ self.addEventListener('fetch', e => {
      branch uses. Storm code reads these as data, and a text body would blow up in the JSON
      parser as a syntax error rather than reading as "not here yet". Both the status and the
      body say the same thing, so either check works. */
+  // v58: Show them albums. What is on the phone wins; the page decides when to refresh it.
+  if (isShowFile(url)) {
+    e.respondWith((async () => {
+      const c = await caches.open(SHOW);
+      const hit = await c.match(req, { ignoreSearch: true });
+      if (hit) return hit;
+      try { return await fetch(req); }
+      catch (err) { return new Response('', { status: 504 }); }
+    })());
+    return;
+  }
+
   if (isStormFile(url)) {
     e.respondWith((async () => {
       const c = await caches.open(STORMS);

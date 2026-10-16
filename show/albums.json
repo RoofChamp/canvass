@@ -1,0 +1,25 @@
+{
+  "version": "2026-10-16a",
+  "note": "Built into the app. Permanent albums change only through Claude, on Travis's word. Certifications that lapse show as 'trained'; license, bond and insurance that lapse show as 'being updated'.",
+  "albums": [
+    {
+      "id": "who",
+      "title": "Who Travis is",
+      "icon": "🛡️",
+      "always": true,
+      "say": "Travis is licensed, bonded and insured, and these are his roofing, siding and drone credentials. He can send you the full certificates before anyone goes on a roof.",
+      "items": [
+        { "card": true, "icon": "🏛️", "title": "Licensed by the City of Columbus", "text": "Home Improvement Contractor license for roofing, siding, windows and doors, and a General Contractor registration.", "kind": "legal", "expires": "2027-09-30", "watch": "Columbus HIC license" },
+        { "card": true, "icon": "🔒", "title": "Bonded", "text": "City of Columbus contractor surety bond.", "kind": "legal" },
+        { "card": true, "icon": "📄", "title": "Insured", "text": "General liability insurance for The Roof Champion of Columbus.", "kind": "legal", "expires": "2027-09-18", "watch": "General liability insurance (COI)" },
+        { "card": true, "icon": "🦺", "title": "Workers' comp", "text": "Ohio Bureau of Workers' Compensation coverage.", "kind": "legal", "expires": "2027-07-01", "watch": "Ohio BWC certificate" },
+        { "img": "show/ct-master-craftsman-roofing.jpg", "title": "CertainTeed Master Craftsman, roofing", "kind": "cert", "expires": "2028-03-17", "lapsed": "CertainTeed Master Craftsman trained, roofing", "watch": "CertainTeed Master Craftsman (roofing)" },
+        { "img": "show/ct-shingle-quality-specialist.jpg", "title": "CertainTeed Shingle Quality Specialist", "kind": "cert" },
+        { "img": "show/ct-siding.jpg", "title": "CertainTeed Master Craftsman SELECT, siding", "kind": "cert" },
+        { "img": "show/faa-part-107.jpg", "title": "FAA Part 107 certified drone pilot", "text": "Recurrent training passed May 2026.", "kind": "cert", "expires": "2028-05-31", "lapsed": "FAA Part 107 drone trained", "watch": "FAA Part 107 recurrent" },
+        { "img": "show/bperp.jpg", "title": "Drone proficiency evaluation (BPERP)", "text": "Airborne Public Safety Association, using national drone test methods (NIST).", "kind": "cert" },
+        { "card": true, "icon": "🌡️", "title": "Thermography trained", "text": "Level 1 drone infrared thermography course through Clemson University.", "kind": "cert" }
+      ]
+    }
+  ]
+}

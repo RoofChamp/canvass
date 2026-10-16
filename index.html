@@ -842,6 +842,19 @@ select{min-height:44px}
 .ttRow .ttName{flex:1;min-width:0}.ttRow .ttName b{display:block;font-size:16px}.ttRow .ttName span{font-size:13px;color:var(--dim)}
 .ttRow .chip{min-height:34px;padding:4px 12px}
 .ttFoot{font-size:12.5px;color:var(--dim);background:var(--card2);border:1px dashed var(--line);border-radius:10px;padding:8px 10px;margin-top:6px;line-height:1.45}
+.shAlb{display:flex;gap:12px;align-items:center;width:100%;text-align:left;background:var(--card);border:1px solid var(--line);border-radius:14px;padding:12px;margin-top:10px;color:var(--txt)}
+.shAlb .shIco{font-size:30px;flex:none;width:48px;height:48px;display:flex;align-items:center;justify-content:center;background:var(--card2);border-radius:12px}
+.shAlb b{display:block;font-size:17px}.shAlb span{font-size:13px;color:var(--dim)}
+.shSay{background:#0f2a1a;border:1px solid #166534;border-radius:12px;padding:10px 12px;line-height:1.5;margin:8px 0 4px}
+.shItem{background:var(--card);border:1px solid var(--line);border-radius:14px;margin-top:10px;overflow:hidden}
+.shItem img{display:block;width:100%;height:auto;background:#fff}
+.shItem .shTxt{padding:10px 12px}.shItem .shTxt b{display:block;font-size:16px}.shItem .shTxt span{display:block;font-size:13.5px;color:var(--dim);margin-top:2px;line-height:1.4}
+.shCard{display:flex;gap:12px;align-items:flex-start;padding:14px 12px}.shCard .shIco{font-size:26px;flex:none}
+.shWarn{font-size:12px;font-weight:800;color:#fbbf24;margin-top:4px}
+#shViewer{position:fixed;inset:0;z-index:120;background:#000;display:flex;flex-direction:column}
+#shViewer img{flex:1;min-height:0;width:100%;object-fit:contain}
+#shViewer .shvBar{display:flex;justify-content:space-between;align-items:center;padding:calc(var(--safe-t) + 8px) 12px 8px;color:#fff;font-weight:700}
+#shViewer .shvCap{color:#e5e7eb;padding:10px 14px calc(var(--safe-b,0px) + 16px);font-size:15px;line-height:1.4;text-align:center}
 .swRow{display:flex;align-items:center;gap:12px;padding:14px 0;border-bottom:1px solid var(--line)}
 .swRow .swTxt{flex:1;min-width:0}.swRow .swTxt b{display:block;font-size:16px}.swRow .swTxt span{display:block;font-size:13px;color:var(--dim);margin-top:3px;line-height:1.4}
 .sw{flex:none;width:56px;height:32px;border-radius:16px;border:1px solid var(--line);background:#334155;position:relative;padding:0;min-height:0}
@@ -1590,6 +1603,22 @@ select{min-height:44px}
     </div>
   </div>
 </div>
+<!-- v58: "Show them". Albums the kids can hand across at the door. Saved on the phone. -->
+<div id="showSheet" class="sheet hide">
+  <div class="sheetBody">
+    <div class="sheetHead"><h2 id="shHead">📸 Show them</h2><button class="x" id="shBack" data-close="showSheet">Close</button></div>
+    <div class="sheetScroll">
+      <div id="shList"></div>
+      <div id="shAlbum" class="hide"></div>
+    </div>
+  </div>
+</div>
+<div id="shViewer" class="hide">
+  <div class="shvBar"><span id="shvCount"></span><button class="ghost" id="shvClose" style="min-height:40px;padding:4px 14px">Close</button></div>
+  <img id="shvImg" alt="">
+  <div class="shvCap" id="shvCap"></div>
+</div>
+<button class="hide" id="mShow" type="button" aria-hidden="true" tabindex="-1"></button>
 <!-- v58: Travis texts the team from his business line. Pick who, write it, send. -->
 <div id="textSheet" class="sheet hide">
   <div class="sheetBody">
@@ -1990,6 +2019,7 @@ select{min-height:44px}
           <button class="tile" data-go="mScout"><b>🔭</b>Scout</button>
           <button class="tile" data-go="mMarks"><b>🏷️</b>Scouted houses</button>
           <button class="tile" data-go="mTalk"><b>💬</b>Talk Paths</button>
+          <button class="tile" data-go="mShow"><b>📸</b>Show them</button>
         </div>
         <div class="tHead">My day</div>
         <div class="tGrid g4">
@@ -2018,6 +2048,7 @@ select{min-height:44px}
         </div>
         <div class="kmHead">At the door</div>
         <button class="ghost kmBtn" data-go="mTalk">💬 What do I say? (Talk Paths)</button>
+        <button class="ghost kmBtn" data-go="mShow">📸 Show them (credentials and photos)</button>
         <button class="ghost kmBtn" data-go="mBookTimes">📅 Travis's open times</button>
         <button class="ghost kmBtn" data-go="mRoute">🔁 Doors to try again</button>
         <div class="kmHead">My day</div>
@@ -16587,6 +16618,131 @@ $('ttSend').onclick = async () => {
     $('ttDone').classList.remove('hide'); ttLoadLog();
   } catch (e) { $('ttErr').textContent = 'Not sent: ' + (e.message || 'no signal'); $('ttErr').classList.remove('hide'); }
   ttPaintSend();
+};
+
+/* ---------------- v58: Show them ----------------
+   Albums live in show/albums.json, built into the app. The photos are copied into their own
+   cache (canvass-show-v1) the first time the phone has signal, so at the door they open with
+   no bars. A new albums.json is only taken once every photo it needs is already on the
+   phone; until then the old one stays. Lapsed certifications read as "trained"; lapsed
+   license, bond and insurance read as "being updated" and show nothing else. */
+const SHOW_CACHE = 'canvass-show-v1', SHOW_INDEX = 'show/albums.json';
+let showData = null, showSaved = {}, showAlbumOpen = null, shvList = [], shvAt = 0;
+const showBlobs = {};   // photo path -> a local address for the copy saved on this phone
+/* The album reads its photos straight out of the phone's saved copy, so it does not depend on
+   the background helper being awake (iPhones put it to sleep). Falls back to the address. */
+async function showLocal(src) {
+  if (showBlobs[src]) return showBlobs[src];
+  try { const c = await caches.open(SHOW_CACHE); const hit = await c.match(src); if (hit) return (showBlobs[src] = URL.createObjectURL(await hit.blob())); } catch (e) {}
+  return src;
+}
+const showToday = () => dayKey(Date.now());
+function showItemState(it) {
+  const lapsed = it.expires && it.expires < showToday();
+  const soon = it.expires && !lapsed && it.expires <= dayKey(Date.now() + 30 * 86400000);
+  if (lapsed && it.kind === 'legal') return { hide: true, lapsed, soon };
+  if (lapsed) return { title: it.lapsed || it.title, img: null, text: it.lapsedText || '', lapsed, soon };
+  return { title: it.title, img: it.img || null, text: it.text || '', lapsed, soon };
+}
+async function showRead() {
+  try { const c = await caches.open(SHOW_CACHE); const hit = await c.match(SHOW_INDEX); if (hit) return await hit.json(); } catch (e) {}
+  try { const r = await fetch(SHOW_INDEX, { cache: 'no-store' }); if (r.ok) return await r.json(); } catch (e) {}
+  return null;
+}
+async function showCheckSaved(data) {
+  const out = {};
+  try {
+    const c = await caches.open(SHOW_CACHE);
+    for (const a of (data && data.albums) || []) {
+      let ok = true;
+      for (const it of a.items || []) if (it.img && !(await c.match(it.img))) { ok = false; break; }
+      out[a.id] = ok;
+    }
+  } catch (e) {}
+  return out;
+}
+/* Download what is missing, then (and only then) take the new index. */
+let showSyncing = false;
+async function showSync() {
+  if (showSyncing || !navigator.onLine || !('caches' in window)) return;
+  showSyncing = true;
+  try {
+    const r = await fetch(SHOW_INDEX, { cache: 'no-store' });
+    if (!r.ok) return;
+    const text = await r.text(), fresh = JSON.parse(text);
+    const c = await caches.open(SHOW_CACHE);
+    const want = new Set();
+    for (const a of fresh.albums || []) for (const it of a.items || []) if (it.img) want.add(it.img);
+    let allIn = true;
+    for (const u of want) {
+      if (await c.match(u)) continue;
+      try { const res = await fetch(u, { cache: 'no-store' }); if (res.ok) await c.put(u, res); else allIn = false; }
+      catch (e) { allIn = false; }
+    }
+    if (!allIn) return;                                  // keep the old albums until every photo is here
+    await c.put(SHOW_INDEX, new Response(text, { headers: { 'Content-Type': 'application/json' } }));
+    // photos no album uses any more come off the phone
+    for (const k of await c.keys()) { const path = new URL(k.url).pathname.replace(/^.*\/show\//, 'show/'); if (path !== SHOW_INDEX && !want.has(path)) await c.delete(k); }
+    showData = fresh; showSaved = await showCheckSaved(fresh);
+  } catch (e) {} finally { showSyncing = false; }
+}
+setTimeout(() => { showSync(); }, 6000);
+document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') setTimeout(showSync, 2500); });
+function showRenderList() {
+  $('shHead').textContent = '📸 Show them'; $('shAlbum').classList.add('hide'); $('shList').classList.remove('hide');
+  const albums = (showData && showData.albums) || [];
+  $('shList').innerHTML = albums.length ? '<div class="small">Hand the phone across, or hold it so they can see. Swipe through, or tap a photo to make it big.</div>'
+    + albums.map((a, i) => {
+      const n = (a.items || []).filter(it => !showItemState(it).hide).length;
+      return `<button class="shAlb" data-sa="${i}"><span class="shIco">${esc(a.icon || '📸')}</span><span style="flex:1;min-width:0"><b>${esc(a.title)}</b>`
+        + `<span>${n} item${n === 1 ? '' : 's'} · ${showSaved[a.id] ? '✓ Saved on this phone' : 'Needs signal once to save'}</span></span></button>`;
+    }).join('') : '<div class="small">Nothing here yet.</div>';
+  $('shList').querySelectorAll('[data-sa]').forEach(b => b.onclick = () => showOpenAlbum(albums[+b.dataset.sa]));
+}
+function showOpenAlbum(a) {
+  showAlbumOpen = a;
+  const boss = syncRole() === 'boss' && !kidView();
+  const items = (a.items || []).map(it => ({ it, st: showItemState(it) })).filter(x => !x.st.hide || boss);
+  shvList = items.filter(x => !x.st.hide && x.st.img).map(x => ({ src: x.st.img, cap: x.st.title }));
+  $('shHead').textContent = (a.icon ? a.icon + ' ' : '') + a.title;
+  $('shList').classList.add('hide'); $('shAlbum').classList.remove('hide');
+  $('shAlbum').innerHTML = `<button class="ghost" id="shToList" style="margin-top:0">‹ All albums</button>`
+    + (a.say ? `<div class="shSay"><b>Say:</b> "${esc(a.say)}"</div>` : '')
+    + items.map(({ it, st }) => {
+      const warn = boss && it.expires ? (st.lapsed ? `<div class="shWarn">⚠️ Expired ${esc(shortDay(it.expires))}. ${it.kind === 'legal' ? 'Hidden from the kids until it is updated.' : 'Showing as "trained".'}</div>`
+        : st.soon ? `<div class="shWarn">⏰ Expires ${esc(shortDay(it.expires))}</div>` : '') : '';
+      if (st.hide) return `<div class="shItem"><div class="shCard"><span class="shIco">⏳</span><div class="shTxt" style="padding:0"><b>${esc(it.title)}: being updated</b>${warn}</div></div></div>`;
+      if (st.img) { const k = shvList.findIndex(x => x.src === st.img);
+        return `<div class="shItem"><img data-src="${esc(st.img)}" alt="${esc(st.title)}" data-shv="${k}" style="min-height:120px"><div class="shTxt"><b>${esc(st.title)}</b>${st.text ? `<span>${esc(st.text)}</span>` : ''}${warn}</div></div>`; }
+      return `<div class="shItem"><div class="shCard"><span class="shIco">${esc(it.icon || '✅')}</span><div class="shTxt" style="padding:0"><b>${esc(st.title)}</b>${st.text ? `<span>${esc(st.text)}</span>` : ''}${warn}</div></div></div>`;
+    }).join('');
+  $('shToList').onclick = showRenderList;
+  $('shAlbum').querySelectorAll('[data-shv]').forEach(im => { im.onclick = () => showViewer(+im.dataset.shv); showLocal(im.dataset.src).then(u => { im.src = u; im.style.minHeight = ''; }); });
+  $('shAlbum').closest('.sheetScroll').scrollTop = 0;
+}
+function showViewer(k) {
+  if (!shvList.length) return;
+  shvAt = (k + shvList.length) % shvList.length;
+  const at = shvAt; showLocal(shvList[at].src).then(u => { if (shvAt === at) $('shvImg').src = u; }); $('shvCap').textContent = shvList[shvAt].cap;
+  $('shvCount').textContent = shvList.length > 1 ? `${shvAt + 1} of ${shvList.length}` : '';
+  $('shViewer').classList.remove('hide');
+}
+$('shvClose').onclick = () => $('shViewer').classList.add('hide');
+(() => {   // swipe or tap a side to move through the photos
+  let x0 = null;
+  $('shViewer').addEventListener('touchstart', e => { x0 = e.touches[0].clientX; }, { passive: true });
+  $('shViewer').addEventListener('touchend', e => {
+    if (x0 == null) return; const dx = e.changedTouches[0].clientX - x0; x0 = null;
+    if (Math.abs(dx) > 40) showViewer(shvAt + (dx < 0 ? 1 : -1));
+  });
+  $('shvImg').addEventListener('click', e => { const r = e.target.getBoundingClientRect(); showViewer(shvAt + (e.clientX - r.left > r.width / 2 ? 1 : -1)); });
+})();
+$('mShow').onclick = async () => {
+  closeSheet('menuSheet'); openSheet('showSheet');
+  $('shList').innerHTML = '<div class="small">Loading…</div>';
+  if (!showData) { showData = await showRead(); showSaved = await showCheckSaved(showData); }
+  showRenderList();
+  showSync().then(() => { if (!$('showSheet').classList.contains('hide') && !$('shList').classList.contains('hide')) showRenderList(); });
 };
 
 $('tSwitch').onclick = () => { if (syncRole() !== 'boss') return; closeSheet('menuSheet'); openSheet('switchSheet'); paintTeamSwitches(); loadTeamSwitches(); };
