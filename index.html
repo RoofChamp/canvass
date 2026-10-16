@@ -841,6 +841,10 @@ select{min-height:44px}
 .ttRow input[type=checkbox]{width:24px;height:24px;flex:none}
 .ttRow .ttName{flex:1;min-width:0}.ttRow .ttName b{display:block;font-size:16px}.ttRow .ttName span{font-size:13px;color:var(--dim)}
 .ttRow .chip{min-height:34px;padding:4px 12px}
+.exRow{display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--line)}
+.exRow .exTxt{flex:1;min-width:0}.exRow .exTxt b{display:block;font-size:15.5px}.exRow .exTxt span{display:block;font-size:13px;color:var(--dim)}
+.exRow .exTxt span.late{color:#fca5a5;font-weight:700}.exRow .exTxt span.soon{color:#fbbf24;font-weight:700}
+.exRow .chip{min-height:34px;padding:4px 12px}
 .ttFoot{font-size:12.5px;color:var(--dim);background:var(--card2);border:1px dashed var(--line);border-radius:10px;padding:8px 10px;margin-top:6px;line-height:1.45}
 .shAlb{display:flex;gap:12px;align-items:center;width:100%;text-align:left;background:var(--card);border:1px solid var(--line);border-radius:14px;padding:12px;margin-top:10px;color:var(--txt)}
 .shAlb .shIco{font-size:30px;flex:none;width:48px;height:48px;display:flex;align-items:center;justify-content:center;background:var(--card2);border-radius:12px}
@@ -1637,10 +1641,38 @@ select{min-height:44px}
       <div class="chips" id="ttTpl"></div>
       <textarea id="ttText" rows="6" maxlength="900" placeholder="Write an update. {name} becomes each person's first name." style="width:100%;margin-top:6px"></textarea>
       <div class="ttFoot" id="ttFoot"></div>
+      <label class="f" style="margin-top:14px">When</label>
+      <div class="chips" id="ttWhen"><button class="chip on" data-w="now">Send now</button><button class="chip" data-w="later">⏰ Send later</button></div>
+      <div id="ttLaterBox" class="hide">
+        <div style="display:flex;gap:8px;margin-top:8px"><div style="flex:1;min-width:0"><label class="f" style="margin-top:0">Day</label><input id="ttDate" type="date"></div>
+        <div style="flex:1;min-width:0"><label class="f" style="margin-top:0">Time</label><input id="ttTime" type="time" step="300"></div></div>
+        <div class="small" style="margin-top:6px">It waits in the mailbox and goes out within 5 minutes of that time, even if your phone is off. You can cancel it until then.</div>
+      </div>
       <div class="small hide" id="ttErr" style="color:#fca5a5;margin-top:10px;font-weight:700"></div>
       <button class="primary" id="ttSend" style="margin-top:12px">Send</button>
       <div id="ttDone" class="hide" style="margin-top:10px"></div>
+      <div id="ttQueue" style="margin-top:16px"></div>
       <div id="ttLog" style="margin-top:16px"></div>
+    </div>
+  </div>
+</div>
+<!-- v59: license, insurance and certification dates. Texts to Travis's cell before they run out. -->
+<div id="expSheet" class="sheet hide">
+  <div class="sheetBody">
+    <div class="sheetHead"><h2>⏳ Expiration dates</h2><button class="x" data-close="expSheet">Close</button></div>
+    <div class="sheetScroll">
+      <div class="small">You get a text on your cell (715) at 30, 14, 7 and 1 days before each one runs out, and on the day. Show them uses these dates too: a lapsed certification shows as "trained", a lapsed license or policy is hidden from the kids.</div>
+      <div id="exList" style="margin-top:10px"><div class="small">Loading…</div></div>
+      <button class="ghost" id="exAdd" style="margin-top:10px">＋ Add a date</button>
+      <div id="exForm" class="hide" style="border:1px solid var(--line);border-radius:12px;padding:10px 12px;margin-top:8px">
+        <label class="f" style="margin-top:0">What it is</label><input id="exName" maxlength="80" autocomplete="off" placeholder="Columbus HIC license">
+        <label class="f">Runs out on</label><input id="exDate" type="date">
+        <label class="f">Kind</label>
+        <div class="chips" id="exKind"><button class="chip on" data-k="legal">License, bond or insurance</button><button class="chip" data-k="cert">Certification</button></div>
+        <div style="display:flex;gap:8px;margin-top:10px"><button class="primary" id="exSave" style="flex:1">Save</button><button class="ghost" id="exCancel" style="flex:1">Cancel</button></div>
+        <button class="ghost danger hide" id="exRemove" style="margin-top:8px">Take it off the list</button>
+      </div>
+      <div class="small hide" id="exErr" style="color:#fca5a5;margin-top:10px;font-weight:700"></div>
     </div>
   </div>
 </div>
@@ -2007,6 +2039,7 @@ select{min-height:44px}
           <button class="tile" data-go="mPreview"><b>👀</b>Kids' view</button>
           <button class="tile" id="tSwitch"><b>🎚️</b>Switches</button>
           <button class="tile" id="tText"><b>📣</b>Message team</button>
+          <button class="tile" id="tExp"><b>⏳</b>Expiration dates</button>
         </div>
         <div class="tHead">Customers and doors</div>
         <div class="tGrid">
@@ -13918,7 +13951,7 @@ document.querySelectorAll('.dsecHead[data-msec]').forEach(b => {
 /* ---- what version is actually on the phone ----
    Matches the service worker cache name, so "did the update land" is answerable by
    looking rather than guessing. */
-const BUILD_VERSION = 'v59';
+const BUILD_VERSION = 'v60';
 const BUILD_DATE = '14 October 2026';
 function renderVersionStamp() {
   const el = $('versionStamp'); if (!el) return;
@@ -16517,7 +16550,46 @@ async function loadTeamSwitches() {
    Texts go out from the business number through GHL, one per person. The mailbox adds the
    same last lines to every one: it is automated, nobody reads replies, and Travis's own
    cell is how to reach him. */
-let ttPhones = [], ttPick = new Set(), ttEditing = null, ttFooter = '';
+let ttPhones = [], ttPick = new Set(), ttEditing = null, ttFooter = '', ttLater = false;
+/* v59: Send later. Day and time on this phone (Columbus time); the mailbox holds it and its
+   5-minute timer sends it, so his phone can be off. */
+const ttWhenFmt = ms => new Date(ms).toLocaleString([], { weekday:'short', month:'short', day:'numeric', hour:'numeric', minute:'2-digit' });
+function ttAt() {
+  const d = $('ttDate').value, t = $('ttTime').value;
+  if (!d || !t) return 0;
+  const ms = new Date(d + 'T' + t).getTime();
+  return isNaN(ms) ? 0 : ms;
+}
+function ttSetWhen(later) {
+  ttLater = later;
+  $('ttWhen').querySelectorAll('[data-w]').forEach(x => x.classList.toggle('on', (x.dataset.w === 'later') === later));
+  $('ttLaterBox').classList.toggle('hide', !later);
+  if (later && !ttAt()) {            // first time: tomorrow at 9:00 in the morning
+    const d = new Date(Date.now() + 86400000);
+    $('ttDate').value = dayKey(d.getTime()); $('ttTime').value = '09:00';
+  }
+  $('ttDone').classList.add('hide'); ttPaintSend();
+}
+$('ttWhen').querySelectorAll('[data-w]').forEach(x => x.onclick = () => ttSetWhen(x.dataset.w === 'later'));
+['ttDate', 'ttTime'].forEach(id => $(id).addEventListener('input', () => ttPaintSend()));
+async function ttLoadQueue() {
+  try {
+    const r = await syncFetch('/text-later');
+    const q = r.later || [];
+    $('ttQueue').innerHTML = q.length ? '<div style="font-weight:800">Waiting to send</div>' + q.map(m =>
+      `<div class="small ttQ" style="border-top:1px solid var(--line);padding:6px 0;display:flex;gap:8px;align-items:flex-start"><div style="flex:1;min-width:0">`
+      + `<b style="color:#fbbf24">⏰ ${esc(ttWhenFmt(m.at))}</b> to ${esc((m.to || []).join(', ') || 'nobody on the list now')}`
+      + `<br><span style="color:var(--dim)">${esc(String(m.text).slice(0, 140))}${String(m.text).length > 140 ? '…' : ''}</span></div>`
+      + `<button class="chip" data-tq="${esc(m.id)}" style="min-height:34px;padding:4px 12px">Cancel</button></div>`).join('') : '';
+    $('ttQueue').querySelectorAll('[data-tq]').forEach(x => x.onclick = async () => {
+      const k = await askChoice('Cancel this text?', 'It will not go out. You can set up a new one any time.',
+        [{ key:'yes', label:'Cancel it' }, { key:'no', label:'Keep it' }]);
+      if (k !== 'yes') return;
+      try { await syncFetch('/text-later', { method:'POST', body: JSON.stringify({ cancel: x.dataset.tq }) }); } catch (e) {}
+      ttLoadQueue();
+    });
+  } catch (e) {}
+}
 const ttFmt = p => String(p || '').replace(/^(\d{3})(\d{3})(\d{4})$/, '$1-$2-$3');
 function ttBuildText(b) {
   const what = { 'Roof replacement': 'a roof replacement', 'Siding': 'a siding job', 'Gutters': 'a gutter job', 'Repair': 'a repair' }[buildWhat(b)] || 'a job';
@@ -16547,8 +16619,10 @@ function ttRender() {
 }
 function ttPaintSend() {
   const n = ttPhones.filter(p => ttPick.has(p.id)).length;
-  $('ttSend').textContent = n ? `Send to ${n === ttPhones.length && n > 1 ? 'all ' + n : n === 1 ? ttPhones.find(p => ttPick.has(p.id)).name.split(' ')[0] : n + ' people'}` : 'Pick who gets it';
-  $('ttSend').disabled = !n || !$('ttText').value.trim();
+  const who = n === ttPhones.length && n > 1 ? 'all ' + n : n === 1 ? ttPhones.find(p => ttPick.has(p.id)).name.split(' ')[0] : n + ' people';
+  const at = ttLater ? ttAt() : 0, tooSoon = ttLater && (!at || at < Date.now() + 3 * 60000);
+  $('ttSend').textContent = !n ? 'Pick who gets it' : !ttLater ? `Send to ${who}` : tooSoon ? 'Pick a time later than now' : `⏰ Send to ${who}, ${ttWhenFmt(at)}`;
+  $('ttSend').disabled = !n || !$('ttText').value.trim() || tooSoon;
 }
 $('ttText').addEventListener('input', ttPaintSend);
 function ttOpenForm(p) {
@@ -16592,6 +16666,7 @@ async function openTextTeam(build) {
   openSheet('textSheet'); ttCloseForm();
   $('ttDone').classList.add('hide'); $('ttErr').classList.add('hide');
   $('ttText').value = build ? ttBuildText(build) : '';
+  $('ttDate').value = ''; $('ttTime').value = ''; ttSetWhen(false);
   $('ttList').innerHTML = '<div class="small">Loading…</div>';
   try {
     await fetchBuilds();
@@ -16599,18 +16674,33 @@ async function openTextTeam(build) {
     ttPhones = r.phones || []; ttFooter = r.footer || '';
     ttPick = new Set(ttPhones.map(p => p.id));                 // the whole team, by default
   } catch (e) { ttPhones = []; $('ttErr').textContent = navigator.onLine ? "Couldn't reach the mailbox. Try again in a moment." : 'No signal. Texts need signal.'; $('ttErr').classList.remove('hide'); }
-  ttRender(); ttLoadLog();
+  ttRender(); ttLoadQueue(); ttLoadLog();
 }
 $('tText').onclick = () => openTextTeam(null);
 $('ttSend').onclick = async () => {
   const text = $('ttText').value.trim(), who = ttPhones.filter(p => ttPick.has(p.id));
   if (!text || !who.length) return;
   const names = who.map(p => p.name.split(' ')[0]);
-  const k = await askChoice(`Text ${names.length > 1 ? names.slice(0, -1).join(', ') + ' and ' + names.slice(-1) : names[0]}?`,
-    'It goes out now from the business line, with the automated note and your cell number at the end.',
-    [{ key:'yes', label:'Send it' }, { key:'no', label:'Not yet' }]);
+  const nameList = names.length > 1 ? names.slice(0, -1).join(', ') + ' and ' + names.slice(-1) : names[0];
+  const at = ttLater ? ttAt() : 0;
+  if (ttLater && (!at || at < Date.now() + 3 * 60000)) return ttPaintSend();
+  const k = ttLater
+    ? await askChoice(`Text ${nameList} ${ttWhenFmt(at)}?`,
+      'It waits in the mailbox and goes out from the business line within 5 minutes of that time, with the automated note and your cell number at the end. You can cancel it until then.',
+      [{ key:'yes', label:'Set it' }, { key:'no', label:'Not yet' }])
+    : await askChoice(`Text ${nameList}?`,
+      'It goes out now from the business line, with the automated note and your cell number at the end.',
+      [{ key:'yes', label:'Send it' }, { key:'no', label:'Not yet' }]);
   if (k !== 'yes') return;
-  const b = $('ttSend'); b.disabled = true; b.textContent = 'Sending…';
+  const b = $('ttSend'); b.disabled = true; b.textContent = ttLater ? 'Saving…' : 'Sending…';
+  if (ttLater) {
+    try {
+      const r = await syncFetch('/text-team', { method:'POST', body: JSON.stringify({ to: who.map(p => p.id), text, at }) });
+      $('ttDone').innerHTML = `<div style="font-weight:700;color:#fbbf24">⏰ Set for ${esc(ttWhenFmt(r.at || at))} to ${esc(nameList)}</div>`;
+      $('ttDone').classList.remove('hide'); ttLoadQueue();
+    } catch (e) { $('ttErr').textContent = 'Not set: ' + (e.message || 'no signal'); $('ttErr').classList.remove('hide'); }
+    return ttPaintSend();
+  }
   try {
     const r = await syncFetch('/text-team', { method:'POST', body: JSON.stringify({ to: who.map(p => p.id), text }) });
     const res = r.results || [];
@@ -16637,12 +16727,22 @@ async function showLocal(src) {
   return src;
 }
 const showToday = () => dayKey(Date.now());
+/* v59: the dates Travis keeps under Expiration dates win over the ones built into the album.
+   Saved on the phone so they still count with no signal. Matched by name (the album's "watch"). */
+let expCache = (() => { try { return JSON.parse(localStorage.getItem('expiries') || '[]'); } catch (e) { return []; } })();
+const expFor = w => { if (!w) return null; const k = String(w).toLowerCase(); const r = expCache.find(x => String(x.name).toLowerCase() === k); return r ? r.expires : null; };
+async function fetchExpiries() {
+  if (!syncCode() || !navigator.onLine) return expCache;
+  try { const r = await syncFetch('/expiries'); expCache = r.expiries || []; try { localStorage.setItem('expiries', JSON.stringify(expCache)); } catch (e) {} } catch (e) {}
+  return expCache;
+}
 function showItemState(it) {
-  const lapsed = it.expires && it.expires < showToday();
-  const soon = it.expires && !lapsed && it.expires <= dayKey(Date.now() + 30 * 86400000);
-  if (lapsed && it.kind === 'legal') return { hide: true, lapsed, soon };
-  if (lapsed) return { title: it.lapsed || it.title, img: null, text: it.lapsedText || '', lapsed, soon };
-  return { title: it.title, img: it.img || null, text: it.text || '', lapsed, soon };
+  const exp = expFor(it.watch) || it.expires || null;
+  const lapsed = exp && exp < showToday();
+  const soon = exp && !lapsed && exp <= dayKey(Date.now() + 30 * 86400000);
+  if (lapsed && it.kind === 'legal') return { hide: true, lapsed, soon, exp };
+  if (lapsed) return { title: it.lapsed || it.title, img: null, text: it.lapsedText || '', lapsed, soon, exp };
+  return { title: it.title, img: it.img || null, text: it.text || '', lapsed, soon, exp };
 }
 async function showRead() {
   try { const c = await caches.open(SHOW_CACHE); const hit = await c.match(SHOW_INDEX); if (hit) return await hit.json(); } catch (e) {}
@@ -16709,8 +16809,8 @@ function showOpenAlbum(a) {
   $('shAlbum').innerHTML = `<button class="ghost" id="shToList" style="margin-top:0">‹ All albums</button>`
     + (a.say ? `<div class="shSay"><b>Say:</b> "${esc(a.say)}"</div>` : '')
     + items.map(({ it, st }) => {
-      const warn = boss && it.expires ? (st.lapsed ? `<div class="shWarn">⚠️ Expired ${esc(shortDay(it.expires))}. ${it.kind === 'legal' ? 'Hidden from the kids until it is updated.' : 'Showing as "trained".'}</div>`
-        : st.soon ? `<div class="shWarn">⏰ Expires ${esc(shortDay(it.expires))}</div>` : '') : '';
+      const warn = boss && st.exp ? (st.lapsed ? `<div class="shWarn">⚠️ Expired ${esc(shortDay(st.exp))}. ${it.kind === 'legal' ? 'Hidden from the kids until it is updated.' : 'Showing as "trained".'}</div>`
+        : st.soon ? `<div class="shWarn">⏰ Expires ${esc(shortDay(st.exp))}</div>` : '') : '';
       if (st.hide) return `<div class="shItem"><div class="shCard"><span class="shIco">⏳</span><div class="shTxt" style="padding:0"><b>${esc(it.title)}: being updated</b>${warn}</div></div></div>`;
       if (st.img) { const k = shvList.findIndex(x => x.src === st.img);
         return `<div class="shItem"><img data-src="${esc(st.img)}" alt="${esc(st.title)}" data-shv="${k}" style="min-height:120px"><div class="shTxt"><b>${esc(st.title)}</b>${st.text ? `<span>${esc(st.text)}</span>` : ''}${warn}</div></div>`; }
@@ -16742,7 +16842,52 @@ $('mShow').onclick = async () => {
   $('shList').innerHTML = '<div class="small">Loading…</div>';
   if (!showData) { showData = await showRead(); showSaved = await showCheckSaved(showData); }
   showRenderList();
+  fetchExpiries().then(() => { if (!$('showSheet').classList.contains('hide')) { if (!$('shList').classList.contains('hide')) showRenderList(); else if (showAlbumOpen) showOpenAlbum(showAlbumOpen); } });
   showSync().then(() => { if (!$('showSheet').classList.contains('hide') && !$('shList').classList.contains('hide')) showRenderList(); });
+};
+
+/* ---------------- v59: Expiration dates (Travis only) ---------------- */
+let exRows = [], exEditing = null, exKind = 'legal';
+function exLeft(d) { return Math.round((Date.parse(d + 'T12:00:00') - Date.parse(dayKey(Date.now()) + 'T12:00:00')) / 86400000); }
+function exRender() {
+  $('exList').innerHTML = exRows.length ? exRows.map(r => {
+    const n = exLeft(r.expires), cls = n < 0 ? 'late' : n <= 30 ? 'soon' : '';
+    const when = n < 0 ? `Ran out ${-n} day${n === -1 ? '' : 's'} ago` : n === 0 ? 'Runs out today' : `${n} day${n === 1 ? '' : 's'} left`;
+    return `<div class="exRow"><div class="exTxt"><b>${esc(r.name)}</b><span class="${cls}">${esc(new Date(r.expires + 'T12:00:00').toLocaleDateString([], { month:'short', day:'numeric', year:'numeric' }))} · ${when}</span>`
+      + `<span>${r.kind === 'cert' ? 'Certification' : 'License, bond or insurance'}</span></div><button class="chip" data-xe="${esc(r.id)}">Edit</button></div>`;
+  }).join('') : '<div class="small">Nothing on the list yet.</div>';
+  $('exList').querySelectorAll('[data-xe]').forEach(x => x.onclick = () => exOpenForm(exRows.find(r => r.id === x.dataset.xe)));
+}
+function exSetKind(k) { exKind = k === 'cert' ? 'cert' : 'legal'; $('exKind').querySelectorAll('[data-k]').forEach(x => x.classList.toggle('on', x.dataset.k === exKind)); }
+$('exKind').querySelectorAll('[data-k]').forEach(x => x.onclick = () => exSetKind(x.dataset.k));
+function exOpenForm(r) {
+  exEditing = r || null;
+  $('exName').value = r ? r.name : ''; $('exDate').value = r ? r.expires : ''; exSetKind(r ? r.kind : 'legal');
+  $('exRemove').classList.toggle('hide', !r); $('exForm').classList.remove('hide'); $('exAdd').classList.add('hide'); $('exErr').classList.add('hide');
+}
+function exCloseForm() { exEditing = null; $('exForm').classList.add('hide'); $('exAdd').classList.remove('hide'); $('exErr').classList.add('hide'); }
+async function exPost(body) {
+  try {
+    const r = await syncFetch('/expiries', { method:'POST', body: JSON.stringify(body) });
+    exRows = r.expiries || []; expCache = exRows.map(x => ({ name: x.name, expires: x.expires, kind: x.kind }));
+    try { localStorage.setItem('expiries', JSON.stringify(expCache)); } catch (e) {}
+    exCloseForm(); exRender();
+  } catch (e) { $('exErr').textContent = e.message || 'No signal. Try again.'; $('exErr').classList.remove('hide'); }
+}
+$('exAdd').onclick = () => exOpenForm(null);
+$('exCancel').onclick = exCloseForm;
+$('exSave').onclick = () => exPost({ id: exEditing ? exEditing.id : undefined, name: $('exName').value.trim(), expires: $('exDate').value, kind: exKind });
+$('exRemove').onclick = async () => {
+  if (!exEditing) return;
+  const k = await askChoice(`Take ${exEditing.name} off the list?`, 'No more reminders for it.', [{ key:'yes', label:'Take it off' }, { key:'no', label:'Keep it' }]);
+  if (k === 'yes') exPost({ id: exEditing.id, remove: true });
+};
+$('tExp').onclick = async () => {
+  if (syncRole() !== 'boss') return;
+  closeSheet('menuSheet'); openSheet('expSheet'); exCloseForm();
+  $('exList').innerHTML = '<div class="small">Loading…</div>';
+  try { const r = await syncFetch('/expiries'); exRows = r.expiries || []; exRender(); }
+  catch (e) { $('exList').innerHTML = ''; $('exErr').textContent = navigator.onLine ? "Couldn't reach the mailbox. Try again in a moment." : 'No signal. This list needs signal.'; $('exErr').classList.remove('hide'); }
 };
 
 $('tSwitch').onclick = () => { if (syncRole() !== 'boss') return; closeSheet('menuSheet'); openSheet('switchSheet'); paintTeamSwitches(); loadTeamSwitches(); };
