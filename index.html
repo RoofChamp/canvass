@@ -13918,7 +13918,7 @@ document.querySelectorAll('.dsecHead[data-msec]').forEach(b => {
 /* ---- what version is actually on the phone ----
    Matches the service worker cache name, so "did the update land" is answerable by
    looking rather than guessing. */
-const BUILD_VERSION = 'v58';
+const BUILD_VERSION = 'v59';
 const BUILD_DATE = '14 October 2026';
 function renderVersionStamp() {
   const el = $('versionStamp'); if (!el) return;
@@ -16620,7 +16620,7 @@ $('ttSend').onclick = async () => {
   ttPaintSend();
 };
 
-/* ---------------- v58: Show them ----------------
+/* ---------------- v59: Show them ----------------
    Albums live in show/albums.json, built into the app. The photos are copied into their own
    cache (canvass-show-v1) the first time the phone has signal, so at the door they open with
    no bars. A new albums.json is only taken once every photo it needs is already on the

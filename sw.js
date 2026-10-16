@@ -4,7 +4,7 @@
    Parcel queries are network-first with a cache fallback, so a street you
    have already walked still shows its lot lines in a dead zone. */
 
-const SHELL = 'canvass-shell-v58';
+const SHELL = 'canvass-shell-v59';
 const TILES = 'canvass-tiles-v1';
 const DATA  = 'canvass-data-v1';
 /* STORM DAY FILES AND THEIR INDEX. Its own cache, and both reasons are load-bearing.
@@ -16,7 +16,7 @@ const DATA  = 'canvass-data-v1';
    The name must never begin `canvass-shell-` — `isShellCache` below matches that prefix,
    and a cache caught by it can be kept as a lifeboat and searched for shell files. */
 const STORMS = 'canvass-storms-v1';
-/* v58: "Show them" albums (credentials and the like). Its own cache, never named
+/* v59: "Show them" albums (credentials and the like). Its own cache, never named
    canvass-shell-, so a deploy never wipes it. The PAGE fills it: it downloads every photo
    first and only then writes the new albums.json, so a weak signal mid-update leaves the
    old album whole rather than half of a new one. This file only answers from it. */
@@ -469,7 +469,7 @@ self.addEventListener('fetch', e => {
      branch uses. Storm code reads these as data, and a text body would blow up in the JSON
      parser as a syntax error rather than reading as "not here yet". Both the status and the
      body say the same thing, so either check works. */
-  // v58: Show them albums. What is on the phone wins; the page decides when to refresh it.
+  // v59: Show them albums. What is on the phone wins; the page decides when to refresh it.
   if (isShowFile(url)) {
     e.respondWith((async () => {
       const c = await caches.open(SHOW);
